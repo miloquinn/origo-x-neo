@@ -163,10 +163,13 @@ class FontCatalog {
 
   /// Newsreader（变量字体，含光学尺寸轴 opsz 与字重轴 wght，仅 Roman）。
   /// Italic 字形未下载，由系统合成斜体；Bold 由变量字体内部 wght 轴覆盖。
+  /// 中文统一走衬线 fallback。不要把无衬线字体放在第二 fallback：当在线
+  /// 字体未下载或只覆盖部分字形时，SkParagraph 会在不同文本 run 之间切换
+  /// fallback，表现为相邻 TXT 页面整页变成另一种字体。
   static const FontOption newsreader = FontOption(
     id: newsreaderId,
     family: 'Newsreader',
-    fallbackFamilies: ['SourceHanSerifCN', 'SourceHanSansCN'],
+    fallbackFamilies: ['SourceHanSerifCN', 'serif'],
     tone: FontTone.serif,
     variableWeightMin: 200,
     variableWeightMax: 800,

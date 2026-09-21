@@ -336,6 +336,13 @@ void main() {
     expect(FontCatalog.harmonyOSSans.supportsVariableWeight, isFalse);
   });
 
+  test('Newsreader keeps CJK fallback in the same serif family', () {
+    expect(
+      FontCatalog.newsreader.fallbackFamilies,
+      <String>['SourceHanSerifCN', 'serif'],
+    );
+  });
+
   test('PingFang is offered only on Apple reader platforms', () {
     expect(
       FontCatalog.readerFontsForPlatform(
