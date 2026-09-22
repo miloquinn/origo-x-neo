@@ -551,6 +551,14 @@ class SourceScriptBootstrap {
       if (!target) target = String(globalThis.baseUrl || __payload.sourceUrl || '');
       return __sourceNetwork('WEBVIEW', target, html, null, js).body || '';
     },
+    showBrowser: (url, html, preloadJs, config) => {
+      __sourceInteraction('browser', url, '', false, html);
+      return '';
+    },
+    showReadingBrowser: (url, title) => {
+      __sourceInteraction('browser', url, title, false, null);
+      return '';
+    },
     encodeURI: __urlEncoder.encode,
     decodeURI: __urlDecoder.decode,
     ajax: (url) => {

@@ -152,6 +152,30 @@ void main() {
     expect(evaluator.evaluate("java.base64Encode('a', 0)", context), 'YQ==\n');
   });
 
+  test(
+    'routes browser display aliases through the interaction boundary',
+    () async {
+      final requests = <String>[];
+      final value = await evaluator.evaluateAsync(
+        "java.showBrowser('https://books.test/popup', '<p>seed</p>'); "
+        "java.showReadingBrowser('https://books.test/read', '阅读')",
+        SourceScriptContext(
+          source: context.source,
+          interactionHandler: (request) async {
+            requests.add('${request.url}|${request.title}|${request.html}');
+            return SourceScriptInteractionResult(finalUrl: request.url);
+          },
+        ),
+      );
+
+      expect(value, isEmpty);
+      expect(requests, [
+        'https://books.test/popup||<p>seed</p>',
+        'https://books.test/read|阅读|null',
+      ]);
+    },
+  );
+
   test('byte host APIs return plain lists across the JS bridge', () {
     const encoding = SourceScriptEncodingApi();
     const crypto = SourceScriptCryptoApi();

@@ -485,7 +485,7 @@ class SourceRuntimeRequests
       try {
         decoded = jsonDecode(raw);
       } on FormatException {
-        final script = sourceScriptBody(raw) ?? 'JSON.stringify(($raw))';
+        final script = sourceHeaderScript(raw);
         decoded = await _scripts().evaluateAsync(
           script,
           scriptContext(

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
+
 import '../models/registered_book_source.dart';
 import 'source_browser_session.dart';
 import '../protocol/book_source_protocol.dart';
@@ -198,6 +200,12 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
         source.stableId,
         () => _store.write(source.stableId, snapshot),
       );
+    } on MissingPluginException {
+      // Public reading may update an in-memory cookie or browser session on a
+      // build without the optional secure-storage plugin. Keep that session
+      // usable for this runtime; explicit login writes still use [save] and
+      // surface the persistence failure to the caller.
+      return;
     } on Object {
       _dirty.add(source.stableId);
       rethrow;
@@ -381,8 +389,7 @@ class SourceRuntimeLogin {
         final value = jsonDecode(rawHeaders);
         if (value is Map) headers = value;
       } on FormatException {
-        final body =
-            sourceScriptBody(rawHeaders) ?? 'JSON.stringify(($rawHeaders))';
+        final body = sourceHeaderScript(rawHeaders);
         Object? value = await _scripts().evaluateAsync(
           body,
           _contexts.scriptContext(source, includeSourceHeaders: false),
@@ -539,6 +546,21 @@ String? sourceScriptBody(String value) {
     caseSensitive: false,
     dotAll: true,
   ).firstMatch(trimmed)?.group(1);
+}
+
+/// Returns an evaluable script for a source-level header value.
+///
+/// Legado accepts legacy exports that omit the outer braces around a JSON
+/// header object. Normalize that representation at the shared boundary so
+/// request and browser-login paths use the same contract.
+String sourceHeaderScript(String value) {
+  final body = sourceScriptBody(value);
+  if (body != null) return body;
+  final expression = value.trim();
+  final objectExpression = expression.startsWith('{')
+      ? expression
+      : '{$expression}';
+  return 'JSON.stringify($objectExpression)';
 }
 
 bool _sameStringMap(Map<String, String> left, Map<String, String> right) {

@@ -42,6 +42,26 @@ void main() {
       );
     });
 
+    test('normalizes legacy header fragments before source requests', () async {
+      final transport = _FakeTransport({
+        'https://books.test/search?q=test&page=1': '''
+          <div class="book">
+            <a href="/book/1"><span class="name">书名</span></a>
+          </div>
+        ''',
+      });
+      final raw = Map<String, dynamic>.from(_htmlSource().raw)
+        ..['header'] = '"X-Source":"legacy"';
+      final runtime = SourceRuntime(transport: transport);
+
+      await runtime.search(
+        ReadingSourceConfig.fromJson(raw).toRegisteredSource(enabled: true),
+        'test',
+      );
+
+      expect(transport.requests.single.headers['X-Source'], 'legacy');
+    });
+
     test(
       'replays synchronous script network calls through source transport',
       () async {
