@@ -46,13 +46,13 @@
 
 书源管理4处测试原来只等待单帧或固定时长；现在等待菜单关闭及后续界面稳定，保留所有原断言。
 
-受影响文件 targeted `flutter analyze` 无问题，`git diff --check` 通过。全仓分析早先只有一个独立风格提示；最终复查时工作区其他文件仍在变化，出现同步服务与书架服务的方法缺失、接口不一致等错误（最新快照64项，日志 `/tmp/open-reading-menu-analyze-final.log`）。这些文件不在本次菜单改动范围，未覆盖其他工作的修改，不能将当前全仓分析报告为通过。上表为各文件实际运行时的独立测试结果。检索确认 `lib` 中无直接使用原生 `PopupMenuButton` / `showMenu` 的操作菜单。
+受影响文件 targeted `flutter analyze` 无问题，`git diff --check` 通过。全仓分析早先只有一个独立风格提示；最终复查时工作区其他文件仍在变化，出现同步服务与书架服务的方法缺失、接口不一致等错误（最新快照64项，日志 `/tmp/origo-x-menu-analyze-final.log`）。这些文件不在本次菜单改动范围，未覆盖其他工作的修改，不能将当前全仓分析报告为通过。上表为各文件实际运行时的独立测试结果。检索确认 `lib` 中无直接使用原生 `PopupMenuButton` / `showMenu` 的操作菜单。
 
 ## 独立问题与边界
 
 两项页面测试在临时恢复原生菜单后仍同样失败，确认不由本次菜单迁移引入；对照结束后均恢复共享菜单：
-- `source_edit_page_test.dart`：保存后编辑页面未关闭。原生对照日志 `/tmp/open-reading-menu-ab-source-edit-native.log`。
-- `detailed_stats_page_test.dart`：找不到“阅读总览”文案。原生对照日志 `/tmp/open-reading-menu-ab-detailed-native.log`。
+- `source_edit_page_test.dart`：保存后编辑页面未关闭。原生对照日志 `/tmp/origo-x-menu-ab-source-edit-native.log`。
+- `detailed_stats_page_test.dart`：找不到“阅读总览”文案。原生对照日志 `/tmp/origo-x-menu-ab-detailed-native.log`。
 
 未修改上述无关保存逻辑或统计页面文案，未跳过任何断言。AI协议、书源类型等编辑表单下拉框保留；系统文本选择工具栏不在本次范围内。
 

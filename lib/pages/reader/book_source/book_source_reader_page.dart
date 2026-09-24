@@ -116,7 +116,7 @@ const _bookSourceOpeningLoaderDelay = Duration(milliseconds: 220);
 
 typedef BookSourcePageMode = ReaderPageMode;
 
-/// Immersive reader for chapters streamed from an Open Reading book source.
+/// Immersive reader for chapters streamed from an Origo X book source.
 class BookSourceReaderPage extends StatefulWidget {
   final RegisteredBookSource source;
   final BookSourceBook book;

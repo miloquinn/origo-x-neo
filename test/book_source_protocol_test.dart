@@ -24,7 +24,7 @@ class _ManifestClient extends BookSourceClient {
 }
 
 void main() {
-  group('Open Reading Source Protocol', () {
+  group('Origo Source Protocol', () {
     test('uses the system client for synthetic DNS discovery', () async {
       final pinned = _JsonSequenceAdapter(['{}']);
       final system = _JsonSequenceAdapter([

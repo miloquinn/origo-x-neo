@@ -22,7 +22,7 @@ void main() {
     expect(result.status, BookSourceExportStatus.success);
     expect(
       backend.request!.suggestedName,
-      'open-reading-book-sources-20260916-080706.json',
+      'origo-x-book-sources-20260916-080706.json',
     );
     expect(backend.request!.mimeType, 'application/json');
     final decoded = jsonDecode(utf8.decode(backend.request!.bytes)) as List;
@@ -99,7 +99,7 @@ RegisteredBookSource _orspSource() => RegisteredBookSource(
   id: 'org.example.source',
   name: 'ORSP source',
   description: '',
-  manifestUrl: Uri.parse('https://example.org/.well-known/open-reading.json'),
+  manifestUrl: Uri.parse('https://example.org/.well-known/origo-x.json'),
   apiBaseUrl: Uri.parse('https://example.org/api/'),
   protocolVersion: '1.5',
   languages: const ['en'],

@@ -270,7 +270,7 @@ TXT/EPUB等重排文本同步内容锚点，不把屏幕第80页作为跨设备�
 迁移覆盖书籍/文件绑定/进度/书签/笔记/会话/脏记录/游标/旧键别名，避免扫描产生伪删除。内容hash可用于重复检测，但不替代书籍身份。
 
 ```text
-OpenReading/v2/
+OrigoReader/v2/
   space.json
   books/书名/书名.txt          ← 当前TXT，绑定后稳定更新
   revisions/<documentId>/...   ← 修订及历史内容

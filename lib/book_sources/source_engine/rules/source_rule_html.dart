@@ -198,7 +198,7 @@ List<Element>? selectSourceHtmlWithJsoupExtensions(
   String nextMarker() {
     late String marker;
     do {
-      marker = 'data-open-reading-compat-${markerSuffix++}';
+      marker = 'data-origo-x-compat-${markerSuffix++}';
     } while (markers.contains(marker) ||
         candidates.any(
           (candidate) => candidate.attributes.containsKey(marker),

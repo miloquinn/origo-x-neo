@@ -293,7 +293,7 @@ def _download(
                     "Accept": "application/vnd.android.package-archive, application/octet-stream",
                     "Accept-Encoding": "identity",
                     "Connection": "close",
-                    "User-Agent": "open-reading-release-verifier/1",
+                    "User-Agent": "origo-x-release-verifier/1",
                 },
             )
             response = connection.getresponse()

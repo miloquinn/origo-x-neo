@@ -7,9 +7,10 @@
             "notes": {
                 "zh": [
                     "统一适配 Legado 书源通用规则，兼容旧式请求头、浏览器交互和可选会话存储，改善来源导入与搜索、目录、正文阅读链路。",
+                    "修复本地 EPUB 翻页后退出再进入时阅读页数偶发倒退的问题，退出阅读器会先可靠保存最后位置，再完成返回。",
                     "修复使用 Newsreader 阅读字体阅读 TXT 时中文 fallback 在不同页面间切换衬线与无衬线字体的问题，统一使用衬线 fallback。",
                     "英文产品名称统一更新为 Origo，覆盖应用标题、设置页、系统显示名称和 App Store 英文元数据。",
-                    "继续保留既有包名、服务地址、WebDAV 路径与 Open Reading Source Protocol 名称，已有安装、同步与书源配置无需迁移。",
+                    "继续保留既有包名、服务地址、WebDAV 路径与 Origo Source Protocol 名称，已有安装、同步与书源配置无需迁移。",
                     "同步优化英文、日文及繁体中文界面的品牌文案与辅助功能标签。"
                 ]
             }
@@ -490,7 +491,7 @@
             "buildNumber": "260804011",
             "notes": {
                 "en": [
-                    "Fixed the macOS app failing to open from Finder on some systems by using an ASCII-safe internal executable name while keeping the visible app name as Open Reading",
+                    "Fixed the macOS app failing to open from Finder on some systems by using an ASCII-safe internal executable name while keeping the visible app name as Origo X",
                     "The macOS release workflow now launches the signed and notarized app through LaunchServices before publishing",
                     "Fixed macOS local book import by preserving selected files inside the app sandbox before the system file permission expires",
                     "Fixed EPUB horizontal page turns flashing another page or feeling unresponsive when crossing chapter boundaries",
@@ -511,7 +512,7 @@
                     "修復 EPUB 模擬翻頁無法從下一章首頁返回上一章末頁的問題"
                 ],
                 "ja": [
-                    "一部の macOS で Finder から開くと「アプリケーションを開けません」と表示される問題を修正しました。内部実行ファイルを ASCII セーフな名前に変更し、表示名は引き続き Open Reading です",
+                    "一部の macOS で Finder から開くと「アプリケーションを開けません」と表示される問題を修正しました。内部実行ファイルを ASCII セーフな名前に変更し、表示名は引き続き Origo X です",
                     "macOS リリース処理に LaunchServices による実起動確認を追加し、署名・公証済みアプリがシステムから起動できる場合のみ公開します",
                     "macOS で選択したファイルをシステム権限が失効する前にアプリのサンドボックスへ保存し、ローカル書籍を取り込めない問題を修正しました",
                     "EPUB の水平スライドで章をまたぐ際に別ページが一瞬表示されたり、操作が重く感じられたりする問題を修正しました",
@@ -1260,8 +1261,8 @@
                 "en": [
                     "Added Android 16 system live progress notifications for book and official APK downloads",
                     "Kept standard progress notifications as the fallback on older Android versions and unsupported OEM surfaces",
-                    "Added book export from the library, including Android Download/Open Reading output and system save panels on Apple and desktop platforms",
-                    "Registered Open Reading for TXT and EPUB open/share flows so external files can enter the existing import and reading workflow"
+                    "Added book export from the library, including Android Download/Origo X output and system save panels on Apple and desktop platforms",
+                    "Registered Origo X for TXT and EPUB open/share flows so external files can enter the existing import and reading workflow"
                 ],
                 "zh": [
                     "为书籍与官网 APK 下载新增 Android 16 系统原生实时进度通知",

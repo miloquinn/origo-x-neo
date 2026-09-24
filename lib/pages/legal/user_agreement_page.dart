@@ -213,7 +213,7 @@ class _UserAgreementPageState extends State<UserAgreementPage> {
             ),
             if (!compact)
               Text(
-                'OPEN READING',
+                'ORIGO X',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: scheme.onSurface.withValues(alpha: 0.46),
                   letterSpacing: 2.2,

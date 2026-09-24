@@ -37,7 +37,7 @@ https://developer.apple.com/documentation/javascriptcore/jsglobalcontextcreate(_
   `cache.put('key', 'first'); cache.get('key')` returned `null`, not `first`.
 - After repair, 167 script, source-runtime, health and architecture regressions
   passed, including the new lifecycle tests. Log:
-  `/tmp/open-reading-health-runtime-regressions.log`.
+  `/tmp/origo-x-health-runtime-regressions.log`.
 - `flutter test --no-pub --dart-define=SOURCE_HEALTH_STRESS_COUNT=3000
   test/source_health_batch_lifecycle_test.dart` passed in 13 seconds on macOS.
   It uses actual Apple JSC, iOS's three concurrent workers, 3,000 independent
@@ -49,7 +49,7 @@ https://developer.apple.com/documentation/javascriptcore/jsglobalcontextcreate(_
   private named parameter syntax.
 - `flutter build ios --release --no-codesign --no-pub`: succeeded, producing
   `build/ios/iphoneos/Runner.app`. Log:
-  `/tmp/open-reading-ios-health-runtime-build.log`.
+  `/tmp/origo-x-ios-health-runtime-build.log`.
 - Generated lockfile churn from platform compilation was removed. Existing
   unrelated working-tree changes were preserved; no dependency changes.
 

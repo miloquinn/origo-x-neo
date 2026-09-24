@@ -9,7 +9,7 @@ import '../models/bookmark.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'app_menu.dart';
-import 'open_reading_icons.dart';
+import 'origo_x_icons.dart';
 
 class ReaderNavigationChapter {
   const ReaderNavigationChapter({
@@ -723,7 +723,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                 ),
                 if (selected) ...[
                   const SizedBox(width: 8),
-                  OpenReadingCurrentIcon(
+                  OrigoReaderCurrentIcon(
                     size: 20,
                     color: widget.palette.accent,
                   ),

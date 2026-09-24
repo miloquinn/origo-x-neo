@@ -3,7 +3,7 @@ import XCTest
 class RunnerTests: XCTestCase {
   func testMacAppStoreReceiptRequiresAnExistingReceiptFile() {
     let receiptURL = URL(
-      fileURLWithPath: "/Applications/OpenReading.app/Contents/_MASReceipt/receipt"
+      fileURLWithPath: "/Applications/OrigoReader.app/Contents/_MASReceipt/receipt"
     )
     XCTAssertTrue(macAppStoreReceiptExists(receiptURL: receiptURL) { $0 == receiptURL.path })
     XCTAssertFalse(macAppStoreReceiptExists(receiptURL: receiptURL) { _ in false })

@@ -53,7 +53,7 @@ void main() {
     expect(await BookSourceRegistry().load(), isEmpty);
     expect(find.text('Manage sources'), findsOneWidget);
     expect(find.byKey(const Key('bookSourcesToolButton')), findsOneWidget);
-    expect(find.text('Open Reading Source Protocol'), findsNothing);
+    expect(find.text('Origo Source Protocol'), findsNothing);
     await tester.tap(find.byKey(const Key('bookSourcesToolButton')));
     await tester.pumpAndSettle();
     expect(find.text('Protocol & information'), findsOneWidget);
@@ -64,7 +64,7 @@ void main() {
     expect(find.byKey(const Key('bookSourcesDedupeButton')), findsNothing);
     await tester.tap(find.byKey(const Key('bookSourcesProtocolButton')));
     await tester.pumpAndSettle();
-    expect(find.text('Open Reading Source Protocol'), findsOneWidget);
+    expect(find.text('Origo Source Protocol'), findsOneWidget);
     expect(find.text('Protocol repository'), findsOneWidget);
     Navigator.of(
       tester.element(find.text('Protocol & information').first),
@@ -183,7 +183,7 @@ void main() {
       addedAt: DateTime.utc(2026, 7, 22),
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
 
     tester.view.devicePixelRatio = 1;
@@ -252,7 +252,7 @@ void main() {
       },
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([
+      'origo_x_book_sources_v1': jsonEncode([
         orsp.toJson(),
         additional.toJson(),
       ]),
@@ -341,7 +341,7 @@ void main() {
       addedAt: DateTime.utc(2026, 7, 31),
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
     await tester.pumpWidget(
       MaterialApp(
@@ -422,7 +422,7 @@ void main() {
       addedAt: DateTime.utc(2026, 8, 20),
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
 
     await tester.pumpWidget(
@@ -467,7 +467,7 @@ void main() {
       addedAt: DateTime.utc(2026, 7, 19),
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
 
     tester.view.devicePixelRatio = 1;
@@ -522,7 +522,7 @@ void main() {
       ),
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode(
+      'origo_x_book_sources_v1': jsonEncode(
         sources.map((source) => source.toJson()).toList(),
       ),
     });
@@ -638,7 +638,7 @@ void main() {
         'ruleContent': {'content': '#content'},
       }).toRegisteredSource();
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
       });
       final checked = withSourceHealthCheckResult(
         source,
@@ -688,7 +688,7 @@ void main() {
       'searchUrl': '/search',
     }).toRegisteredSource().copyWith(enabled: false);
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
     final maintenance = _EmittingMaintenance()
       ..emit(

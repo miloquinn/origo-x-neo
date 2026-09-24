@@ -1,5 +1,5 @@
 name: Rights or copyright report
-description: Report material controlled by the Open Reading project that may infringe copyright or other rights
+description: Report material controlled by the Origo X project that may infringe copyright or other rights
 title: "[Rights report] "
 labels:
   - rights-report
@@ -7,9 +7,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this form only for files, links, bundled defaults, documentation, releases, or other material controlled by the Open Reading project.
+        Use this form only for files, links, bundled defaults, documentation, releases, or other material controlled by the Origo X project.
 
-        Open Reading does not operate independently added third-party sources. Reports about a third-party source's content should normally be sent to that source operator or hosting provider first. Do not post private personal information, credentials, or confidential evidence in a public issue.
+        Origo X does not operate independently added third-party sources. Reports about a third-party source's content should normally be sent to that source operator or hosting provider first. Do not post private personal information, credentials, or confidential evidence in a public issue.
   - type: dropdown
     id: controlled_material
     attributes:
@@ -28,7 +28,7 @@ body:
     attributes:
       label: Exact URL or file path
       description: Provide the narrowest location that identifies the material.
-      placeholder: https://github.com/miloquinn/open-reading/...
+      placeholder: https://github.com/miloquinn/origo-x/...
     validations:
       required: true
   - type: textarea

@@ -4,7 +4,7 @@ import 'package:xxread/widgets/qr_code_view.dart';
 void main() {
   test('TOTP QR encoder is deterministic and keeps finder patterns', () {
     const uri =
-        'otpauth://totp/OpenReading:reader?secret=BASE32SECRET&issuer=OpenReading';
+        'otpauth://totp/OrigoReader:reader?secret=BASE32SECRET&issuer=OrigoReader';
     final first = encodeQrModules(uri);
     final second = encodeQrModules(uri);
 

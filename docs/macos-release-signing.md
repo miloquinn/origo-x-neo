@@ -17,7 +17,7 @@ Mac App Store 包必须走另一条脚本，见 [App Store 对接与发布](app-
 
 ## 发布产物
 
-- 文件名：`OpenReading-macOS-universal-<version>.zip`
+- 文件名：`OrigoReader-macOS-universal-<version>.zip`
 - 架构：Apple Silicon `arm64` + Intel `x86_64`
 - 应用身份：`com.niki.xxread`
 - 签名：Developer ID Application
@@ -72,10 +72,10 @@ MACOS_PROVISIONING_PROFILE_BASE64
 
 ## 启用顺序
 
-1. 确认 `miloquinn/open-reading-web` 已部署 manifest 驱动的动态资产校验器，并允许：
+1. 确认 `miloquinn/origo-web` 已部署 manifest 驱动的动态资产校验器，并允许：
 
    ```text
-   (macos, zip, universal) -> OpenReading-macOS-universal-{version}.zip
+   (macos, zip, universal) -> OrigoReader-macOS-universal-{version}.zip
    ```
 
 2. 确认官网导入器仍会严格校验平台、包类型、架构、规范文件名、GitHub Release 资产集合和 SHA-256；资产总数不得重新锁死。
@@ -84,7 +84,7 @@ MACOS_PROVISIONING_PROFILE_BASE64
 
    ```bash
    gh variable set MACOS_RELEASE_ENABLED \
-     --repo miloquinn/open-reading \
+     --repo miloquinn/origo-x \
      --body true
    ```
 
@@ -98,7 +98,7 @@ MACOS_PROVISIONING_PROFILE_BASE64
 
 ```bash
 gh variable set MACOS_RELEASE_ENABLED \
-  --repo miloquinn/open-reading \
+  --repo miloquinn/origo-x \
   --body false
 ```
 

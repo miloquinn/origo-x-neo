@@ -18,7 +18,54 @@ class _Cache extends SourceCoverCache {
   }) => result.future;
 }
 
+class _SyncCache extends SourceCoverCache {
+  _SyncCache(this.bytes);
+
+  final Uint8List bytes;
+
+  @override
+  Uint8List? peek(Uri uri, {Map<String, String> headers = const {}}) => bytes;
+
+  @override
+  Future<Uint8List> load(
+    Uri uri, {
+    Map<String, String> headers = const {},
+    bool preferPlatform = false,
+    SourceImageLoadPriority priority = SourceImageLoadPriority.visible,
+  }) => throw StateError('A memory hit must not start a load.');
+}
+
 void main() {
+  testWidgets('memory-cached cover skips the placeholder frame', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 100,
+          height: 150,
+          child: SourceCoverImage(
+            url: Uri.parse('https://example.test/cached.png'),
+            cache: _SyncCache(
+              base64Decode(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==',
+              ),
+            ),
+            width: 100,
+            height: 150,
+            fallback: const ColoredBox(key: Key('fallback'), color: Colors.grey),
+          ),
+        ),
+      ),
+    );
+
+    // The bytes arrive synchronously, so the very first frame already builds
+    // the image instead of painting the placeholder and swapping one frame
+    // later.
+    expect(find.byType(Image), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final reduceMotion in [false, true]) {
     testWidgets(
       'cover retains fallback until decoded and fades once ($reduceMotion)',

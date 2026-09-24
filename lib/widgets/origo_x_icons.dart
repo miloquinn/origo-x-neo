@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
-abstract final class OpenReadingIconAssets {
-  static const currentReadingSvg =
-      'assets/icons/open_reading_current_reading.svg';
-  static const currentReadingPng =
-      'assets/icons/open_reading_current_reading.png';
+abstract final class OrigoReaderIconAssets {
+  static const currentReadingSvg = 'assets/icons/origo_x_current_reading.svg';
+  static const currentReadingPng = 'assets/icons/origo_x_current_reading.png';
 }
 
-class OpenReadingCurrentIcon extends StatelessWidget {
-  const OpenReadingCurrentIcon({
+class OrigoReaderCurrentIcon extends StatelessWidget {
+  const OrigoReaderCurrentIcon({
     super.key,
     required this.color,
     this.size = 24,
@@ -21,17 +19,17 @@ class OpenReadingCurrentIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       image: true,
-      label: 'Origo current reading position',
+      label: 'Origo X current reading position',
       child: SizedBox.square(
         dimension: size,
-        child: CustomPaint(painter: _OpenReadingCurrentIconPainter(color)),
+        child: CustomPaint(painter: _OrigoReaderCurrentIconPainter(color)),
       ),
     );
   }
 }
 
-class _OpenReadingCurrentIconPainter extends CustomPainter {
-  const _OpenReadingCurrentIconPainter(this.color);
+class _OrigoReaderCurrentIconPainter extends CustomPainter {
+  const _OrigoReaderCurrentIconPainter(this.color);
 
   final Color color;
 
@@ -68,7 +66,7 @@ class _OpenReadingCurrentIconPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _OpenReadingCurrentIconPainter oldDelegate) {
+  bool shouldRepaint(covariant _OrigoReaderCurrentIconPainter oldDelegate) {
     return oldDelegate.color != color;
   }
 }

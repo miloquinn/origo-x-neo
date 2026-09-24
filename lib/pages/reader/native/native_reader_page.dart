@@ -752,10 +752,14 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   Future<void> _saveCanonicalProgress(
     _NativeChapter chapter,
     _ReaderPageData page,
-    int chapterIndex,
-  ) {
+    int chapterIndex, {
+    bool allowDuringExit = false,
+  }) {
     // Layout/restore callbacks describe provisional pixels, not a new reading
     // position. Keep the saved target until it has actually been positioned.
+    if (_exitInProgress && !allowDuringExit) {
+      return Future<void>.value();
+    }
     if (_pageMode == NativePageMode.verticalScroll &&
         !_initialPositionRestored) {
       return Future<void>.value();
@@ -815,6 +819,9 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   }
 
   Future<void> _queueBookProgress(int bookId, int chapterIndex) {
+    // The exit snapshot updates both the canonical locator and chapter index;
+    // a late chapter-only callback must not overwrite that snapshot.
+    if (_exitInProgress) return Future<void>.value();
     return _queuePositionWrite(
       () => BookDao().updateBookProgress(bookId, chapterIndex),
     );

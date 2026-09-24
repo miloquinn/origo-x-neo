@@ -1,6 +1,6 @@
 # App Store 与官网宣传素材
 
-本目录保存可长期复用的 Open Reading 宣传素材，避免成品只留在个人桌面或临时目录。
+本目录保存可长期复用的 Origo X 宣传素材，避免成品只留在个人桌面或临时目录。
 
 ## 上架入口
 
@@ -17,7 +17,7 @@ iPhone 和 iPad 界面，并核对示例书籍、封面及正文的展示授权�
 - `screenshots/`：六张精选原始应用截图，统一为 1216×2640，保留真实状态栏和应用界面。
 - `promotional/iphone-6.5/`：六张 1242×2688 的宣传图及整套预览；尺寸符合 iPhone 6.5 英寸槽位，画面仍需替换为 iOS 实际界面。
 - 正式应用图标继续使用 [`assets/images/app_icon.png`](../../assets/images/app_icon.png)，不在本目录重复保存。
-- 官网加载的压缩 WebP 位于独立仓库 `miloquinn/open-reading-web` 的 `app/static/product/`，由本目录的精选截图派生。
+- 官网加载的压缩 WebP 位于独立仓库 `miloquinn/origo-x-platform` 的 `app/static/product/`，由本目录的精选截图派生。
 
 ## 素材对应关系
 

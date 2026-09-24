@@ -41,7 +41,7 @@ class AppUpdateDownloadService {
               connectTimeout: const Duration(seconds: 15),
               receiveTimeout: const Duration(minutes: 10),
               followRedirects: false,
-              headers: {if (!kIsWeb) 'User-Agent': 'OpenReading-AppUpdate'},
+              headers: {if (!kIsWeb) 'User-Agent': 'OrigoReader-AppUpdate'},
             ),
           );
 
@@ -67,7 +67,7 @@ class AppUpdateDownloadService {
     final notificationTask = BackgroundDownloadTask(
       id: 'app-update:${asset.buildNumber}',
       kind: BackgroundDownloadKind.update,
-      title: 'Origo ${asset.buildNumber}',
+      title: 'Origo X ${asset.buildNumber}',
     );
     await _notify(() => BackgroundDownloadNotifier.begin(notificationTask));
 
@@ -80,8 +80,8 @@ class AppUpdateDownloadService {
       '_',
     );
     final baseName = safeVersion.isEmpty
-        ? 'open-reading-update'
-        : 'open-reading-$safeVersion';
+        ? 'origo-x-update'
+        : 'origo-x-$safeVersion';
     final partialFile = File('${updatesDirectory.path}/$baseName.apk.part');
     final apkFile = File('${updatesDirectory.path}/$baseName.apk');
     final internalCancelToken = CancelToken();

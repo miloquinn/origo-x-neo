@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assets/images/app_icon.png" width="112" alt="开元阅读图标">
-  <h1>开元阅读 · Open Reading</h1>
+  <h1>开元阅读 · Origo X</h1>
   <p>本地优先、跨平台、支持开放书源的现代电子书阅读器</p>
 
   <p>
@@ -23,8 +23,8 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-2ea44f" alt="AGPL-3.0 License"></a>
     <img src="https://img.shields.io/badge/Reader_Engine-Flutter_Native-0ea5e9" alt="Flutter Native Reader Engine">
     <img src="https://img.shields.io/badge/Core_Reader-No_WebView-f97316" alt="Core Reader Without WebView">
-    <a href="https://github.com/miloquinn/open-reading"><img src="https://img.shields.io/badge/GitHub-open--reading-181717?logo=github" alt="GitHub"></a>
-    <a href="https://github.com/miloquinn/open-reading-source-protocol"><img src="https://img.shields.io/badge/Book_Source-ORSP_1.5-7c3aed" alt="Open Reading Source Protocol 1.5"></a>
+    <a href="https://github.com/miloquinn/origo-x"><img src="https://img.shields.io/badge/GitHub-open--reading-181717?logo=github" alt="GitHub"></a>
+    <a href="https://github.com/miloquinn/origo-source-protocol"><img src="https://img.shields.io/badge/Book_Source-ORSP_1.5-7c3aed" alt="Origo Source Protocol 1.5"></a>
   </p>
 </div>
 
@@ -48,7 +48,7 @@
 开元阅读提供帮助的人，也谢谢愿意继续陪伴它走下去的每一位用户。
 
 开元阅读是一款使用 Flutter 构建的电子书阅读器。本仓库保存 `v2.4.5` 及以前版本的开源源码。
-应用以本地文件阅读为基础，同时通过 Open Reading Source Protocol（ORSP）连接用户自行选择的
+应用以本地文件阅读为基础，同时通过 Origo Source Protocol（ORSP）连接用户自行选择的
 公开内容服务。书籍、阅读进度、书签、阅读统计与大多数设置默认保存在当前设备；本地阅读
 不要求登录，也不依赖项目方的云端服务。
 
@@ -137,13 +137,13 @@
 - 更新检查会同时查询 GitHub Releases 与官方站点；从官方站点下载安装包时，服务端会为下载统计、安全防护和故障排查记录版本、架构、时间、IP 与 User-Agent，含原始 IP 的明细最多保留 30 天；
 - 自定义字体、背景图片、书籍文件和第三方内容的使用与分发授权由用户自行确认。
 
-## Open Reading Source Protocol
+## Origo Source Protocol
 
 ORSP 1.5 让阅读器通过统一 HTTP 协议连接公开、无需登录的内容服务，而不是在客户端保存站点
 抓取规则、Cookie 或可执行脚本。协议定义发现文档、搜索、书籍详情、分页章节目录与章节正文，
 还可选提供推荐、分类和浏览能力，以及运营者、联系入口、内容许可与权利声明元数据。
 
-- 权威协议仓库：[miloquinn/open-reading-source-protocol](https://github.com/miloquinn/open-reading-source-protocol)
+- 权威协议仓库：[miloquinn/origo-source-protocol](https://github.com/miloquinn/origo-source-protocol)
 
 运行仓库内的本地示例书源：
 
@@ -156,17 +156,17 @@ dart run tool/example_book_source_server.dart
 
 请只接入原创、公共领域或已获得合法授权的内容，不要使用书源能力绕过访问控制、付费机制
 或第三方服务条款。
-客户端会展示书源运营者自行提供的权利信息，但不会把这些声明视为 Open Reading 的认证或
+客户端会展示书源运营者自行提供的权利信息，但不会把这些声明视为 Origo X 的认证或
 背书。项目控制范围内材料的权利投诉可通过
-[GitHub 权利报告表单](https://github.com/miloquinn/open-reading/issues/new?template=rights_report.yml)提交。
+[GitHub 权利报告表单](https://github.com/miloquinn/origo-x-neo/issues/new?template=rights_report.yml)提交。
 
 ## 开始开发
 
 环境要求：Flutter 3.x、Dart `>=3.4.0 <4.0.0`。
 
 ```bash
-git clone https://github.com/miloquinn/open-reading.git
-cd open-reading
+git clone https://github.com/miloquinn/origo-x-neo.git
+cd origo-x
 flutter pub get
 flutter run
 ```
@@ -215,7 +215,7 @@ tool/              # 本地开发、官网发布校验与示例服务工具
 ```
 
 官网、发行 API、安装包镜像与下载统计服务位于独立仓库
-[`miloquinn/open-reading-web`](https://github.com/miloquinn/open-reading-web)。
+[`miloquinn/origo-web`](https://github.com/miloquinn/origo-web)。
 
 更完整的架构说明见 [`structure.md`](structure.md) 和
 [`CODEBASE_DOCUMENTATION.md`](CODEBASE_DOCUMENTATION.md)，版本变化见

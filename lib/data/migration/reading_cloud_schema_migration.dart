@@ -51,7 +51,7 @@ class ReadingCloudSchemaMigration {
         await db.insert('reading_cloud_events', {
           'event_id': const Uuid().v5(
             Namespace.url.value,
-            'open-reading:history:$left:$right',
+            'origo-x:history:$left:$right',
           ),
           'start_ms': left,
           'end_ms': right,
@@ -72,7 +72,7 @@ class ReadingCloudSchemaMigration {
       if (parsed == null || seconds <= 0) continue;
       final start = parsed.millisecondsSinceEpoch;
       await db.insert('reading_cloud_events', {
-        'event_id': const Uuid().v5(origin, 'open-reading:daily:$day:$seconds'),
+        'event_id': const Uuid().v5(origin, 'origo-x:daily:$day:$seconds'),
         'start_ms': start,
         'end_ms': start + 86400000,
         'seconds': seconds,

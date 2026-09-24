@@ -6,7 +6,7 @@
 
 ## Goal
 
-Enable the iOS Runner target to use an app-owned iCloud Documents container for book files while preserving the existing local Files integration under `On My iPhone/Open Reading`.
+Enable the iOS Runner target to use an app-owned iCloud Documents container for book files while preserving the existing local Files integration under `On My iPhone/Origo X`.
 
 This change establishes the signed platform capability and container contract. Directory scanning, book indexing, reading-progress synchronization, and import-page UI changes are separate follow-up work.
 
@@ -35,7 +35,7 @@ Xcode project metadata will mark iCloud as an enabled system capability so the p
 
 ## Public iCloud Documents Scope
 
-The iCloud container will be configured as a public document scope named `Open Reading`, with folder nesting allowed. Book files will live under:
+The iCloud container will be configured as a public document scope named `Origo X`, with folder nesting allowed. Book files will live under:
 
 `Documents/books/`
 

@@ -20,7 +20,7 @@ Validation evidence (2026-09-10):
 - Account page navigation: 4 passed, including logged-out access to offline privacy.
 - Premium settings visibility: 2 passed (phone and tablet, grant and revoke).
 - Full Flutter analysis: no issues.
-- Xcode arm64 iPhone 18 Pro simulator build succeeded, including the complete Flutter application and ApplePurchaseSupportBridge.swift. Final log: /tmp/open-reading-membership-final-xcode.log.
+- Xcode arm64 iPhone 18 Pro simulator build succeeded, including the complete Flutter application and ApplePurchaseSupportBridge.swift. Final log: /tmp/origo-x-membership-final-xcode.log.
 - The generic Flutter simulator build with Xcode 27 failed in Flutter's framework-thinning step: it treated "arm64 x86_64" as a single architecture even though lipo reported both. Specifying ARCHS=arm64 / ONLY_ACTIVE_ARCH=YES in xcodebuild succeeds. This is not evidence of an App Store distribution build or real payment validation.
 - Local Pods metadata predated the tracked SwiftPM/CocoaPods configuration. Validation used resolved local Pods; build-generated Podfile.lock and Package.resolved changes were restored after verification. No dependency or lock-file migration is included in the membership change.
 - Release gaps remain: public privacy hosting, account deletion, server refund/revocation notifications and real sandbox/TestFlight purchase/restore/refund validation.

@@ -213,7 +213,7 @@ class CustomFontService {
     final record = CustomFontRecord(
       id: id,
       displayName: path.basenameWithoutExtension(fileName).trim(),
-      runtimeFamily: 'OpenReadingCustom_$shortHash',
+      runtimeFamily: 'OrigoReaderCustom_$shortHash',
       fileName: fileName,
       relativePath: storedFileName,
       format: extension.substring(1),

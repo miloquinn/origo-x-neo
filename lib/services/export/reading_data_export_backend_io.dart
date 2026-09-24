@@ -51,7 +51,7 @@ class IoReadingDataExportBackend implements ReadingDataExportBackend {
       final temporary = File(
         path.join(
           exportDirectory.path,
-          'open-reading-${DateTime.now().microsecondsSinceEpoch}-${request.suggestedName}',
+          'origo-x-${DateTime.now().microsecondsSinceEpoch}-${request.suggestedName}',
         ),
       );
       try {
@@ -111,7 +111,7 @@ class IoReadingDataExportBackend implements ReadingDataExportBackend {
   Future<void> _writeAtomically(File destination, List<int> bytes) async {
     await destination.parent.create(recursive: true);
     final partial = File(
-      '${destination.path}.open-reading-${DateTime.now().microsecondsSinceEpoch}.partial',
+      '${destination.path}.origo-x-${DateTime.now().microsecondsSinceEpoch}.partial',
     );
     File? backup;
     try {

@@ -1,6 +1,6 @@
-# Open Reading — Reader Implementations Analysis
+# Origo X — Reader Implementations Analysis
 
-Analysis of two reader implementations in `/Users/xiaoyuan/code/open-reading`:
+Analysis of two reader implementations in `/Users/xiaoyuan/code/origo-x`:
 **A) PDF reader** (`pdfx`) and **B) online book-source reader** (curl rendering + book-source page).
 
 Both readers ultimately share two rendering substrates:

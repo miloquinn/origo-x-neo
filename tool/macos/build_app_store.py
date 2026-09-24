@@ -70,7 +70,7 @@ def provisioning_profile():
     # succeed). Manual signing against an explicit profile sidesteps that renegotiation.
     # The profile must be signed with an "Apple Distribution" certificate, not the
     # legacy "3rd Party Mac Developer Application" type Xcode no longer matches by name.
-    default = 'Open Reading macOS App Store (Apple Distribution)'
+    default = 'Origo X macOS App Store (Apple Distribution)'
     return os.environ.get('MACOS_PROVISIONING_PROFILE', default).strip()
 
 
@@ -197,7 +197,7 @@ def execute(args):
     run_step('Product build: configure Flutter macOS App Store', config, log)
     verify_store_defines()
     run_step('Product build: locked CocoaPods dependencies', ['pod', 'install', '--deployment'], log, ROOT / 'macos')
-    archive = output / 'OpenReading.xcarchive'
+    archive = output / 'OrigoReader.xcarchive'
     run_step('Product build: signed Mac App Store archive',
              ['xcodebuild', '-workspace', 'macos/Runner.xcworkspace', '-scheme', 'Runner',
               '-configuration', 'Release', '-destination', 'generic/platform=macOS',

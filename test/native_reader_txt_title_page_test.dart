@@ -40,7 +40,7 @@ void main() {
       ReaderSettingsStore.pageModeKey: ReaderPageMode.instantPage.name,
     });
     temporaryDirectory = Directory.systemTemp.createTempSync(
-      'open-reading-txt-title-page-',
+      'origo-x-txt-title-page-',
     );
     bookFile = File('${temporaryDirectory.path}/title-page.txt')
       ..writeAsStringSync(

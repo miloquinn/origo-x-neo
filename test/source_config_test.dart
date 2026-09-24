@@ -356,7 +356,7 @@ void main() {
         _source(),
       ).toRegisteredSource();
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
       });
 
       expect(await BookSourceRegistry().load(), hasLength(1));
@@ -374,7 +374,7 @@ void main() {
       final raw = jsonEncode([stored]);
       expect(raw.length, greaterThan(256 * 1024));
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': raw,
+        'origo_x_book_sources_v1': raw,
       });
       final storage = _MemoryBookSourceRegistryStorage();
       final registry = BookSourceRegistry(storage: storage);
@@ -383,7 +383,7 @@ void main() {
 
       final preferences = await SharedPreferences.getInstance();
       expect(storage.raw, raw);
-      expect(preferences.containsKey('open_reading_book_sources_v1'), isFalse);
+      expect(preferences.containsKey('origo_x_book_sources_v1'), isFalse);
       expect(await registry.load(), hasLength(1));
     },
   );
@@ -425,7 +425,7 @@ void main() {
 
     final preferences = await SharedPreferences.getInstance();
     expect(storage.writeCalls, 0);
-    expect(preferences.containsKey('open_reading_book_sources_v1'), isFalse);
+    expect(preferences.containsKey('origo_x_book_sources_v1'), isFalse);
     expect(publishedChanges, 0);
   });
 
@@ -435,7 +435,7 @@ void main() {
       ..['capabilities'] = <String>[]
       ..['enabled'] = false;
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([legacy]),
+      'origo_x_book_sources_v1': jsonEncode([legacy]),
     });
 
     final restored = (await BookSourceRegistry().load()).single;
@@ -547,7 +547,7 @@ void main() {
       ).toRegisteredSource();
       final raw = jsonEncode([source.toJson()]);
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': raw,
+        'origo_x_book_sources_v1': raw,
       });
       final storage = _MemoryBookSourceRegistryStorage();
       final first = BookSourceRegistry(storage: storage);
@@ -558,7 +558,7 @@ void main() {
       final preferences = await SharedPreferences.getInstance();
       expect(storage.writeCalls, 1);
       expect(storage.raw, raw);
-      expect(preferences.containsKey('open_reading_book_sources_v1'), isFalse);
+      expect(preferences.containsKey('origo_x_book_sources_v1'), isFalse);
       expect(await first.load(), hasLength(1));
       expect(await second.load(), hasLength(1));
     },
@@ -568,7 +568,7 @@ void main() {
     final source = ReadingSourceConfig.fromJson(_source()).toRegisteredSource();
     final raw = jsonEncode([source.toJson()]);
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': raw,
+      'origo_x_book_sources_v1': raw,
     });
     final firstStorage = _MemoryBookSourceRegistryStorage();
     await BookSourceRegistry(storage: firstStorage).prepareStorage();
@@ -576,7 +576,7 @@ void main() {
 
     await BookSourceRegistry.resetForTesting();
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': raw,
+      'origo_x_book_sources_v1': raw,
     });
     final secondStorage = _MemoryBookSourceRegistryStorage();
     await BookSourceRegistry(storage: secondStorage).prepareStorage();

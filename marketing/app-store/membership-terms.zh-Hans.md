@@ -32,4 +32,4 @@ App Store 购买的退款由 Apple 按适用规则审核处理。提交申请不
 
 App Store 版本同时适用 [Apple 标准最终用户许可协议](https://www.apple.com/legal/internet-services/itunes/dev/stdeula/)。
 
-Apple 购买与退款问题可通过 [Apple 购买支持](https://reportaproblem.apple.com/)处理。应用问题可通过[开元阅读支持](https://github.com/miloquinn/open-reading/issues)反馈；请勿在公开反馈中提交交易凭据、账号密码或个人资料。
+Apple 购买与退款问题可通过 [Apple 购买支持](https://reportaproblem.apple.com/)处理。应用问题可通过[开元阅读支持](https://github.com/miloquinn/origo-x/issues)反馈；请勿在公开反馈中提交交易凭据、账号密码或个人资料。

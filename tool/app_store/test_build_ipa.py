@@ -43,7 +43,7 @@ class BuildIpaTests(unittest.TestCase):
         os.environ.update(ASC_KEY_ID='test-key', ASC_ISSUER_ID='test-issuer', ASC_KEY_PATH=str(self.key))
 
     def archive(self, archive, *, version='2.6.4', number='1', bundle=build.BUNDLE_ID):
-        app = archive / 'Products/Applications/OpenReading.app'
+        app = archive / 'Products/Applications/OrigoReader.app'
         (app / '_CodeSignature').mkdir(parents=True)
         (app / '_CodeSignature/CodeResources').touch()
         (app / 'embedded.mobileprovision').touch()
@@ -173,7 +173,7 @@ class BuildIpaTests(unittest.TestCase):
                 if '-exportArchive' in command and not upload:
                     dest = Path(command[command.index('-exportPath') + 1])
                     dest.mkdir()
-                    (dest / 'OpenReading.ipa').write_bytes(b'fake-ipa')
+                    (dest / 'OrigoReader.ipa').write_bytes(b'fake-ipa')
             with patch.object(build, 'run_step', side_effect=fake_step), contextlib.redirect_stdout(io.StringIO()):
                 args = self.args('--build-number', number, *(['--upload'] if upload else []))
                 self.assertEqual(build.execute(args), 0)

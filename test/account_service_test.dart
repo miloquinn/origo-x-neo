@@ -1717,7 +1717,7 @@ void main() {
             expect(options.data, {'challenge_id': 'mfa-id', 'code': '111111'});
             return _json({
               'secret': 'BASE32SECRET',
-              'otpauth_uri': 'otpauth://totp/OpenReading:test',
+              'otpauth_uri': 'otpauth://totp/OrigoReader:test',
             });
           }(),
           '/api/v1/auth/security/mfa/confirm' => () {
@@ -1810,6 +1810,62 @@ void main() {
       expect(storage.mfaPending, isFalse);
     },
   );
+
+  test('relay email change parses a missing current challenge', () async {
+    final adapter = _RouteAdapter((options) {
+      return switch (options.uri.path) {
+        '/api/v1/auth/security/email/code' => _json({
+          'current': null,
+          'current_code_required': false,
+          'new': {'challenge_id': 'new-id', 'expires_in': 580},
+          'message': 'sent',
+        }),
+        _ => throw StateError('Unexpected route ${options.uri.path}'),
+      };
+    });
+    final client = _client(
+      adapter,
+      _MemoryTokenStore(accessToken: 'access-1', refreshToken: 'refresh-1'),
+    );
+
+    final email = await client.requestEmailChangeCode('reader@qq.com');
+
+    expect(email.currentChallengeId, isNull);
+    expect(email.currentCodeRequired, isFalse);
+    expect(email.newChallengeId, 'new-id');
+    expect(email.expiresIn, 580);
+  });
+
+  test('password substitutes for the current-email code in the payload', () async {
+    final storage = _MemoryTokenStore(
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+    );
+    final adapter = _RouteAdapter((options) {
+      return switch (options.uri.path) {
+        '/api/v1/auth/security/email/change' => () {
+          expect(options.data, {
+            'new_email': 'new@example.com',
+            'new_challenge_id': 'new-id',
+            'new_code': '222222',
+            'current_password': 'the-current-password',
+          });
+          return _json(_session(access: 'access-2', refresh: 'refresh-2'));
+        }(),
+        _ => throw StateError('Unexpected route ${options.uri.path}'),
+      };
+    });
+    final client = _client(adapter, storage);
+
+    await client.changeEmail(
+      newEmail: 'new@example.com',
+      newChallengeId: 'new-id',
+      newCode: '222222',
+      currentPassword: 'the-current-password',
+    );
+
+    expect(storage.accessToken, 'access-2');
+  });
 
   test('avatar upload evicts the old URL even when URL is unchanged', () async {
     final storage = _MemoryTokenStore(

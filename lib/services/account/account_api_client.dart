@@ -207,16 +207,19 @@ class MemberAccountApiClient {
 
   Future<MemberSession> changeEmail({
     required String newEmail,
-    required String currentChallengeId,
-    required String currentCode,
     required String newChallengeId,
     required String newCode,
+    String? currentChallengeId,
+    String? currentCode,
+    String? currentPassword,
   }) => _sessionRequest('$authRoot/security/email/change', {
     'new_email': newEmail.trim(),
-    'current_challenge_id': currentChallengeId,
-    'current_code': currentCode.trim(),
     'new_challenge_id': newChallengeId,
     'new_code': newCode.trim(),
+    'current_challenge_id': ?currentChallengeId,
+    if (currentCode != null) 'current_code': currentCode.trim(),
+    if (currentPassword?.isNotEmpty ?? false)
+      'current_password': currentPassword,
   }, authenticated: true);
 
   Future<MemberEmailChallenge> requestPasswordChangeCode() async =>

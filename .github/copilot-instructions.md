@@ -1,4 +1,4 @@
-# Copilot instructions for open-reading
+# Copilot instructions for origo-x
 
 This repository is a cross-platform Flutter/Dart reading application. When reviewing or changing code:
 

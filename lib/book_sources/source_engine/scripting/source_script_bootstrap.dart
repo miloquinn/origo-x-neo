@@ -5,7 +5,7 @@ import 'source_script_java_compatibility.dart';
 import 'source_script_network_guard.dart';
 import 'source_script_state.dart';
 
-const sourceScriptHostChannel = 'OpenReadingSourceHost';
+const sourceScriptHostChannel = 'OrigoReaderSourceHost';
 
 class SourceScriptBootstrap {
   const SourceScriptBootstrap._();

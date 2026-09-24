@@ -25,6 +25,7 @@ class MemberUser {
     required this.createdAt,
     this.displayName,
     this.avatarUrl,
+    this.emailIsRelay = false,
   });
 
   factory MemberUser.fromJson(Map<String, dynamic> json, {Uri? baseUri}) {
@@ -50,12 +51,17 @@ class MemberUser {
         (json['auth_methods'] as List? ?? const []).whereType<String>(),
       ),
       createdAt: DateTime.parse(json['created_at'] as String),
+      emailIsRelay: json['email_is_relay'] as bool? ?? false,
     );
   }
 
   final String id;
   final String email;
   final bool emailVerified;
+
+  /// Apple 隐藏邮箱（@privaterelay.appleid.com）可能收不到验证码邮件。
+  final bool emailIsRelay;
+
   final String username;
   final String? displayName;
   final String effectiveName;
@@ -173,30 +179,27 @@ class MemberEmailChallenge {
 
 class MemberEmailChangeChallenge {
   const MemberEmailChangeChallenge({
-    required this.currentChallengeId,
     required this.newChallengeId,
     required this.expiresIn,
+    this.currentChallengeId,
+    this.currentCodeRequired = true,
   });
 
-  factory MemberEmailChangeChallenge.fromJson(Map<String, dynamic> json) =>
-      MemberEmailChangeChallenge.fromChallenges(
-        current: _map(json['current']),
-        next: _map(json['new']),
-      );
+  factory MemberEmailChangeChallenge.fromJson(Map<String, dynamic> json) {
+    final current = json['current'];
+    return MemberEmailChangeChallenge(
+      currentChallengeId:
+          current == null ? null : _map(current)['challenge_id'] as String,
+      currentCodeRequired: json['current_code_required'] as bool? ?? true,
+      newChallengeId: _map(json['new'])['challenge_id'] as String,
+      expiresIn: _map(json['new'])['expires_in'] as int,
+    );
+  }
 
-  factory MemberEmailChangeChallenge.fromChallenges({
-    required Map<String, dynamic> current,
-    required Map<String, dynamic> next,
-  }) => MemberEmailChangeChallenge(
-    currentChallengeId: current['challenge_id'] as String,
-    newChallengeId: next['challenge_id'] as String,
-    expiresIn: _shorterExpiry(
-      current['expires_in'] as int,
-      next['expires_in'] as int,
-    ),
-  );
+  /// Apple 隐藏邮箱收不到当前侧验证码，服务端不下发该验证码。
+  final String? currentChallengeId;
 
-  final String currentChallengeId;
+  final bool currentCodeRequired;
   final String newChallengeId;
   final int expiresIn;
 }
@@ -566,5 +569,3 @@ String? _absoluteUrl(String? value, Uri? baseUri) {
   return (uri.isAbsolute || baseUri == null ? uri : baseUri.resolveUri(uri))
       .toString();
 }
-
-int _shorterExpiry(int first, int second) => first < second ? first : second;

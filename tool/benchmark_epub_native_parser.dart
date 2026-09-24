@@ -29,7 +29,7 @@ Future<void> main(List<String> arguments) async {
 }
 
 Future<void> _benchmark(File source, {required bool full}) async {
-  final cache = Directory.systemTemp.createTempSync('open-reading-epub-bench-');
+  final cache = Directory.systemTemp.createTempSync('origo-x-epub-bench-');
   try {
     final sourceSize = source.lengthSync();
     final sourceModifiedMillis = source

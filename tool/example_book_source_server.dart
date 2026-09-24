@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-/// A dependency-free reference server for Open Reading Source Protocol v1.
+/// A dependency-free reference server for Origo Source Protocol v1.
 ///
 /// Run it from the repository root:
 ///
@@ -18,8 +18,8 @@ class ExampleBookSourceServer {
   HttpServer? _server;
 
   ExampleBookSourceServer({
-    this.sourceId = 'dev.open-reading.example-source',
-    this.sourceName = 'Open Reading 示例书源',
+    this.sourceId = 'dev.origo-x.example-source',
+    this.sourceName = 'Origo X 示例书源',
   });
 
   Uri get baseUri {
@@ -169,12 +169,12 @@ class ExampleBookSourceServer {
       'description': '仓库内置的本地协议测试书源，仅包含原创示例文本。',
       'apiBaseUrl': publicBaseUri.resolve('api/').toString(),
       'websiteUrl': publicBaseUri.toString(),
-      'operatorName': 'Open Reading Project',
+      'operatorName': 'Origo X Project',
       'contactUrl':
-          'https://github.com/miloquinn/open-reading/issues/new?template=rights_report.yml',
+          'https://github.com/miloquinn/origo-x/issues/new?template=rights_report.yml',
       'contentLicense': 'Original example content under the repository license',
       'rightsStatement':
-          'This reference source contains only original protocol test stories created for Open Reading.',
+          'This reference source contains only original protocol test stories created for Origo X.',
       'languages': ['zh-CN', 'en'],
       'maxCatalogPageSize': _catalogMaxPageSize,
       'capabilities': [
@@ -446,7 +446,7 @@ const Map<String, _ExampleBook> _books = {
     book: {
       'id': 'protocol-garden',
       'title': '协议花园',
-      'author': 'Open Reading',
+      'author': 'Origo X',
       'description': '一本用于验证开放书源协议的原创微型故事。',
       'categories': ['原创', '测试'],
       'status': 'completed',
@@ -476,7 +476,7 @@ const Map<String, _ExampleBook> _books = {
     book: {
       'id': 'quiet-library',
       'title': '安静的书架',
-      'author': 'Open Reading',
+      'author': 'Origo X',
       'description': '用于测试多结果搜索和书籍详情接口的第二本原创示例。',
       'categories': ['原创', '短篇'],
       'status': 'completed',
@@ -498,7 +498,7 @@ const Map<String, _ExampleBook> _books = {
     book: {
       'id': 'paginated-serial',
       'title': '分页连载',
-      'author': 'Open Reading',
+      'author': 'Origo X',
       'description':
           '用于验证章节目录分页的原创示例：本源在发现文档里把'
           'maxCatalogPageSize 声明为 2，客户端必须跟随 hasMore 翻页才能取全。',
@@ -546,12 +546,11 @@ Future<void> main(List<String> arguments) async {
   final port = _readPort(arguments);
   final address = _readAddress(arguments);
   final server = ExampleBookSourceServer(
-    sourceId:
-        _readOption(arguments, '--id') ?? 'dev.open-reading.example-source',
-    sourceName: _readOption(arguments, '--name') ?? 'Open Reading 示例书源',
+    sourceId: _readOption(arguments, '--id') ?? 'dev.origo-x.example-source',
+    sourceName: _readOption(arguments, '--name') ?? 'Origo X 示例书源',
   );
   final uri = await server.start(address: address, port: port);
-  stdout.writeln('Open Reading example source is running.');
+  stdout.writeln('Origo X example source is running.');
   if (address.address == InternetAddress.anyIPv4.address) {
     stdout.writeln('Local source URL: http://127.0.0.1:$port');
     stdout.writeln('Android emulator URL: http://10.0.2.2:$port');

@@ -9,7 +9,7 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
-  String get appTitle => 'Origo';
+  String get appTitle => 'Origo X';
 
   @override
   String get home => 'ホーム';
@@ -259,7 +259,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get bookSourcesNoSourcesDescription =>
-      'Open Reading Source Protocol に対応したサービスのアドレスを貼り付けて接続します。';
+      'Origo Source Protocol に対応したサービスのアドレスを貼り付けて接続します。';
 
   @override
   String get bookSourcesManageTitle => '接続済みのソース';
@@ -601,7 +601,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get bookSourcesNoOfficialSourcesNotice =>
-      'Origo は書籍ソースをプリインストールせず、サードパーティサービスを運営、推奨、保証しません。すべてのアドレスはあなたが追加します。';
+      'Origo X は書籍ソースをプリインストールせず、サードパーティサービスを運営、推奨、保証しません。すべてのアドレスはあなたが追加します。';
 
   @override
   String get bookSourcesResponsibilityAck =>
@@ -626,7 +626,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bookSourcesRefreshFailed => 'このソースを更新できませんでした';
 
   @override
-  String get bookSourcesProtocolTitle => 'Open Reading Source Protocol';
+  String get bookSourcesProtocolTitle => 'Origo Source Protocol';
 
   @override
   String get bookSourcesInformationTitle => 'プロトコルと説明';
@@ -686,7 +686,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get bookSourcesRightsUnverifiedNotice =>
-      'これらの情報は独立したソース運営者による自己申告です。Origo は透明性のために表示しますが、検証、推奨、保証は行いません。';
+      'これらの情報は独立したソース運営者による自己申告です。Origo X は透明性のために表示しますが、検証、推奨、保証は行いません。';
 
   @override
   String get bookSourcesContactOperator => '運営者に連絡';
@@ -1081,7 +1081,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fontMonospaceDescription => 'コードや技術文書、集中しやすい組版に適した等幅フォントです。';
 
   @override
-  String get fontPreviewText => 'Origo · 自由に読む 開卷有益';
+  String get fontPreviewText => 'Origo X · 自由に読む 開卷有益';
 
   @override
   String get customFonts => 'マイフォント';
@@ -1104,19 +1104,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get builtInFonts => '内蔵フォント';
 
   @override
-  String get onlineFonts => 'Online fonts';
+  String get onlineFonts => 'オンラインフォント';
 
   @override
-  String get fontDownload => 'Download';
+  String get fontDownload => 'ダウンロード';
 
   @override
-  String get fontDownloading => 'Downloading…';
+  String get fontDownloading => 'ダウンロード中…';
 
   @override
-  String get fontDownloaded => 'Downloaded';
+  String get fontDownloaded => 'ダウンロード済み';
 
   @override
-  String get fontDownloadFailed => 'Download failed, tap to retry';
+  String get fontDownloadFailed => 'ダウンロードに失敗しました。タップして再試行';
 
   @override
   String get fontDownloadHint => '初回使用時にオンラインでダウンロードします';
@@ -1130,30 +1130,29 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fontStaticWeight => '固定ウェイト（太字はシステム合成）';
 
   @override
-  String get fontDeleteDownload => 'Delete download';
+  String get fontDeleteDownload => 'ダウンロードを削除';
 
   @override
   String fontDeleteDownloadTitle(String name) {
-    return 'Delete downloaded \"$name\"?';
+    return 'ダウンロード済みの「$name」を削除しますか？';
   }
 
   @override
   String fontDeleteDownloadMessage(String size) {
-    return 'Will free $size of storage. Will re-download next time you use it.';
+    return '$size のストレージが解放されます。次回使用時に再ダウンロードされます。';
   }
 
   @override
-  String get fontDownloadCancelled => 'Download cancelled';
+  String get fontDownloadCancelled => 'ダウンロードをキャンセルしました';
 
   @override
-  String get fontDownloadNetworkFailed => 'Network error, download failed';
+  String get fontDownloadNetworkFailed => 'ネットワークエラーのためダウンロードに失敗しました';
 
   @override
-  String get fontDownloadInvalid => 'Downloaded font file is invalid';
+  String get fontDownloadInvalid => 'ダウンロードしたフォントファイルが無効です';
 
   @override
-  String get fontDownloadUnsupported =>
-      'Online font download is not supported on this platform';
+  String get fontDownloadUnsupported => 'このプラットフォームではオンラインフォントのダウンロードに対応していません';
 
   @override
   String get importFont => 'フォントをインポート';
@@ -1240,7 +1239,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsQqChannel => 'QQ チャンネル';
 
   @override
-  String get settingsQqChannelSubtitle => '開元閱讀 · Origo6';
+  String get settingsQqChannelSubtitle => '開元閱讀 · Origo X';
 
   @override
   String get settingsQqChannelOpenFailed => 'QQ チャンネルの招待リンクを開けませんでした';
@@ -1256,6 +1255,24 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get languageJapanese => '日本語';
+
+  @override
+  String get languageGerman => 'Deutsch';
+
+  @override
+  String get languageSpanish => 'Español';
+
+  @override
+  String get languageFrench => 'Français';
+
+  @override
+  String get languageItalian => 'Italiano';
+
+  @override
+  String get languagePortuguese => 'Português';
+
+  @override
+  String get languageRussian => 'Русский';
 
   @override
   String get languageTraditionalChinese => '繁體中文';
@@ -1788,7 +1805,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agreementCardSubtitle => '以下の内容をよくお読みください';
 
   @override
-  String get agreementWelcomeTitle => 'Origo へようこそ';
+  String get agreementWelcomeTitle => 'Origo X へようこそ';
 
   @override
   String get agreementWelcomeBody => '安定した読書体験を提供するため、まず以下の規約をお読みのうえ同意してください。';
@@ -2965,7 +2982,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get openSourceLicensesIntro =>
-      '以下のライセンス文と告知はアプリ内でオフライン表示できます。Origo、オンラインフォント、サードパーティソフトウェアには、それぞれのライセンスが適用されます。';
+      '以下のライセンス文と告知はアプリ内でオフライン表示できます。Origo X、オンラインフォント、サードパーティソフトウェアには、それぞれのライセンスが適用されます。';
 
   @override
   String get openSourceProjectSection => 'プロジェクト';
@@ -2987,7 +3004,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get openSourceLicenseLegalese =>
-      'Origo とサードパーティコンポーネントには、それぞれのライセンスが適用されます。';
+      'Origo X とサードパーティコンポーネントには、それぞれのライセンスが適用されます。';
 
   @override
   String get openSourceLicenseLoadFailed => 'ライセンス文を読み込めませんでした。';
@@ -3227,7 +3244,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsAboutTitle => 'アプリについて';
 
   @override
-  String get settingsAppName => 'Origo';
+  String get settingsAppName => 'Origo X';
 
   @override
   String get settingsAuthor => 'メンテナー：小元Niki';
@@ -4010,10 +4027,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importSelectFiles => 'ファイルを選択';
 
   @override
-  String get importIosSharedDocuments => 'このiPhone内 · Origo';
+  String get importIosSharedDocuments => 'このiPhone内 · Origo X';
 
   @override
-  String get importICloudDrive => 'iCloud Drive · Origo';
+  String get importICloudDrive => 'iCloud Drive · Origo X';
 
   @override
   String get importICloudUnavailable => 'iCloud Drive を利用できません';
@@ -4505,7 +4522,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get agreementV2HeroBody =>
-      'Origo はオープンソース・クロスプラットフォーム・ローカルファーストの電子書籍リーダーです。読書のための機能を提供しますが、あなたが取り込んだ書籍を提供・ホスティング・審査することはありません。';
+      'Origo X はオープンソース・クロスプラットフォーム・ローカルファーストの電子書籍リーダーです。読書のための機能を提供しますが、あなたが取り込んだ書籍を提供・ホスティング・審査することはありません。';
 
   @override
   String get agreementV2LocalTitle => 'ローカルファースト';
@@ -4575,7 +4592,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agreementFlowPrivacyConsent => 'プライバシー通知をすべて読み、同意します。';
 
   @override
-  String get agreementFlowEnterApp => 'Origo を始める';
+  String get agreementFlowEnterApp => 'Origo X を始める';
 
   @override
   String get agreementFlowPrivacyLocalTitle => '標準で端末内に保存';
@@ -4605,14 +4622,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get agreementV2ImportantNotice =>
-      '重要：Origo の公式版にはサードパーティの書籍ソースはプリインストール、内蔵、推奨されておらず、開発者がそのコンテンツを運営、代理、ホスティングすることもありません。取り込むファイルと追加するソースはご自身で選択し、権利のあるコンテンツだけを利用してください。';
+      '重要：Origo X の公式版にはサードパーティの書籍ソースはプリインストール、内蔵、推奨されておらず、開発者がそのコンテンツを運営、代理、ホスティングすることもありません。取り込むファイルと追加するソースはご自身で選択し、権利のあるコンテンツだけを利用してください。';
 
   @override
   String get agreementV2SourceBoundaryTitle => 'サードパーティソースの責任範囲';
 
   @override
   String get agreementV2SourceBoundaryPoint1 =>
-      '公式プロジェクトが提供するのはオープンソースの閲覧ソフトウェアと Open Reading Source Protocol だけであり、ソースのアドレスや公式一覧は提供しません。';
+      '公式プロジェクトが提供するのはオープンソースの閲覧ソフトウェアと Origo Source Protocol だけであり、ソースのアドレスや公式一覧は提供しません。';
 
   @override
   String get agreementV2SourceBoundaryPoint2 =>
@@ -4627,14 +4644,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get agreementV2Section1Body =>
-      '本規約は、Origo ソフトウェアおよび付属機能のダウンロード・インストール・使用に適用されます。「同意して続ける」をタップすることで、本規約を読み、理解し、同意したものとみなされます。同意しない場合は、使用を中止しアプリを終了してください。お住まいの地域の法律が定める同意年齢に達していない場合は、保護者が内容を読み同意する必要があります。';
+      '本規約は、Origo X ソフトウェアおよび付属機能のダウンロード・インストール・使用に適用されます。「同意して続ける」をタップすることで、本規約を読み、理解し、同意したものとみなされます。同意しない場合は、使用を中止しアプリを終了してください。お住まいの地域の法律が定める同意年齢に達していない場合は、保護者が内容を読み同意する必要があります。';
 
   @override
   String get agreementV2Section2Title => 'オープンソースソフトウェアとライセンス';
 
   @override
   String get agreementV2Section2Body =>
-      'Origo の今後のバージョンは GNU Affero General Public License v3.0 の下で公開されます。ライセンスに従って使用・複製・改変・頒布・販売できますが、改変版を頒布する場合は完全な対応ソースを AGPL-3.0 で提供し、改変版をネットワークサービスとして提供する場合も利用者に対応ソースを提供する必要があります。v1.0.0 以前に付与された MIT License の権利は引き続き有効で撤回されません。本規約はオープンソースライセンスが付与する権利を制限せず、サードパーティコンポーネントには各自のライセンスが適用されます。';
+      'Origo X の今後のバージョンは GNU Affero General Public License v3.0 の下で公開されます。ライセンスに従って使用・複製・改変・頒布・販売できますが、改変版を頒布する場合は完全な対応ソースを AGPL-3.0 で提供し、改変版をネットワークサービスとして提供する場合も利用者に対応ソースを提供する必要があります。v1.0.0 以前に付与された MIT License の権利は引き続き有効で撤回されません。本規約はオープンソースライセンスが付与する権利を制限せず、サードパーティコンポーネントには各自のライセンスが適用されます。';
 
   @override
   String get agreementV2Section3Title => 'ユーザーコンテンツと著作権責任';
@@ -4717,7 +4734,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get agreementV2ExitDialogBody =>
-      'Origo を利用するには利用規約への同意が必要です。同意しない場合はアプリを終了してください。';
+      'Origo X を利用するには利用規約への同意が必要です。同意しない場合はアプリを終了してください。';
 
   @override
   String get agreementV2CancelLabel => '戻る';
@@ -5320,24 +5337,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountSecurityTitle => 'アカウントのセキュリティ';
 
   @override
-  String get accountSecurityLoading => 'Loading security status…';
+  String get accountSecurityLoading => 'セキュリティ状態を読み込み中…';
 
   @override
   String get accountChangeEmailTitle => 'メールアドレスを変更';
 
   @override
-  String get accountChangeEmailEnterTitle => 'Choose a new email';
+  String get accountChangeEmailEnterTitle => '新しいメールアドレスを入力';
 
   @override
   String get accountChangeEmailEnterHint =>
-      'We will send one code to your current email and one to the new address.';
+      '現在のメールアドレスと新しいメールアドレスに、それぞれ確認コードを送信します。';
 
   @override
-  String get accountChangeEmailVerifyTitle => 'Verify both email addresses';
+  String get accountChangeEmailVerifyTitle => '両方のメールアドレスを確認';
 
   @override
   String get accountChangeEmailVerifyHint =>
-      'Enter the two codes to finish changing your sign-in email.';
+      '2通のメールに記載されたコードを入力して、ログインメールアドレスの変更を完了してください。';
 
   @override
   String get accountCurrentEmail => '現在のメール';
@@ -5355,6 +5372,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountSendBothCodes => '両方にコードを送信';
 
   @override
+  String get accountChangeEmailEnterRelayHint =>
+      '現在のアドレスは Apple の非公開リレーメールで、認証コードを受け取れません。新しいアドレスにのみコードを送信します。';
+
+  @override
+  String get accountChangeEmailVerifyRelayHint =>
+      '現在のアドレスは Apple の非公開リレーメールのため、そのコードは不要です。新しいアドレスに届いたコードを入力して完了してください。';
+
+  @override
+  String get accountCurrentPasswordInstead => '現在のパスワード（コードの代わりに）';
+
+  @override
+  String get accountRelayEmailTitle => 'Apple の非公開メールを使用中';
+
+  @override
+  String get accountRelayEmailBody =>
+      'サインインアドレスは Apple のリレーアドレスのため、認証メールが届かない場合があります。常用のメールアドレスに変更することをおすすめします。';
+
+  @override
   String get accountChangeEmailAction => 'メールを変更';
 
   @override
@@ -5364,18 +5399,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountChangePasswordTitle => 'パスワードを設定・変更';
 
   @override
-  String get accountPasswordEmailTitle => 'Verify by email';
+  String get accountPasswordEmailTitle => 'まず現在のメールアドレスを確認';
 
   @override
   String get accountPasswordEmailHint =>
-      'Send a code to your current email before choosing a new password.';
+      '新しいパスワードを設定する前に、現在のメールアドレスに確認コードを送信します。';
 
   @override
-  String get accountPasswordNewTitle => 'Choose a new password';
+  String get accountPasswordNewTitle => '新しいパスワードを設定';
 
   @override
-  String get accountPasswordNewHint =>
-      'Enter the email code and set the password you will use next time.';
+  String get accountPasswordNewHint => 'メールの確認コードを入力し、次回から使うパスワードを設定してください。';
 
   @override
   String get accountNewPassword => '新しいパスワード';
@@ -5400,41 +5434,41 @@ class AppLocalizationsJa extends AppLocalizations {
       '初期状態では無効です。有効にするとパスワードとメールコードのログインを保護できます。';
 
   @override
-  String get accountMfaOnTitle => 'Two-factor authentication is on';
+  String get accountMfaOnTitle => '二要素認証は有効です';
 
   @override
-  String get accountMfaEmailTitle => 'Verify your email first';
+  String get accountMfaEmailTitle => 'まず現在のメールアドレスを確認';
 
   @override
   String accountMfaEmailHint(String email) {
-    return 'We will send a setup code to $email.';
+    return '$email に設定用コードを送信します。';
   }
 
   @override
-  String get accountMfaEmailCodeTitle => 'Enter the email code';
+  String get accountMfaEmailCodeTitle => 'メールの確認コードを入力';
 
   @override
   String get accountMfaEmailCodeHint =>
-      'After verification, the authenticator QR code and secret will open on the next page.';
+      '確認が完了すると、次のページで認証アプリのQRコードとシークレットが表示されます。';
 
   @override
-  String get accountMfaAuthenticatorTitle => 'Add Origo to your authenticator';
+  String get accountMfaAuthenticatorTitle => 'Origo X を認証アプリに追加';
 
   @override
   String get accountMfaAuthenticatorHint =>
-      'Scan the QR code or enter the secret manually, then enter the six-digit code from the authenticator.';
+      'QRコードをスキャンするかシークレットを手動で入力し、認証アプリに表示された6桁のコードを入力してください。';
 
   @override
-  String get accountMfaQrCodeLabel => 'Authenticator setup QR code';
+  String get accountMfaQrCodeLabel => '認証アプリ設定用QRコード';
 
   @override
-  String get accountMfaSecretLabel => 'Setup secret';
+  String get accountMfaSecretLabel => '設定シークレット';
 
   @override
-  String get accountMfaSecretCopied => 'Setup secret copied';
+  String get accountMfaSecretCopied => '設定シークレットをコピーしました';
 
   @override
-  String get accountMfaRecoveryTitle => 'Save your recovery codes';
+  String get accountMfaRecoveryTitle => 'リカバリーコードを保存';
 
   @override
   String get accountMfaChallengeTitle => '2 段階認証';
@@ -5500,11 +5534,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountRedeemPremium => '引き換えて永久解除';
 
   @override
-  String get accountApplePurchase => 'Unlock forever with App Store';
+  String get accountApplePurchase => 'App Store で永久にアンロック';
 
   @override
   String get accountApplePurchaseHint =>
-      'A one-time purchase permanently links Premium to this Origo account and syncs it to supported platforms.';
+      '一度の購入で Premium がこの Origo X アカウントに永久に紐づき、対応プラットフォームへ同期されます。';
 
   @override
   String get accountAppleProductLoading => '商品情報を取得しています…';
@@ -5513,18 +5547,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountAppleProductRetry => '商品情報の取得に失敗しました。タップして再試行';
 
   @override
-  String get accountAppleRestore => 'Restore purchases';
+  String get accountAppleRestore => '購入を復元';
 
   @override
-  String get accountApplePurchasePending =>
-      'The purchase is waiting for App Store approval';
+  String get accountApplePurchasePending => '購入は App Store の確認待ちです';
 
   @override
-  String get accountApplePurchaseSubmitted =>
-      'Purchase submitted; verifying Premium access';
+  String get accountApplePurchaseSubmitted => '購入を送信しました。Premium 特典を確認しています';
 
   @override
-  String get accountAppleRestoreSubmitted => 'Purchase restoration requested';
+  String get accountAppleRestoreSubmitted => '購入の復元をリクエストしました';
 
   @override
   String get accountPremiumUnlocked => '永久プレミアムを解除しました';
@@ -6063,7 +6095,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get premiumRestoreHelp =>
-      '再インストールや機種変更後は、購入時のApple Accountと連携済みのOrigoアカウントで購入を復元してください。復元による再課金はありません。';
+      '再インストールや機種変更後は、購入時のApple Accountと連携済みのOrigo Xアカウントで購入を復元してください。復元による再課金はありません。';
 
   @override
   String get premiumMembershipTerms => '会員サービス規約';
@@ -6083,7 +6115,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get premiumAccountBindingBody =>
-      '購入の検証後、プレミアムは現在のOrigoアカウントに連携され、対応プラットフォーム間で同期されます。ログアウトや利用権の取消しにより高度な機能は無効になります。購入前にアカウントをご確認ください。';
+      '購入の検証後、プレミアムは現在のOrigo Xアカウントに連携され、対応プラットフォーム間で同期されます。ログアウトや利用権の取消しにより高度な機能は無効になります。購入前にアカウントをご確認ください。';
 
   @override
   String get premiumRefundTitle => '返金をリクエスト';
@@ -6097,14 +6129,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get premiumPrivacyPurchaseBody =>
-      '支払い情報はAppleが処理します。購入の検証と利用権の連携・復元のため、商品IDとApple署名付き取引検証データをOrigoのアカウントサービスに送信します。この購入処理で開発者がカード番号全体やApple Accountのパスワードを受け取ることはありません。';
+      '支払い情報はAppleが処理します。購入の検証と利用権の連携・復元のため、商品IDとApple署名付き取引検証データをOrigo Xのアカウントサービスに送信します。この購入処理で開発者がカード番号全体やApple Accountのパスワードを受け取ることはありません。';
 
   @override
   String get premiumPrivacyAccountTitle => 'アカウントサービス';
 
   @override
   String get premiumPrivacyAccountBody =>
-      'ログイン、安全性の検証、端末間の利用権同期のため、Origoのアカウントサービスがアカウント情報と会員記録を処理します。サポートやプライバシーに関するお問い合わせは公式サイトの連絡先をご利用ください。';
+      'ログイン、安全性の検証、端末間の利用権同期のため、Origo Xのアカウントサービスがアカウント情報と会員記録を処理します。サポートやプライバシーに関するお問い合わせは公式サイトの連絡先をご利用ください。';
 
   @override
   String get premiumPurchaseSuccess => 'プレミアムを有効にしました';
@@ -6120,7 +6152,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get premiumRestoreEmpty =>
-      '復元できる購入が見つかりませんでした。購入時のApple Accountと連携済みのOrigoアカウントをご確認ください。';
+      '復元できる購入が見つかりませんでした。購入時のApple Accountと連携済みのOrigo Xアカウントをご確認ください。';
 
   @override
   String get premiumPurchaseCanceled => '購入をキャンセルしました';
@@ -6162,7 +6194,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get premiumBillingBodyOther =>
-      '利用可能な購入または引き換え方法でプレミアムを開通できます。価格と支払い方法は購入先の表示をご確認ください。検証済みの会員特典は現在の Origo アカウントに紐づきます。';
+      '利用可能な購入または引き換え方法でプレミアムを開通できます。価格と支払い方法は購入先の表示をご確認ください。検証済みの会員特典は現在の Origo X アカウントに紐づきます。';
 
   @override
   String get accountDeleteTitle => 'アカウントを削除';
@@ -6334,11 +6366,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountDeleteDoneBody =>
-      'アカウントと関連データは完全に削除され、すべての端末でログアウトされました。Origo をご利用いただきありがとうございました。';
+      'アカウントと関連データは完全に削除され、すべての端末でログアウトされました。Origo X をご利用いただきありがとうございました。';
 
   @override
   String get accountDeleteAppleManualRevocation =>
-      'このダイアログを閉じた後、「Apple Accountの設定」>「サインインとセキュリティ」>「Appleでサインイン」>「Origo」を開き、「Appleでサインインの使用を停止」を選択してください。';
+      'このダイアログを閉じた後、「Apple Accountの設定」>「サインインとセキュリティ」>「Appleでサインイン」>「Origo X」を開き、「Appleでサインインの使用を停止」を選択してください。';
 
   @override
   String get accountDeleteDoneClose => '閉じる';

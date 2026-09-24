@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/bookmark.dart';
 import 'package:xxread/utils/reader_themes.dart';
-import 'package:xxread/widgets/open_reading_icons.dart';
+import 'package:xxread/widgets/origo_x_icons.dart';
 import 'package:xxread/widgets/reader_navigation_sheet.dart';
 
 void main() {
@@ -76,8 +76,8 @@ void main() {
   testWidgets('Origo current-position icon assets are bundled', (
     tester,
   ) async {
-    final svg = await rootBundle.load(OpenReadingIconAssets.currentReadingSvg);
-    final png = await rootBundle.load(OpenReadingIconAssets.currentReadingPng);
+    final svg = await rootBundle.load(OrigoReaderIconAssets.currentReadingSvg);
+    final png = await rootBundle.load(OrigoReaderIconAssets.currentReadingPng);
 
     expect(svg.lengthInBytes, greaterThan(0));
     expect(png.lengthInBytes, greaterThan(0));
@@ -184,7 +184,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(OpenReadingCurrentIcon), findsOneWidget);
+    expect(find.byType(OrigoReaderCurrentIcon), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
     expect(find.byType(IconButton), findsOneWidget);
     expect(
@@ -263,7 +263,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(OpenReadingCurrentIcon), findsOneWidget);
+    expect(find.byType(OrigoReaderCurrentIcon), findsOneWidget);
     expect(find.text('当前'), findsNWidgets(2));
     expect(
       tester.widget<Text>(find.text('学习就是将错误降到最低')).style?.color,
@@ -377,7 +377,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(OpenReadingCurrentIcon), findsOneWidget);
+    expect(find.byType(OrigoReaderCurrentIcon), findsOneWidget);
     expect(
       tester.widget<Text>(find.text('学习是一种优化的奖励函数')).style?.color,
       ReaderThemes.day.accent,

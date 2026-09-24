@@ -14,7 +14,7 @@ void main() {
 
   setUp(() {
     info = PackageInfo(
-      appName: 'Origo',
+      appName: 'Origo X',
       packageName: 'com.niki.xxread',
       version: '2.6.7',
       buildNumber: '260910001',

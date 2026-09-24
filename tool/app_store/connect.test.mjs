@@ -53,7 +53,7 @@ function jsonResponse(data, { status = 200, statusText = 'OK' } = {}) {
 }
 
 async function keyEnvironment() {
-  const directory = await mkdtemp(join(tmpdir(), 'open-reading-asc-'));
+  const directory = await mkdtemp(join(tmpdir(), 'origo-x-asc-'));
   const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
   const keyPath = join(directory, 'AuthKey_TEST.p8');
   await writeFile(keyPath, privateKey.export({ type: 'pkcs8', format: 'pem' }), { mode: 0o600 });
@@ -74,7 +74,7 @@ test('JWT uses ES256 claims and a 64-byte P1363 signature without containing the
 });
 
 test('metadata defaults to local-only dry run and does not need credentials', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'open-reading-metadata-'));
+  const directory = await mkdtemp(join(tmpdir(), 'origo-x-metadata-'));
   const file = join(directory, 'metadata.json');
   await writeFile(file, JSON.stringify(validMetadata()));
   let fetchCalls = 0;
@@ -92,7 +92,7 @@ test('metadata validates and previews optional copyright', async () => {
   assert.equal(validateMetadata(metadata).valid, true);
   assert.equal(validateMetadata(validMetadata({ copyright: 'x'.repeat(201) })).errors.some((error) => /copyright exceeds 200/.test(error)), true);
 
-  const directory = await mkdtemp(join(tmpdir(), 'open-reading-copyright-'));
+  const directory = await mkdtemp(join(tmpdir(), 'origo-x-copyright-'));
   const file = join(directory, 'metadata.json');
   await writeFile(file, JSON.stringify(metadata));
   const result = await main(['metadata', '--file', file], { env: {} });
@@ -185,7 +185,7 @@ test('request timeout remains active while reading a successful response body', 
 });
 
 test('path containment accepts sibling names beginning with two dots', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'open-reading-path-'));
+  const directory = await mkdtemp(join(tmpdir(), 'origo-x-path-'));
   const repository = join(directory, 'repo');
   await mkdir(repository);
   assert.equal(isPathInside(repository, join(repository, '..private.p8')), true);
@@ -323,7 +323,7 @@ test('apply POST includes only version-localization fields and relationship', as
   const metadata = validMetadata({
     localizations: {
       'zh-Hans': validLocalization({ description: '旧描述' }),
-      'en-US': validLocalization({ name: 'Open Reading', subtitle: 'Read freely', description: 'Reader' }),
+      'en-US': validLocalization({ name: 'Origo X', subtitle: 'Read freely', description: 'Reader' }),
     },
   });
   await applyMetadata(metadata, { env, fetchImpl });

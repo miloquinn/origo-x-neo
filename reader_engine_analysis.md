@@ -1,4 +1,4 @@
-# Open Reading — Flutter Native Reader Engine Analysis
+# Origo X — Flutter Native Reader Engine Analysis
 
 Package `xxread`. Every text book is rendered through a NATIVE layout engine (TextPainter + visual-line
 pagination + snapshot caching), never a WebView. This document analyzes the shared paging substrate, the
@@ -94,7 +94,7 @@ Surfaces: `_buildReaderContent` (`native_reader_shell.dart` line 62) dispatches;
 ---
 # 7. Custom fonts, reading themes, custom background images
 
-* Fonts: `lib/services/core/custom_font_service(_io|_web).dart` — `importFontBytes` validates TTF/OTF magic (`_matchesFontSignature`), dedupes by SHA-256, inspects variable-weight axis (`font_variation_parser.dart`), assigns runtime family `OpenReadingCustom_<hash>`, registers bytes via `CustomFontRegistrar` (FontLoader), persists a manifest, `ensureLoaded` re-registers on demand. Online fonts: `online_font_service(_io|_web).dart`.
+* Fonts: `lib/services/core/custom_font_service(_io|_web).dart` — `importFontBytes` validates TTF/OTF magic (`_matchesFontSignature`), dedupes by SHA-256, inspects variable-weight axis (`font_variation_parser.dart`), assigns runtime family `OrigoReaderCustom_<hash>`, registers bytes via `CustomFontRegistrar` (FontLoader), persists a manifest, `ensureLoaded` re-registers on demand. Online fonts: `online_font_service(_io|_web).dart`.
 * Themes: `lib/utils/reader_themes.dart` — `ReaderThemePalette` (line 9: background/text/secondary/surface/controls/accent/.../backgroundImagePath/opacity) + `toThemeData` (53) builds Material3 theme. `ReaderThemes` (141) dispatches built-ins + custom. Custom themes persisted via `ReaderCustomTheme`/`ReaderCustomThemeStore` (`lib/core/reader/reader_custom_theme.dart`); ordering via `reader_theme_order.dart`. Palette `cacheKey` (44) feeds every page-snapshot key → theme change = distinct snapshot.
 * Background images: `lib/services/core/reader_theme_background_service(_io|_web).dart` stores jpg/png/webp ≤20MB under `reader_theme_backgrounds` (path-traversal-guarded delete). `lib/widgets/reader_theme_background.dart` stacks color + `Opacity(0..0.75)` image + child. UI: `lib/pages/reader/themes/reader_custom_theme_page.dart` / `reader_custom_themes_page.dart`.
 

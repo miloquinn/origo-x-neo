@@ -16,7 +16,7 @@ jobs:
       - name: Verify read and write access without modifying the repository
         env:
           GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
-          GH_REPO: miloquinn/open-reading
+          GH_REPO: miloquinn/origo-x
           GH_TARGET_BRANCH: main
         shell: bash
         run: |

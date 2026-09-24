@@ -1,4 +1,4 @@
-# Open Reading 关键开发日志
+# Origo X 关键开发日志
 
 > 本文件是精简流水账，只记录后续开发需要记住的关键变化、决策、验证和风险。
 > 小型样式调整、普通重命名和无长期影响的修复不记录。
@@ -28,7 +28,7 @@
 
 ### 《赛博要饭》纸张展开 UI 知识沉淀
 
-- 将首次首页支持浮层的视觉构成、动画时间轴、关键参数、一次性展示边界、无障碍处理和可复用 Flutter 示例整理到 `/Users/xiaoyuan/work/knowledge-base/projects/open-reading/cyber-begging-paper-unroll-ui.md`。
+- 将首次首页支持浮层的视觉构成、动画时间轴、关键参数、一次性展示边界、无障碍处理和可复用 Flutter 示例整理到 `/Users/xiaoyuan/work/knowledge-base/projects/origo-x/cyber-begging-paper-unroll-ui.md`。
 - 知识库 `README.md` 增加项目经验索引；项目 `structure.md` 的“首次首页支持引导”增加知识库反向入口，后续可从代码架构文档直接定位完整设计拆解。
 - 本次只修改文档，使用 Markdown 代码块提取与 `dart format` 验证示例语法；未修改产品运行时代码。
 
@@ -51,7 +51,7 @@
 
 ### v2.5.2 编译修复后快速真机包
 
-- `260804008` 构建被书源登录会话/页面与 `PageStyleHelper` 编译缺口阻断；补齐后使用 `2.5.2+260804009` 成功生成 arm64-v8a Origo release `output/releases/v2.5.2/OpenReading-Android-arm64-v8a-2.5.2-260804009.apk`，实际 versionCode `260806009`，大小 `37897728` 字节，SHA-256 `592867C67FD33EA7A724A8BE5D72DD41B0FEFCCE8015425F0508E678FE92904E`。按用户要求未执行测试，已保留数据覆盖安装 PKT110，设备版本与进程正常。
+- `260804008` 构建被书源登录会话/页面与 `PageStyleHelper` 编译缺口阻断；补齐后使用 `2.5.2+260804009` 成功生成 arm64-v8a Origo release `output/releases/v2.5.2/OrigoReader-Android-arm64-v8a-2.5.2-260804009.apk`，实际 versionCode `260806009`，大小 `37897728` 字节，SHA-256 `592867C67FD33EA7A724A8BE5D72DD41B0FEFCCE8015425F0508E678FE92904E`。按用户要求未执行测试，已保留数据覆盖安装 PKT110，设备版本与进程正常。
 
 ### 管理员会员运营审计
 
@@ -75,7 +75,7 @@
 
 ### v2.5.2 通用二级页面快速真机包
 
-- `2.5.2+260804006` 已生成 arm64-v8a Origo release `output/releases/v2.5.2/OpenReading-Android-arm64-v8a-2.5.2-260804006.apk`，实际 versionCode `260806006`，大小 `37831880` 字节，SHA-256 `B3FC489CCE9D09EACD13B162179995777796FB083147BDBE92247F60FC9EAC21`。按用户要求未执行测试；构建前后源码指纹一致。APK 已保留数据覆盖安装 PKT110，设备版本、进程与前台 Activity 正常。
+- `2.5.2+260804006` 已生成 arm64-v8a Origo release `output/releases/v2.5.2/OrigoReader-Android-arm64-v8a-2.5.2-260804006.apk`，实际 versionCode `260806006`，大小 `37831880` 字节，SHA-256 `B3FC489CCE9D09EACD13B162179995777796FB083147BDBE92247F60FC9EAC21`。按用户要求未执行测试；构建前后源码指纹一致。APK 已保留数据覆盖安装 PKT110，设备版本、进程与前台 Activity 正常。
 
 ### 阅读书源执行层去重清理
 
@@ -93,19 +93,19 @@
 
 ### v2.5.2 快速真机更新包
 
-- `2.5.2+260804005` 已生成 arm64-v8a Origo release `output/releases/v2.5.2/OpenReading-Android-arm64-v8a-2.5.2-260804005.apk`，实际 versionCode `260806005`，文件大小 `37831264` 字节，SHA-256 `8FD9020BDE722F1B4D85B924AA2F0BD3309D4D153007FF0D8D03841ABE99A6A6`。账户与书源核心 Flutter 测试 61 项、阅读书源实验室 Python 测试 4 项通过，静态分析零问题；构建前后源码指纹一致。APK 已保留数据覆盖安装 PKT110，设备版本、进程、前台 Activity 与启动日志均正常。
+- `2.5.2+260804005` 已生成 arm64-v8a Origo release `output/releases/v2.5.2/OrigoReader-Android-arm64-v8a-2.5.2-260804005.apk`，实际 versionCode `260806005`，文件大小 `37831264` 字节，SHA-256 `8FD9020BDE722F1B4D85B924AA2F0BD3309D4D153007FF0D8D03841ABE99A6A6`。账户与书源核心 Flutter 测试 61 项、阅读书源实验室 Python 测试 4 项通过，静态分析零问题；构建前后源码指纹一致。APK 已保留数据覆盖安装 PKT110，设备版本、进程、前台 Activity 与启动日志均正常。
 
 ### v2.5.2 用户代码更新后重打真机包
 
 - `260804002` 已完成 arm64-v8a Origo 签名构建、验签并保留数据覆盖安装到 PKT110，设备回报 `2.5.2` / `260806002`，真机可正常显示新版独立“设置或更换密码”分步页面。
 - 最终一致性检查发现 `260804002` 与随后构建的 `260804003` 期间，工作区持续新增或修改书源请求、运行时、脚本引擎、对应测试及实验室审计代码；两份包均不作为最终工作区验收包。
-- 最终包使用 `2.5.2+260804004`：`output/releases/v2.5.2/OpenReading-Android-arm64-v8a-2.5.2-260804004.apk`，实际 versionCode `260806004`，仅含 arm64-v8a，APK V2 签名及 Origo 证书身份一致；文件大小 `37765464` 字节，SHA-256 `0FD171CEF08C046EB2E840CF4735B6B25311BE401009110C0DFD12D72B5E66E8`。账户、头像、二维码、缓存、仿真翻页、书源运行时与脚本引擎 Flutter 定向测试 98 项、阅读书源 实验室 Python 测试 4 项通过；静态分析无 error/warning、保留 4 条既有 info。构建前后源码指纹一致，确认产物来自稳定工作区；APK 已保留数据覆盖安装到 PKT110，设备回报 `2.5.2` / `260806004`，进程与前台 Activity 正常，启动日志无致命错误，真机账号安全分层页面显示正常。
+- 最终包使用 `2.5.2+260804004`：`output/releases/v2.5.2/OrigoReader-Android-arm64-v8a-2.5.2-260804004.apk`，实际 versionCode `260806004`，仅含 arm64-v8a，APK V2 签名及 Origo 证书身份一致；文件大小 `37765464` 字节，SHA-256 `0FD171CEF08C046EB2E840CF4735B6B25311BE401009110C0DFD12D72B5E66E8`。账户、头像、二维码、缓存、仿真翻页、书源运行时与脚本引擎 Flutter 定向测试 98 项、阅读书源 实验室 Python 测试 4 项通过；静态分析无 error/warning、保留 4 条既有 info。构建前后源码指纹一致，确认产物来自稳定工作区；APK 已保留数据覆盖安装到 PKT110，设备回报 `2.5.2` / `260806004`，进程与前台 Activity 正常，启动日志无致命错误，真机账号安全分层页面显示正常。
 
 ### 阅读书源 书源兼容实验室与旧式规则补齐
 
 - 新增独立的 `tool/reading_source_lab/` Python 项目，离线解析对象、数组、常见包装对象与 `sourceUrls` 清单，按书源地址保留最后配置并生成 JSON/Markdown 兼容报告；工具不联网、不执行脚本，也不输出 header、登录或 Cookie 值。
 - 对照 `Luoyacheng/readingSource-E` 的 `AnalyzeUrl`、`AnalyzeRule`、JSoup/XPath/JsonPath 执行路径，记录了导入、URL 脚本、请求 options、规则阶段和状态传递模型。三批本地样本原始配置不入库；聚合报告记录 4,139 条去重/校验后配置，脚本、登录态、WebView、Java DOM 辅助 API 与 XPath 子集是主要部分兼容簇。
-- Open Reading 旧式 DOM 规则新增 `%%` 交错合并、方括号索引/排除/区间/倒序、`@all` 与真实直接文本节点 `@textNodes` 语义；新增失败优先回归，并保留既有 `&&`/`||`、CSS、XPath、JSONPath、脚本和状态行为。
+- Origo X 旧式 DOM 规则新增 `%%` 交错合并、方括号索引/排除/区间/倒序、`@all` 与真实直接文本节点 `@textNodes` 语义；新增失败优先回归，并保留既有 `&&`/`||`、CSS、XPath、JSONPath、脚本和状态行为。
 - `source_runtime`、脚本引擎、书源配置和导入分析共 66 项相关 Flutter 测试通过；目标 Dart 静态分析零问题；实验室 3 项 Python 单元测试通过。未执行真实站点批量联网验证、Android WebView 真机矩阵或登录/验证码流程。
 
 ### 阅读书源脚本来源状态、集合与 Cookie 对齐
@@ -141,7 +141,7 @@
 ### v2.5.2 Android 真机自测包
 
 - 版本更新为 `2.5.2+260804001`，构建号已按 Asia/Shanghai 日期规则占用；候选内容包含原生账号中心与安全设备登录、用户中心信息分层、头像压缩上传，以及 EPUB NCX/EPUB3 锚点精确导航。
-- 已生成单一 arm64-v8a Origo 签名 release APK `output/releases/v2.5.2/OpenReading-Android-arm64-v8a-2.5.2-260804001.apk`：包名 `com.niki.xxread`、versionName `2.5.2`、实际 versionCode `260806001`，仅含 arm64-v8a，APK V2 签名及 Origo 证书身份一致；文件大小 `37698463` 字节，SHA-256 `88E201F1B341DB7863797B94F968F859F01D51BC49C9FF6C05514FA83FF4E19E`。
+- 已生成单一 arm64-v8a Origo 签名 release APK `output/releases/v2.5.2/OrigoReader-Android-arm64-v8a-2.5.2-260804001.apk`：包名 `com.niki.xxread`、versionName `2.5.2`、实际 versionCode `260806001`，仅含 arm64-v8a，APK V2 签名及 Origo 证书身份一致；文件大小 `37698463` 字节，SHA-256 `88E201F1B341DB7863797B94F968F859F01D51BC49C9FF6C05514FA83FF4E19E`。
 - 账户、头像与 EPUB 导航 31 项定向测试通过，触达文件静态分析无 error/warning、保留本地阅读器 7 条既有 info，格式检查零变更。APK 已在 PKT110 保留数据覆盖安装并启动，设备回报 `2.5.2` / `260806001`，应用进程存活且 `MainActivity` 位于前台，启动日志未发现 fatal、exception、ANR 或 Flutter 致命错误。
 
 ## 2026-08-04
@@ -302,7 +302,7 @@
 
 ### 数千条阅读书源快速导入与可管理列表
 
-- 对照成熟阅读器的导入与批量入库流程，确认联网校验应是独立管理操作；Open Reading 原先把最多 120 个候选逐个执行“搜索 -> 详情 -> 目录 -> 首章正文”，最多保存 30 个，临时网络失败也会直接丢弃，这是大型聚合文件导入慢且只剩少数来源的根因。
+- 对照成熟阅读器的导入与批量入库流程，确认联网校验应是独立管理操作；Origo X 原先把最多 120 个候选逐个执行“搜索 -> 详情 -> 目录 -> 首章正文”，最多保存 30 个，临时网络失败也会直接丢弃，这是大型聚合文件导入慢且只剩少数来源的根因。
 - 阅读书源 JSON 导入改为本地解析、按 `bookSourceUrl` 去重、兼容能力标记和单次批量保存；不再调用在线阅读链验证，也不再隐藏未验证记录。可运行来源按导入配置启用，高级能力按实际调用解析，后续补齐能力无需重新导入。解析移到后台 isolate，URL 聚合文件修正为只下载和解码一次；批量保存直接返回内存结果，不再保存后立刻重新解析整份注册表。
 - 兼容扫描不再因为 `enabledCookieJar=true` 或存在可选登录配置就判定整源不可运行；只有显式 Cookie 请求头和核心阅读规则真实使用受限能力时才阻止执行。图片、文件、音频、视频源继续只保存配置、不进入文字阅读运行时。
 - 书源管理页改为 Sliver 惰性列表，支持名称/网址/备注/分组搜索，“全部 / 已启用 / 已停用 / 可直接使用 / 待兼容”筛选、可搜索分组选择，以及仅对当前筛选结果全选和批量启停/删除；600 条组件夹具确认末尾项目不会提前构建，搜索后可直接定位。
@@ -471,13 +471,13 @@
 - `ReaderSettingsStore` 统一持久化两个字段；分页缓存指纹、纵向列表 key、分页测量与最终 `RichText` 全部使用相同的字间距和对齐方式。排版变化继续按 canonical 文本 offset 恢复阅读位置。“系统默认字体”仍保持 `fontFamily: null`，真正跟随平台字体。
 - 同步恢复阅读字体就绪门禁和正文 `TextScaler.noScaling` 行为，避免字体偏好尚未恢复时先绘制临时系统字体，以及 iOS/Windows 系统缩放对阅读字号二次放大。
 - 验证：排版、设置、分页与两套阅读器定向 73 项通过；全量 492 项测试通过。正式源码定向静态分析无 error/warning，仅有既有 info；全项目分析被旧 Syncthing 冲突备份 `lib/pages/reader/native_reader_page.sync-conflict-20260723-185753-XNTYOKG.dart` 的过期构造参数阻断，未删除该备份。
-- iOS Profile 真机包已用 Xcode 27 beta 构建为 `build/ios/iphoneos/OpenReading.app`（53.5 MB），签名标识 `com.niki.xxread`、Team ID `2HD5836RZ2` 校验通过。SloanePro 当时被 CoreDevice 标记为 `unavailable`，安装返回 4016；需解锁手机并保持 USB/受信任连接后重试，不需要重新编译。
+- iOS Profile 真机包已用 Xcode 27 beta 构建为 `build/ios/iphoneos/OrigoReader.app`（53.5 MB），签名标识 `com.niki.xxread`、Team ID `2HD5836RZ2` 校验通过。SloanePro 当时被 CoreDevice 标记为 `unavailable`，安装返回 4016；需解锁手机并保持 USB/受信任连接后重试，不需要重新编译。
 
 ## 2026-07-24
 
 ### GitHub Release 增加未签名 iOS IPA
 
-- 版本 Tag 发布工作流新增独立 macOS 构建 job：以 `flutter build ios --release --no-codesign` 生成应用，并打包为标准 `Payload/*.app` 结构的 `OpenReading-iOS-unsigned-<version>.ipa`。
+- 版本 Tag 发布工作流新增独立 macOS 构建 job：以 `flutter build ios --release --no-codesign` 生成应用，并打包为标准 `Payload/*.app` 结构的 `OrigoReader-iOS-unsigned-<version>.ipa`。
 - IPA 会校验版本、构建号、ZIP 完整性、Payload 结构以及不含 `_CodeSignature` / provisioning profile；随后纳入 GitHub Release、SHA-256 清单和官网镜像 manifest。Release 正文新增平台下载表格与可点击链接，并明确该 IPA 仅供开发者自行签名或重新打包，普通测试走 TestFlight。
 - 风险：未签名 IPA 不能由终端用户直接安装；后续如增加 Ad Hoc 分发，必须另行实现受限设备、签名和 HTTPS manifest 流程，不能将其混同为公开安装包。
 
@@ -495,7 +495,7 @@
 - OPPO PKT110 的已授权目录曾由系统 `ExternalStorageProvider` 临时返回空列表；重启手机后同一授权和目录恢复，确认不是应用权限或格式过滤故障。排查期间加入的 direct-child、MediaStore 和目录文件描述符回退全部移除，正式代码只保留标准 `DocumentsContract` 扫描。
 - SAF 文件物化改到 Android IO executor，Dart 在继续源哈希、托管复制和副本哈希前校验物化文件大小与扫描元数据一致。74,015,054 字节 TXT 的临时文件与托管副本大小、内容哈希已确认一致。
 - 大型 TXT 的第二个空正文根因是过期的 `routeEntranceCompleted` 标志覆盖了实时 `AnimationStatus.forward`；路由等待现在以实时动画状态为准，并新增 active entrance 回归。用户已在 Debug 真机确认该 TXT 可正常阅读。
-- 清理后相关 51 项测试通过，Android Kotlin 编译成功；全量测试 485 项通过、3 项既有首页/设置断言失败，完整静态分析无 error/warning、保留 64 条既有 info。`2.3.7+260723012` 三 ABI Origo Release 本地构建、包名、版本码和签名验证通过；PKT110 当前 Debug 签名不同，因此 `adb install -r` 被系统安全拒绝，未卸载或清除数据。
+- 清理后相关 51 项测试通过，Android Kotlin 编译成功；全量测试 485 项通过、3 项既有首页/设置断言失败，完整静态分析无 error/warning、保留 64 条既有 info。`2.3.7+260723012` 三 ABI Origo Xelease 本地构建、包名、版本码和签名验证通过；PKT110 当前 Debug 签名不同，因此 `adb install -r` 被系统安全拒绝，未卸载或清除数据。
 - 随后把 3 条过期 UI 断言与当前默认网格布局、10.5px 导航标签同步，全量测试达到 488/488。`v2.3.7` 正式 Run `30010883735` 的 GitHub Release、Android、Windows、Linux、macOS universal 签名与公证、Web 部署和官网镜像全部成功；官网六个平台/架构均为 build `260723012` 并通过 Range 206。
 
 ### 更新提示支持 Markdown 与显式跳过版本
@@ -531,7 +531,7 @@
 - 修复“首次无缓存顺滑、缓存后每次打开反而掉帧”的时序倒挂：缓存命中此前会在 460ms 封面飞行内立即反序列化大型目录、构建章节描述、读取相邻片段并启动首屏分页。现在缓存读取与章节窗口准备统一等入口路由落定后开始，且不追加首次索引专用的 800ms 延迟；返回中途取消或路由被移除时不会继续启动重活。
 - 缓存门闩首版曾把新路由开始前的初始 `AnimationStatus.dismissed` 误当成退出，导致大型 TXT 直接返回空章节并提示没有正文。状态机改为必须先观察到 forward/reverse 运动，之后的 dismissed 才代表取消；新增“初始 dismissed → forward → completed”回归，禁止再次把路由初始态等同于退出态。
 - 验证：新增大无结构 TXT 分片内容连续性、慢加载交叉透明度、加载期点击交互和主题背景回归；TXT 解析、封面路由、本地阅读器与在线书源阅读器定向 58 项通过，首页系统栏/悬浮导航 3 项通过。目标静态分析无 error/warning，保留阅读器既有 15 条 info 提示。单并发全量 460 项中本轮相关失败已修复并复跑通过，仍有 5 项同期导航字号、分页高度和设置页显隐断言与当前实现不一致，均不在本轮阅读器改动范围。
-- 用户要求将本轮书籍打开、加载、悬浮导航、退出缩回和 Android 预测性返回动画统一归入 `2.3.7`；`CHANGELOG.md`、应用内四语种 changelog 与 GitHub release notes 已同步。签名测试包 `2.3.7+260723005` 三 ABI 验证通过；PKT110 上原 Debug 签名版本经用户确认后卸载清数据，arm64 Origo Release 安装成功并启动到 `MainActivity`。
+- 用户要求将本轮书籍打开、加载、悬浮导航、退出缩回和 Android 预测性返回动画统一归入 `2.3.7`；`CHANGELOG.md`、应用内四语种 changelog 与 GitHub release notes 已同步。签名测试包 `2.3.7+260723005` 三 ABI 验证通过；PKT110 上原 Debug 签名版本经用户确认后卸载清数据，arm64 Origo Xelease 安装成功并启动到 `MainActivity`。
 - 正文密集页面的返回掉帧进一步定位为退出时仍需合成完整阅读层树。封面路由现在在退出信号发布时开启 `SnapshotWidget`，首个退出帧把当前屏幕冻结为纹理，后续只合成单张快照；预测性返回取消时继续使用快照恢复，动画完成后再释放并切回实时正文。书籍路由、page-curl、本地/书源阅读器与首页悬浮栏联合回归 82 项通过，目标分析仅保留 page-curl 既有 3 条 info。
 
 ### Android 侧滑返回不再顶跳首页悬浮栏
@@ -676,7 +676,7 @@
 ### v2.3.1 Android 快速测试构建
 
 - 版本更新为 `2.3.1+260722005`，公开更新日志、四语应用内版本历史和 GitHub release notes 已记录 WebDAV 稳定性、新书上传策略及缓存/书源封面改进。
-- 使用共享 Origo 身份完成三 ABI release APK；实际 versionCode 为 `260723005 / 260724005 / 260726005`，包名、版本和签名身份完成必要核对。便于真机测试的 arm64 包为 `build/app/outputs/flutter-apk/open-reading-2.3.1-260722005-arm64-v8a.apk`。
+- 使用共享 Origo 身份完成三 ABI release APK；实际 versionCode 为 `260723005 / 260724005 / 260726005`，包名、版本和签名身份完成必要核对。便于真机测试的 arm64 包为 `build/app/outputs/flutter-apk/origo-x-2.3.1-260722005-arm64-v8a.apk`。
 - 按用户要求未执行安装、真机、全量测试或完整发布验证；Android 坚果云 WebDAV 兼容性仍需通过该测试包实测。
 
 ### 书源封面请求风暴与缓存边界修复
@@ -806,8 +806,8 @@
 - 接手另一 AI 中途中断的国际化任务：ARB key 和四语种生成文件已全部就绪，但 `settings_page.dart` 的 AI 快捷模型卡片/配置弹窗还有十几处硬编码中文和英文字符串未接回已存在的 `l10n.settingsAi*` key（如 API Key 状态文案、Base URL/Temperature 标签等）；其余文件里的中文字符串（AI 提示词模板、分词停用词表、书籍元数据正则等）确认属于非 UI 文本，未改动。全项目 `flutter analyze` 零 error、315 项测试全过。
 - 版本升级为 `2.2.6+14135`。首次构建误用不带 `--split-per-abi` 的普通 `flutter build apk --release`，产出 85MB 单一通用包；体积异常是因为遗漏了官方发布一直使用的三 ABI 分包方式，并非在线字体改造无效。改用 `--split-per-abi` 后 arm64-v8a 降到 32.6MB，符合字体资源改为运行时下载后的预期体积。
 - 首次构建 versionCode 与真机实际情况不符：仓库 `pubspec.yaml`/CHANGELOG 记录的 2.2.5 基础构建号是 `14134`，但真机上通过分包安装的 arm64-v8a 实际 versionCode 是 `14134+2000=16134`（Flutter split-per-abi 会给每个 ABI 加上固定偏移：armeabi-v7a +1000、arm64-v8a +2000、x86_64 +4000）。改用分包后基础构建号 `14135` 对应的 arm64-v8a versionCode 为 `16135`，仍高于机上已装的 `16134`，可以正常覆盖升级。
-- 使用共享 Origo 配置（`/Users/xiaoyuan/certs/shared/origo/origo.p12`，alias `open-reading`）完成三 ABI split release 构建：armeabi-v7a/arm64-v8a/x86_64 versionCode 分别为 `15135`/`16135`/`18135`，均通过 `apksigner verify --verbose`（v2 scheme）。arm64-v8a 产物 SHA-256：`DCB6CAA31297405A67E5714ECCF1E311AA821D50310E83AE9D6F6FEF25BE98FE`。本轮只完成本地签名打包，未创建提交、Tag、GitHub Release 或官网镜像。
-- 已在 `/Users/xiaoyuan/certs/CLAUDE.md` 记录 open-reading 项目对应哪个 keystore/alias，避免下次又要重新翻找证书目录。
+- 使用共享 Origo 配置（`/Users/xiaoyuan/certs/shared/origo/origo.p12`，alias `origo-x`）完成三 ABI split release 构建：armeabi-v7a/arm64-v8a/x86_64 versionCode 分别为 `15135`/`16135`/`18135`，均通过 `apksigner verify --verbose`（v2 scheme）。arm64-v8a 产物 SHA-256：`DCB6CAA31297405A67E5714ECCF1E311AA821D50310E83AE9D6F6FEF25BE98FE`。本轮只完成本地签名打包，未创建提交、Tag、GitHub Release 或官网镜像。
+- 已在 `/Users/xiaoyuan/certs/CLAUDE.md` 记录 origo-x 项目对应哪个 keystore/alias，避免下次又要重新翻找证书目录。
 
 ## 2026-07-20
 
@@ -854,7 +854,7 @@
 
 ### 官网拆分为独立仓库
 
-- 官网、发行 API、安装包镜像、下载统计、后台和生产部署代码从 `server/open-reading-web/` 拆分到独立目录 `F:\Work\open-reading-web` 与公开仓库 `miloquinn/open-reading-web`；独立仓库拥有自己的锁定依赖、CI、部署约束和 90 项测试。
+- 官网、发行 API、安装包镜像、下载统计、后台和生产部署代码从 `server/origo-web/` 拆分到独立目录 `F:\Work\origo-web` 与公开仓库 `miloquinn/origo-web`；独立仓库拥有自己的锁定依赖、CI、部署约束和 90 项测试。
 - 客户端仓库移除官网源码及官网验证 job；Release 继续通过受控 SSH 镜像安装包，并使用 `tool/official_site/verify_official_download.py` 核验官网 arm64 APK，避免客户端发布流程依赖官网仓库工作树。
 - 独立官网仓库 Ruff、Pytest 和 Actionlint 通过；客户端 PR/Release 工作流 Actionlint 通过。App Store 原始截图仍保留在客户端 `marketing/app-store/`，官网 WebP 由独立仓库维护。
 
@@ -889,7 +889,7 @@
 ### ORSP 1.2 权利透明度与投诉闭环
 
 - ORSP 从 1.1 升级到 1.2，发现文档新增可选的 `operatorName`、`contactUrl`、`contentLicense` 和 `rightsStatement`；客户端模型与本地注册表完整保存这些字段，仍保持对所有 `1.x` 书源的兼容。
-- 新增书源门禁强化为明确禁止绕过登录、付费、DRM 或其他访问控制；书源管理页可查看运营者和权利信息、联系运营者，并明确提示这些内容属于第三方自我声明，Open Reading 不核验、不推荐、不背书。
+- 新增书源门禁强化为明确禁止绕过登录、付费、DRM 或其他访问控制；书源管理页可查看运营者和权利信息、联系运营者，并明确提示这些内容属于第三方自我声明，Origo X 不核验、不推荐、不背书。
 - README、内置协议副本、OpenAPI、示例发现文档、参考服务器与 `SOURCE_POLICY.md` 已同步；仓库新增专用 rights-report Issue 表单，应用书源管理页提供直达入口。项目控制材料由维护者处理，独立第三方书源内容仍优先向其运营者或托管方投诉。
 
 ### v2.2.0 发布准备
@@ -1128,7 +1128,7 @@
 
 - 版本号升级为 `1.2.1+12103`，更新 `CHANGELOG.md`、应用内版本记录和 `.github/release-notes/v1.2.1.md`。
 - 发布提交 `5e87f57` 已推送至 `main`，Tag `v1.2.1` 触发跨平台 Release 工作流；发布源校验、格式、静态分析、全量测试、Android/Windows/Linux 构建和 GitHub Release 发布全部成功。
-- GitHub Release：`https://github.com/miloquinn/open-reading/releases/tag/v1.2.1`；包含 3 个分架构 Android APK、Windows x64 ZIP、Linux x64 tar.gz 和 `SHA256SUMS.txt`。
+- GitHub Release：`https://github.com/miloquinn/origo-x/releases/tag/v1.2.1`；包含 3 个分架构 Android APK、Windows x64 ZIP、Linux x64 tar.gz 和 `SHA256SUMS.txt`。
 - Android APK 的自动签名身份校验通过，发布产物确认使用配置的签名证书。
 
 ### v1.2.2 在线阅读控制栏热修复
@@ -1136,7 +1136,7 @@
 - 修复 1.2.1 整书连续滚动中的手势回归：在线书源的 `SelectionArea` 会赢得手势竞争，导致外层点击回调无法收到屏幕中间轻点。
 - 连续滚动改用原始指针监听，仅在未移动、未长按且位于屏幕中间三分之一的轻点时切换控制栏；上下拖动与长按文字选择不会误触。
 - 新增真实手势竞技场回归测试，修复前稳定失败、修复后在线阅读模式 12 项通过；隔离发布源码格式检查、静态分析和全量 153 项测试通过。
-- 版本号 `1.2.2+12104`，发布提交 `9c0a373`，GitHub Release：`https://github.com/miloquinn/open-reading/releases/tag/v1.2.2`。
+- 版本号 `1.2.2+12104`，发布提交 `9c0a373`，GitHub Release：`https://github.com/miloquinn/origo-x/releases/tag/v1.2.2`。
 - Android、Windows、Linux 产物与 `SHA256SUMS.txt` 发布成功；Android APK 签名身份校验通过。
 
 ### 本地书籍格式支持基线（Lightink 对照）
@@ -1144,7 +1144,7 @@
 - 新增 `lib/services/books/book_format_support.dart`：格式能力级别、阅读管线、选择器扩展名与 Lightink 对照说明的单一注册表。
 - 新增 `docs/book-format-support.md`：约定 TXT/EPUB 走统一文本分页；ZIP/RAR 为容器；MOBI/AZW3/FB2/RTF/Office 目标为转纯文本后分页；PDF/漫画为专用渲染；并写明分阶段优先级。
 - `book_import_source_service` / `book_import_service` 的 FilePicker 扩展名改为引用注册表，避免多处硬编码分叉。
-- 产品目标：Open Reading 将来完整支持上述格式矩阵；ZIP/RAR 在实现前不进入选择器（`acceptInFilePicker: false`）。
+- 产品目标：Origo X 将来完整支持上述格式矩阵；ZIP/RAR 在实现前不进入选择器（`acceptInFilePicker: false`）。
 
 ### v1.2.0 发布准备
 
@@ -1228,7 +1228,7 @@
 
 ### 书源范围收敛
 
-- 项目聚焦 Open Reading Source Protocol。
+- 项目聚焦 Origo Source Protocol。
 - 删除旧阅读书源兼容实现、扫描器、注册器、示例和对应测试。
 - 原生书源协议版本为 1.1。
 
@@ -1348,7 +1348,7 @@
 
 ### 私有开发与公开 Release 分离
 
-- 后续源码、验证和发布 Tag 迁移到私有仓库 `miloquinn/open-reading-neo`；公开仓库 `miloquinn/open-reading` 保留截至 `v2.4.5` 的公开源码和历史版本。
+- 后续源码、验证和发布 Tag 迁移到私有仓库 `miloquinn/origo-x-neo`；公开仓库 `miloquinn/origo-x` 保留截至 `v2.4.5` 的公开源码和历史版本。
 - 发布流水线从私有 Tag 构建、签名并部署，使用审批保护且限于公开仓库的 `PUBLIC_RELEASE_TOKEN` 写入公开 Release；Release Notes 必须由版本文件显式提供，不再从私有提交自动生成，避免泄露内部提交信息。
 - 公开仓库原有 Release workflow 必须保持禁用，避免镜像 Tag 触发旧源码重复构建；本地默认上游切到私有仓库，公开远程禁止 Git push。
 - 私有 PR checks 在 Linux 测试前把锁定的 `flutter_js 0.8.7` 自带 QuickJS 共享库目录加入 `LD_LIBRARY_PATH`，避免规则脚本用例因 Runner 未搜索到已下载的 `.so` 而误报失败。
@@ -1397,7 +1397,7 @@
 - 私库 PR checks 的统一 `flutter test --coverage` 会让 `book_source_management_page_test.dart` 第六项在前五项之后稳定等待到 10 分钟超时，而该文件 8 项分别在新进程中均立即通过。CI 现将其余测试保持一次覆盖率运行，并仅把这 8 项逐项隔离执行，既保留全部断言，也避免框架级共享状态污染阻断主线。
 - 首次私库正式 Run 的平台构建与公共 GitHub Release 成功，但 GitHub 将 macOS 的预期 `skipped` 通过默认 `success()` 传播给下游，导致 Web 部署和官网镜像也被跳过。发布工作流现为下游增加显式依赖结果判断，并提供 `deployment_only` 恢复入口：只重建 Web、复用已发布且不可变的公共 Release 资产完成部署和官网导入，不重复生成平台安装包。
 - `v2.5.0` 正式 Run `30793778381` 成功完成 Android 三 ABI、Windows x64、Linux x64、iOS unsigned、Web 构建和公共 GitHub Release；macOS 因发布变量未启用而按设计跳过。deployment-only 恢复 Run `30795097049` 随后成功完成 Web 部署与官网镜像，确认修复后的显式依赖条件可在不重建不可变平台产物的情况下恢复下游发布。
-- 公共 Latest Release `https://github.com/miloquinn/open-reading/releases/tag/v2.5.0` 为非 Draft、非 Prerelease，共包含六个安装包及 `SHA256SUMS.txt`；全部产物重新下载后 SHA-256 复算 6/6 通过。Android 三个 APK 的包名 `com.niki.xxread`、versionName `2.5.0`、ABI 偏移 versionCode、V2 签名与 Origo 证书身份全部一致；iOS IPA ZIP、版本元数据和 Runner.app 未签名状态通过。
+- 公共 Latest Release `https://github.com/miloquinn/origo-x/releases/tag/v2.5.0` 为非 Draft、非 Prerelease，共包含六个安装包及 `SHA256SUMS.txt`；全部产物重新下载后 SHA-256 复算 6/6 通过。Android 三个 APK 的包名 `com.niki.xxread`、versionName `2.5.0`、ABI 偏移 versionCode、V2 签名与 Origo 证书身份全部一致；iOS IPA ZIP、版本元数据和 Runner.app 未签名状态通过。
 - 官网 Android 三 ABI、Windows x64、Linux x64、iOS universal 六个平台槽位的版本、构建号、大小与 SHA-256 均和 GitHub Release 一致，Range 请求全部返回 206。`read.xxread.top/version.json` 已为 `2.5.0+260803003`，Web 首页、官网首页及下载页均返回 200。未做 Android/iOS 真机安装与视觉复核。
 - `v2.5.0` 发布后核对发现，公开仓库 `release` Environment 原有的五个 macOS Developer ID/Notary Secret 在迁移私库时遗漏，导致本版本 macOS job 按 `MACOS_RELEASE_ENABLED=false` 跳过。现已从 `/Users/xiaoyuan/certs/APPLE` 的 Developer ID P12 和 App Store Connect API Key 重建私库五个 Secret，使用 `notarytool history` 验证 Key ID、Issuer ID 与私钥组合有效，并将私库变量 `MACOS_RELEASE_ENABLED` 开启为 `true`。该配置只用于后续新版本 Tag；不向已发布且资产不可变的 `v2.5.0` 追加 macOS 包。
 
@@ -1406,7 +1406,7 @@
 - EPUB 目录在多个小节共用同一正文章节索引时，现结合当前章节文本与阅读偏移定位真正活动的小节，只为对应目录项显示当前状态；文字选择工具栏改为复用阅读器毛玻璃控制栏；iOS Xcode 工程移除残留的固定 `MARKETING_VERSION`，统一跟随 Flutter 版本。
 - 用户提供的《精准学习》暴露出前述修复仍丢失 NCX `#fragment`，导致二级标题点击只能回到同一 XHTML 起点。现将 NCX/EPUB3 fragment 写入版本 4 索引缓存，章节解析同步记录元素 `id/name` 到正文 UTF-16 offset；目录点击通过 canonical locator 精确落到锚点页，当前小节按全书目标位置判定，并覆盖小节正文跨到下一 XHTML、目标标题位于分页中部两种边界。真实文件探针确认 7 个二级标题全部解析到对应正文（例如“优化的奖励函数”偏移 8633、“搜索空间”偏移 1141）；EPUB 解析、导航面板和本地 EPUB 跨章共 18 项回归通过，目标静态分析无 error/warning、保留 7 条既有 info。已生成的 `260803004` 自测包只包含旧的标题文本推断逻辑，不包含本次锚点修复，后续验收必须使用新编号重新构建。
 - 版本更新为 `2.5.1+260803004`，基础构建号已按 Asia/Shanghai 日期规则占用；计划生成单一 arm64-v8a Origo 签名自测 APK。目录和文字选择工具栏 10 项定向测试通过，触达 Dart 文件静态分析无 error/warning、保留本地阅读器 7 条既有 info，格式检查零变更；构建与签名验证结果待回写。
-- 已生成单一 arm64-v8a Origo 签名自测包 `output/releases/v2.5.1/OpenReading-Android-arm64-v8a-2.5.1-260803004.apk`：包名 `com.niki.xxread`、versionName `2.5.1`、实际 versionCode `260805004`，仅含 arm64-v8a 原生库，APK V2 签名及 Origo 证书身份一致；文件大小 `37499395` 字节，SHA-256 `00794CF2B96B85EB1C49AB1FE95933F399767722A77CCE512BB2B6CE6382C3DF`。未做真机安装与视觉复核。
+- 已生成单一 arm64-v8a Origo 签名自测包 `output/releases/v2.5.1/OrigoReader-Android-arm64-v8a-2.5.1-260803004.apk`：包名 `com.niki.xxread`、versionName `2.5.1`、实际 versionCode `260805004`，仅含 arm64-v8a 原生库，APK V2 签名及 Origo 证书身份一致；文件大小 `37499395` 字节，SHA-256 `00794CF2B96B85EB1C49AB1FE95933F399767722A77CCE512BB2B6CE6382C3DF`。未做真机安装与视觉复核。
 
 ### EPUB 阅读进度偶发回退修复
 
@@ -1424,6 +1424,6 @@
 - 仍需人工在 Apple 开发者后台完成、无法由自动化代劳：Identifiers → App ID `com.niki.xxread` 勾选 Sign In with Apple 能力并（如为手动签名）重新生成描述文件；App Store Connect 送审版本页确认已挂载 `com.niki.xxread.premium.lifetime` 且完成 App Privacy 问卷。
 - 官网后端新增 apple 登录服务层、路由、schema 约束放宽和 10 项定向测试（新用户创建、二次登录复用身份并保留仅首次登录写入的展示名、跨应用 `aud` 拒绝、未配置时禁用、`provider_status`、路由端到端与 503/400 分支），Ruff 与全量 148 项测试通过（较此前 138 项净增 10 项）。Flutter 侧新增 `MemberAccountController.loginWithApple`、`MemberAccountApiClient.loginApple`、账号页原生按钮与登录方式重构，目标文件静态分析与全项目 `flutter analyze` 均无新增问题。
 - 用户在 Apple 开发者后台配置 Sign In with Apple 能力时要求预留 Server-to-Server Notification Endpoint，随即补充官网后端 `POST /api/v1/auth/apple/notifications`：用同一套 JWKS 校验 Apple 推送的通知 JWT（`iss`/`aud` 与登录校验一致，`aud` 同样复用 `OPEN_READING_APPLE_BUNDLE_IDS`，无需新密钥），解出内层 `events` JSON 后对 `consent-revoked`、`account-delete`（同时兼容论坛反馈的 `account-deleted` 拼写）两类事件解绑 `membership_oauth_identities` 对应记录，其余事件类型忽略。新增 4 项定向测试，Ruff 与全量 152 项测试通过。已告知用户该端点地址为 `https://open.xxread.top/api/v1/auth/apple/notifications`，需部署后再让 Apple 端保存生效。
-- 用户确认已在 Apple 开发者后台保存 Sign In with Apple 能力与该通知地址后，用 `deploy/publish.sh`（`DEPLOY_HOST=open-reading-vps DEPLOY_USER=milo`）部署官网后端，测试、Ruff、前端构建、迁移、健康检查全部通过；本次仅发布后端，App 版本号未变。
+- 用户确认已在 Apple 开发者后台保存 Sign In with Apple 能力与该通知地址后，用 `deploy/publish.sh`（`DEPLOY_HOST=origo-x-vps DEPLOY_USER=milo`）部署官网后端，测试、Ruff、前端构建、迁移、健康检查全部通过；本次仅发布后端，App 版本号未变。
 - 部署后核对线上接口发现 `OPEN_READING_APPLE_BUNDLE_IDS`/`OPEN_READING_APPLE_PRODUCT_IDS`/`OPEN_READING_APPLE_ROOT_CERT_PATHS` 生产 `.env` 从未配置过：不仅本次 Apple 登录因此被禁用，此前 Log.md 记录"已完成"的 App Store 内购验证服务实际上也从未在生产环境启用过（`main.py` 用同一组变量门控整个 `ApplePurchaseService` 的实例化）。
-- 经用户确认后补齐：从 `https://www.apple.com/certificateauthority/AppleRootCA-G3.cer` 下载 Apple 官方根证书（公开证书，非私钥），转 PEM 后放到 `/srv/open-reading/shared/certs/AppleRootCA-G3.pem`（`open-reading` 用户可读），生产 `.env` 追加上述三个变量并重启 `open-reading-web.service`。线上核实 `/api/v1/auth/config` 的 `providers.apple` 变为 `true`、`/api/v1/membership/config` 的 `apple_product_id` 变为 `com.niki.xxread.premium.lifetime`、健康检查与首页均正常——Apple 登录和 App Store 内购验证服务这才在生产环境首次真正启用。
+- 经用户确认后补齐：从 `https://www.apple.com/certificateauthority/AppleRootCA-G3.cer` 下载 Apple 官方根证书（公开证书，非私钥），转 PEM 后放到 `/srv/origo-x/shared/certs/AppleRootCA-G3.pem`（`origo-x` 用户可读），生产 `.env` 追加上述三个变量并重启 `origo-web.service`。线上核实 `/api/v1/auth/config` 的 `providers.apple` 变为 `true`、`/api/v1/membership/config` 的 `apple_product_id` 变为 `com.niki.xxread.premium.lifetime`、健康检查与首页均正常——Apple 登录和 App Store 内购验证服务这才在生产环境首次真正启用。

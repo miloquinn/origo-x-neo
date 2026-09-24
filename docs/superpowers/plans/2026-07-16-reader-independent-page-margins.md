@@ -404,7 +404,7 @@ Use Lore trailers recording the migration constraint, page-indicator independenc
 ### Task 3: Profile build and SloanePro visual verification
 
 **Files:**
-- Verify: `build/ios/iphoneos/OpenReading.app`
+- Verify: `build/ios/iphoneos/OrigoReader.app`
 - Capture: `/Users/xiaoyuan/.codex/visualizations/2026/07/16/019f6989-8ec5-70a3-8071-9dd2a2ffdcb2/SloanePro-independent-margins.png`
 
 **Interfaces:**
@@ -418,12 +418,12 @@ export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 flutter build ios --profile --no-pub
 ```
 
-Expected: `✓ Built build/ios/iphoneos/OpenReading.app`.
+Expected: `✓ Built build/ios/iphoneos/OrigoReader.app`.
 
 - [ ] **Step 2: Install and launch on SloanePro**
 
 ```bash
-xcrun devicectl device install app --timeout 120 --device 00008140-001979421E93001C build/ios/iphoneos/OpenReading.app
+xcrun devicectl device install app --timeout 120 --device 00008140-001979421E93001C build/ios/iphoneos/OrigoReader.app
 xcrun devicectl device process launch --timeout 60 --device 00008140-001979421E93001C --terminate-existing com.niki.xxread
 ```
 

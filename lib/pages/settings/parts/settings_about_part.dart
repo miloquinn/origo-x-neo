@@ -338,7 +338,7 @@ extension _SettingsAboutPart on _SettingsPageState {
   }
 
   Future<void> _openGithubRepo() async {
-    final uri = Uri.parse('https://github.com/miloquinn/open-reading');
+    final uri = Uri.parse('https://github.com/miloquinn/origo-x');
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       showSideToast(

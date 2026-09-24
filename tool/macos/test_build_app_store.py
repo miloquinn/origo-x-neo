@@ -126,7 +126,7 @@ class BuildMacAppStoreTests(unittest.TestCase):
                 if '-exportArchive' in command and not upload:
                     dest = Path(command[command.index('-exportPath') + 1])
                     dest.mkdir()
-                    (dest / 'OpenReading.pkg').write_bytes(b'fake-pkg')
+                    (dest / 'OrigoReader.pkg').write_bytes(b'fake-pkg')
 
             with patch.object(build, 'run_step', side_effect=fake_step), contextlib.redirect_stdout(io.StringIO()):
                 extra = ['--upload'] if upload else []
@@ -140,7 +140,7 @@ class BuildMacAppStoreTests(unittest.TestCase):
             self.assertIn('CODE_SIGN_IDENTITY=Apple Distribution', xcode[0])
             self.assertIn('CODE_SIGN_STYLE=Manual', xcode[0])
             self.assertIn(
-                'PROVISIONING_PROFILE_SPECIFIER=Open Reading macOS App Store (Apple Distribution)',
+                'PROVISIONING_PROFILE_SPECIFIER=Origo X macOS App Store (Apple Distribution)',
                 xcode[0],
             )
             options = plistlib.loads(

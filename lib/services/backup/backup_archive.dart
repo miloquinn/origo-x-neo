@@ -34,7 +34,7 @@ class BackupArchive {
     'reading_sessions',
     'book_notes',
   ];
-  static const sourceKey = 'open_reading_book_sources_v1';
+  static const sourceKey = 'origo_x_book_sources_v1';
 
   // Account sessions, device permissions and cloud passwords are device-local.
   static bool includesPreference(String key) =>
@@ -90,7 +90,7 @@ class BackupArchive {
         '{"version":2,"sources":[],"groups":[]}';
     _validateSources(rawSources);
     return {
-      'format': 'open-reading-backup',
+      'format': 'origo-x-backup',
       'version': 1,
       'createdAt': DateTime.now().toUtc().toIso8601String(),
       'schema': await database.getVersion(),
@@ -313,7 +313,7 @@ class BackupArchive {
       );
       final names = extracted.$1;
       final data = extracted.$2;
-      if (data['format'] != 'open-reading-backup' ||
+      if (data['format'] != 'origo-x-backup' ||
           ![1, 2].contains(data['version']) ||
           data['schema'] != await database.getVersion()) {
         throw const FormatException('Unsupported backup version');

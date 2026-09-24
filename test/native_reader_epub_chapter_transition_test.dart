@@ -27,7 +27,7 @@ void main() {
 
   setUpAll(() {
     supportDirectory = Directory.systemTemp.createTempSync(
-      'open-reading-epub-transition-support-',
+      'origo-x-epub-transition-support-',
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -82,7 +82,7 @@ void main() {
         ReaderSettingsStore.chapterTitlePageKey: false,
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-image-precache-',
+        'origo-x-epub-image-precache-',
       );
       final epub = File('${directory.path}/image-precache.epub');
       epub.writeAsBytesSync(
@@ -165,7 +165,7 @@ void main() {
         ReaderSettingsStore.chapterTitlePageKey: false,
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-transition-',
+        'origo-x-epub-transition-',
       );
       final epub = File('${directory.path}/transition.epub');
       epub.writeAsBytesSync(_epubFixture());
@@ -316,7 +316,7 @@ void main() {
       ReaderSettingsStore.chapterTitlePageKey: false,
     });
     final directory = Directory.systemTemp.createTempSync(
-      'open-reading-epub-front-matter-',
+      'origo-x-epub-front-matter-',
     );
     final epub = File('${directory.path}/front-matter.epub');
     epub.writeAsBytesSync(
@@ -416,7 +416,7 @@ void main() {
         ReaderSettingsStore.chapterTitlePageKey: false,
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-warming-tail-',
+        'origo-x-epub-warming-tail-',
       );
       final epub = File('${directory.path}/warming-tail.epub');
       epub.writeAsBytesSync(
@@ -507,7 +507,7 @@ void main() {
     });
     await tester.binding.setSurfaceSize(const Size(400, 800));
     final directory = Directory.systemTemp.createTempSync(
-      'open_reading_epub_backward_window_',
+      'origo_x_epub_backward_window_',
     );
     final epub = File('${directory.path}/backward-window.epub');
     epub.writeAsBytesSync(_epubFixture(chapterCount: 6));
@@ -666,7 +666,7 @@ void main() {
         ReaderSettingsStore.chapterTitlePageKey: false,
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-curl-boundary-',
+        'origo-x-epub-curl-boundary-',
       );
       final epub = File('${directory.path}/curl-boundary.epub');
       epub.writeAsBytesSync(_epubFixture(chapterCount: 3));

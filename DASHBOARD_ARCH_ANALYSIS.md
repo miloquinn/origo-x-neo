@@ -1,6 +1,6 @@
-# Open Reading — Flutter App Architecture Analysis
+# Origo X — Flutter App Architecture Analysis
 
-Repo: /Users/xiaoyuan/code/open-reading (package name `xxread`, app title "开元阅读"). Findings verified by direct source inspection. DESIGN.md is the source-of-truth design doc; it documents the WebDAV sync & book-source-grouping workstreams, while most code under analysis has evolved beyond it.
+Repo: /Users/xiaoyuan/code/origo-x (package name `xxread`, app title "开元阅读"). Findings verified by direct source inspection. DESIGN.md is the source-of-truth design doc; it documents the WebDAV sync & book-source-grouping workstreams, while most code under analysis has evolved beyond it.
 
 ## 1. Page/navigation architecture & home shell
 
@@ -123,7 +123,7 @@ XxReadApp._buildHome: bootstrap-error page -> loading page -> UserAgreementPage 
   - Apple purchase: ApplePremiumPurchaseService(productId: com.niki.xxread.premium.lifetime, verify: (_) => _api.submitApplePurchase(...), onMembership: ...).
 - MemberAccountApiClient (account_api_client.dart, 612 lines): Dio REST client; single _refreshing future guards concurrent refresh; authConfig/membershipConfig/restoreSession/loginPassword/requestCode/registerPassword/mfaStatus/beginExternalLogin/loginApple/beginPasskeyLogin/finishPasskeyLogin/pollDeviceAuthorization/updateProfile/avatar/membership/submitApplePurchase/logout/refreshSession. Throws MemberAccountException.
 - account_models.dart: MemberUser, MemberAuthProviders (google/github/apple/passkey flags), MemberAuthConfig, MemberEmailCodePurpose, MemberExternalAuthMethod { google, github, apple, passkey }.
-- Token store (account_token_store.dart): MemberTokenStore + SecureMemberTokenStore on FlutterSecureStorage (open_reading.account.{access_token,refresh_token,mfa_pending}); PendingDeviceAuthorizationStore + SecurePendingDeviceAuthorizationStore; write-back rollback.
+- Token store (account_token_store.dart): MemberTokenStore + SecureMemberTokenStore on FlutterSecureStorage (origo_x.account.{access_token,refresh_token,mfa_pending}); PendingDeviceAuthorizationStore + SecurePendingDeviceAuthorizationStore; write-back rollback.
 - Avatar cache (account_avatar_cache.dart): LRU memory (LinkedHashMap) + disk cache (account_avatars/), in-flight de-dup, epoch invalidation, size/TTL bounds, Dio loader; avatar_image_processor.dart; AccountSummaryCache.
 - Apple purchase (apple_purchase_service.dart): ApplePurchaseStore + InAppPurchaseStore (wraps in_app_purchase); ApplePremiumPurchaseService listens to purchaseStream, server verify (_verify = source of truth), keeps unfinished transaction on verify failure for retry, 8s timeouts, restore.
 - Device authorization: beginExternalLogin -> DeviceAuthorization persisted for recovery, polled (pollDeviceAuthorization) with native deep-link bridge (AccountAuthCallbackBridge, MethodChannel com.niki.xxread/account_auth) primary + polling fallback.

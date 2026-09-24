@@ -24,7 +24,7 @@ class AppCacheUsage {
       bytesByCategory.values.fold(0, (sum, value) => sum + value);
 }
 
-/// Reports and clears only cache directories explicitly owned by Open Reading.
+/// Reports and clears only cache directories explicitly owned by Origo X.
 ///
 /// Application documents, databases, imported books, saved covers, preferences,
 /// and secure credentials are intentionally outside this service's directory

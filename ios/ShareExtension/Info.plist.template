@@ -18,7 +18,7 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>OpenReadingAppGroupIdentifier</key>
+	<key>OrigoReaderAppGroupIdentifier</key>
 	<string>$(OPEN_READING_APP_GROUP)</string>
 	<key>NSExtension</key>
 	<dict>

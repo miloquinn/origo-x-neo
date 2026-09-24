@@ -100,7 +100,7 @@ class IoBookExportBackend implements BookExportBackend {
   Future<void> _copyAtomically(File source, File destination) async {
     await destination.parent.create(recursive: true);
     final partial = File(
-      '${destination.path}.open-reading-${DateTime.now().microsecondsSinceEpoch}.partial',
+      '${destination.path}.origo-x-${DateTime.now().microsecondsSinceEpoch}.partial',
     );
     File? backup;
     try {

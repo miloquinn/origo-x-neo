@@ -756,7 +756,7 @@ class _SignedInAdapter implements HttpClientAdapter {
         return {
           'secret': 'BASE32SECRET',
           'otpauth_uri':
-              'otpauth://totp/OpenReading:reader?secret=BASE32SECRET&issuer=OpenReading',
+              'otpauth://totp/OrigoReader:reader?secret=BASE32SECRET&issuer=OrigoReader',
         };
       }(),
       _ => throw StateError('Unexpected route ${options.uri.path}'),

@@ -3,9 +3,9 @@ import 'dart:convert';
 const String openReadingSourceProtocol = 'open-reading-source';
 const String openReadingSourceProtocolVersion = '1.5';
 const String openReadingSourceProtocolRepositoryUrl =
-    'https://github.com/miloquinn/open-reading-source-protocol';
+    'https://github.com/miloquinn/origo-source-protocol';
 const String openReadingRightsReportUrl =
-    'https://github.com/miloquinn/open-reading/issues/new?template=rights_report.yml';
+    'https://github.com/miloquinn/origo-x/issues/new?template=rights_report.yml';
 const String openReadingSourceDiscoveryPath =
     '.well-known/open-reading-source.json';
 

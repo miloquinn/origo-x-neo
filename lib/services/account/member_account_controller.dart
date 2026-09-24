@@ -389,15 +389,17 @@ class MemberAccountController extends ChangeNotifier {
 
   Future<void> changeEmail({
     required String newEmail,
-    required String currentChallengeId,
-    required String currentCode,
     required String newChallengeId,
     required String newCode,
+    String? currentChallengeId,
+    String? currentCode,
+    String? currentPassword,
   }) => _run(() async {
     final session = await _api.changeEmail(
       newEmail: newEmail,
       currentChallengeId: currentChallengeId,
       currentCode: currentCode,
+      currentPassword: currentPassword,
       newChallengeId: newChallengeId,
       newCode: newCode,
     );

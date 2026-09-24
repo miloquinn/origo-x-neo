@@ -2,7 +2,7 @@
 
 日期：2026-07-18
 状态：交互设计定稿；固定阅读窗口已实现，下拉书签边界移交待实现与真机调优
-参考：Lightink `docs/17-pull-bookmark-vs-vertical-scroll.md`、Open Reading 当前 `ReaderPullBookmark` 与上下翻页实现
+参考：Lightink `docs/17-pull-bookmark-vs-vertical-scroll.md`、Origo X 当前 `ReaderPullBookmark` 与上下翻页实现
 
 ## 1. 目标
 

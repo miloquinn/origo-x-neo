@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="assets/images/app_icon.png" width="112" alt="Open Reading icon">
-  <h1>Open Reading</h1>
+  <img src="assets/images/app_icon.png" width="112" alt="Origo X icon">
+  <h1>Origo X</h1>
   <p>A local-first, cross-platform ebook reader with an open book-source ecosystem.</p>
 
   <p>
@@ -10,7 +10,7 @@
   </p>
 
   <p>
-    <a href="https://open.xxread.top/"><strong>Open Reading website</strong></a> ·
+    <a href="https://open.xxread.top/"><strong>Origo X website</strong></a> ·
     <a href="https://community.xxread.top/">Xiaoyuan Reader Community</a> ·
     <a href="https://xxread.top/">Xiaoyuan Reader (iOS only)</a>
   </p>
@@ -20,13 +20,13 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-2ea44f" alt="AGPL-3.0 License"></a>
     <img src="https://img.shields.io/badge/Reader_Engine-Flutter_Native-0ea5e9" alt="Flutter Native Reader Engine">
     <img src="https://img.shields.io/badge/Core_Reader-No_WebView-f97316" alt="Core Reader Without WebView">
-    <a href="https://github.com/miloquinn/open-reading-source-protocol"><img src="https://img.shields.io/badge/Book_Source-Open_Protocol-7c3aed" alt="Open Reading Source Protocol"></a>
+    <a href="https://github.com/miloquinn/origo-source-protocol"><img src="https://img.shields.io/badge/Book_Source-Open_Protocol-7c3aed" alt="Origo Source Protocol"></a>
   </p>
 </div>
 
 ---
 
-Open Reading is an open-source ebook reader built with Flutter. It keeps books,
+Origo X is an open-source ebook reader built with Flutter. It keeps books,
 progress, bookmarks, and notes on the user's device by default while providing
 careful typography, TTS, annotations, reading statistics, optional AI tools,
 and community-extensible book sources.
@@ -35,14 +35,14 @@ and community-extensible book sources.
 
 | Name | Role | Website |
 | --- | --- | --- |
-| Open Reading | The open-source, cross-platform reader maintained in this repository | [open.xxread.top](https://open.xxread.top/) |
+| Origo X | The open-source, cross-platform reader maintained in this repository | [open.xxread.top](https://open.xxread.top/) |
 | Xiaoyuan Reader | The user-facing reading product, currently available only on iOS | [xxread.top](https://xxread.top/) |
 | Xiaoyuan Reader Community | A community for reading, writing, and discussion | [community.xxread.top](https://community.xxread.top/) |
 
 ## Not a WebView wrapper — a native Flutter reading engine
 
 Many cross-platform readers hand EPUB HTML to a WebView and build the reading
-experience around a browser container. Open Reading takes the harder route:
+experience around a browser container. Origo X takes the harder route:
 its core reader is a custom **Flutter-native rendering and pagination engine**.
 
 Chapter parsing, styled text measurement, pagination, mixed image content,
@@ -63,8 +63,8 @@ This is not a webpage placed inside an app. It is native reading infrastructure
 with room for deeper performance, typography, and interaction work.
 
 > [!IMPORTANT]
-> Online sources use the independently maintained **Open Reading Source
-> Protocol (ORSP)**. Visit the [protocol repository](https://github.com/miloquinn/open-reading-source-protocol)
+> Online sources use the independently maintained **Origo X Source
+> Protocol (ORSP)**. Visit the [protocol repository](https://github.com/miloquinn/origo-source-protocol)
 > for the specification, OpenAPI definition, schemas, and reference server.
 
 ## Highlights
@@ -92,7 +92,7 @@ ORSP 1.5 defines standard discovery, search, book-detail, paginated
 chapter-catalog, and chapter-content endpoints. Reader apps implement the
 protocol once; source developers may use any server language or framework.
 
-- Repository: [miloquinn/open-reading-source-protocol](https://github.com/miloquinn/open-reading-source-protocol)
+- Repository: [miloquinn/origo-source-protocol](https://github.com/miloquinn/origo-source-protocol)
 - Version: `1.5`
 - Intended content: original, public-domain, or properly licensed works
 - Transparency metadata: operator, contact URL, content license, and rights statement
@@ -113,8 +113,8 @@ Advanced features to register a local or LAN source.
 Requires Flutter 3.x and Dart `>=3.4.0 <4.0.0`.
 
 ```bash
-git clone https://github.com/miloquinn/open-reading.git
-cd open-reading
+git clone https://github.com/miloquinn/origo-x-neo.git
+cd origo-x
 flutter pub get
 flutter run
 ```
@@ -141,7 +141,7 @@ tool/              Local development tools and example source
 
 Issues, pull requests, translations, platform work, and ORSP implementations
 are welcome. Do not commit API keys, private databases, book files, or content
-you are not authorized to distribute. Open Reading does not provide or host
+you are not authorized to distribute. Origo X does not provide or host
 pirated content, and ORSP must not be used to bypass access controls or terms.
 
 ## License

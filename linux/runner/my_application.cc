@@ -22,7 +22,7 @@ static const char* get_localized_app_name() {
     }
   }
   // Default to English
-  return "Origo";
+  return "Origo X";
 }
 
 static void set_window_icon(GtkWindow* window) {

@@ -65,13 +65,13 @@ class OpenSourceLicensesPage extends StatelessWidget {
           _SectionTitle(title: l10n.openSourceProjectSection),
           const SizedBox(height: 8),
           _LicenseEntryCard(
-            key: const ValueKey('open-reading-agpl-license'),
-            title: 'Origo',
+            key: const ValueKey('origo-x-agpl-license'),
+            title: 'Origo X',
             subtitle: 'GNU Affero General Public License v3.0',
             icon: Icons.code_rounded,
             onTap: () => _openBundledLicense(
               context,
-              title: 'Origo · AGPL-3.0',
+              title: 'Origo X · AGPL-3.0',
               assetPath: 'LICENSE',
             ),
           ),

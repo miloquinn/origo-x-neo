@@ -6,7 +6,7 @@
 
 **目标：** 构建一个分阶段、顺序执行的多书导入队列，具备清晰的单书结果、持久化的 Android 目录授权、iOS 本地 Files 与应用自有 iCloud Documents 来源，以及自适应的移动端/平板 UI。
 
-**架构：** 将文件发现与单文件导入、队列展示拆分。Android SAF 和 iCloud 作为持久化发现来源，其文档会被物化并复制到应用管理的本地库中；`On My iPhone/Open Reading/books` 已经是应用管理的库，因此直接原地注册。一个类型化队列一次只运行一个导入，把重复项视为正常的跳过结果，保留失败项以便重试，并通过现有事件总线报告库变更。
+**架构：** 将文件发现与单文件导入、队列展示拆分。Android SAF 和 iCloud 作为持久化发现来源，其文档会被物化并复制到应用管理的本地库中；`On My iPhone/Origo X/books` 已经是应用管理的库，因此直接原地注册。一个类型化队列一次只运行一个导入，把重复项视为正常的跳过结果，保留失败项以便重试，并通过现有事件总线报告库变更。
 
 **技术栈：** Flutter/Dart、`file_picker`、`path_provider`、`sqflite_common_ffi`、Android Kotlin `DocumentsContract`/`ContentResolver`、iOS Swift `FileManager`/`NSFileCoordinator`、Flutter MethodChannel、ARB 本地化、Flutter widget/unit tests、XCTest。
 
@@ -17,7 +17,7 @@
 - 保留现有的单文件 100 MB 限制和支持的扩展名：`txt`、`epub`、`pdf`、`mobi`、`azw`、`azw3`、`fb2`、`rtf`、`doc`、`docx`、`cbz`、`cbr`。
 - Android 目录访问必须使用 SAF 持久化树权限。移除 `READ_EXTERNAL_STORAGE`、`WRITE_EXTERNAL_STORAGE` 和 `MANAGE_EXTERNAL_STORAGE`；不要用更宽泛的存储权限替代。
 - Android SAF 和 iCloud 是来源位置。导入时会把所选来源复制到应用管理的本地 `Documents/books` 目录，因此现有 `dart:io File` 读取逻辑保持不变。
-- `On My iPhone/Open Reading/books` 是应用管理的本地库。放入其中的文件会原地注册，用户删除本地书籍时也会删除这些文件。
+- `On My iPhone/Origo X/books` 是应用管理的本地库。放入其中的文件会原地注册，用户删除本地书籍时也会删除这些文件。
 - iCloud 容器标识必须严格保持为 `iCloud.com.niki.xxread`；保留 bundle ID `com.niki.xxread`、team `2HD5836RZ2` 和自动签名。
 - iCloud 只同步源文件。SQLite、阅读进度、书签和笔记都保留在设备本地。
 - 队列属于页面生命周期状态。不要在应用重启后持久化未完成的队列执行。
@@ -1203,7 +1203,7 @@ flutter test test/import_book_page_test.dart
 - `importChooseFiles`: Choose files / 选择文件
 - `importAddFolder`: Add book folder / 添加书籍目录
 - `importFilesAndICloud`: Files & iCloud Drive / 文件与 iCloud Drive
-- `importScanLocalFolder`: Scan Open Reading folder / 扫描 Open Reading 文件夹
+- `importScanLocalFolder`: Scan Origo X folder / 扫描 Origo X 文件夹
 - `importScanICloudFolder`: Sync from iCloud / 从 iCloud 同步
 - `importQueueTitle(count)`: `{count} books ready`
 - `importStart(count)`: `Import {count} books`
@@ -1211,7 +1211,7 @@ flutter test test/import_book_page_test.dart
 - `importSummaryCounts(succeeded, skipped, failed)`
 - `importRetryFailed(count)`, `importContinueAdding`, `importDone`
 - `importRemoveFromQueue`, `importFolderEmpty`, `importFolderPermissionLost`, `importICloudUnavailable`, `importCloudDownloading`
-- `importLocalFolderOwnershipHint`：说明 `Open Reading/books` 中的文件就是本地书库内容，删除书籍时也会删除对应文件。
+- `importLocalFolderOwnershipHint`：说明 `Origo X/books` 中的文件就是本地书库内容，删除书籍时也会删除对应文件。
 - `importExternalSourceCopyHint`：说明应用会导入本地副本，因此 Android/iCloud 来源文件保持不变。
 
 运行：
@@ -1488,7 +1488,7 @@ SystemCapabilities = {
     <key>NSUbiquitousContainerIsDocumentScopePublic</key>
     <true/>
     <key>NSUbiquitousContainerName</key>
-    <string>Open Reading</string>
+    <string>Origo X</string>
     <key>NSUbiquitousContainerSupportedFolderLevels</key>
     <string>Any</string>
   </dict>
@@ -1547,7 +1547,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -workspace i
 
 ```bash
 git add ios/Runner/Runner.entitlements ios/Runner/StorageBridge.swift ios/Runner/Info.plist ios/Runner/AppDelegate.swift ios/Runner.xcodeproj/project.pbxproj ios/RunnerTests/RunnerTests.swift lib/services/books/book_import_source_service.dart test/book_import_source_service_test.dart
-git commit -m "Expose Open Reading book sources through Files and iCloud" \
+git commit -m "Expose Origo X book sources through Files and iCloud" \
   -m "Keep the local Files folder as the managed library and add an app-owned iCloud Documents source that downloads and materializes books only when their queue item runs." \
   -m "Constraint: iCloud container identity is iCloud.com.niki.xxread" \
   -m "Confidence: medium" \
@@ -1577,7 +1577,7 @@ git commit -m "Expose Open Reading book sources through Files and iCloud" \
 断言：
 
 - Android 显示“选择文件”“添加书籍目录”、已注册文件夹卡片、刷新和移除授权。
-- 只有在 iCloud 可用时，iOS 才显示“文件与 iCloud Drive”“扫描 Open Reading 文件夹”和“从 iCloud 同步”。
+- 只有在 iCloud 可用时，iOS 才显示“文件与 iCloud Drive”“扫描 Origo X 文件夹”和“从 iCloud 同步”。
 - 点击来源操作只会暂存书籍，绝不会自动开始导入。
 - 只有当至少有一项被导入或修复时，点击“完成”返回的路由结果才是 `true`。
 
@@ -1685,8 +1685,8 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -workspace i
 
 真机证据：
 
-1. 把书籍放入 `On My iPhone/Open Reading/books`，扫描并原地登记，不能生成重复副本。
-2. 把书籍放入 `iCloud Drive/Open Reading/books`，暂存时不能立即下载全部文件。
+1. 把书籍放入 `On My iPhone/Origo X/books`，扫描并原地登记，不能生成重复副本。
+2. 把书籍放入 `iCloud Drive/Origo X/books`，暂存时不能立即下载全部文件。
 3. 开始导入，验证每个 iCloud 条目只在成为当前任务时才下载并物化。
 4. 关闭 iCloud Drive 或退出账号，验证来源显示不可用，而已经导入的本地书籍仍可打开。
 5. 在登录同一 Apple ID 的另一台设备上安装应用，验证 iCloud 来源文件会出现，并可导入该设备的本地书库。
@@ -1736,7 +1736,7 @@ git commit -m "Make the cross-platform import contract discoverable" \
 - [ ] 失败项可以单独或一起重试，且不会重复创建成功的书籍。
 - [ ] Android 目录权限在重启后仍然有效，并且不需要宽泛存储权限。
 - [ ] Android SAF 文档会被物化；不会把 `content://` URI 传给 `dart:io File`。
-- [ ] `On My iPhone/Open Reading/books` 会原地注册文件。
+- [ ] `On My iPhone/Origo X/books` 会原地注册文件。
 - [ ] iCloud 来源文件通过 `iCloud.com.niki.xxread` 同步，并按需导入到本地库。
 - [ ] Android 和 iCloud 的来源文件保持不变。
 - [ ] UI 在移动端、平板和桌面宽度测试尺寸下都不会溢出。

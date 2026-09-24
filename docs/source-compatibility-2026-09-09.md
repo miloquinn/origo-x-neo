@@ -73,7 +73,7 @@ JSON 远程脚本清单、部分 Java/字体/压缩文件接口、完整 XPath�
 
 ## Android 调试安装包
 
-最终代码 `flutter build apk --debug --no-pub` 成功。安装包保存于 `output/source-compatibility-2026-09-09/open-reading-debug.apk`。
+最终代码 `flutter build apk --debug --no-pub` 成功。安装包保存于 `output/source-compatibility-2026-09-09/origo-x-debug.apk`。
 
 - 大小：184,927,778 bytes。
 - SHA-256：`b4cbd36c4217ef9052a11e129cfcb3cd7f763810c01ba946b55ae629064668df`。

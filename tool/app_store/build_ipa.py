@@ -162,7 +162,7 @@ def execute(args):
              ['flutter', 'build', 'ios', '--config-only', '--release', '--no-codesign', '--no-pub',
               '--build-name', args.build_name, '--build-number', args.build_number], log)
     run_step('Product build: locked CocoaPods dependencies', ['pod', 'install', '--deployment'], log, ROOT / 'ios')
-    archive = output / 'OpenReading.xcarchive'
+    archive = output / 'OrigoReader.xcarchive'
     run_step('Product build: signed archive',
              ['xcodebuild', '-workspace', 'ios/Runner.xcworkspace', '-scheme', 'Runner',
               '-configuration', 'Release', '-destination', 'generic/platform=iOS',

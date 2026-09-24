@@ -415,7 +415,7 @@ class SafDirectoryBridge(
         check(directory.exists() || directory.mkdirs()) {
             "Unable to create the Downloads directory"
         }
-        val partial = File.createTempFile(".open-reading-", ".partial", directory)
+        val partial = File.createTempFile(".origo-x-", ".partial", directory)
         try {
             pending.source.inputStream().buffered().use { input ->
                 partial.outputStream().buffered().use { output -> input.copyTo(output) }

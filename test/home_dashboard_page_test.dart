@@ -30,7 +30,7 @@ void main() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     databaseDirectory = await Directory.systemTemp.createTemp(
-      'open-reading-home-test-',
+      'origo-x-home-test-',
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(

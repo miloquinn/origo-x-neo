@@ -162,7 +162,7 @@ Expected: no new errors; pre-existing warnings may remain.
 
 Run: `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer flutter build ios --profile --no-pub`
 
-Expected: `build/ios/iphoneos/OpenReading.app` is produced.
+Expected: `build/ios/iphoneos/OrigoReader.app` is produced.
 
 Install with `xcrun devicectl device install app` and launch bundle
 `com.niki.xxread` on device `00008140-001979421E93001C`.

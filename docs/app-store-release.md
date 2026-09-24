@@ -9,7 +9,7 @@ GitHub / 官网的 Developer ID 公证包默认走卡密，不能直接拿去提
 
 - 审核对象是 macOS `2.6.7 (260911002)`。本机浏览器确认版本仍被拒绝、仍关联该旧构建；内购 `com.niki.xxread.premium.lifetime` 为“准备提交”，审核截图与内购审核备注为空。尚未重新提交。
 - OAuth 会话与商店版赞助入口修复已在客户端提交 `8a54603`；删除入口由 `87e2a50` 提供。最终候选包仍需真机验证。
-- **后端版本漂移**：本地及 GitHub `open-reading-web` 为 9 月 8 日 `6e31100`，实际生产 `Azure-hk:/srv/open-reading/current` 指向 `code-releases/20260911T110450Z`，已实现账号删除、购买凭证解绑/恢复、相关迁移和测试。不可从旧仓库断言线上缺少这些功能，也不可直接部署旧 checkout 覆盖生产。
+- **后端版本漂移**：本地及 GitHub `origo-web` 为 9 月 8 日 `6e31100`，实际生产 `Azure-hk:/srv/origo-x/current` 指向 `code-releases/20260911T110450Z`，已实现账号删除、购买凭证解绑/恢复、相关迁移和测试。不可从旧仓库断言线上缺少这些功能，也不可直接部署旧 checkout 覆盖生产。
 - 生产后端、前端服务均 active，内网 `/api/health` 返回数据库、会员数据库和存储正常；浏览器可见线上账号安全页的“注销账号”入口。
 - 只提取生产源码到本地隔离目录，未复制生产环境变量、数据库或日志；在独立本地 PostgreSQL 16 测试库运行账号删除、认证与 Apple Store 测试：86 项通过，ruff 通过。真实用户数据库未参与测试。
 - 续验：隔离客户端 86 项核心、10 项注销页面、7 项账号页面测试通过，analyze 无问题；`2.6.7 (260912001)` macOS arm64 商店候选未签名编译成功。当前本机缺少 Apple Distribution 身份和 macOS 商店 profile，历史私有 env 路径不存在，不能据下文旧记录认定签名已就绪。
@@ -81,7 +81,7 @@ Mac 商店包与 iOS 共用 `IOS_TEAM_ID` / `ASC_*` 凭据；若 Mac 团队不�
    不能把本机检查视为正式上传资格。签名、iCloud、登录、内购/恢复/退款需真实验证。
 
 具体审核说明和隐私数据核对表见 [review-notes.md](../marketing/app-store/review-notes.md)。
-对接后端位于相邻 `open-reading-web` 仓库；本轮只读检查，未修改或部署该服务。
+对接后端位于相邻 `origo-web` 仓库；本轮只读检查，未修改或部署该服务。
 
 ## 签名环境
 

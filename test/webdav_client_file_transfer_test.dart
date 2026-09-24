@@ -12,7 +12,7 @@ void main() {
 
   setUp(() async {
     temporaryDirectory = await Directory.systemTemp.createTemp(
-      'open-reading-webdav-client-test-',
+      'origo-webdav-client-test-',
     );
   });
 

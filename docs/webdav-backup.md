@@ -19,8 +19,8 @@ WebDAV 只提供“立即备份”和“选择时间点恢复”。不会在启�
 目录为配置目录下的 `backups/`。文件名：
 
 ```
-open-reading-<UTC 毫秒时间戳>-<UUID>.zip
-open-reading-<UTC 毫秒时间戳>-<UUID>.zip.complete
+origo-x-<UTC 毫秒时间戳>-<UUID>.zip
+origo-x-<UTC 毫秒时间戳>-<UUID>.zip.complete
 ```
 
 ZIP 内包含 `backup.json`、`books/`、`covers/`。`.complete` 是上传完成标记，内容为 ZIP 的 SHA-256；只有存在标记的 ZIP 会显示在恢复列表。中途断线、进程结束留下的未完成 ZIP 不会被当成备份。使用基本 MKCOL、PROPFIND、PUT、GET，连接探测的清理使用 DELETE；不依赖 OPTIONS、MOVE、强 ETag、条件写或服务器锁。

@@ -51,7 +51,7 @@ class SecureSourceLoginSessionStore implements SourceLoginSessionStore {
   SecureSourceLoginSessionStore([FlutterSecureStorage? storage])
     : _storage = storage ?? const FlutterSecureStorage();
 
-  static const _prefix = 'open_reading.source_session.';
+  static const _prefix = 'origo_x.source_session.';
   final FlutterSecureStorage _storage;
 
   String _key(String sourceId) => '$_prefix$sourceId';

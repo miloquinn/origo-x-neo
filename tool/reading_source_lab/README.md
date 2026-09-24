@@ -2,7 +2,7 @@
 
 这是一个独立、无第三方运行时依赖的阅读书源解析与兼容性审计项目。它不联网、不执行
 书源脚本，也不会输出请求头、登录配置或 Cookie 的具体值；用途是把大批 JSON 书源转成
-可重复验证的结构统计和 Open Reading 兼容矩阵。
+可重复验证的结构统计和 Origo X 兼容矩阵。
 
 ## 能做什么
 
@@ -68,4 +68,4 @@ JSON schema v2 的 `files` 保留逐文件的解析、错误、结构和能力�
 [三批样本报告](docs/sample-baseline.md) 保留作历史资料，其逐文件总和没有跨文件去重。
 
 规则研究基于公开阅读书源执行实现的源码快照（下载日期 2026-08-04）。关键语义来源和
-Open Reading 对照见 [docs/compatibility.md](docs/compatibility.md)。
+Origo X 对照见 [docs/compatibility.md](docs/compatibility.md)。

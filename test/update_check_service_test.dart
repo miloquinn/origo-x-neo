@@ -11,7 +11,7 @@ void main() {
     'check reads installed build from PackageInfo and detects build-only update',
     () async {
       PackageInfo.setMockInitialValues(
-        appName: 'Origo',
+        appName: 'Origo X',
         packageName: 'com.niki.xxread',
         version: '2.2.0',
         buildNumber: '14118',
@@ -34,12 +34,12 @@ void main() {
                     ? {
                         ..._websitePayload(),
                         'github_release_url':
-                            'https://github.com/miloquinn/open-reading/releases/tag/v2.2.0+14119',
+                            'https://github.com/miloquinn/origo-x/releases/tag/v2.2.0+14119',
                       }
                     : {
                         'tag_name': 'v2.2.0+14119',
                         'html_url':
-                            'https://github.com/miloquinn/open-reading/releases/tag/v2.2.0+14119',
+                            'https://github.com/miloquinn/origo-x/releases/tag/v2.2.0+14119',
                       },
               ),
             );
@@ -65,9 +65,7 @@ void main() {
       buildNumber: build,
       name: 'Release',
       notes: '',
-      releaseUrl: Uri.parse(
-        'https://github.com/miloquinn/open-reading/releases',
-      ),
+      releaseUrl: Uri.parse('https://github.com/miloquinn/origo-x/releases'),
       publishedAt: null,
     );
 
@@ -114,7 +112,7 @@ void main() {
       final parsed = AppRelease.fromGithubJson({
         'tag_name': 'v2.6.7+260908001',
         'html_url':
-            'https://github.com/miloquinn/open-reading/releases/tag/v2.6.7+260908001',
+            'https://github.com/miloquinn/origo-x/releases/tag/v2.6.7+260908001',
       });
       expect(parsed.version, '2.6.7');
       expect(parsed.buildNumber, '260908001');
@@ -126,7 +124,7 @@ void main() {
       final website = AppRelease.fromWebsiteJson({
         ..._websitePayload(),
         'github_release_url':
-            'https://github.com/miloquinn/open-reading/releases/tag/v2.2.0+14119',
+            'https://github.com/miloquinn/origo-x/releases/tag/v2.2.0+14119',
       });
       final newerGithub = release('2.2.0', '14120');
       expect(
@@ -169,10 +167,9 @@ void main() {
   test('parses the GitHub release payload used by the update dialog', () {
     final release = AppRelease.fromGithubJson({
       'tag_name': 'v1.2.3',
-      'name': 'Origo v1.2.3',
+      'name': 'Origo X v1.2.3',
       'body': 'Bug fixes and improvements',
-      'html_url':
-          'https://github.com/miloquinn/open-reading/releases/tag/v1.2.3',
+      'html_url': 'https://github.com/miloquinn/origo-x/releases/tag/v1.2.3',
       'published_at': '2026-07-12T00:00:00Z',
     });
 
@@ -193,9 +190,9 @@ void main() {
         'package_type': 'apk',
         'release_notes': 'Official website updates.',
         'download_url':
-            'https://open.xxread.top/download/file/open-reading-arm64.apk',
+            'https://open.xxread.top/download/file/origo-x-arm64.apk',
         'github_release_url':
-            'https://github.com/miloquinn/open-reading/releases/tag/v2.2.0',
+            'https://github.com/miloquinn/origo-x/releases/tag/v2.2.0',
         'website_url': 'https://open.xxread.top/download',
         'sha256': 'a' * 64,
         'file_size': 63400000,
@@ -220,12 +217,12 @@ void main() {
         'version': '2.6.7',
         'build_number': '260910001',
         'github_release_url':
-            'https://github.com/miloquinn/open-reading/releases/tag/v2.6.7+260908001',
+            'https://github.com/miloquinn/origo-x/releases/tag/v2.6.7+260908001',
       });
       final github = AppRelease.fromGithubJson({
         'tag_name': 'v2.6.7+260908002',
         'html_url':
-            'https://github.com/miloquinn/open-reading/releases/tag/v2.6.7+260908002',
+            'https://github.com/miloquinn/origo-x/releases/tag/v2.6.7+260908002',
       });
       expect(website.releaseBuildNumber, '260908001');
       expect(website.websiteAsset!.buildNumber, '260910001');
@@ -315,9 +312,9 @@ void main() {
         'platform': 'android',
         'architecture': 'arm64-v8a',
         'package_type': 'apk',
-        'download_url': 'https://example.com/open-reading.apk',
+        'download_url': 'https://example.com/origo-x.apk',
         'github_release_url':
-            'https://github.com/miloquinn/open-reading/releases/tag/v2.2.0',
+            'https://github.com/miloquinn/origo-x/releases/tag/v2.2.0',
         'website_url': 'https://open.xxread.top/download',
         'sha256': 'a' * 64,
         'file_size': 42,
@@ -358,7 +355,7 @@ void main() {
           'package_type': 'apk',
           'build_number': '16119',
           'download_url':
-              'https://open.xxread.top/download/file/open-reading-x64.apk',
+              'https://open.xxread.top/download/file/origo-x-x64.apk',
           'sha256': 'b' * 64,
           'file_size': 42,
         },
@@ -378,8 +375,7 @@ void main() {
     expect(
       () => AppRelease.fromGithubJson({
         'tag_name': 'v2.2.0',
-        'html_url':
-            'https://github.com/attacker/open-reading/releases/tag/v2.2.0',
+        'html_url': 'https://github.com/attacker/origo-x/releases/tag/v2.2.0',
       }),
       throwsFormatException,
     );
@@ -387,7 +383,7 @@ void main() {
       () => AppRelease.fromWebsiteJson({
         ..._websitePayload(),
         'github_release_url':
-            'https://github.com/attacker/open-reading/releases/tag/v2.2.0',
+            'https://github.com/attacker/origo-x/releases/tag/v2.2.0',
       }),
       throwsFormatException,
     );
@@ -401,10 +397,10 @@ void main() {
     );
     AppRelease github(String version) => AppRelease(
       version: version,
-      name: 'Origo v$version',
+      name: 'Origo X v$version',
       notes: 'GitHub notes',
       releaseUrl: Uri.parse(
-        'https://github.com/miloquinn/open-reading/releases/tag/v$version',
+        'https://github.com/miloquinn/origo-x/releases/tag/v$version',
       ),
       publishedAt: null,
     );
@@ -479,10 +475,9 @@ Map<String, dynamic> _websitePayload() => {
   'architecture': 'arm64-v8a',
   'package_type': 'apk',
   'release_notes': 'Official website updates.',
-  'download_url':
-      'https://open.xxread.top/download/file/open-reading-arm64.apk',
+  'download_url': 'https://open.xxread.top/download/file/origo-x-arm64.apk',
   'github_release_url':
-      'https://github.com/miloquinn/open-reading/releases/tag/v2.2.0',
+      'https://github.com/miloquinn/origo-x/releases/tag/v2.2.0',
   'website_url': 'https://open.xxread.top/download',
   'sha256': 'a' * 64,
   'file_size': 63400000,

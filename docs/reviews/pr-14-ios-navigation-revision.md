@@ -1,6 +1,6 @@
 # PR #14 音频会话修订
 
-对应原 PR：<https://github.com/miloquinn/open-reading-neo/pull/14>，审阅提交 `15f930f31d14a58b5ead95f4282605b415d8300f`。
+对应原 PR：<https://github.com/miloquinn/origo-x-neo/pull/14>，审阅提交 `15f930f31d14a58b5ead95f4282605b415d8300f`。
 
 ## 修订
 

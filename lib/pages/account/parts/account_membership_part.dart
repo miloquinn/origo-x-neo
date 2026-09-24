@@ -29,6 +29,7 @@ class _LoginMethodsCard extends StatelessWidget {
   String _methodLabel(BuildContext context, String method) => switch (method) {
     'github' => 'GitHub',
     'google' => 'Google',
+    'apple' => 'Apple',
     'passkey' => 'Passkey',
     'password' => context.l10n.accountPassword,
     'email_code' => context.l10n.accountEmail,

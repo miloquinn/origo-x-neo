@@ -12,7 +12,7 @@
 4. 独立进程串行运行像素测试（Impeller / Skia）、平板壳层及导航测试，执行全项目分析和 diff 检查。
 5. 用同场景、同后端的前后渲染诊断量化收益；离屏渲染回读耗时不等于真机屏幕帧率。记录设备验证边界。
 
-初始检查：源码位于 /Users/xiaoyuan/code/open-reading；当前工作目录仅有残留 l10n 目录。源码 checkout 唯一原有未跟踪内容为 coverage/，保持不动。现有 Impeller 五项像素测试通过。
+初始检查：源码位于 /Users/xiaoyuan/code/origo-x；当前工作目录仅有残留 l10n 目录。源码 checkout 唯一原有未跟踪内容为 coverage/，保持不动。现有 Impeller 五项像素测试通过。
 
 ## 最终实现
 

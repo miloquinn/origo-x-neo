@@ -1,10 +1,10 @@
-# 本地书籍格式支持（Open Reading）
+# 本地书籍格式支持（Origo X）
 
-> 状态：架构基线（2026-07-18），能力矩阵更新（2026-07-26：Kindle 正文 / CBZ 漫画 / HTML / Markdown 已接线；CBT 可读、CBR/CB7 按文件头嗅探）  
-> 代码单一事实来源：`lib/services/books/book_format_support.dart`  
+> 状态：架构基线（2026-07-18），能力矩阵更新（2026-07-26：Kindle 正文 / CBZ 漫画 / HTML / Markdown 已接线；CBT 可读、CBR/CB7 按文件头嗅探）
+> 代码单一事实来源：`lib/services/books/book_format_support.dart`
 > Lightink 对照资料：`F:\work\lightink-reverse\docs\09-reader-complete.md`（及 05/06）
 
-本文约定：**Open Reading 将来要支持哪些格式、各自怎么进阅读器、与 Lightink 如何对齐**。  
+本文约定：**Origo X 将来要支持哪些格式、各自怎么进阅读器、与 Lightink 如何对齐**。
 实现可分阶段，但**不得再散落多份互相矛盾的扩展名列表**。
 
 ---
@@ -27,9 +27,9 @@
 
 与 Lightink 一致的核心原则：
 
-1. **文字书只有一套分页引擎**（OR：`NativeTextPaginator`；Lightink：`TxtLayout`）。  
-2. **EPUB 不是 WebView 排版**，而是解析后抽章节文本再分页。  
-3. **翻页动画不重跑分页**，只切换已分好的页 / 快照。  
+1. **文字书只有一套分页引擎**（OR：`NativeTextPaginator`；Lightink：`TxtLayout`）。
+2. **EPUB 不是 WebView 排版**，而是解析后抽章节文本再分页。
+3. **翻页动画不重跑分页**，只切换已分好的页 / 快照。
 4. **容器不排版**，只负责展开。
 
 ---
@@ -55,7 +55,7 @@
 | ZIP | `zip` | 计划中 | **planned** | 解压→内层分流 | 有 ZipDecoder 容器 |
 | RAR | `rar` | 计划中 | **planned** | 解压→内层分流 | 有 `unrar_file` |
 
-能力枚举见代码：`BookFormatCapability`  
+能力枚举见代码：`BookFormatCapability`
 （`fullReader` / `convertThenLayout` / `container` / `metadataImport` / `planned` / `unsupported`）
 
 ---
@@ -70,9 +70,9 @@ bytes → 编码探测 → 章节规则切章 → NativeTextPaginator → 阅读
 
 应对齐 / 可增强（参考 Lightink）：
 
-- 章节规则可配置（`ChapterMatchRule` 一类）  
-- 首行缩进、段距、`lineHeight` 与可选额外行距  
-- 进度用字符 offset / CanonicalLocator，重排不丢位置  
+- 章节规则可配置（`ChapterMatchRule` 一类）
+- 首行缩进、段距、`lineHeight` 与可选额外行距
+- 进度用字符 offset / CanonicalLocator，重排不丢位置
 
 ### 3.2 EPUB（已具备进口，统一分页边界要对齐）
 
@@ -81,10 +81,10 @@ bytes → 编码探测 → 章节规则切章 → NativeTextPaginator → 阅读
       → NativeTextPaginator（与 TXT 同一引擎）
 ```
 
-- 目录来自 spine / nav / NCX  
-- 封面单独抽取（已有 `epub_image_extractor`）  
-- **正文主路径不走 WebView**  
-- 图文混排：后续增量；首期保证纯文本阅读质量  
+- 目录来自 spine / nav / NCX
+- 封面单独抽取（已有 `epub_image_extractor`）
+- **正文主路径不走 WebView**
+- 图文混排：后续增量；首期保证纯文本阅读质量
 
 ### 3.3 MOBI / AZW / AZW3（已接线，2026-07-26）
 
@@ -104,31 +104,31 @@ zip/rar → 解压到临时/托管目录
         → 单书或多书导入队列
 ```
 
-- 实现完成前 **`acceptInFilePicker: false`**，避免选中却无法读  
-- 实现后打开选择器，并写清「压缩包内需含可读格式」  
+- 实现完成前 **`acceptInFilePicker: false`**，避免选中却无法读
+- 实现后打开选择器，并写清「压缩包内需含可读格式」
 
 ### 3.5 PDF（专用路径，已接线 2026-07-26）
 
 - `PdfReaderPage`（`pages/reader/pdf/pdf_reader_page.dart`）：pdfx `PdfDocument` 打开，
   按页渲染 PNG 位图（屏幕像素密度自适应、白底、最大宽 2160px），
-  **渲染严格串行**（Android 不允许并行渲染），LRU 缓存 5 页 + 相邻页预载。  
-- UI 骨架与 CBZ 漫画共用 `paged_image_reader.dart`（翻页/缩放/跳页/进度/点击区域/阅读方向/背景色/音量键/屏幕常亮）。  
+  **渲染严格串行**（Android 不允许并行渲染），LRU 缓存 5 页 + 相邻页预载。
+- UI 骨架与 CBZ 漫画共用 `paged_image_reader.dart`（翻页/缩放/跳页/进度/点击区域/阅读方向/背景色/音量键/屏幕常亮）。
 - 平台：Android / iOS / macOS / Windows / Web（pdf.js 已在 `web/index.html` 配置）；
-  **pdfx 无 Linux 实现**，Linux 端打开提示 `readerPdfLinuxUnsupported`。  
-- 不与 `NativeTextPaginator` 混用；进度存 `currentPage`（页索引）。  
+  **pdfx 无 Linux 实现**，Linux 端打开提示 `readerPdfLinuxUnsupported`。
+- 不与 `NativeTextPaginator` 混用；进度存 `currentPage`（页索引）。
 
 ### 3.6 FB2 / RTF / DOC / DOCX（OR 扩展，Lightink 无）
 
-一律：**进口转换 → 章节纯文本 → 统一分页**。  
+一律：**进口转换 → 章节纯文本 → 统一分页**。
 复杂版式不承诺 1:1，以可读为主。
 
 ### 3.7 CBZ / CBT / CBR / CB7（漫画）
 
 - CBZ：**已接线**（2026-07-26）。本地入口仍是 `ComicReaderPage`，在线入口仍是 `OnlineComicReaderPage`；两者都进入同一条 `ImageReaderHost` 会话（章节/页码/目录/重试），页渲染继续走 `PagedImageReader`。`comic_book_parser.dart` 在 isolate 内解 ZIP 目录建页索引（数字感知排序、过滤 __MACOSX/隐藏文件）、按需解压单页、LRU 页缓存与相邻页预载。不走文本行盒。
 - **共享控制层**（2026-07-26）：`image/paged_image_reader.dart` 为漫画与 PDF 提供统一控制层——共享 3×3 点击区域（`reader_tap_zones`，RTL 下镜像列）、Android 音量键翻页与屏幕常亮、上/下一页按钮、进度滑条、跳页输入；`paged_image_reader_settings.dart` 持久化按书阅读方向（日漫 RTL）与全局页面背景色（黑/灰/白）。
-- **容器嗅探**（2026-07-26）：所有漫画格式打开与导入时按文件头识别真实容器（ZIP 前缀魔数 / `Rar!` / 7z 魔数 / offset 257 的 `ustar`），扩展名只作无魔数时的兜底。市面上大量 CBR/CB7 实为 ZIP 改名，识别后直接走 CBZ 同款管线。  
-- CBT：**已接线**。TAR 容器由 `archive` 的 `TarDecoder` 解包，页索引/解压/阅读与 CBZ 完全共用；旧式 V7 TAR 无 ustar 魔数时按扩展名兜底。  
-- CBR / CB7：真实容器为 RAR/7z 时无纯 Dart 解码，`comic_book_parser` 抛 `ComicArchiveUnsupportedException`，阅读页展示本地化提示（真 RAR→`readerComicCbrUnsupported`，其余→`readerComicArchiveUnsupported`）；元数据与封面在容器可解包时照常提取，否则回退估算值。  
+- **容器嗅探**（2026-07-26）：所有漫画格式打开与导入时按文件头识别真实容器（ZIP 前缀魔数 / `Rar!` / 7z 魔数 / offset 257 的 `ustar`），扩展名只作无魔数时的兜底。市面上大量 CBR/CB7 实为 ZIP 改名，识别后直接走 CBZ 同款管线。
+- CBT：**已接线**。TAR 容器由 `archive` 的 `TarDecoder` 解包，页索引/解压/阅读与 CBZ 完全共用；旧式 V7 TAR 无 ustar 魔数时按扩展名兜底。
+- CBR / CB7：真实容器为 RAR/7z 时无纯 Dart 解码，`comic_book_parser` 抛 `ComicArchiveUnsupportedException`，阅读页展示本地化提示（真 RAR→`readerComicCbrUnsupported`，其余→`readerComicArchiveUnsupported`）；元数据与封面在容器可解包时照常提取，否则回退估算值。
 
 ---
 
@@ -146,10 +146,10 @@ zip/rar → 解压到临时/托管目录
 
 **规则：** 新增/调整格式时：
 
-1. 先改 `BookFormatRegistry`  
-2. 再改解析/阅读适配器  
-3. 更新本文与 `structure.md` / `Log.md`（若影响主流程）  
-4. 补测试  
+1. 先改 `BookFormatRegistry`
+2. 再改解析/阅读适配器
+3. 更新本文与 `structure.md` / `Log.md`（若影响主流程）
+4. 补测试
 
 禁止在 `FilePicker` 处再手写一长串扩展名而不走注册表。
 
@@ -174,27 +174,27 @@ zip/rar → 解压到临时/托管目录
 
 ## 6. Lightink 不支持、OR 仍要做的
 
-- PDF 应用内阅读  
-- MOBI/AZW3 **完整**正文阅读  
-- FB2 / RTF / Office 文本化  
-- CBZ/CBR 漫画  
+- PDF 应用内阅读
+- MOBI/AZW3 **完整**正文阅读
+- FB2 / RTF / Office 文本化
+- CBZ/CBR 漫画
 
 Lightink 已验证、OR 应对齐的：
 
-- TXT / EPUB → **统一文本分页**  
-- ZIP / RAR → **容器再分流**  
-- 仿真翻页与分页解耦（另见 lightink-reverse 移植包）  
+- TXT / EPUB → **统一文本分页**
+- ZIP / RAR → **容器再分流**
+- 仿真翻页与分页解耦（另见 lightink-reverse 移植包）
 
 ---
 
 ## 7. 验收清单（格式相关功能完成时）
 
-- [ ] 扩展名只来自 `BookFormatRegistry`  
-- [ ] TXT/EPUB 打开后分页与进度稳定  
-- [ ] 新文字格式最终调用 `NativeTextPaginator`（或明确 documented 例外）  
-- [ ] 容器包内嵌套 TXT/EPUB 可导入  
-- [ ] 选择器不出现「能选不能读」的 planned 格式（或明确提示）  
-- [ ] `docs/book-format-support.md` 与代码能力级别一致  
+- [ ] 扩展名只来自 `BookFormatRegistry`
+- [ ] TXT/EPUB 打开后分页与进度稳定
+- [ ] 新文字格式最终调用 `NativeTextPaginator`（或明确 documented 例外）
+- [ ] 容器包内嵌套 TXT/EPUB 可导入
+- [ ] 选择器不出现「能选不能读」的 planned 格式（或明确提示）
+- [ ] `docs/book-format-support.md` 与代码能力级别一致
 
 ---
 

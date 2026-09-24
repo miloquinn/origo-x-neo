@@ -68,7 +68,7 @@ class SecureSyncConfigStore {
   static const _scopeKey = 'webdav_sync_scope_v1';
   static const _newBookUploadPolicyKey =
       'webdav_sync_new_book_upload_policy_v1';
-  static const _passwordKey = 'open_reading.webdav.password';
+  static const _passwordKey = 'origo_x.webdav.password';
   static const _autoResumeKey = 'webdav_auto_resume_v1';
 
   final SyncSecretStorage _secretStorage;

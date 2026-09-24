@@ -45,7 +45,7 @@ class BookSourceRegistry {
   BookSourceRegistry({BookSourceRegistryStorage? storage})
     : _storage = storage ?? const DefaultBookSourceRegistryStorage();
 
-  static const String _storageKey = 'open_reading_book_sources_v1';
+  static const String _storageKey = 'origo_x_book_sources_v1';
   static const int _backgroundDecodeThreshold = 256 * 1024;
   static final StreamController<void> _changesController =
       StreamController<void>.broadcast();

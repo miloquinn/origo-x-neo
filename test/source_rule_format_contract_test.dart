@@ -257,10 +257,10 @@ void main() {
       () => engine.evaluateList(document, null, 'a:contains(Book)['),
       throwsA(anything),
     );
-    expect(document.rawText, isNot(contains('data-open-reading-compat')));
+    expect(document.rawText, isNot(contains('data-origo-x-compat')));
     expect(
       engine.evaluateString(document, null, 'html'),
-      isNot(contains('data-open-reading-compat')),
+      isNot(contains('data-origo-x-compat')),
     );
   });
 }

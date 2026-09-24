@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-# Install as /usr/local/sbin/open-reading-deploy-web, owned by root:root, mode 0750.
+# Install as /usr/local/sbin/origo-x-deploy-web, owned by root:root, mode 0750.
 
 set -euo pipefail
 
-readonly DEPLOY_USER="open-reading-release"
-readonly DEPLOY_ROOT="/srv/open-reading/flutter-web"
+readonly DEPLOY_USER="origo-x-release"
+readonly DEPLOY_ROOT="/srv/origo-x/flutter-web"
 readonly RELEASES_ROOT="${DEPLOY_ROOT}/releases"
 readonly CURRENT_LINK="${DEPLOY_ROOT}/current"
-readonly ARCHIVE_NAME="open-reading-web.tar.gz"
+readonly ARCHIVE_NAME="origo-web.tar.gz"
 readonly CHECKSUM_NAME="${ARCHIVE_NAME}.sha256"
 readonly RETAIN_RELEASES=5
 
 die() {
-  printf 'open-reading-deploy-web: %s\n' "$*" >&2
+  printf 'origo-x-deploy-web: %s\n' "$*" >&2
   exit 1
 }
 
 usage() {
   cat >&2 <<'EOF'
-Usage: open-reading-deploy-web \
-  --source /tmp/open-reading-web-RUN_ID-RUN_ATTEMPT \
+Usage: origo-x-deploy-web \
+  --source /tmp/origo-web-RUN_ID-RUN_ATTEMPT \
   --tag vX.Y.Z[+BUILD] \
   --repository OWNER/REPOSITORY \
   --run-id RUN_ID \
@@ -77,7 +77,7 @@ done
 [[ "$run_id" =~ ^[0-9]+$ ]] || die "invalid GitHub run ID"
 [[ "$run_attempt" =~ ^[0-9]+$ ]] || die "invalid GitHub run attempt"
 
-expected_source="/tmp/open-reading-web-${run_id}-${run_attempt}"
+expected_source="/tmp/origo-web-${run_id}-${run_attempt}"
 [[ "$source_dir" == "$expected_source" ]] \
   || die "source is outside the permitted staging namespace"
 [[ -d "$source_dir" && ! -L "$source_dir" ]] || die "source is not a directory"
@@ -154,7 +154,7 @@ for source, destination in zip(sys.argv[1::2], sys.argv[2::2]):
 PY
 
 checksum_line="$(cat -- "$checksum_path")"
-[[ "$checksum_line" =~ ^([0-9a-fA-F]{64})[[:space:]][[:space:]]open-reading-web\.tar\.gz$ ]] \
+[[ "$checksum_line" =~ ^([0-9a-fA-F]{64})[[:space:]][[:space:]]origo-web\.tar\.gz$ ]] \
   || die "checksum file has an invalid format"
 archive_sha256="${BASH_REMATCH[1],,}"
 (

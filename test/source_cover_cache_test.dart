@@ -12,6 +12,30 @@ import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 import 'package:xxread/book_sources/source_engine/source_webview_loader.dart';
 
 void main() {
+  test('peek returns memory-resident bytes without starting a load', () async {
+    final directory = await Directory.systemTemp.createTemp('source-peek-');
+    addTearDown(() => directory.delete(recursive: true));
+    var loads = 0;
+    final cache = SourceCoverCache(
+      cacheDirectory: directory,
+      loader: (uri) async {
+        loads++;
+        return Uint8List.fromList([1, 2, 3]);
+      },
+    );
+    final uri = Uri.parse('https://example.org/peek.jpg');
+
+    expect(cache.peek(uri), isNull);
+
+    final loaded = await cache.load(uri);
+    expect(loads, 1);
+    expect(cache.peek(uri), same(loaded));
+    expect(loads, 1);
+
+    cache.clearMemory();
+    expect(cache.peek(uri), isNull);
+  });
+
   test('bounds concurrent cover requests', () async {
     final directory = await Directory.systemTemp.createTemp('source-covers-');
     addTearDown(() => directory.delete(recursive: true));

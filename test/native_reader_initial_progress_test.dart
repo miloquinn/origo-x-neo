@@ -48,7 +48,7 @@ void main() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     databaseDirectory = await Directory.systemTemp.createTemp(
-      'open-reading-reader-progress-db-',
+      'origo-x-reader-progress-db-',
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -66,7 +66,7 @@ void main() {
         ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-initial-progress-',
+        'origo-x-epub-initial-progress-',
       );
       final epub = File('${directory.path}/initial-progress.epub')
         ..writeAsBytesSync(_epubFixture());
@@ -158,7 +158,7 @@ void main() {
         ]''',
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-search-navigation-',
+        'origo-x-epub-search-navigation-',
       );
       final epub = File('${directory.path}/search-navigation.epub')
         ..writeAsBytesSync(_epubFixture(chapterCount: 10));
@@ -273,7 +273,7 @@ void main() {
         ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-search-same-chapter-',
+        'origo-x-epub-search-same-chapter-',
       );
       final epub = File('${directory.path}/search-same-chapter.epub')
         ..writeAsBytesSync(_epubFixture());
@@ -393,7 +393,7 @@ void main() {
         ReaderSettingsStore.scrollByChapterKey: false,
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-continuous-progress-',
+        'origo-x-epub-continuous-progress-',
       );
       final epub = File('${directory.path}/continuous-progress.epub')
         ..writeAsBytesSync(_epubFixture());
@@ -497,7 +497,7 @@ void main() {
             ReadingResumeService.enabledPreferenceKey: true,
           });
           final directory = Directory.systemTemp.createTempSync(
-            'open-reading-epub-scroll-exit-',
+            'origo-x-epub-scroll-exit-',
           );
           final epub = File('${directory.path}/scroll-exit.epub')
             ..writeAsBytesSync(_epubFixture());
@@ -908,7 +908,7 @@ void main() {
         ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
       });
       final directory = Directory.systemTemp.createTempSync(
-        'open-reading-epub-resume-progress-',
+        'origo-x-epub-resume-progress-',
       );
       final epub = File('${directory.path}/resume-progress.epub')
         ..writeAsBytesSync(_epubFixture());

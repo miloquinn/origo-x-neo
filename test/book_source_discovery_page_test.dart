@@ -35,7 +35,7 @@ void main() {
     tester.view.physicalSize = const Size(390, 844);
     addTearDown(tester.view.reset);
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([
+      'origo_x_book_sources_v1': jsonEncode([
         _source('slow', 'Slow').toJson(),
         _source('fast', 'Fast').toJson(),
       ]),
@@ -75,7 +75,7 @@ void main() {
       final sourceA = _source('source-a', 'Source A');
       final sourceB = _source('source-b', 'Source B');
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([
+        'origo_x_book_sources_v1': jsonEncode([
           sourceA.toJson(),
           sourceB.toJson(),
         ]),
@@ -143,7 +143,7 @@ void main() {
       addTearDown(tester.view.reset);
       final source = _source('source-a', 'Source A');
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
         BookSourcesPageController.preferenceKey: 'list',
       });
       final registry = BookSourceRegistry();
@@ -226,7 +226,7 @@ void main() {
     final sourceA = _source('source-a', 'Source A');
     final sourceB = _source('source-b', 'Source B');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode(
+      'origo_x_book_sources_v1': jsonEncode(
         [sourceA, sourceB].map((source) => source.toJson()).toList(),
       ),
     });
@@ -287,7 +287,7 @@ void main() {
     addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
     SharedPreferences.setMockInitialValues({
       additionalSourceProtocolsPreferenceKey: true,
-      'open_reading_book_sources_v1': jsonEncode(
+      'origo_x_book_sources_v1': jsonEncode(
         sources.map((s) => s.toJson()).toList(),
       ),
     });
@@ -350,7 +350,7 @@ void main() {
       _source('source-b', 'Source B'),
     ];
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode(
+      'origo_x_book_sources_v1': jsonEncode(
         sources.map((source) => source.toJson()).toList(),
       ),
     });
@@ -410,7 +410,7 @@ void main() {
     addTearDown(tester.view.reset);
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
     final client = _DiscoveryClient();
 
@@ -443,7 +443,7 @@ void main() {
       addTearDown(tester.view.reset);
       final source = _source('source-a', 'Source A');
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
       });
       final client = _DelayedRefreshDiscoveryClient();
 
@@ -495,7 +495,7 @@ void main() {
     final sourceA = _source('source-a', 'Source A');
     final sourceB = _source('source-b', 'Source B');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode(
+      'origo_x_book_sources_v1': jsonEncode(
         [sourceA, sourceB].map((source) => source.toJson()).toList(),
       ),
       BookSourcesPageController.preferenceKey: 'list',
@@ -606,7 +606,7 @@ void main() {
 
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
       BookSourcesPageController.preferenceKey: 'list',
     });
 
@@ -645,7 +645,7 @@ void main() {
       (index) => _source('source-$index', 'Source $index'),
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode(
+      'origo_x_book_sources_v1': jsonEncode(
         sources.map((source) => source.toJson()).toList(),
       ),
       BookSourcesPageController.preferenceKey: 'list',
@@ -703,7 +703,7 @@ void main() {
     final sourceA = _source('source-a', 'Source A');
     final sourceB = _source('source-b', 'Source B');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode(
+      'origo_x_book_sources_v1': jsonEncode(
         [sourceA, sourceB].map((source) => source.toJson()).toList(),
       ),
       BookSourcesPageController.preferenceKey: 'list',
@@ -769,7 +769,7 @@ void main() {
         growable: false,
       );
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode(
+        'origo_x_book_sources_v1': jsonEncode(
           sources.map((source) => source.toJson()).toList(),
         ),
         BookSourcesPageController.preferenceKey: 'list',
@@ -881,7 +881,7 @@ void main() {
         growable: false,
       );
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode(
+        'origo_x_book_sources_v1': jsonEncode(
           sources.map((source) => source.toJson()).toList(),
         ),
       });
@@ -921,7 +921,7 @@ void main() {
       final sourceA = _source('source-a', 'Source A');
       final sourceB = _source('source-b', 'Source B');
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode(
+        'origo_x_book_sources_v1': jsonEncode(
           [sourceA, sourceB].map((source) => source.toJson()).toList(),
         ),
       });
@@ -1036,7 +1036,7 @@ void main() {
       ).copyWith(isFavorite: true);
       final sourceC = _source('source-c', 'Source C');
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode(
+        'origo_x_book_sources_v1': jsonEncode(
           [sourceA, sourceB, sourceC].map((s) => s.toJson()).toList(),
         ),
       });
@@ -1177,7 +1177,7 @@ void main() {
       growable: false,
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode(
+      'origo_x_book_sources_v1': jsonEncode(
         sources.map((source) => source.toJson()).toList(),
       ),
     });
@@ -1202,7 +1202,7 @@ void main() {
   ) async {
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
 
     await tester.pumpWidget(
@@ -1249,7 +1249,7 @@ void main() {
   ) async {
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
 
     await tester.pumpWidget(
@@ -1273,7 +1273,7 @@ void main() {
   testWidgets('an empty capable source shows an empty state', (tester) async {
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
 
     await tester.pumpWidget(
@@ -1305,7 +1305,7 @@ void main() {
       capabilities: const {'search', 'detail', 'catalog', 'content'},
     );
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
 
     await tester.pumpWidget(
@@ -1333,7 +1333,7 @@ void main() {
 
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
     final client = _LargeCategoryDiscoveryClient();
 
@@ -1397,7 +1397,7 @@ void main() {
 
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
       BookSourcesPageController.preferenceKey: 'list',
     });
 
@@ -1434,7 +1434,7 @@ void main() {
 
       final source = _source('source-a', 'Source A');
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
       });
 
       await tester.pumpWidget(
@@ -1465,7 +1465,7 @@ void main() {
     addTearDown(tester.view.reset);
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
 
     await tester.pumpWidget(

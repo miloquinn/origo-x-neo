@@ -4,7 +4,7 @@ project(runner LANGUAGES CXX)
 
 # Keep the native CMake target ASCII-only for compatibility across Linux
 # toolchains. The localized application name is configured in the UI layer.
-set(BINARY_NAME "open_reading")
+set(BINARY_NAME "origo_x")
 
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
@@ -97,12 +97,12 @@ install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
 
 # Include the desktop entry in release bundles so distro packages can install
 # the declared book-file associations without maintaining a second manifest.
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/open-reading.desktop"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/origo-x.desktop"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications"
   COMPONENT Runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/images/app_icon_desktop.png"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/256x256/apps"
-  RENAME "open-reading.png"
+  RENAME "origo-x.png"
   COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"

@@ -5,7 +5,7 @@
 - macOS 2.6.7 (260911002)，提交 ID `a00361ca-b291-4cdb-a16d-b345d29928e8`。
 - 2026-09-12 浏览器读取 App Store Connect：版本仍被拒绝、关联旧构建；永久高级版商品 `com.niki.xxread.premium.lifetime` / `6797734053` 仍为“准备提交”；内购审核截图和审核备注均为空。
 - 浏览器连接恢复后再次确认以上状态。本次没有向 Apple 发送回复、保存后台元数据或重新提交审核。
-- 9 月 8 日的本地后端及 GitHub HEAD `6e31100` 落后于生产。实际 `Azure-hk:/srv/open-reading/current` 当时指向 `code-releases/20260911T110450Z`，已有账号删除、凭证解绑/恢复与相应测试。此前依据本地代码提出的“缺少删除后端”不适用于该生产版本。
+- 9 月 8 日的本地后端及 GitHub HEAD `6e31100` 落后于生产。实际 `Azure-hk:/srv/origo-x/current` 当时指向 `code-releases/20260911T110450Z`，已有账号删除、凭证解绑/恢复与相应测试。此前依据本地代码提出的“缺少删除后端”不适用于该生产版本。
 
 ## 修复与验收顺序
 
@@ -20,7 +20,7 @@
 
 - 最终隔离客户端：86 项账号/Apple 购买/分发核心测试、10 项注销页面测试、7 项账号页面测试通过；Flutter 3.44.9 / Dart 3.12.2 静态分析无问题。两个有全局状态的 widget 文件分别运行。
 - macOS arm64 Release 最终编译成功，Bundle ID `com.niki.xxread`、版本 `2.6.7`、构建 `260912001`，商店分发 define 为 true；编译包含 Apple 授权码上送及注销后可滚动的手动撤销提示。`CODE_SIGNING_ALLOWED=NO`，不是签名归档或上传证据。
-- 隔离候选基于客户端 `b2156de`，只包含本次账号相关修改，位于 `/tmp/open-reading-review-20260912/client-candidate`，分支 `codex/app-store-review-20260912`，提交 `62fa45bf4031035a06e5a1afe2e45684290bf405`；隔离工作区干净。共享客户端保留同样的账号修复，其他任务的改动没有纳入此候选。
+- 隔离候选基于客户端 `b2156de`，只包含本次账号相关修改，位于 `/tmp/origo-x-review-20260912/client-candidate`，分支 `codex/app-store-review-20260912`，提交 `62fa45bf4031035a06e5a1afe2e45684290bf405`；隔离工作区干净。共享客户端保留同样的账号修复，其他任务的改动没有纳入此候选。
 - 客户端归档和补丁保存在 `build/app-store-review/20260912/`；zip 名称明确标为 `UNSIGNED`。
 - 后端集成基线为线上 `20260912-promotion-ui`，保留管理员路由和活动码最新修改。最终全套 **339 项通过**（含真实 PostgreSQL 删除、购买恢复及活动码回归），ruff app/tests/scripts 通过；独立架构复查 APPROVE。
 - 网页 typecheck、1506 键三语检查、下载规则检查和 Nuxt build 通过；采用最新活动码页面再次构建通过。
@@ -28,8 +28,8 @@
 
 ## 已部署的后端
 
-- 当前 release：`/srv/open-reading/code-releases/20260912-apple-account-review`，由 `20260912-promotion-ui` 在服务器复制成新目录，仅覆盖 12 个白名单源码/测试文件及本地构建的前端产物；没有整仓覆盖共享后端。
-- 完整备份：`/srv/open-reading/backups/pre-apple-review-20260912T095222Z`，含 PostgreSQL custom dump 和一致性 SQLite 备份，仅保留在服务器私有目录。
+- 当前 release：`/srv/origo-x/code-releases/20260912-apple-account-review`，由 `20260912-promotion-ui` 在服务器复制成新目录，仅覆盖 12 个白名单源码/测试文件及本地构建的前端产物；没有整仓覆盖共享后端。
+- 完整备份：`/srv/origo-x/backups/pre-apple-review-20260912T095222Z`，含 PostgreSQL custom dump 和一致性 SQLite 备份，仅保留在服务器私有目录。
 - 完整恢复、临时库两次迁移演练通过；生产迁移前后旧表指纹一致。新增 `membership_apple_credentials` 表，不改变已有购买或活动码数据。
 - 双服务 active，公开 HTTPS health 正常。管理页匿名访问跳转 `/milo/login`；旧 `/admin` 页面保持 404，管理 API 和注销预览仍要求认证。
 - 账号注销与 Apple 凭据写入共用用户行锁，解决并行登录时遗漏撤销的问题。注销路径在 Apple 网络调用期间占用一条数据库连接，每个已保存客户端凭据最多等待 15 秒。

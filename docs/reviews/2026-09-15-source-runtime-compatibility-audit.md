@@ -1,18 +1,18 @@
 # 书源运行时与登录兼容性审计
 
-日期：2026-09-15。对照 `/Users/origo/code/legado-E` 与 Open Reading 当前工作区。
+日期：2026-09-15。对照 `/Users/origo/code/legado-E` 与 Origo X 当前工作区。
 
 结论：当前主要缺口已经超出选择器语法。同步脚本执行、宿主对象行为、状态生效时机、登录 UI 事件和错误恢复仍存在成组差异。继续按单个书源补函数，难以稳定提升整条阅读链的兼容性。
 
 ## 范围和证据等级
 
 - 参考项目 HEAD：`8b87c5aba4df91c39a3a0939a68a1180b9f2ee1c`。
-- Open Reading HEAD：`3f0f0317feab88677ea9ac3c58dea7e11a71f482`；分析使用当前工作区文件。
+- Origo X HEAD：`3f0f0317feab88677ea9ac3c58dea7e11a71f482`；分析使用当前工作区文件。
 - 本次在 macOS 的真实 JavaScriptCore 桥上运行 12 个离线观测，使用假网络传输和内存登录存储；未访问真实账号或书源网站。
 - 参考行为来自本地 Kotlin 源码审阅，未启动 Legado Android 应用。因此表中的参考预期不是双引擎运行结果。
 - 没有修改应用代码；新增诊断程序、观测结果和本文。工作区原有及其他任务的修改不属于本次审计。
 
-[诊断程序](/Users/origo/code/open-reading/tool/source_compatibility_audit_probe.dart) · [原始观测](/Users/origo/code/open-reading/docs/reviews/2026-09-15-source-runtime-observations.json)
+[诊断程序](/Users/origo/code/origo-x/tool/source_compatibility_audit_probe.dart) · [原始观测](/Users/origo/code/origo-x/docs/reviews/2026-09-15-source-runtime-observations.json)
 
 复验：
 
@@ -58,9 +58,9 @@ JSON 承载的是程序入口、规则和界面描述，运行时提供以下协
 
 ### 2.1 同步网络调用的重跑模型是核心风险
 
-[脚本 evaluator](/Users/origo/code/open-reading/lib/book_sources/source_engine/scripting/source_script_engine.dart:53) 遇到同步 `java.ajax()` 时，以特殊异常退出，Dart 异步获取响应，再从脚本开头重新执行。
+[脚本 evaluator](/Users/origo/code/origo-x/lib/book_sources/source_engine/scripting/source_script_engine.dart:53) 遇到同步 `java.ajax()` 时，以特殊异常退出，Dart 异步获取响应，再从脚本开头重新执行。
 
-[响应索引](/Users/origo/code/open-reading/lib/book_sources/source_engine/scripting/source_script_host_api.dart:187) 仅使用 method、URL、body、headers、webJs 作为签名，没有区分同一脚本中第几次调用；所以“重放第一次请求”和“真正的第二次同地址请求”混为一谈。
+[响应索引](/Users/origo/code/origo-x/lib/book_sources/source_engine/scripting/source_script_host_api.dart:187) 仅使用 method、URL、body、headers、webJs 作为签名，没有区分同一脚本中第几次调用；所以“重放第一次请求”和“真正的第二次同地址请求”混为一谈。
 
 重跑还会重新生成随机值、读取时间、执行缓存/Cookie 等副作用。当前部分状态留在 JavaScript 局部变量，部分立即调用宿主，部分在最终 envelope 才写回，缺乏统一的执行顺序保证。这能解释为什么纯提取样例正常，稍复杂的认证或请求脚本就失效。
 
@@ -78,17 +78,17 @@ evaluateAsync(login脚本) 持有串行执行队列
         → 上一个脚本仍在等待这个请求
 ```
 
-证据：[串行队列](/Users/origo/code/open-reading/lib/book_sources/source_engine/scripting/source_script_engine.dart:39)、[请求内求值 header](/Users/origo/code/open-reading/lib/book_sources/source_engine/source_runtime_requests.dart:598)、[header 脚本执行](/Users/origo/code/open-reading/lib/book_sources/source_engine/source_runtime_requests.dart:473)。2 秒超时是诊断观察窗口；循环依赖的判断同时有代码依据，不是根据网站响应慢推测。
+证据：[串行队列](/Users/origo/code/origo-x/lib/book_sources/source_engine/scripting/source_script_engine.dart:39)、[请求内求值 header](/Users/origo/code/origo-x/lib/book_sources/source_engine/source_runtime_requests.dart:598)、[header 脚本执行](/Users/origo/code/origo-x/lib/book_sources/source_engine/source_runtime_requests.dart:473)。2 秒超时是诊断观察窗口；循环依赖的判断同时有代码依据，不是根据网站响应慢推测。
 
 ### 2.3 登录头存在“写入成功但请求看不见”
 
-[putLoginHeader](/Users/origo/code/open-reading/lib/book_sources/source_engine/scripting/source_script_bootstrap.dart:148) 只修改当前 JS 的 `__loginHeaders`；真正写回 session 要等 [最终结果解包](/Users/origo/code/open-reading/lib/book_sources/source_engine/scripting/source_script_engine.dart:147)。脚本内的网络请求先读取 Dart session，因此读到旧头。
+[putLoginHeader](/Users/origo/code/origo-x/lib/book_sources/source_engine/scripting/source_script_bootstrap.dart:148) 只修改当前 JS 的 `__loginHeaders`；真正写回 session 要等 [最终结果解包](/Users/origo/code/origo-x/lib/book_sources/source_engine/scripting/source_script_engine.dart:147)。脚本内的网络请求先读取 Dart session，因此读到旧头。
 
-另一个独立问题是 [登录 action 路径](/Users/origo/code/open-reading/lib/book_sources/source_engine/source_runtime_login.dart:453) 调用 `save(source, loginInfo: ...)`，而 [save 默认参数](/Users/origo/code/open-reading/lib/book_sources/source_engine/source_runtime_login.dart:119) 将 `loginHeaders` 设为 `{}`。普通按钮 action 在执行前就可能清掉原来的头。
+另一个独立问题是 [登录 action 路径](/Users/origo/code/origo-x/lib/book_sources/source_engine/source_runtime_login.dart:453) 调用 `save(source, loginInfo: ...)`，而 [save 默认参数](/Users/origo/code/origo-x/lib/book_sources/source_engine/source_runtime_login.dart:119) 将 `loginHeaders` 设为 `{}`。普通按钮 action 在执行前就可能清掉原来的头。
 
 ### 2.4 错误恢复发生得太晚
 
-[当前请求入口](/Users/origo/code/open-reading/lib/book_sources/source_engine/source_runtime_requests.dart:145) 只在传输成功后调用登录检查，catch 中直接重抛。[HTTP 层](/Users/origo/code/open-reading/lib/book_sources/source_engine/source_http_transport.dart:391) 会将非重定向的错误状态抛出，某些 401 还转换为重新登录提示。因此不能因为存在 `_applyLoginCheck` 就认为已实现参考项目的错误恢复契约。
+[当前请求入口](/Users/origo/code/origo-x/lib/book_sources/source_engine/source_runtime_requests.dart:145) 只在传输成功后调用登录检查，catch 中直接重抛。[HTTP 层](/Users/origo/code/origo-x/lib/book_sources/source_engine/source_http_transport.dart:391) 会将非重定向的错误状态抛出，某些 401 还转换为重新登录提示。因此不能因为存在 `_applyLoginCheck` 就认为已实现参考项目的错误恢复契约。
 
 [参考 WebBook](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/model/webBook/WebBook.kt:70) 在失败分支构造错误响应，再让检查脚本有一次恢复机会。复现采用传输异常；未在此次运行真实 HTTP 401 对照。
 
@@ -96,7 +96,7 @@ evaluateAsync(login脚本) 持有串行执行队列
 
 ### 三条相关但不同的流程
 
-**网页登录。** 参考 [SourceLoginActivity](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/ui/login/SourceLoginActivity.kt:31) 在没有 `loginUi` 时进入 WebView，加载登录 URL 和来源请求头，并回收 Cookie。Open Reading 已有原生浏览器、Cookie/Local Storage、安全存储与会话恢复，不能将它描述为“没有网页登录”。当前约束见 [网页登录文档](/Users/origo/code/open-reading/docs/source-website-login.md)。
+**网页登录。** 参考 [SourceLoginActivity](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/ui/login/SourceLoginActivity.kt:31) 在没有 `loginUi` 时进入 WebView，加载登录 URL 和来源请求头，并回收 Cookie。Origo X 已有原生浏览器、Cookie/Local Storage、安全存储与会话恢复，不能将它描述为“没有网页登录”。当前约束见 [网页登录文档](/Users/origo/code/origo-x/docs/source-website-login.md)。
 
 **脚本表单/设置界面。** 有 `loginUi` 时，它是一个可编程界面：`text/password/button/toggle/select`、默认值、动态 `viewName`、字段变化 action、按钮点击/长按、界面数据更新和重建。`loginUrl` 此时可以承载 JS 函数集合。页面中也可能是 API Key、线路选择、签到、验证码等设置，并不总是账号密码表单。
 
@@ -111,11 +111,11 @@ evaluateAsync(login脚本) 持有串行执行队列
 - 没有 `login()` 时默认提交静默完成，而参考实现明确报错。
 - `source.login()` 缺失，导致某类自动重登脚本即使走到 `loginCheckJs` 也无法继续。
 
-依据：[参考 UI 事件](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/ui/login/SourceLoginDialog.kt:697)、[参考宿主回调](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/ui/login/SourceLoginJsExtensions.kt:24)、[当前页面](/Users/origo/code/open-reading/lib/pages/book_sources/source_login_page.dart:302)。
+依据：[参考 UI 事件](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/ui/login/SourceLoginDialog.kt:697)、[参考宿主回调](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/ui/login/SourceLoginJsExtensions.kt:24)、[当前页面](/Users/origo/code/origo-x/lib/pages/book_sources/source_login_page.dart:302)。
 
 ### Cookie 与持久化不能只比函数名
 
-参考 [CookieStore](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/help/http/CookieStore.kt:32) 按计算后的域名保存，并与 WebView/session Cookie 合并；Open Reading 使用来源隔离的 Cookie jar，按域名、路径、安全属性匹配。两者存在实质语义差别，特别是一个来源跨多个关联域名、多个来源共用账号的情况；本次未逐站验证这些影响。
+参考 [CookieStore](/Users/origo/code/legado-E/app/src/main/java/io/legado/app/help/http/CookieStore.kt:32) 按计算后的域名保存，并与 WebView/session Cookie 合并；Origo X 使用来源隔离的 Cookie jar，按域名、路径、安全属性匹配。两者存在实质语义差别，特别是一个来源跨多个关联域名、多个来源共用账号的情况；本次未逐站验证这些影响。
 
 应单独定义兼容脚本的 Cookie 视图和浏览器/HTTP 交换规则，不应为了追求兼容就无条件向其他域名发送 Cookie。
 
@@ -137,7 +137,7 @@ evaluateAsync(login脚本) 持有串行执行队列
 
 第三，缺少同响应的参考对照。已有端到端测试和线上抽测很有价值，但不能自动区分“源过期”“网站拒绝访问”“需要登录”“引擎输出不同”。应同时保存参考输出和本项目输出。
 
-第四，统计口径仍容易误导。[固定语料基线](/Users/origo/code/open-reading/tool/reading_source_lab/docs/corpus-baseline-2026-09-09.md) 明确写着：7,506 个唯一源、6,865 个结构齐全、91.46% 是结构准备率；该基线执行数为 0，执行率未知。这不代表项目历史上从没测试过书源，而是这份大样本报告没有提供执行兼容证明。其启发式统计检测到 3,669 个依赖 JavaScript、883 个含登录依赖、378 个含 WebView 依赖；这些数字说明运行时值得优先投入，不能算作失败数。
+第四，统计口径仍容易误导。[固定语料基线](/Users/origo/code/origo-x/tool/reading_source_lab/docs/corpus-baseline-2026-09-09.md) 明确写着：7,506 个唯一源、6,865 个结构齐全、91.46% 是结构准备率；该基线执行数为 0，执行率未知。这不代表项目历史上从没测试过书源，而是这份大样本报告没有提供执行兼容证明。其启发式统计检测到 3,669 个依赖 JavaScript、883 个含登录依赖、378 个含 WebView 依赖；这些数字说明运行时值得优先投入，不能算作失败数。
 
 当前 `SourceCompatibilityScanner` 还会移除登录字段再作核心可用性扫描，且不检查每个宿主 API。允许尝试公开阅读合理，但 `supported` 不应被理解为“完整兼容”，最好拆成“结构可尝试 / 执行已验证 / 需要交互 / 能力缺失 / 网站异常”。
 

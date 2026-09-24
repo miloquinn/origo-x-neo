@@ -8,7 +8,7 @@ static NSString *const ORPowerSavingPreferenceKey = @"flutter.power_saving_mode_
 static NSHashTable<CADisplayLink *> *ORFlutterDisplayLinks;
 static BOOL ORPowerSavingMode = NO;
 
-@interface CADisplayLink (OpenReadingFrameRate)
+@interface CADisplayLink (OrigoReaderFrameRate)
 + (CADisplayLink *)or_displayLinkWithTarget:(id)target selector:(SEL)selector;
 @end
 
@@ -17,7 +17,7 @@ static BOOL ORPowerSavingMode = NO;
 + (void)applyFrameRateToDisplayLink:(CADisplayLink *)displayLink;
 @end
 
-@implementation CADisplayLink (OpenReadingFrameRate)
+@implementation CADisplayLink (OrigoReaderFrameRate)
 
 + (CADisplayLink *)or_displayLinkWithTarget:(id)target selector:(SEL)selector {
   CADisplayLink *displayLink = [self or_displayLinkWithTarget:target selector:selector];

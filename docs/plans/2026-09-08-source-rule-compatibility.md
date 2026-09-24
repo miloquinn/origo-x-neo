@@ -112,9 +112,9 @@
 198.18.1.51、198.18.1.54、198.18.1.42。原图片策略拒绝该范围，而书源 transport
 允许；统一策略后，之前两项 `stage=image` 失败的漫画均真实解码通过。
 
-在线日志保存在 `/tmp/open-reading-text-live-verified-20260908.log`、
-`/tmp/open-reading-comic-live-verified-20260908.log` 和
-`/tmp/open-reading-comic-second-verified-20260908.log`。诊断测试本身通过只代表探测
+在线日志保存在 `/tmp/origo-x-text-live-verified-20260908.log`、
+`/tmp/origo-x-comic-live-verified-20260908.log` 和
+`/tmp/origo-x-comic-second-verified-20260908.log`。诊断测试本身通过只代表探测
 执行完成，源可用性以 `SUMMARY` 及逐项结果为准。
 
 ## 验证边界
@@ -128,14 +128,14 @@
 ## 最终验收
 
 - 38 个 source/network 测试文件：**362 项通过**，按单个 Flutter 命令、
-  `--concurrency=1` 执行，日志 `/tmp/open-reading-verified-source-suite-20260908.log`。
+  `--concurrency=1` 执行，日志 `/tmp/origo-x-verified-source-suite-20260908.log`。
 - 响应 codec 独立进程：**5 项通过**，日志
-  `/tmp/open-reading-verified-response-codec-20260908.log`。
+  `/tmp/origo-x-verified-response-codec-20260908.log`。
 - 漫画阅读器图片章节实际打开用例独立进程：**1 项通过**，日志
-  `/tmp/open-reading-verified-comic-reader-20260908.log`。
+  `/tmp/origo-x-verified-comic-reader-20260908.log`。
 - 合计 **368 项通过**；额外中途重跑的同一用例不重复计数。
 - `flutter analyze --no-pub`：**No issues found**，日志
-  `/tmp/open-reading-verified-analysis-20260908.log`。
+  `/tmp/origo-x-verified-analysis-20260908.log`。
 - 本次 29 个 Dart 文件格式检查无改动；`git diff --check` 通过。
 - 规则复审中页选 HTML、块/BR 文本、空格组合符、位置筛选四项反例已修复并复审通过。
 - 早期多个 Flutter 命令并行时出现过共享 native-assets 生成竞争；已改为串行命令重跑。

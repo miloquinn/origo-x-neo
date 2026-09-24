@@ -7,7 +7,7 @@ import 'package:xxread/core/reader/indexed_text_reader.dart';
 void main() {
   test('reads the requested UTF-8 byte range asynchronously', () async {
     final directory = Directory.systemTemp.createTempSync(
-      'open-reading-indexed-text-',
+      'origo-x-indexed-text-',
     );
     final file = File('${directory.path}/chapters.data');
     addTearDown(() => directory.deleteSync(recursive: true));

@@ -47,7 +47,8 @@ extension _NativeReaderSession on _NativeReaderPageState {
 
   void _syncCloudReading() {
     final lifecycle = WidgetsBinding.instance.lifecycleState;
-    if (_readingSessionStartedAt != null && _openingContentReadyScheduled &&
+    if (_readingSessionStartedAt != null &&
+        _openingContentReadyScheduled &&
         (ModalRoute.isCurrentOf(context) ?? true) &&
         !_readerAloudActive &&
         (lifecycle == null || lifecycle == AppLifecycleState.resumed)) {
@@ -177,7 +178,7 @@ extension _NativeReaderSession on _NativeReaderPageState {
     _exitInProgress = true;
     BookOpenTransition.beginExit();
     unawaited(_flushReadingSession());
-    await _persistCurrentReaderPosition(reason: 'exit');
+    await _persistCurrentReaderPosition(reason: 'exit', allowDuringExit: true);
     await _flushPendingPositionSave();
     debugPrint('[reader-progress] exit position queue flushed');
     if (!mounted) return;
@@ -188,7 +189,16 @@ extension _NativeReaderSession on _NativeReaderPageState {
     Navigator.of(context).pop();
   }
 
-  Future<void> _persistCurrentReaderPosition({required String reason}) {
+  Future<void> _persistCurrentReaderPosition({
+    required String reason,
+    bool allowDuringExit = false,
+  }) {
+    // A scroll-end or layout callback can arrive while the route is waiting
+    // for its exit write. Those callbacks describe the old frame and must not
+    // enqueue another write after the committed exit position.
+    if (_exitInProgress && !allowDuringExit) {
+      return Future<void>.value();
+    }
     final chapters = _loadedChapters;
     if (chapters.isEmpty) return Future<void>.value();
 
@@ -203,7 +213,7 @@ extension _NativeReaderSession on _NativeReaderPageState {
         'chapter=${pending.page.chapterIndex} page=${pending.page.pageIndex} '
         'offset=${pending.page.content.startOffset}',
       );
-      _publishPendingHorizontalPage(chapters);
+      _publishPendingHorizontalPage(chapters, allowDuringExit: allowDuringExit);
       return Future<void>.value();
     }
 
@@ -219,7 +229,12 @@ extension _NativeReaderSession on _NativeReaderPageState {
       '[reader-progress] save visible page on $reason '
       'chapter=$chapterIndex page=$pageIndex offset=${page.startOffset}',
     );
-    return _saveCanonicalProgress(chapters[chapterIndex], page, chapterIndex);
+    return _saveCanonicalProgress(
+      chapters[chapterIndex],
+      page,
+      chapterIndex,
+      allowDuringExit: allowDuringExit,
+    );
   }
 
   Future<void> _flushPendingPositionSave() => _positionSaveQueue.flush();

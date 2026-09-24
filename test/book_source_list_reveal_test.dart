@@ -7,7 +7,28 @@ import 'package:xxread/pages/book_sources/widgets/book_source_list_reveal.dart';
 import 'package:xxread/pages/book_sources/widgets/book_source_pill.dart';
 
 void main() {
-  testWidgets('new lazy rows pop in and release their animation wrapper', (
+  testWidgets('finishing the reveal keeps the row subtree state', (
+    tester,
+  ) async {
+    _StateProbeState.initCount = 0;
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: BookSourceListReveal(
+          animate: true,
+          child: _StateProbe(),
+        ),
+      ),
+    );
+    expect(_StateProbeState.initCount, 1);
+
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('probe')), findsOneWidget);
+    // Cover widgets keep their image state across the reveal: re-inflating the
+    // row would flash the generated placeholder over an already-loaded cover.
+    expect(_StateProbeState.initCount, 1);
+  });
+
+  testWidgets('new lazy rows pop in with a one-shot entrance', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -19,7 +40,6 @@ void main() {
       ),
     );
 
-    expect(find.byType(TweenAnimationBuilder<double>), findsOneWidget);
     expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 0);
 
     await tester.pump(const Duration(milliseconds: 100));
@@ -30,7 +50,7 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('row')), findsOneWidget);
-    expect(find.byType(TweenAnimationBuilder<double>), findsNothing);
+    expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 1);
   });
 
   testWidgets('reduced motion shows lazy rows immediately', (tester) async {
@@ -47,7 +67,9 @@ void main() {
     );
 
     expect(find.byKey(const Key('row')), findsOneWidget);
-    expect(find.byType(TweenAnimationBuilder<double>), findsNothing);
+    expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 1);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 1);
   });
 
   testWidgets('source categories animate open and unload after collapsing', (
@@ -172,6 +194,27 @@ void main() {
     expect(tester.getTopRight(pill).dx, closeTo(370, 0.5));
     expect(tester.takeException(), isNull);
   });
+}
+
+class _StateProbe extends StatefulWidget {
+  const _StateProbe();
+
+  @override
+  State<_StateProbe> createState() => _StateProbeState();
+}
+
+class _StateProbeState extends State<_StateProbe> {
+  static int initCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    initCount++;
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      const SizedBox(key: Key('probe'), width: 100, height: 40);
 }
 
 class _DirectoryHarness extends StatefulWidget {

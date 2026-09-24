@@ -35,7 +35,7 @@ void main() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     supportDirectory = await Directory.systemTemp.createTemp(
-      'open-reading-pagination-support-',
+      'origo-x-pagination-support-',
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -47,7 +47,7 @@ void main() {
   setUp(() async {
     replaceRuleService = ReplaceRuleService();
     fixtureDirectory = Directory.systemTemp.createTempSync(
-      'open-reading-pagination-fixture-',
+      'origo-x-pagination-fixture-',
     );
     bookFile = File('${fixtureDirectory.path}/cached.txt')
       ..writeAsStringSync(

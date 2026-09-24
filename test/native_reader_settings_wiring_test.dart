@@ -222,7 +222,7 @@ void main() {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     await tester.binding.setSurfaceSize(const Size(400, 800));
     final verticalBook = File(
-      '${Directory.systemTemp.path}/open-reading-vertical-paging.html',
+      '${Directory.systemTemp.path}/origo-x-vertical-paging.html',
     );
     verticalBook.writeAsStringSync(
       '<!doctype html><html><body><h1>Vertical paging</h1>'
@@ -358,7 +358,7 @@ void main() {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     await tester.binding.setSurfaceSize(const Size(480, 800));
     final horizontalBook = File(
-      '${Directory.systemTemp.path}/open-reading-native-tap-animation.html',
+      '${Directory.systemTemp.path}/origo-x-native-tap-animation.html',
     );
     horizontalBook.writeAsStringSync(
       '<!doctype html><html><body><h1>Tap animation</h1>'
@@ -442,7 +442,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       await tester.binding.setSurfaceSize(const Size(480, 800));
       final horizontalBook = File(
-        '${Directory.systemTemp.path}/open-reading-native-tap-instant.html',
+        '${Directory.systemTemp.path}/origo-x-native-tap-instant.html',
       );
       horizontalBook.writeAsStringSync(
         '<!doctype html><html><body><h1>Instant tap</h1>'
@@ -509,7 +509,7 @@ void main() {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     await tester.binding.setSurfaceSize(const Size(1200, 800));
     final tabletBook = File(
-      '${Directory.systemTemp.path}/open-reading-tablet-spread.html',
+      '${Directory.systemTemp.path}/origo-x-tablet-spread.html',
     );
     tabletBook.writeAsStringSync(
       '<!doctype html><html><body><h1>Tablet spread</h1>'
@@ -630,7 +630,7 @@ void main() {
       ReaderSettingsStore.tabletTwoPageKey: false,
     });
     final tabletBook = File(
-      '${Directory.systemTemp.path}/open-reading-tablet-single-page.html',
+      '${Directory.systemTemp.path}/origo-x-tablet-single-page.html',
     );
     tabletBook.writeAsStringSync(
       '<!doctype html><html><body><h1>Tablet single page</h1>'
@@ -667,7 +667,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       final parityBook = File(
-        '${Directory.systemTemp.path}/open-reading-tablet-parity.html',
+        '${Directory.systemTemp.path}/origo-x-tablet-parity.html',
       );
       parityBook.writeAsStringSync(
         '<!doctype html><html><body>'

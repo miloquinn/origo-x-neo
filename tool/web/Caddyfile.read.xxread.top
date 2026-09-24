@@ -1,7 +1,7 @@
 read.xxread.top {
 	tls /etc/caddy/certs/xxread.top.origin.crt /etc/caddy/certs/xxread.top.origin.key
 	encode zstd gzip
-	root * /srv/open-reading/flutter-web/current
+	root * /srv/origo-x/flutter-web/current
 
 	@no_cache path / /index.html /version.json /flutter_bootstrap.js /flutter.js /main.dart.js /flutter_service_worker.js /manifest.json /sqflite_sw.js /sqlite3.wasm
 	header @no_cache Cache-Control "no-cache, no-store, must-revalidate"
@@ -21,7 +21,7 @@ read.xxread.top {
 	}
 
 	log {
-		output file /var/log/caddy/open-reading-web-access.log {
+		output file /var/log/caddy/origo-web-access.log {
 			roll_size 20MiB
 			roll_keep 5
 			roll_keep_for 720h

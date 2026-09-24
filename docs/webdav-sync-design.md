@@ -39,7 +39,7 @@
 
 `BookRevisionRepository` 负责不可变修订；TXT、EPUB/PDF 等所有格式在修改后流式上传完整文件，共用发布、恢复和冲突规则。内容定义分块算法与增量上传分支已删除。清单的 `chunks` 列表固定写入一个完整文件引用；保留该协议字段和已有多对象修订的读取能力，避免使已提交数据不可恢复。
 
-清单包含 `protocol: open-reading-book`、`schema_version: 2`、`book_uid`、`parents`、整书 `sha256`、`size`、`format`、`original_file_name`、有序 `chunks`，以及来源资料摘要和引用。修订 ID 是实际 JSON 字节的 SHA-256，不是时间戳。相同输入可复用同一提交，解析不依赖字段排列。
+清单包含 `protocol: origo-x-book`、`schema_version: 2`、`book_uid`、`parents`、整书 `sha256`、`size`、`format`、`original_file_name`、有序 `chunks`，以及来源资料摘要和引用。修订 ID 是实际 JSON 字节的 SHA-256，不是时间戳。相同输入可复用同一提交，解析不依赖字段排列。
 
 发布顺序：本地快照 → 来源附件/完整书籍 → 回读校验 → 修订清单 → 回读校验 → 本机完成标记 → 元数据文件描述。清单是正文提交点。未完成的上传不成为可用书籍，失败重试复用已经确认的完整文件；损坏或中断的不可变对象只允许用其地址对应的正确内容修复。
 

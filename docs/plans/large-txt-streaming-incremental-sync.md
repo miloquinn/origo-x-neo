@@ -43,13 +43,13 @@
 - v3 暂无云端历史清单目录/保留策略，本机历史及本机/云端孤立块自动回收尚未实现。
 - 未连接用户真实 WebDAV，也未完成两台物理设备、移动端文件提供器或真机内存验收。
 
-原始完整指标：本次验证目录 `/tmp/open-reading-large-txt-validation/benchmark-final.json`；日志 `/tmp/open-reading-large-txt-benchmark-final.log`。
+原始完整指标：本次验证目录 `/tmp/origo-x-large-txt-validation/benchmark-final.json`；日志 `/tmp/origo-x-large-txt-benchmark-final.log`。
 
 协议依据：[RFC 9110 Partial PUT](https://www.rfc-editor.org/rfc/rfc9110.html#section-14.5)。普通 WebDAV 的局部 PUT 不具备跨服务商通用保证，客户端分块格式用于避免依赖服务端拼接扩展。
 
 ## 最终验证与修改入口
 
-- 22 个回归测试文件共 145 个测试通过，另有上述 3 组实际大文件基准。最终结果见 `/tmp/open-reading-large-txt-validation/verified-regressions.json`。
+- 22 个回归测试文件共 145 个测试通过，另有上述 3 组实际大文件基准。最终结果见 `/tmp/origo-x-large-txt-validation/verified-regressions.json`。
 - `flutter analyze --no-pub`：No issues found；`git diff --check`：通过。
 - macOS Debug 产品无签名构建：`xcodebuild ... CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= build`，BUILD SUCCEEDED。未执行签名发布、安装或用户云端操作。
 - 原生阅读索引：`lib/core/reader/streaming_txt_index.dart`、`lib/core/reader/txt_chapter_parser.dart`、`lib/pages/reader/native/native_reader_parsers.dart`。

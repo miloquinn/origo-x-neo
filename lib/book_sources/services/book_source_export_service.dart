@@ -77,7 +77,7 @@ class BookSourceExportService {
         '${now.minute.toString().padLeft(2, '0')}'
         '${now.second.toString().padLeft(2, '0')}';
     return BookSourceExportDocument(
-      fileName: 'open-reading-book-sources-$stamp.json',
+      fileName: 'origo-x-book-sources-$stamp.json',
       json: '${const JsonEncoder.withIndent('  ').convert(exported)}\n',
       sourceCount: exported.length,
     );

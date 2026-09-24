@@ -1,4 +1,4 @@
-# Open Reading 项目结构
+# Origo X 项目结构
 
 > 最后更新：2026-08-04
 > 当前版本：2.3.8
@@ -23,13 +23,13 @@
 - iOS App 级隐私清单位于 `ios/Runner/PrivacyInfo.xcprivacy`，声明 Runner 原生文件导入、iCloud Documents 与用户授权文件所使用的 required reason API；第三方 Flutter 插件继续各自在 bundle 内携带其隐私清单。
 - 本地结构化数据使用 SQLite，移动端通过 `sqflite`，桌面端通过 `sqflite_common_ffi`。
 - 轻量设置使用 `SharedPreferences`；大型书源注册表独立存放在应用支持目录，避免偏好缓存整体装载大 JSON。
-- 在线书源同时支持 Open Reading Source Protocol 与阅读书源 JSON；阅读书源由应用内置运行时直接执行，不依赖外部阅读器。
-- 官网、发行 API、安装包镜像和下载统计已拆分到独立仓库 `miloquinn/open-reading-web`；本仓库只保留客户端集成和发布后的官网下载校验工具。
+- 在线书源同时支持 Origo Source Protocol 与阅读书源 JSON；阅读书源由应用内置运行时直接执行，不依赖外部阅读器。
+- 官网、发行 API、安装包镜像和下载统计已拆分到独立仓库 `miloquinn/origo-web`；本仓库只保留客户端集成和发布后的官网下载校验工具。
 
 ## 顶层目录
 
 ```text
-open-reading/
+origo-x/
 ├─ android/                 Android 原生工程、存储与更新安装桥接
 ├─ ios/                     iOS 原生工程和文档存储桥接
 ├─ linux/ macos/ windows/   桌面平台工程
@@ -58,7 +58,7 @@ open-reading/
 - `.github/workflows/pr-checks.yml`：对 Pull Request、`main` 推送和手动运行执行锁定依赖解析、国际化生成一致性、格式检查、静态分析、带覆盖率测试，以及 Android debug 和 Web release 冒烟构建；官网服务使用独立 Python 3.12 job 执行 Ruff 和 Pytest；Pull Request 额外执行依赖安全审查。Web 构建当前为提示性检查，不阻塞合并。
 - `.github/workflows/platform-smoke.yml`：在相关源码或平台工程变更、每周计划任务和手动运行时，构建 Linux、Windows、macOS release 以及不签名的 iOS release，用于尽早发现平台工程漂移。OpenHarmony 仍依赖专用 SDK，不在 GitHub 托管运行器中构建。
 - `.github/workflows/release.yml`：所有版本 Tag 共用同一发布并发锁；Tag 发布前验证客户端与官网服务，并在写入 GitHub Latest 前拒绝低于或等于当前 Latest 的其他 Tag，同 Tag 重跑保持幂等。随后构建 Android、未签名 iOS IPA、Windows、Linux 发布包；仓库变量启用后还会构建 macOS universal 包，使用 Developer ID、Hardened Runtime 和 Apple 公证签名。未签名 IPA 只供开发者自行签名或重新打包，不能直接安装。全部资产生成校验和并发布 GitHub Release，随后通过固定 `known_hosts` 和受控导入 wrapper 原子镜像到官网。macOS 凭据和官网启用顺序记录在 `docs/macos-release-signing.md`。
-- 私有仓库 `miloquinn/open-reading-neo` 是后续源码、验证和发布 Tag 的权威位置；发布工作流使用审批保护的 `PUBLIC_RELEASE_TOKEN`，仅把公开安装包、校验清单和人工维护的 Release Notes 写入 `miloquinn/open-reading`。公开仓库的 `main` 保留最后公开源码，不能作为后续构建输入；跨仓库发布 Tag 只用于承载 GitHub Release，不代表公开源码快照。
+- 私有仓库 `miloquinn/origo-x-neo` 是后续源码、验证和发布 Tag 的权威位置；发布工作流使用审批保护的 `PUBLIC_RELEASE_TOKEN`，仅把公开安装包、校验清单和人工维护的 Release Notes 写入 `miloquinn/origo-x`。公开仓库的 `main` 保留最后公开源码，不能作为后续构建输入；跨仓库发布 Tag 只用于承载 GitHub Release，不代表公开源码快照。
 - GitHub `release` Environment 同时保护 Android/macOS 签名 job 和官网镜像 job，并应配置 required reviewers。Android 签名、macOS Developer ID/Notary API Key 与 `OFFICIAL_SITE_SSH_HOST`、`OFFICIAL_SITE_SSH_PORT`、`OFFICIAL_SITE_SSH_USER`、`OFFICIAL_SITE_SSH_PRIVATE_KEY`、`OFFICIAL_SITE_SSH_KNOWN_HOSTS` 均只保存在该 Environment，不保留仓库级副本。
 - `pubspec.lock` 纳入版本控制，CI 和发布流程均使用 `--enforce-lockfile` 保证依赖解析可复现。
 
@@ -153,7 +153,7 @@ lib/
 - `android/app/src/main/kotlin/com/niki/xxread/IncomingBookIntentBridge.kt`：接收 TXT/EPUB 的 `ACTION_VIEW`、`ACTION_SEND` 与 `ACTION_SEND_MULTIPLE`，在临时授权失效前流式物化、校验并持久化请求清单；Dart 完成导入后确认清理。`SafDirectoryBridge.kt` 使用标准 `DocumentsContract` 递归扫描已授权目录，在后台线程物化文件，并通过 MediaStore 向公共下载目录导出书籍；目录扫描不使用 direct-child、MediaStore 或文件描述符旁路。`BookImportSourceService` 会复核物化文件大小后再交给哈希与托管副本流程。
 - `ios/Runner/IncomingBookBridge.swift`、自定义 SceneDelegate 与 Share Extension：Document Types 负责“在开元阅读中打开”，Share Extension 通过 App Group inbox 把分享文件交给主应用；security-scoped URL 只在协调复制期间持有。`StorageBridge.swift` 负责系统文档导出面板。
 - macOS 注册书籍 Document Types 并把 open-files 事件物化到缓存；Windows/Linux 从启动参数接收文件，Linux bundle 附带 MIME `.desktop` 声明。系统关联是否自动注册仍取决于正式安装/打包方式。
-- 独立仓库 `miloquinn/open-reading-web` 负责 `open.xxread.top` 的页面、版本化 latest API、镜像导入、下载统计、后台、生产部署与运行数据安全；其发布和数据结构文档不再由客户端仓库重复维护。
+- 独立仓库 `miloquinn/origo-web` 负责 `open.xxread.top` 的页面、版本化 latest API、镜像导入、下载统计、后台、生产部署与运行数据安全；其发布和数据结构文档不再由客户端仓库重复维护。
 - `.github/workflows/release.yml` 在 GitHub Release 完成后仍通过受控 SSH 导入官网镜像，并使用 `tool/official_site/verify_official_download.py` 下载、核对官网 arm64 APK 的元数据、大小和 SHA-256。
 - `marketing/app-store/` 保存官网 WebP 的原始截图来源；界面更新时需要同步向独立官网仓库提交新的 `app/static/product/*-latest.webp`。
 
@@ -163,7 +163,7 @@ lib/
 - `services/core/first_home_support_intro_service.dart`：以 SharedPreferences 键 `first_home_support_intro_seen_v1` 原子领取一次性展示资格。
 - `assets/images/cyber_begging_paper.png`：无背景 RGBA 纸张素材；阴影与悬浮层次由运行时 UI 绘制，不写入图片本身。
 - “立即支持”切换到设置页并滚动到捐赠卡片；“再说吧”关闭浮层。入口只在当前会话刚完成欢迎协议时请求展示，已领取后不重复出现。
-- 设计拆解、关键参数和可复用 Flutter 源码示例已沉淀到个人知识库：`/Users/xiaoyuan/work/knowledge-base/projects/open-reading/cyber-begging-paper-unroll-ui.md`；知识库总入口为 `/Users/xiaoyuan/work/knowledge-base/README.md` 的“项目经验索引”。
+- 设计拆解、关键参数和可复用 Flutter 源码示例已沉淀到个人知识库：`/Users/xiaoyuan/work/knowledge-base/projects/origo-x/cyber-begging-paper-unroll-ui.md`；知识库总入口为 `/Users/xiaoyuan/work/knowledge-base/README.md` 的“项目经验索引”。
 
 ## 字体架构
 
@@ -175,7 +175,7 @@ lib/
 - `AppSettingsNotifier` 持久化书库卡片/纯封面网格模式与手机网格 2/3 列密度；手机严格按选择列数显示，平板和桌面按同一封面密度响应式增加列数。卡片模式保留既有书名、进度等信息，纯封面网格仍支持点击阅读与长按管理。
 - `CustomFontService` 在原生平台负责 TTF/OTF 校验、SHA-256 去重、运行时 `FontLoader` 注册、清单恢复和文件删除；导入时只读解析 SFNT `fvar` 表中的 `wght` 轴并持久化真实范围，旧清单会对本地原文件回扫一次补齐元数据。Web 首版不提供持久化字体导入。
 - `OnlineFontService` 将下载进度保留在独立、节流的局部监听器中，网络分块不再触发 `AppSettingsNotifier` 全局重建；大字体签名与 SHA-256 校验、ZIP 条目解压在后台 isolate 完成，UI isolate 只承担最终 `FontLoader` 注册。官方字体只提供 ZIP 总包时，优先用受限 HTTP Range 读取指定 Deflate 条目；若网络代理忽略 Range 并返回 `200` 整包，则在 128 MiB 上限内从固定偏移安全截取目标条目。两条路径解压后都必须通过大小、字体签名和固定 SHA-256 校验。
-- 用户字体使用 `custom_<hash>` 稳定 ID 和 `OpenReadingCustom_<hash>` 运行时 family，避免同名字体互相覆盖。
+- 用户字体使用 `custom_<hash>` 稳定 ID 和 `OrigoReaderCustom_<hash>` 运行时 family，避免同名字体互相覆盖。
 - 删除正在使用的用户字体时，App 字体与阅读字体分别恢复各自默认值；阅读字体 ID 仍参与分页布局签名。
 - 在线字体的许可原文保存在 `assets/fonts/licenses/`，通过应用内许可页离线展示；HarmonyOS Sans 只从华为官方包读取未修改的 SC Regular，并保留专用字体协议显著声明。`FontOption` 对在线和用户导入字体统一记录真实变量 `wght` 轴范围；阅读字重控件会区分变量字体与固定字重/系统合成效果。用户自行导入字体仍由用户负责确认授权范围。
 
@@ -187,7 +187,7 @@ lib/
 - 文件选择器扩展名只使用 `BookFormatRegistry.pickerExtensions`（当前含 txt/epub/pdf/mobi/azw/azw3/fb2/rtf/doc/docx/html/htm/xhtml/md/markdown/cbz/cbt/cbr/cb7；zip/rar 为 planned，实现前不进选择器）。
 - 漫画容器（cbz/cbt/cbr/cb7）仍从 `ComicReaderPage` 打开；在线图片源仍从 `OnlineComicReaderPage` 打开。两条入口共用 `ImageReaderHost` + `ImageReaderSource` 会话，页渲染继续走 `PagedImageReader`。`comic_book_parser.dart` 按文件头识别真实容器（ZIP/TAR 可解，改名的 CBR/CB7 自动识别），真 RAR/7z 抛类型化异常并展示本地化「转 CBZ」提示。
 - 漫画与 PDF 共用 `pages/reader/image/paged_image_reader.dart` 控制层：共享 3×3 点击区域（RTL 镜像列）、Android 音量键翻页与屏幕常亮，底栏含上/下一页、进度滑条与跳页输入；`core/reader/paged_image_reader_settings.dart` 按书持久化阅读方向（日漫从右到左）、全局持久化页面背景色（黑/灰/白），屏幕常亮与音量键开关与文字阅读器共用同一偏好键。
-- Lightink 1.22 对照：TXT/EPUB 完整文本引擎；ZIP/RAR 容器；MOBI/AZW3 仅 UI 级；PDF 无阅读引擎。Open Reading 在 Kindle/PDF/FB2 等上目标不低于并部分超过 Lightink。
+- Lightink 1.22 对照：TXT/EPUB 完整文本引擎；ZIP/RAR 容器；MOBI/AZW3 仅 UI 级；PDF 无阅读引擎。Origo X 在 Kindle/PDF/FB2 等上目标不低于并部分超过 Lightink。
 
 ## 阅读器架构
 
@@ -303,7 +303,7 @@ EPUB 图片块与其后的正文共用同一个显示投影：携带图片的第
 
 书源服务边界：
 
-- `BookSourceRegistry`：注册和启用状态。所有结构合法的导入记录都会保留；`loadRunnable()` 才按全局协议开关和本地运行能力缩小运行集合。换源等交互入口使用 `loadRunnableInBackground()`，把大型注册表 JSON 解码、阅读书源兼容扫描和运行门禁过滤移到后台 isolate，主 isolate 只恢复已筛选记录。原生平台把注册表作为单独 JSON 文件原子写入应用支持目录；启动时会在任何全局偏好缓存预热之前，把旧版 `open_reading_book_sources_v1` SharedPreferences 大字段迁出并删除，Web 与缺少文件插件的测试环境保留旧存储回退。批量导入只序列化和写入一次且直接返回内存结果，单项/批量变更通过全局异步尾队列串行，避免并发覆盖。
+- `BookSourceRegistry`：注册和启用状态。所有结构合法的导入记录都会保留；`loadRunnable()` 才按全局协议开关和本地运行能力缩小运行集合。换源等交互入口使用 `loadRunnableInBackground()`，把大型注册表 JSON 解码、阅读书源兼容扫描和运行门禁过滤移到后台 isolate，主 isolate 只恢复已筛选记录。原生平台把注册表作为单独 JSON 文件原子写入应用支持目录；启动时会在任何全局偏好缓存预热之前，把旧版 `origo_x_book_sources_v1` SharedPreferences 大字段迁出并删除，Web 与缺少文件插件的测试环境保留旧存储回退。批量导入只序列化和写入一次且直接返回内存结果，单项/批量变更通过全局异步尾队列串行，避免并发覆盖。
 - `BookSourceClient`：协议请求。ORSP 清单、推荐、分类、浏览和详情使用按书源 API/协议版本/操作/分页参数隔离的响应缓存；TTL 分别按数据变化频率设置，手动刷新先清除当前范围缓存。搜索结果只进入短期内存缓存，带取消令牌的搜索不共享在途请求，避免一个页面取消影响另一个调用方。阅读书源运行时响应可能包含变量或认证派生状态，因此不进入该持久缓存。
 - `BookSourceResponseCache`：公开书源元数据的有界两级缓存。原生平台使用 48 项/4 MiB 内存 LRU 与 160 项/16 MiB 临时目录 JSON 缓存，Web 端条件导出为同配额的内存实现；冷缓存并发请求共享一次加载，响应进入内存后立即返回，JSON 编码、磁盘写入、原子替换和配额清理在有序后台队列完成。单 key/前缀失效只推进相关活动代次并建立磁盘读取屏障，全部清空才推进全局 epoch；活动代次在对应加载和写入结束后释放，既阻止旧结果复活，也不无限积累或牵连其他书源。损坏、过期、失败或取消结果不会持久化。
 - `BookSourceChangeService`：手动整书换源编排。以最多 12 个 worker 有界并发搜索当前来源之外的已启用书源，每源搜索预算 6 秒；优先搜索 ORSP、已完整验证的阅读书源和配置中 `respondTime` 较低的来源，再按 `customOrder` 与名称稳定排序。取消订阅或单源超时会把取消令牌下传到 ORSP Dio 与阅读书源 HTTP 传输层，终止在途请求并释放 worker，而非只停止 UI 更新；书名必须规范化精确匹配，作者校验可由用户关闭。候选在提交前必须实际通过详情、目录和映射后当前章节正文验证。章节位置优先按完整标题、章节号匹配，再按新旧目录比例回退。

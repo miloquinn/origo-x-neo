@@ -171,7 +171,7 @@ Future<Uint8List> synthesizeNativeCloud(
             }
           : doubao
           ? {
-              'user': {'uid': 'open-reading'},
+              'user': {'uid': 'origo-x'},
               'req_params': {
                 'text': text,
                 'speaker': settings.voice,

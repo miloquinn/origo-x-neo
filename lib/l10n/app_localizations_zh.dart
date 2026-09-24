@@ -256,7 +256,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get bookSourcesNoSourcesDescription =>
-      '粘贴兼容 Open Reading Source Protocol 的服务地址即可接入。';
+      '粘贴兼容 Origo Source Protocol 的服务地址即可接入。';
 
   @override
   String get bookSourcesManageTitle => '已接入书源';
@@ -617,7 +617,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bookSourcesRefreshFailed => '无法刷新该书源';
 
   @override
-  String get bookSourcesProtocolTitle => 'Open Reading Source Protocol';
+  String get bookSourcesProtocolTitle => 'Origo Source Protocol';
 
   @override
   String get bookSourcesInformationTitle => '协议与说明';
@@ -1065,7 +1065,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fontMonospaceDescription => '等宽字体，适合代码、技术内容和专注排版。';
 
   @override
-  String get fontPreviewText => 'Origo · 自由阅读，开卷有益';
+  String get fontPreviewText => 'Origo X · 自由阅读，开卷有益';
 
   @override
   String get customFonts => '我的字体';
@@ -1222,7 +1222,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsQqChannel => 'QQ 频道';
 
   @override
-  String get settingsQqChannelSubtitle => '开元阅读 · Origo6';
+  String get settingsQqChannelSubtitle => '开元阅读 · Origo X';
 
   @override
   String get settingsQqChannelOpenFailed => '无法打开 QQ 频道邀请链接';
@@ -1238,6 +1238,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get languageJapanese => '日本語';
+
+  @override
+  String get languageGerman => 'Deutsch';
+
+  @override
+  String get languageSpanish => 'Español';
+
+  @override
+  String get languageFrench => 'Français';
+
+  @override
+  String get languageItalian => 'Italiano';
+
+  @override
+  String get languagePortuguese => 'Português';
+
+  @override
+  String get languageRussian => 'Русский';
 
   @override
   String get languageTraditionalChinese => '繁體中文';
@@ -2931,7 +2949,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get openSourceLicensesIntro =>
-      '以下许可文本及声明随应用离线提供。Origo、在线字体及第三方软件分别遵循各自的许可条款。';
+      '以下许可文本及声明随应用离线提供。Origo X、在线字体及第三方软件分别遵循各自的许可条款。';
 
   @override
   String get openSourceProjectSection => '项目许可';
@@ -2952,7 +2970,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get openSourceDependenciesSubtitle => '查看由 Flutter 自动收集的第三方软件许可';
 
   @override
-  String get openSourceLicenseLegalese => 'Origo 与第三方组件分别遵循各自的许可条款。';
+  String get openSourceLicenseLegalese => 'Origo X 与第三方组件分别遵循各自的许可条款。';
 
   @override
   String get openSourceLicenseLoadFailed => '无法加载许可文本。';
@@ -3964,10 +3982,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importSelectFiles => '选择文件';
 
   @override
-  String get importIosSharedDocuments => '我的 iPhone · Origo';
+  String get importIosSharedDocuments => '我的 iPhone · Origo X';
 
   @override
-  String get importICloudDrive => 'iCloud Drive · Origo';
+  String get importICloudDrive => 'iCloud Drive · Origo X';
 
   @override
   String get importICloudUnavailable => 'iCloud Drive 当前不可用';
@@ -4558,7 +4576,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get agreementV2SourceBoundaryPoint1 =>
-      '官方只提供开源阅读软件和 Open Reading Source Protocol，不提供书源地址或官方书源目录。';
+      '官方只提供开源阅读软件和 Origo Source Protocol，不提供书源地址或官方书源目录。';
 
   @override
   String get agreementV2SourceBoundaryPoint2 =>
@@ -5288,6 +5306,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountSendBothCodes => '向两个邮箱发送验证码';
+
+  @override
+  String get accountChangeEmailEnterRelayHint =>
+      '当前邮箱是 Apple 隐藏邮箱，无法接收验证码邮件。我们只会向新邮箱发送一个验证码。';
+
+  @override
+  String get accountChangeEmailVerifyRelayHint =>
+      '当前是 Apple 隐藏邮箱，无需其验证码。输入新邮箱中的验证码即可完成更换。';
+
+  @override
+  String get accountCurrentPasswordInstead => '当前密码（可代替验证码）';
+
+  @override
+  String get accountRelayEmailTitle => '正在使用 Apple 隐藏邮箱';
+
+  @override
+  String get accountRelayEmailBody =>
+      '你的登录邮箱是 Apple 的隐藏转发邮箱，验证码等邮件可能无法送达。建议更换为你常用的邮箱地址。';
 
   @override
   String get accountChangeEmailAction => '确认更换邮箱';
@@ -6803,7 +6839,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get bookSourcesNoSourcesDescription =>
-      '貼上相容 Open Reading Source Protocol 的服務位址即可接入。';
+      '貼上相容 Origo Source Protocol 的服務位址即可接入。';
 
   @override
   String get bookSourcesManageTitle => '已接入書源';
@@ -7164,7 +7200,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get bookSourcesRefreshFailed => '無法重新整理此書源';
 
   @override
-  String get bookSourcesProtocolTitle => 'Open Reading Source Protocol';
+  String get bookSourcesProtocolTitle => 'Origo Source Protocol';
 
   @override
   String get bookSourcesInformationTitle => '協定與說明';
@@ -7612,7 +7648,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get fontMonospaceDescription => '等寬字體，適合程式碼、技術內容和專注排版。';
 
   @override
-  String get fontPreviewText => 'Origo · 自由閱讀，開卷有益';
+  String get fontPreviewText => 'Origo X · 自由閱讀，開卷有益';
 
   @override
   String get customFonts => '我的字體';
@@ -7635,6 +7671,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get builtInFonts => '內建字體';
 
   @override
+  String get onlineFonts => '線上字型';
+
+  @override
+  String get fontDownload => '下載';
+
+  @override
+  String get fontDownloading => '下載中…';
+
+  @override
+  String get fontDownloaded => '已下載';
+
+  @override
+  String get fontDownloadFailed => '下載失敗，點擊重試';
+
+  @override
   String get fontDownloadHint => '首次使用需線上下載';
 
   @override
@@ -7644,6 +7695,31 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get fontStaticWeight => '固定字重（粗體由系統合成）';
+
+  @override
+  String get fontDeleteDownload => '刪除下載';
+
+  @override
+  String fontDeleteDownloadTitle(String name) {
+    return '刪除已下載的「$name」？';
+  }
+
+  @override
+  String fontDeleteDownloadMessage(String size) {
+    return '將釋放 $size 儲存空間。下次使用時會重新下載。';
+  }
+
+  @override
+  String get fontDownloadCancelled => '下載已取消';
+
+  @override
+  String get fontDownloadNetworkFailed => '網路錯誤，下載失敗';
+
+  @override
+  String get fontDownloadInvalid => '下載的字型檔案無效';
+
+  @override
+  String get fontDownloadUnsupported => '目前平台暫不支援線上下載字型';
 
   @override
   String get importFont => '匯入字體';
@@ -7729,7 +7805,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsQqChannel => 'QQ 頻道';
 
   @override
-  String get settingsQqChannelSubtitle => '開元閱讀 · Origo6';
+  String get settingsQqChannelSubtitle => '開元閱讀 · Origo X';
 
   @override
   String get settingsQqChannelOpenFailed => '無法開啟 QQ 頻道邀請連結';
@@ -7745,6 +7821,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get languageJapanese => '日本語';
+
+  @override
+  String get languageGerman => 'Deutsch';
+
+  @override
+  String get languageSpanish => 'Español';
+
+  @override
+  String get languageFrench => 'Français';
+
+  @override
+  String get languageItalian => 'Italiano';
+
+  @override
+  String get languagePortuguese => 'Português';
+
+  @override
+  String get languageRussian => 'Русский';
 
   @override
   String get languageTraditionalChinese => '繁體中文';
@@ -9438,7 +9532,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get openSourceLicensesIntro =>
-      '以下授權文字及聲明隨應用程式離線提供。Origo、線上字型及第三方軟體分別適用各自的授權條款。';
+      '以下授權文字及聲明隨應用程式離線提供。Origo X、線上字型及第三方軟體分別適用各自的授權條款。';
 
   @override
   String get openSourceProjectSection => '專案授權';
@@ -9459,7 +9553,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get openSourceDependenciesSubtitle => '查看由 Flutter 自動彙整的第三方軟體授權';
 
   @override
-  String get openSourceLicenseLegalese => 'Origo 與第三方元件分別適用各自的授權條款。';
+  String get openSourceLicenseLegalese => 'Origo X 與第三方元件分別適用各自的授權條款。';
 
   @override
   String get openSourceLicenseLoadFailed => '無法載入授權文字。';
@@ -10471,10 +10565,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importSelectFiles => '選擇檔案';
 
   @override
-  String get importIosSharedDocuments => '我的 iPhone · Origo';
+  String get importIosSharedDocuments => '我的 iPhone · Origo X';
 
   @override
-  String get importICloudDrive => 'iCloud Drive · Origo';
+  String get importICloudDrive => 'iCloud Drive · Origo X';
 
   @override
   String get importICloudUnavailable => 'iCloud Drive 目前無法使用';
@@ -11065,7 +11159,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get agreementV2SourceBoundaryPoint1 =>
-      '官方只提供開源閱讀軟體和 Open Reading Source Protocol，不提供書源位址或官方書源目錄。';
+      '官方只提供開源閱讀軟體和 Origo Source Protocol，不提供書源位址或官方書源目錄。';
 
   @override
   String get agreementV2SourceBoundaryPoint2 =>
@@ -11764,7 +11858,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountSecurityTitle => '帳號安全';
 
   @override
+  String get accountSecurityLoading => '正在讀取安全狀態…';
+
+  @override
   String get accountChangeEmailTitle => '更換電子郵件';
+
+  @override
+  String get accountChangeEmailEnterTitle => '填寫新電子郵件';
+
+  @override
+  String get accountChangeEmailEnterHint => '我們會分別向目前電子郵件和新電子郵件發送一個驗證碼。';
+
+  @override
+  String get accountChangeEmailVerifyTitle => '驗證兩個電子郵件';
+
+  @override
+  String get accountChangeEmailVerifyHint => '輸入兩封郵件中的驗證碼，完成登入電子郵件更換。';
 
   @override
   String get accountCurrentEmail => '目前電子郵件';
@@ -11782,6 +11891,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountSendBothCodes => '向兩個信箱傳送驗證碼';
 
   @override
+  String get accountChangeEmailEnterRelayHint =>
+      '目前信箱是 Apple 隱藏信箱，無法接收驗證碼郵件。我們只會向新信箱發送一個驗證碼。';
+
+  @override
+  String get accountChangeEmailVerifyRelayHint =>
+      '目前是 Apple 隱藏信箱，無需其驗證碼。輸入新信箱中的驗證碼即可完成更換。';
+
+  @override
+  String get accountCurrentPasswordInstead => '目前密碼（可代替驗證碼）';
+
+  @override
+  String get accountRelayEmailTitle => '正在使用 Apple 隱藏信箱';
+
+  @override
+  String get accountRelayEmailBody =>
+      '你的登入信箱是 Apple 的隱藏轉發信箱，驗證碼等郵件可能無法送達。建議更換為你常用的信箱位址。';
+
+  @override
   String get accountChangeEmailAction => '確認更換電子郵件';
 
   @override
@@ -11789,6 +11916,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get accountChangePasswordTitle => '設定或更換密碼';
+
+  @override
+  String get accountPasswordEmailTitle => '先驗證目前電子郵件';
+
+  @override
+  String get accountPasswordEmailHint => '發送驗證碼到目前電子郵件，驗證後再設定新密碼。';
+
+  @override
+  String get accountPasswordNewTitle => '設定新密碼';
+
+  @override
+  String get accountPasswordNewHint => '輸入郵件驗證碼，並設定下次登入使用的密碼。';
 
   @override
   String get accountNewPassword => '新密碼';
@@ -11810,6 +11949,41 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get accountMfaDisabledByDefault => '預設關閉。開啟後可保護密碼和電子郵件驗證碼登入。';
+
+  @override
+  String get accountMfaOnTitle => '雙重驗證已開啟';
+
+  @override
+  String get accountMfaEmailTitle => '先驗證目前電子郵件';
+
+  @override
+  String accountMfaEmailHint(String email) {
+    return '我們會向 $email 發送一個開啟驗證碼。';
+  }
+
+  @override
+  String get accountMfaEmailCodeTitle => '輸入郵件驗證碼';
+
+  @override
+  String get accountMfaEmailCodeHint => '驗證完成後，下一個頁面才會顯示驗證器 QR 碼和金鑰。';
+
+  @override
+  String get accountMfaAuthenticatorTitle => '將開元閱讀加入驗證器';
+
+  @override
+  String get accountMfaAuthenticatorHint => '掃描 QR 碼或手動輸入金鑰，再填寫驗證器產生的六位動態碼。';
+
+  @override
+  String get accountMfaQrCodeLabel => '驗證器設定 QR 碼';
+
+  @override
+  String get accountMfaSecretLabel => '設定金鑰';
+
+  @override
+  String get accountMfaSecretCopied => '設定金鑰已複製';
+
+  @override
+  String get accountMfaRecoveryTitle => '儲存復原碼';
 
   @override
   String get accountMfaChallengeTitle => '雙重驗證';
@@ -11872,10 +12046,28 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountRedeemPremium => '兌換並永久解鎖';
 
   @override
+  String get accountApplePurchase => '透過 App Store 永久解鎖';
+
+  @override
+  String get accountApplePurchaseHint => '一次購買，永久綁定目前開元閱讀帳號，並同步到支援的平台。';
+
+  @override
   String get accountAppleProductLoading => '正在取得商品資訊…';
 
   @override
   String get accountAppleProductRetry => '商品資訊載入失敗，點一下重試';
+
+  @override
+  String get accountAppleRestore => '恢復購買';
+
+  @override
+  String get accountApplePurchasePending => '購買正在等待 App Store 確認';
+
+  @override
+  String get accountApplePurchaseSubmitted => '購買已提交，正在驗證高級版權益';
+
+  @override
+  String get accountAppleRestoreSubmitted => '已請求恢復購買';
 
   @override
   String get accountPremiumUnlocked => '永久高級版已解鎖';

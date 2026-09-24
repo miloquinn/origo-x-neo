@@ -124,6 +124,24 @@ class SourceCoverCache {
   int get queuedPreloadRequests => _preloadWaiters.length;
   int get memorySizeBytes => _memoryBytes;
 
+  /// Returns bytes that are already resident in the memory cache without
+  /// starting a load, or null when the cover is not loaded yet.
+  ///
+  /// Cover widgets use this to paint a cached cover on their first frame.
+  /// Going through [load] instead always costs at least one placeholder
+  /// frame, because even an instantly-resolved future notifies the Future
+  /// builder only on the next frame.
+  Uint8List? peek(Uri uri, {Map<String, String> headers = const {}}) {
+    _validateUri(uri);
+    final key =
+        'default:${_key(uri, Map<String, String>.unmodifiable(headers))}';
+    final bytes = _memory.remove(key);
+    if (bytes == null) return null;
+    // Refresh LRU recency the same way a load hit would.
+    _memory[key] = bytes;
+    return bytes;
+  }
+
   Future<Uint8List> load(
     Uri uri, {
     Map<String, String> headers = const {},

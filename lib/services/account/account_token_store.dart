@@ -23,7 +23,7 @@ class SecurePendingDeviceAuthorizationStore
   SecurePendingDeviceAuthorizationStore([FlutterSecureStorage? storage])
     : _storage = storage ?? const FlutterSecureStorage();
 
-  static const _key = 'open_reading.account.pending_device_authorization';
+  static const _key = 'origo_x.account.pending_device_authorization';
   final FlutterSecureStorage _storage;
 
   @override
@@ -58,9 +58,9 @@ class SecureMemberTokenStore implements MemberTokenStore {
   SecureMemberTokenStore([FlutterSecureStorage? storage])
     : _storage = storage ?? const FlutterSecureStorage();
 
-  static const _accessTokenKey = 'open_reading.account.access_token';
-  static const _refreshTokenKey = 'open_reading.account.refresh_token';
-  static const _mfaPendingKey = 'open_reading.account.mfa_pending';
+  static const _accessTokenKey = 'origo_x.account.access_token';
+  static const _refreshTokenKey = 'origo_x.account.refresh_token';
+  static const _mfaPendingKey = 'origo_x.account.mfa_pending';
 
   final FlutterSecureStorage _storage;
 

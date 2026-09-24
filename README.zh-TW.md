@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assets/images/app_icon.png" width="112" alt="開元閱讀圖示">
-  <h1>開元閱讀 · Open Reading</h1>
+  <h1>開元閱讀 · Origo X</h1>
   <p>本機優先、跨平台、支援開放書源的現代電子書閱讀器</p>
   <p><a href="README.en.md">English</a> · <a href="README.md">简体中文</a> · <strong>繁體中文</strong> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.es.md">Español</a></p>
 </div>
@@ -27,18 +27,18 @@
 
 ## 開放書源協議
 
-線上書源透過獨立開源的 **Open Reading Source Protocol（ORSP）** 接入。協議定義發現、
+線上書源透過獨立開源的 **Origo Source Protocol（ORSP）** 接入。協議定義發現、
 搜尋、書籍詳情、章節目錄和正文介面。
 
-**[前往書源協議開源倉庫](https://github.com/miloquinn/open-reading-source-protocol)**
+**[前往書源協議開源倉庫](https://github.com/miloquinn/origo-source-protocol)**
 
 協議僅適用於原創、公共領域或合法授權內容，請勿用於繞過存取控制或散布未授權作品。
 
 ## 開始開發
 
 ```bash
-git clone https://github.com/miloquinn/open-reading.git
-cd open-reading
+git clone https://github.com/miloquinn/origo-x-neo.git
+cd origo-x
 flutter pub get
 flutter run
 ```

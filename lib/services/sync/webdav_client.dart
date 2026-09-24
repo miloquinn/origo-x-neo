@@ -146,7 +146,7 @@ class WebDavClient {
           '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
       final testCollection = _pathUri([
         ..._rootSegments,
-        '.open-reading-test-$suffix',
+        '.origo-x-test-$suffix',
       ]);
       final testFile = testCollection.replace(
         pathSegments: [...testCollection.pathSegments, 'probe.txt'],
@@ -156,10 +156,10 @@ class WebDavClient {
         final put = await _request(
           'PUT',
           testFile,
-          data: 'open-reading-webdav-probe',
+          data: 'origo-webdav-probe',
         );
         final get = await _request('GET', testFile);
-        if (get.data != 'open-reading-webdav-probe') {
+        if (get.data != 'origo-webdav-probe') {
           throw const WebDavSyncFailure(
             WebDavSyncErrorCode.serverIncompatible,
             'The server did not return the test file unchanged.',

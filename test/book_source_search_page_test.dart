@@ -221,7 +221,7 @@ void main() {
 
     final source = _source();
     SharedPreferences.setMockInitialValues({
-      'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
     });
     final client = _PagingBookSourceClient();
     await tester.pumpWidget(
@@ -633,7 +633,7 @@ void main() {
       AdvancedFeatureAccess.premiumUnlocked = true;
       addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
         additionalSourceProtocolsPreferenceKey: true,
       });
       final client = _DiscoveryBookSourceClient();
@@ -687,7 +687,7 @@ void main() {
       AdvancedFeatureAccess.premiumUnlocked = true;
       addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
         additionalSourceProtocolsPreferenceKey: true,
         BookSourcesPageController.preferenceKey: 'list',
       });
@@ -754,7 +754,7 @@ void main() {
       AdvancedFeatureAccess.premiumUnlocked = true;
       addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
         additionalSourceProtocolsPreferenceKey: true,
       });
       final client = _DiscoveryBookSourceClient();
@@ -795,7 +795,7 @@ void main() {
       AdvancedFeatureAccess.premiumUnlocked = true;
       addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
         additionalSourceProtocolsPreferenceKey: true,
       });
       final client = _PaginationDiscoveryClient(
@@ -854,7 +854,7 @@ void main() {
       AdvancedFeatureAccess.premiumUnlocked = true;
       addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
       SharedPreferences.setMockInitialValues({
-        'open_reading_book_sources_v1': jsonEncode([source.toJson()]),
+        'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
         additionalSourceProtocolsPreferenceKey: true,
       });
       final client = _PaginationDiscoveryClient(

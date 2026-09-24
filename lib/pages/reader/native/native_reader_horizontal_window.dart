@@ -128,7 +128,10 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
     _BookPageRef page,
     List<_NativeChapter> chapters, {
     int pagesReadDelta = 0,
+    bool allowDuringExit = false,
   }) {
+    // Exit owns the final position commit; late controller callbacks are stale.
+    if (_exitInProgress && !allowDuringExit) return;
     _hideControlsForPageTurn();
     final movedForward =
         page.chapterIndex > _chapterIndex ||
@@ -176,16 +179,21 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
       chapters[page.chapterIndex],
       page.content,
       page.chapterIndex,
+      allowDuringExit: allowDuringExit,
     );
   }
 
-  void _publishPendingHorizontalPage(List<_NativeChapter> chapters) {
+  void _publishPendingHorizontalPage(
+    List<_NativeChapter> chapters, {
+    bool allowDuringExit = false,
+  }) {
     final pending = _horizontalPageTurnTracker.take();
     if (pending == null) return;
     _publishBookPageChanged(
       pending.page,
       chapters,
       pagesReadDelta: pending.pagesReadDelta,
+      allowDuringExit: allowDuringExit,
     );
   }
 

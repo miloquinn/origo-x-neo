@@ -14,7 +14,7 @@ class GenerateChangelogTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "v9.1.0.md"
             path.write_text(
-                "# Open Reading v9.1.0\n\n"
+                "# Origo X v9.1.0\n\n"
                 "## Changes\n\n"
                 "- **Fast** reading with [details](https://example.com).\n"
                 "\n## Version\n\n- Version: `9.1.0`\n",
@@ -31,7 +31,7 @@ class GenerateChangelogTest(unittest.TestCase):
             notes_dir = Path(directory) / "release-notes"
             notes_dir.mkdir()
             (notes_dir / "v9.1.0.md").write_text(
-                "# Open Reading v9.1.0\n\n## Changes\n\n- New feature\n",
+                "# Origo X v9.1.0\n\n## Changes\n\n- New feature\n",
                 encoding="utf-8",
             )
             existing = {
@@ -96,7 +96,7 @@ class GenerateChangelogTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "v2.6.7.md"
             path.write_text(
-                "# Open Reading v2.6.7\n\n"
+                "# Origo X v2.6.7\n\n"
                 "## Changes\n\n- Fix\n\n"
                 "## 版本信息\n\n"
                 "- 版本：`2.6.7`\n"
@@ -114,7 +114,7 @@ class GenerateChangelogTest(unittest.TestCase):
             notes_dir = Path(directory) / "release-notes"
             notes_dir.mkdir()
             (notes_dir / "v9.1.0.md").write_text(
-                "# Open Reading v9.1.0\n\n"
+                "# Origo X v9.1.0\n\n"
                 "## Changes\n\n- New feature\n\n"
                 "## Version\n\n"
                 "- Version: `9.1.0`\n"
@@ -148,13 +148,13 @@ class GenerateChangelogTest(unittest.TestCase):
             notes_dir = Path(directory) / "release-notes"
             notes_dir.mkdir()
             (notes_dir / "v9.1.0.md").write_text(
-                "# Open Reading v9.1.0\n\n"
+                "# Origo X v9.1.0\n\n"
                 "## Changes\n\n- Legacy filename\n\n"
                 "## Version\n\n- Version: `9.1.0`\n- Build number: `123`\n",
                 encoding="utf-8",
             )
             (notes_dir / "v9.1.0+123.md").write_text(
-                "# Open Reading v9.1.0\n\n## Changes\n\n- New filename\n",
+                "# Origo X v9.1.0\n\n## Changes\n\n- New filename\n",
                 encoding="utf-8",
             )
 
@@ -166,7 +166,7 @@ class GenerateChangelogTest(unittest.TestCase):
             notes_dir = Path(directory) / "release-notes"
             notes_dir.mkdir()
             (notes_dir / "v9.1.0+124.md").write_text(
-                "# Open Reading v9.1.0\n\n"
+                "# Origo X v9.1.0\n\n"
                 "## Changes\n\n- Fix\n\n"
                 "## Version\n\n- Version: `9.1.0`\n- Build number: `123`\n",
                 encoding="utf-8",
@@ -182,7 +182,7 @@ class GenerateChangelogTest(unittest.TestCase):
                     notes_dir = Path(directory) / "release-notes"
                     notes_dir.mkdir()
                     (notes_dir / f"v9.1.0+{build_number}.md").write_text(
-                        "# Open Reading v9.1.0\n\n## Changes\n\n- Fix\n",
+                        "# Origo X v9.1.0\n\n## Changes\n\n- Fix\n",
                         encoding="utf-8",
                     )
 

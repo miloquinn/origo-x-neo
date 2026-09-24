@@ -43,7 +43,7 @@ class _SourceCoverImageState extends State<SourceCoverImage> {
   @override
   void initState() {
     super.initState();
-    _bytes = _cache.load(widget.url, headers: widget.headers);
+    _bytes = _load();
   }
 
   @override
@@ -53,17 +53,28 @@ class _SourceCoverImageState extends State<SourceCoverImage> {
         oldWidget.cache != widget.cache ||
         !mapEquals(oldWidget.headers, widget.headers)) {
       _decodeRetry.reset();
-      _bytes = _cache.load(widget.url, headers: widget.headers);
+      _bytes = _load();
     }
+  }
+
+  Future<Uint8List> _load() {
+    final cached = _cache.peek(widget.url, headers: widget.headers);
+    // A memory-cache hit resolves synchronously so the first frame paints the
+    // cover instead of flashing the placeholder for one frame. Awaiting the
+    // same bytes through the cache's future always costs that frame.
+    if (cached != null) return SynchronousFuture<Uint8List>(cached);
+    return _cache.load(widget.url, headers: widget.headers);
   }
 
   void _retryAfterDecodeFailure() {
     _decodeRetry.schedule(
       isMounted: () => mounted,
       evict: () => _cache.evict(widget.url, headers: widget.headers),
-      reload: () => setState(() {
-        _bytes = _cache.load(widget.url, headers: widget.headers);
-      }),
+      reload: () {
+        setState(() {
+          _bytes = _load();
+        });
+      },
     );
   }
 

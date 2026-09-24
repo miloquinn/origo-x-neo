@@ -77,7 +77,7 @@ Android 目录只使用 SAF 持久化 URI 权限，不申请广泛存储权限�
 - `services/`：HTTP 客户端与本地书源注册表。
 
 规范和参考服务独立维护在：
-https://github.com/miloquinn/open-reading-source-protocol
+https://github.com/miloquinn/origo-source-protocol
 
 ### `lib/services/core/`
 

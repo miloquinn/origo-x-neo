@@ -168,7 +168,7 @@ class AppRelease {
     return AppRelease(
       version: version.split('+').first,
       buildNumber: canonicalBuild,
-      name: 'Origo v$version',
+      name: 'Origo X v$version',
       notes: _firstString(payload, ['release_notes', 'notes', 'body']),
       releaseUrl: Uri.parse(githubUrl),
       publishedAt: DateTime.tryParse(_string(payload, 'published_at')),
@@ -275,13 +275,13 @@ class UpdateCheckService {
             BaseOptions(
               connectTimeout: const Duration(seconds: 8),
               receiveTimeout: const Duration(seconds: 8),
-              headers: {if (!kIsWeb) 'User-Agent': 'OpenReading-UpdateCheck'},
+              headers: {if (!kIsWeb) 'User-Agent': 'OrigoReader-UpdateCheck'},
             ),
           ),
       _targetResolver = targetResolver ?? UpdateTarget.current;
 
   static const githubLatestReleaseUrl =
-      'https://api.github.com/repos/miloquinn/open-reading/releases/latest';
+      'https://api.github.com/repos/miloquinn/origo-x/releases/latest';
   static const websiteLatestReleaseUrl =
       'https://open.xxread.top/api/v1/releases/latest';
 
@@ -434,8 +434,8 @@ bool _isAllowedGithubReleaseUrl(String value) {
   return uri != null &&
       uri.scheme == 'https' &&
       uri.host.toLowerCase() == 'github.com' &&
-      (path == '/miloquinn/open-reading/releases' ||
-          path.startsWith('/miloquinn/open-reading/releases/'));
+      (path == '/miloquinn/origo-x/releases' ||
+          path.startsWith('/miloquinn/origo-x/releases/'));
 }
 
 bool _isAllowedOfficialUrl(String value) {

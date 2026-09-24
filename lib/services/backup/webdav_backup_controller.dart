@@ -200,7 +200,7 @@ class WebDavBackupController extends ChangeNotifier {
     }
   }
 
-  static final _name = RegExp(r'^open-reading-(\d+)-[a-f0-9-]+\.zip$');
+  static final _name = RegExp(r'^origo-x-(\d+)-[a-f0-9-]+\.zip$');
   static const _folder = ['backups'];
   Future<List<CloudBackup>> _list(WebDavClient client) async {
     final root = client.rootPath(_folder);
@@ -251,10 +251,10 @@ class WebDavBackupController extends ChangeNotifier {
     final archive = await _archiveFactory();
     await archive.recoverInterruptedRestore();
     final temporary = await Directory.systemTemp.createTemp(
-      'open-reading-backup-',
+      'origo-x-backup-',
     );
     final name =
-        'open-reading-${DateTime.now().toUtc().millisecondsSinceEpoch}-${const Uuid().v4()}.zip';
+        'origo-x-${DateTime.now().toUtc().millisecondsSinceEpoch}-${const Uuid().v4()}.zip';
     final remote = client.rootPath([..._folder, name]);
     var uploaded = false;
     try {
@@ -302,7 +302,7 @@ class WebDavBackupController extends ChangeNotifier {
     final archive = await _archiveFactory();
     await archive.recoverInterruptedRestore();
     final temporary = await Directory.systemTemp.createTemp(
-      'open-reading-restore-',
+      'origo-x-restore-',
     );
     ValidatedBackup? validated;
     try {

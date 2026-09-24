@@ -141,7 +141,7 @@ void main() {
     tester,
   ) async {
     final fixture = File(
-      '${Directory.systemTemp.path}/open-reading-auto-page-turn-boundary.epub',
+      '${Directory.systemTemp.path}/origo-x-auto-page-turn-boundary.epub',
     )..writeAsBytesSync(_twoChapterEpubFixture());
     fixtureFiles.add(fixture);
     SharedPreferences.setMockInitialValues({
@@ -342,7 +342,7 @@ void main() {
     tester,
   ) async {
     final fixture = File(
-      '${Directory.systemTemp.path}/open-reading-auto-scroll-boundary.epub',
+      '${Directory.systemTemp.path}/origo-x-auto-scroll-boundary.epub',
     )..writeAsBytesSync(_twoChapterEpubFixture(paragraphsPerChapter: 12));
     fixtureFiles.add(fixture);
     SharedPreferences.setMockInitialValues({
@@ -536,7 +536,7 @@ File _longHtmlFixture(List<File> fixtures, String name) => _htmlFixture(
 File _htmlFixture(List<File> fixtures, String name, String body) {
   final file =
       File(
-        '${Directory.systemTemp.path}/open-reading-auto-page-turn-$name.html',
+        '${Directory.systemTemp.path}/origo-x-auto-page-turn-$name.html',
       )..writeAsStringSync(
         '<!doctype html><html lang="en"><body>$body</body></html>',
       );

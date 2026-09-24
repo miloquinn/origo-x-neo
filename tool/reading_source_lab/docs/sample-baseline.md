@@ -21,7 +21,7 @@ Parsed **4139** sources from **3** files; duplicates: **12**; parse errors: **1*
 
 ## Feature dependency totals
 
-| Feature | Sources | Open Reading status |
+| Feature | Sources | Origo X status |
 |---|---:|---|
 | `regex` | 3312 | supported |
 | `css` | 2936 | supported |

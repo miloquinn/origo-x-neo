@@ -46,7 +46,7 @@ void main() {
     await icons.load();
 
     _previewCacheRoot = await Directory.systemTemp.createTemp(
-      'open-reading-discovery-covers-',
+      'origo-x-discovery-covers-',
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -99,7 +99,7 @@ void main() {
       try {
         final sources = List.generate(24, _previewSource, growable: false);
         SharedPreferences.setMockInitialValues({
-          'open_reading_book_sources_v1': jsonEncode(
+          'origo_x_book_sources_v1': jsonEncode(
             sources.map((source) => source.toJson()).toList(growable: false),
           ),
         });
@@ -517,7 +517,7 @@ Future<Uint8List> _createPreviewCover(String title, int index) async {
   titlePainter.dispose();
   final markPainter = TextPainter(
     text: const TextSpan(
-      text: 'OPEN READING',
+      text: 'ORIGO X',
       style: TextStyle(
         fontFamily: 'TabletPreview',
         color: Color(0xFFE8D8B5),

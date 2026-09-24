@@ -18,7 +18,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('开源与字体许可'), findsOneWidget);
-    expect(find.text('Origo'), findsOneWidget);
+    expect(find.text('Origo X'), findsOneWidget);
     expect(find.text('GNU Affero General Public License v3.0'), findsOneWidget);
     expect(find.text('Noto Serif SC / Source Han Serif'), findsOneWidget);
 
@@ -72,10 +72,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('open-reading-agpl-license')));
+    await tester.tap(find.byKey(const ValueKey('origo-x-agpl-license')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Origo · AGPL-3.0'), findsOneWidget);
+    expect(find.text('Origo X · AGPL-3.0'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (widget) =>

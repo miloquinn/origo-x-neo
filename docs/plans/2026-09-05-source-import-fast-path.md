@@ -36,7 +36,7 @@
 | 2000条 / 57,611,271 bytes | 1247.333ms | 842.326ms | 32.5% |
 | 10000条 / 15,746,671 bytes | 468.762ms | 384.351ms | 18.0% |
 
-完整每轮值保存在 `/tmp/open-reading-import-paired-benchmark.log`，临时对照文件在 `.omx/import-performance-comparison/`。此对照不是运行另一客户端的跨应用测评。
+完整每轮值保存在 `/tmp/origo-x-import-paired-benchmark.log`，临时对照文件在 `.omx/import-performance-comparison/`。此对照不是运行另一客户端的跨应用测评。
 
 ## 仍需注意的验证边界
 

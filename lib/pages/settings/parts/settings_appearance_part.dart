@@ -428,6 +428,32 @@ extension _SettingsAppearancePart on _SettingsPageState {
       case 'en-US':
       case 'en_US':
         return l10n.languageEnglish;
+      case 'de':
+      case 'de-DE':
+      case 'de_DE':
+        return l10n.languageGerman;
+      case 'es':
+      case 'es-ES':
+      case 'es_ES':
+        return l10n.languageSpanish;
+      case 'fr':
+      case 'fr-FR':
+      case 'fr_FR':
+        return l10n.languageFrench;
+      case 'it':
+      case 'it-IT':
+      case 'it_IT':
+        return l10n.languageItalian;
+      case 'pt':
+      case 'pt-BR':
+      case 'pt_BR':
+      case 'pt-PT':
+      case 'pt_PT':
+        return l10n.languagePortuguese;
+      case 'ru':
+      case 'ru-RU':
+      case 'ru_RU':
+        return l10n.languageRussian;
       default:
         return l10n.languageSystem;
     }
@@ -441,6 +467,12 @@ extension _SettingsAppearancePart on _SettingsPageState {
       _LanguageOption(code: 'zh-TW', label: l10n.languageTraditionalChinese),
       _LanguageOption(code: 'en', label: l10n.languageEnglish),
       _LanguageOption(code: 'ja', label: l10n.languageJapanese),
+      _LanguageOption(code: 'de', label: l10n.languageGerman),
+      _LanguageOption(code: 'es', label: l10n.languageSpanish),
+      _LanguageOption(code: 'fr', label: l10n.languageFrench),
+      _LanguageOption(code: 'it', label: l10n.languageItalian),
+      _LanguageOption(code: 'pt', label: l10n.languagePortuguese),
+      _LanguageOption(code: 'ru', label: l10n.languageRussian),
     ];
 
     showModalBottomSheet(
@@ -489,22 +521,28 @@ extension _SettingsAppearancePart on _SettingsPageState {
                 ),
               ),
               const SizedBox(height: 12),
-              ...options.map((option) {
-                final isSelected = appSettings.localeCode == option.code;
-                return ListTile(
-                  title: Text(option.label),
-                  trailing: isSelected
-                      ? Icon(
-                          Icons.check_circle,
-                          color: Theme.of(context).colorScheme.primary,
-                        )
-                      : null,
-                  onTap: () {
-                    appSettings.setLocaleCode(option.code);
-                    Navigator.pop(context);
-                  },
-                );
-              }),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final option in options)
+                      ListTile(
+                        title: Text(option.label),
+                        trailing: appSettings.localeCode == option.code
+                            ? Icon(
+                                Icons.check_circle,
+                                color:
+                                    Theme.of(context).colorScheme.primary,
+                              )
+                            : null,
+                        onTap: () {
+                          appSettings.setLocaleCode(option.code);
+                          Navigator.pop(context);
+                        },
+                      ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 8),
             ],
           ),

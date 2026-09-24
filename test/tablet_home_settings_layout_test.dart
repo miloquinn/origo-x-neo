@@ -45,7 +45,7 @@ void main() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     databaseDirectory = await Directory.systemTemp.createTemp(
-      'open-reading-tablet-layout-test-',
+      'origo-x-tablet-layout-test-',
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(

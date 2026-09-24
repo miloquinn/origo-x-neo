@@ -23,7 +23,7 @@ void main() {
         manifestUrl: discovered.manifestUrl,
       );
 
-      expect(source.id, 'dev.open-reading.example-source');
+      expect(source.id, 'dev.origo-x.example-source');
       expect(
         source.capabilities,
         containsAll([

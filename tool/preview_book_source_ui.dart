@@ -212,7 +212,7 @@ Future<void> _capture(
   // This explicit preview harness keeps registry state in memory.
   // ignore: invalid_use_of_visible_for_testing_member
   SharedPreferences.setMockInitialValues({
-    'open_reading_book_sources_v1': jsonEncode(
+    'origo_x_book_sources_v1': jsonEncode(
       sources.map((source) => source.toJson()).toList(growable: false),
     ),
     additionalSourceProtocolsPreferenceKey: true,

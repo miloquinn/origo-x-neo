@@ -77,7 +77,7 @@ RegExp compileReplaceRulePattern(String pattern) {
   var multiLine = false;
   var dotAll = false;
   // Reading-source JVM rules commonly place flags at the beginning or after an
-  // alternation. Preserve the historical Open Reading behavior: promote every
+  // alternation. Preserve the historical Origo X behavior: promote every
   // supported inline flag to the complete Dart expression.
   source = source.replaceAllMapped(_inlineFlags, (match) {
     final flags = match.group(1)!;

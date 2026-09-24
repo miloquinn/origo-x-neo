@@ -8,7 +8,7 @@
 
 ## 1. 目标
 
-为 Open Reading 提供本地优先、范围透明、可长期保存的阅读数据出口。用户可以：
+为 Origo X 提供本地优先、范围透明、可长期保存的阅读数据出口。用户可以：
 
 1. 将笔记、高亮和批注导出为可读、可迁移的 Markdown。
 2. 将阅读统计独立导出为适合分析的 CSV；后续可选 JSON。
@@ -292,7 +292,7 @@ date,timezone,record_kind,book_id,title,reading_seconds,pages_read
 
 ```markdown
 ---
-schema: open-reading.notes/v1
+schema: origo-x.notes/v1
 title: "思考，快与慢"
 author: "丹尼尔·卡尼曼"
 book_id: "or-book-a7c21d"
@@ -417,7 +417,7 @@ P0 manifest 只描述本次快照的结构和口径，不为尚未实现的增�
 
 ```json
 {
-  "schema": "open-reading.export/v1",
+  "schema": "origo-x.export/v1",
   "created_at": "…",
   "app_version": "…",
   "datasets": ["annotations", "reading_stats"],
@@ -672,7 +672,7 @@ P0 采用“先完整生成一个最终产物，再交给平台保存”的原�
 - 不包含账户、设备、WebDAV 凭据或本地路径；
 - 统计文件不包含笔记正文；
 - 不包含高亮前后额外上下文；
-- 文件未加密，交给第三方应用后不再受 Open Reading 控制。
+- 文件未加密，交给第三方应用后不再受 Origo X 控制。
 
 勾选 `activity_chunks.csv` 时显示：
 
@@ -704,7 +704,7 @@ P0 采用“先完整生成一个最终产物，再交给平台保存”的原�
 
 安全规则：
 
-1. 只更新带 Open Reading 稳定 ID 的应用生成区块。
+1. 只更新带 Origo X 稳定 ID 的应用生成区块。
 2. 无法识别的用户新增内容必须保留。
 3. 默认不从导出目录删除内容。
 4. 应用与 Markdown 同时修改时不静默覆盖，生成冲突副本或中止该文件。

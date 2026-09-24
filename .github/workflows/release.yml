@@ -27,7 +27,7 @@ env:
   FLUTTER_VERSION: "3.44.4"
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
   INCLUDE_MACOS: ${{ vars.MACOS_RELEASE_ENABLED == 'true' && 'true' || 'false' }}
-  PUBLIC_RELEASE_REPOSITORY: "miloquinn/open-reading"
+  PUBLIC_RELEASE_REPOSITORY: "miloquinn/origo-x"
   PUBLIC_RELEASE_TARGET: "main"
 
 jobs:
@@ -157,10 +157,10 @@ jobs:
           PY
 
           mkdir -p web-release
-          tar -C build/web -czf web-release/open-reading-web.tar.gz .
+          tar -C build/web -czf web-release/origo-web.tar.gz .
           (
             cd web-release
-            sha256sum open-reading-web.tar.gz > open-reading-web.tar.gz.sha256
+            sha256sum origo-web.tar.gz > origo-web.tar.gz.sha256
           )
 
       - name: Upload internal web deployment artifact
@@ -216,7 +216,7 @@ jobs:
             fi
           done
 
-          keystore_path="${RUNNER_TEMP}/open-reading-release.jks"
+          keystore_path="${RUNNER_TEMP}/origo-x-release.jks"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           chmod 600 "$keystore_path"
           echo "ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
@@ -278,11 +278,11 @@ jobs:
           version="${version%%+*}"
           mkdir -p release-assets
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
-            "release-assets/OpenReading-Android-arm64-v8a-${version}.apk"
+            "release-assets/OrigoReader-Android-arm64-v8a-${version}.apk"
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
-            "release-assets/OpenReading-Android-armeabi-v7a-${version}.apk"
+            "release-assets/OrigoReader-Android-armeabi-v7a-${version}.apk"
           cp build/app/outputs/flutter-apk/app-x86_64-release.apk \
-            "release-assets/OpenReading-Android-x86_64-${version}.apk"
+            "release-assets/OrigoReader-Android-x86_64-${version}.apk"
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -342,7 +342,7 @@ jobs:
           New-Item -ItemType Directory -Path release-assets -Force | Out-Null
           Compress-Archive `
             -Path 'build/windows/x64/runner/Release/*' `
-            -DestinationPath "release-assets/OpenReading-Windows-x64-$version.zip" `
+            -DestinationPath "release-assets/OrigoReader-Windows-x64-$version.zip" `
             -Force
 
       - name: Upload Windows artifact
@@ -413,7 +413,7 @@ jobs:
           version="${version%%+*}"
           mkdir -p release-assets
           tar -C build/linux/x64/release -czf \
-            "release-assets/OpenReading-Linux-x64-${version}.tar.gz" bundle
+            "release-assets/OrigoReader-Linux-x64-${version}.tar.gz" bundle
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -482,9 +482,9 @@ jobs:
             exit 1
           fi
 
-          p12_path="${RUNNER_TEMP}/open-reading-developer-id.p12"
+          p12_path="${RUNNER_TEMP}/origo-x-developer-id.p12"
           notary_key_path="${RUNNER_TEMP}/AuthKey_${NOTARY_KEY_ID}.p8"
-          keychain_path="${RUNNER_TEMP}/open-reading-signing.keychain-db"
+          keychain_path="${RUNNER_TEMP}/origo-x-signing.keychain-db"
           keychain_password="$(uuidgen)$(uuidgen)"
 
           P12_PATH="$p12_path" NOTARY_KEY_PATH="$notary_key_path" python3 <<'PY'
@@ -554,9 +554,9 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$PROVISIONING_PROFILE_BASE64" ]] || { echo '::error::MACOS_PROVISIONING_PROFILE_BASE64 is missing.'; exit 1; }
-          profile_path="${RUNNER_TEMP}/OpenReading.provisionprofile"
+          profile_path="${RUNNER_TEMP}/OrigoReader.provisionprofile"
           printf '%s' "$PROVISIONING_PROFILE_BASE64" | base64 --decode > "$profile_path"
-          profile_plist="${RUNNER_TEMP}/OpenReading-profile.plist"
+          profile_plist="${RUNNER_TEMP}/OrigoReader-profile.plist"
           security cms -D -i "$profile_path" > "$profile_plist"
           PROFILE_PLIST="$profile_plist" python3 <<'PY'
           import hashlib, os, plistlib, subprocess
@@ -592,7 +592,7 @@ jobs:
           fi
 
           cp "$MACOS_PROVISIONING_PROFILE" "$app_path/Contents/embedded.provisionprofile"
-          signed_entitlements="${RUNNER_TEMP}/OpenReading-release-entitlements.plist"
+          signed_entitlements="${RUNNER_TEMP}/OrigoReader-release-entitlements.plist"
           RELEASE_ENTITLEMENTS='macos/Runner/Release.entitlements' PROFILE_PLIST="$MACOS_PROFILE_PLIST" OUTPUT_ENTITLEMENTS="$signed_entitlements" python3 <<'PY'
           import os, plistlib
           with open(os.environ['RELEASE_ENTITLEMENTS'], 'rb') as stream:
@@ -673,7 +673,7 @@ jobs:
           NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
         run: |
           set -euo pipefail
-          notarization_upload="${RUNNER_TEMP}/open-reading-notarization.zip"
+          notarization_upload="${RUNNER_TEMP}/origo-x-notarization.zip"
           ditto -c -k --sequesterRsrc --keepParent \
             "$MACOS_APP_PATH" "$notarization_upload"
 
@@ -712,7 +712,7 @@ jobs:
           mkdir -p release-assets
           ditto -c -k --sequesterRsrc --keepParent \
             "$MACOS_APP_PATH" \
-            "release-assets/OpenReading-macOS-universal-${version}.zip"
+            "release-assets/OrigoReader-macOS-universal-${version}.zip"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -731,7 +731,7 @@ jobs:
           rm -f \
             "${MACOS_P12_PATH:-}" \
             "${MACOS_NOTARY_KEY_PATH:-}" \
-            "${RUNNER_TEMP}/open-reading-notarization.zip"
+            "${RUNNER_TEMP}/origo-x-notarization.zip"
 
   ios:
     name: iOS IPA (unsigned)
@@ -799,11 +799,11 @@ jobs:
             exit 1
           fi
 
-          staging_dir="$(mktemp -d "${RUNNER_TEMP}/open-reading-ios-ipa.XXXXXX")"
+          staging_dir="$(mktemp -d "${RUNNER_TEMP}/origo-x-ios-ipa.XXXXXX")"
           trap 'rm -rf "$staging_dir"' EXIT
           mkdir -p "$staging_dir/Payload" release-assets
           cp -R "$app_path" "$staging_dir/Payload/"
-          ipa_path="release-assets/OpenReading-iOS-unsigned-${version}.ipa"
+          ipa_path="release-assets/OrigoReader-iOS-unsigned-${version}.ipa"
           (
             cd "$staging_dir"
             /usr/bin/zip -qry "$GITHUB_WORKSPACE/$ipa_path" Payload
@@ -886,15 +886,15 @@ jobs:
           version="${RELEASE_TAG#v}"
           version="${version%%+*}"
           expected_files=(
-            "OpenReading-Android-arm64-v8a-${version}.apk"
-            "OpenReading-Android-armeabi-v7a-${version}.apk"
-            "OpenReading-Android-x86_64-${version}.apk"
-            "OpenReading-iOS-unsigned-${version}.ipa"
-            "OpenReading-Windows-x64-${version}.zip"
-            "OpenReading-Linux-x64-${version}.tar.gz"
+            "OrigoReader-Android-arm64-v8a-${version}.apk"
+            "OrigoReader-Android-armeabi-v7a-${version}.apk"
+            "OrigoReader-Android-x86_64-${version}.apk"
+            "OrigoReader-iOS-unsigned-${version}.ipa"
+            "OrigoReader-Windows-x64-${version}.zip"
+            "OrigoReader-Linux-x64-${version}.tar.gz"
           )
           if [[ "$INCLUDE_MACOS" == "true" ]]; then
-            expected_files+=("OpenReading-macOS-universal-${version}.zip")
+            expected_files+=("OrigoReader-macOS-universal-${version}.zip")
           fi
           expected_files+=("SHA256SUMS.txt")
           expected_list="${RUNNER_TEMP}/expected-release-assets.txt"
@@ -1138,10 +1138,10 @@ jobs:
           macos_download_row=""
           if [[ "$INCLUDE_MACOS" == "true" ]]; then
             macos_note='- **macOS universal**：支持 Apple Silicon 与 Intel，应用已使用 Developer ID 签名并通过 Apple 公证'
-            macos_download_row="| macOS | [![macOS universal](https://img.shields.io/badge/macOS-universal-555555?logo=apple&logoColor=white)](${release_url}/OpenReading-macOS-universal-${version}.zip) |"
+            macos_download_row="| macOS | [![macOS universal](https://img.shields.io/badge/macOS-universal-555555?logo=apple&logoColor=white)](${release_url}/OrigoReader-macOS-universal-${version}.zip) |"
           fi
 
-          ios_download_row="| iOS | [![iOS IPA unsigned](https://img.shields.io/badge/iOS-IPA%20未签名-6B7280?logo=apple&logoColor=white)](${release_url}/OpenReading-iOS-unsigned-${version}.ipa)"
+          ios_download_row="| iOS | [![iOS IPA unsigned](https://img.shields.io/badge/iOS-IPA%20未签名-6B7280?logo=apple&logoColor=white)](${release_url}/OrigoReader-iOS-unsigned-${version}.ipa)"
           if [[ -n "$IOS_TESTFLIGHT_URL" ]]; then
             if [[ ! "$IOS_TESTFLIGHT_URL" =~ ^https://testflight\.apple\.com/join/[A-Za-z0-9]+$ ]]; then
               echo "::error::IOS_TESTFLIGHT_URL must be a public https://testflight.apple.com/join/<code> URL."
@@ -1156,17 +1156,17 @@ jobs:
 
           | 平台 | 下载 |
           | --- | --- |
-          | Android | [![Android APK ARM64-v8a](https://img.shields.io/badge/Android-APK%20ARM64--v8a-3DDC84?logo=android&logoColor=white)](${release_url}/OpenReading-Android-arm64-v8a-${version}.apk) [![Android APK ARMv7](https://img.shields.io/badge/Android-APK%20ARMv7-69C36D?logo=android&logoColor=white)](${release_url}/OpenReading-Android-armeabi-v7a-${version}.apk) [![Android APK x86_64](https://img.shields.io/badge/Android-APK%20x86__64-8BC34A?logo=android&logoColor=white)](${release_url}/OpenReading-Android-x86_64-${version}.apk) |
+          | Android | [![Android APK ARM64-v8a](https://img.shields.io/badge/Android-APK%20ARM64--v8a-3DDC84?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-arm64-v8a-${version}.apk) [![Android APK ARMv7](https://img.shields.io/badge/Android-APK%20ARMv7-69C36D?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-armeabi-v7a-${version}.apk) [![Android APK x86_64](https://img.shields.io/badge/Android-APK%20x86__64-8BC34A?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-x86_64-${version}.apk) |
           ${ios_download_row}
-          | Web | [![Open Reading Web](https://img.shields.io/badge/Web-在线阅读-287FCD?logo=googlechrome&logoColor=white)](https://read.xxread.top/) |
+          | Web | [![Origo X Platform](https://img.shields.io/badge/Web-在线阅读-287FCD?logo=googlechrome&logoColor=white)](https://read.xxread.top/) |
           ${macos_download_row}
-          | Windows | [![Windows x64](https://img.shields.io/badge/Windows-ZIP%20x64-0078D4?logo=windows&logoColor=white)](${release_url}/OpenReading-Windows-x64-${version}.zip) |
-          | Linux | [![Linux x64](https://img.shields.io/badge/Linux-tar.gz%20x64-FCC624?logo=linux&logoColor=black)](${release_url}/OpenReading-Linux-x64-${version}.tar.gz) |
+          | Windows | [![Windows x64](https://img.shields.io/badge/Windows-ZIP%20x64-0078D4?logo=windows&logoColor=white)](${release_url}/OrigoReader-Windows-x64-${version}.zip) |
+          | Linux | [![Linux x64](https://img.shields.io/badge/Linux-tar.gz%20x64-FCC624?logo=linux&logoColor=black)](${release_url}/OrigoReader-Linux-x64-${version}.tar.gz) |
 
           - Android arm64-v8a 适合绝大多数现代 Android 设备；ARMv7 适合较旧的 32 位设备；x86_64 适合模拟器或少数 x86_64 设备。
           - iOS 未签名 IPA 仅供开发者自行签名或重新打包，不能直接安装；普通测试请使用 TestFlight。
           - Web 版无需下载，在现代浏览器中直接打开即可开始阅读。
-          - Windows 解压 ZIP 后运行 \`xxread.exe\`；Linux 解压后运行 \`bundle/open_reading\`，需要 GTK 3 运行环境。
+          - Windows 解压 ZIP 后运行 \`xxread.exe\`；Linux 解压后运行 \`bundle/origo_x\`，需要 GTK 3 运行环境。
           - [![SHA-256 checksums](https://img.shields.io/badge/SHA--256-校验清单-4B8BBE)](${release_url}/SHA256SUMS.txt)
           ${macos_note}
 
@@ -1243,8 +1243,8 @@ jobs:
             echo "::error::Official-site SSH port has an invalid format."
             exit 1
           fi
-          if [[ "$SSH_USER" != "open-reading-release" ]]; then
-            echo "::error::Web deployment requires the restricted open-reading-release account."
+          if [[ "$SSH_USER" != "origo-x-release" ]]; then
+            echo "::error::Web deployment requires the restricted origo-x-release account."
             exit 1
           fi
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\+[1-9][0-9]*)?$ ]] \
@@ -1259,7 +1259,7 @@ jobs:
           ssh_dir="${RUNNER_TEMP}/web-deployment-ssh"
           identity_file="${ssh_dir}/identity"
           known_hosts_file="${ssh_dir}/known_hosts"
-          remote_dir="/tmp/open-reading-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          remote_dir="/tmp/origo-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           target="${SSH_USER}@${SSH_HOST}"
           mkdir -p "$ssh_dir"
           printf '%s\n' "$SSH_PRIVATE_KEY" | sed 's/\r$//' > "$identity_file"
@@ -1314,7 +1314,7 @@ jobs:
           remote_created=true
           scp "${scp_options[@]}" web-deployment/* "${target}:${remote_dir}/"
           ssh "${ssh_options[@]}" "$target" \
-            "sudo -n -- /usr/local/sbin/open-reading-deploy-web \
+            "sudo -n -- /usr/local/sbin/origo-x-deploy-web \
               --source '${remote_dir}' \
               --tag '${RELEASE_TAG}' \
               --repository '${PUBLIC_RELEASE_REPOSITORY}' \
@@ -1391,15 +1391,15 @@ jobs:
           gh release download "$RELEASE_TAG" --dir "$bundle_dir"
 
           expected_files=(
-            "OpenReading-Android-arm64-v8a-${version}.apk"
-            "OpenReading-Android-armeabi-v7a-${version}.apk"
-            "OpenReading-Android-x86_64-${version}.apk"
-            "OpenReading-iOS-unsigned-${version}.ipa"
-            "OpenReading-Linux-x64-${version}.tar.gz"
-            "OpenReading-Windows-x64-${version}.zip"
+            "OrigoReader-Android-arm64-v8a-${version}.apk"
+            "OrigoReader-Android-armeabi-v7a-${version}.apk"
+            "OrigoReader-Android-x86_64-${version}.apk"
+            "OrigoReader-iOS-unsigned-${version}.ipa"
+            "OrigoReader-Linux-x64-${version}.tar.gz"
+            "OrigoReader-Windows-x64-${version}.zip"
           )
           if [[ "$INCLUDE_MACOS" == "true" ]]; then
-            expected_files+=("OpenReading-macOS-universal-${version}.zip")
+            expected_files+=("OrigoReader-macOS-universal-${version}.zip")
           fi
           expected_files+=("SHA256SUMS.txt")
           for filename in "${expected_files[@]}"; do
@@ -1483,31 +1483,31 @@ jobs:
           bundle_dir = Path("official-site-bundle")
           asset_specs = [
               (
-                  f"OpenReading-Android-arm64-v8a-{version}.apk",
+                  f"OrigoReader-Android-arm64-v8a-{version}.apk",
                   "android",
                   "apk",
                   "arm64-v8a",
               ),
               (
-                  f"OpenReading-Android-armeabi-v7a-{version}.apk",
+                  f"OrigoReader-Android-armeabi-v7a-{version}.apk",
                   "android",
                   "apk",
                   "armeabi-v7a",
               ),
               (
-                  f"OpenReading-Android-x86_64-{version}.apk",
+                  f"OrigoReader-Android-x86_64-{version}.apk",
                   "android",
                   "apk",
                   "x86_64",
               ),
-              (f"OpenReading-iOS-unsigned-{version}.ipa", "ios", "ipa", "universal"),
-              (f"OpenReading-Windows-x64-{version}.zip", "windows", "zip", "x64"),
-              (f"OpenReading-Linux-x64-{version}.tar.gz", "linux", "tar.gz", "x64"),
+              (f"OrigoReader-iOS-unsigned-{version}.ipa", "ios", "ipa", "universal"),
+              (f"OrigoReader-Windows-x64-{version}.zip", "windows", "zip", "x64"),
+              (f"OrigoReader-Linux-x64-{version}.tar.gz", "linux", "tar.gz", "x64"),
           ]
           if os.environ.get("INCLUDE_MACOS") == "true":
               asset_specs.append(
                   (
-                      f"OpenReading-macOS-universal-{version}.zip",
+                      f"OrigoReader-macOS-universal-{version}.zip",
                       "macos",
                       "zip",
                       "universal",
@@ -1662,7 +1662,7 @@ jobs:
           ssh_dir="${RUNNER_TEMP}/official-site-ssh"
           identity_file="${ssh_dir}/identity"
           known_hosts_file="${ssh_dir}/known_hosts"
-          remote_dir="/tmp/open-reading-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          remote_dir="/tmp/origo-x-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           bundle_dir="${GITHUB_WORKSPACE}/official-site-bundle"
           target="${SSH_USER}@${SSH_HOST}"
           mkdir -p "$ssh_dir"
@@ -1720,7 +1720,7 @@ jobs:
           scp "${scp_options[@]}" "${bundle_dir}/"* "${target}:${remote_dir}/"
 
           ssh "${ssh_options[@]}" "$target" \
-            "sudo -n -- /usr/local/sbin/open-reading-import-release \
+            "sudo -n -- /usr/local/sbin/origo-x-import-release \
               --source '${remote_dir}' \
               --tag '${RELEASE_TAG}' \
               --repository '${PUBLIC_RELEASE_REPOSITORY}' \

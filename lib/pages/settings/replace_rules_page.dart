@@ -117,7 +117,7 @@ class _ReplaceRulesPageState extends State<ReplaceRulesPage> {
     );
     final path = await FilePicker.saveFile(
       dialogTitle: context.l10n.replaceRulesExport,
-      fileName: 'open-reading-replace-rules.json',
+      fileName: 'origo-x-replace-rules.json',
       type: FileType.custom,
       allowedExtensions: const ['json'],
       bytes: Uint8List.fromList(bytes),

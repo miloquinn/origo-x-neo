@@ -573,7 +573,7 @@ void main() {
         isFalse,
       );
       final incomplete = File(
-        '${server.root.path}/OpenReading/backups/open-reading-123-abcdef.zip',
+        '${server.root.path}/OrigoReader/backups/origo-x-123-abcdef.zip',
       );
       await incomplete.writeAsString('partial');
       await controller.refresh();

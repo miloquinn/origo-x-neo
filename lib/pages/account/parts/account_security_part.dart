@@ -18,6 +18,16 @@ class _AccountSecurityPage extends StatelessWidget {
             : ListView(
                 padding: floatingSubpagePadding(context, bottom: 40),
                 children: [
+                  if (user.emailIsRelay) ...[
+                    _RelayEmailBannerCard(
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => const _ChangeEmailPage(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   _LoginMethodsCard(user: user),
                   const SizedBox(height: 16),
                   _SectionCard(
@@ -96,9 +106,66 @@ class _ChangeEmailPage extends StatefulWidget {
   State<_ChangeEmailPage> createState() => _ChangeEmailPageState();
 }
 
+/// “你正在使用 Apple 隐藏邮箱”的安全提醒卡，引导用户尽早换绑常用邮箱。
+class _RelayEmailBannerCard extends StatelessWidget {
+  const _RelayEmailBannerCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.mark_email_unread_rounded, color: scheme.error),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  context.l10n.accountRelayEmailTitle,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: scheme.onErrorContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.accountRelayEmailBody,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: scheme.onErrorContainer,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.tonal(
+              key: const ValueKey('account-relay-email-change'),
+              onPressed: onTap,
+              child: Text(context.l10n.accountChangeEmailTitle),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ChangeEmailPageState extends State<_ChangeEmailPage> {
   final _newEmail = TextEditingController();
   final _currentEmailCode = TextEditingController();
+  final _currentPassword = TextEditingController();
   final _newEmailCode = TextEditingController();
   MemberEmailChangeChallenge? _challenge;
 
@@ -106,6 +173,7 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
   void dispose() {
     _newEmail.dispose();
     _currentEmailCode.dispose();
+    _currentPassword.dispose();
     _newEmailCode.dispose();
     super.dispose();
   }
@@ -122,7 +190,12 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
       await account.changeEmail(
         newEmail: _newEmail.text,
         currentChallengeId: challenge.currentChallengeId,
-        currentCode: _currentEmailCode.text,
+        currentCode: _currentEmailCode.text.isNotEmpty
+            ? _currentEmailCode.text
+            : null,
+        currentPassword: _currentPassword.text.isNotEmpty
+            ? _currentPassword.text
+            : null,
         newChallengeId: challenge.newChallengeId,
         newCode: _newEmailCode.text,
       );
@@ -140,6 +213,10 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
   Widget build(BuildContext context) {
     final account = context.watch<MemberAccountController>();
     final user = account.user;
+    // Apple 隐藏邮箱收不到当前侧验证码：请求前由用户标记判断，请求后以服务端回执为准。
+    final relaySkip =
+        _challenge != null ? !_challenge!.currentCodeRequired : false;
+    final relayEmail = user?.emailIsRelay ?? false;
     return FloatingSubpageScaffold(
       title: '',
       showHeader: false,
@@ -162,8 +239,12 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
                       ? context.l10n.accountChangeEmailEnterTitle
                       : context.l10n.accountChangeEmailVerifyTitle,
                   body: _challenge == null
-                      ? context.l10n.accountChangeEmailEnterHint
-                      : context.l10n.accountChangeEmailVerifyHint,
+                      ? (relayEmail
+                            ? context.l10n.accountChangeEmailEnterRelayHint
+                            : context.l10n.accountChangeEmailEnterHint)
+                      : (relaySkip
+                            ? context.l10n.accountChangeEmailVerifyRelayHint
+                            : context.l10n.accountChangeEmailVerifyHint),
                 ),
                 const SizedBox(height: 16),
                 _SectionCard(
@@ -181,6 +262,12 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
                           Icons.mark_email_unread_outlined,
                           keyboardType: TextInputType.emailAddress,
                         )
+                      else if (relaySkip)
+                        _RelayEmailNotice(
+                          message: context
+                              .l10n
+                              .accountChangeEmailVerifyRelayHint,
+                        )
                       else ...[
                         _accountTextField(
                           _currentEmailCode,
@@ -188,6 +275,15 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
                           Icons.password_rounded,
                           keyboardType: TextInputType.number,
                         ),
+                        const SizedBox(height: 12),
+                        _accountTextField(
+                          _currentPassword,
+                          context.l10n.accountCurrentPasswordInstead,
+                          Icons.key_rounded,
+                          obscure: true,
+                        ),
+                      ],
+                      if (_challenge != null) ...[
                         const SizedBox(height: 12),
                         _accountTextField(
                           _newEmailCode,
@@ -211,6 +307,41 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+/// Apple 隐藏邮箱的当前侧豁免提示，替代收不到的“当前邮箱验证码”输入框。
+class _RelayEmailNotice extends StatelessWidget {
+  const _RelayEmailNotice({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.mark_email_unread_outlined, color: scheme.error),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onErrorContainer,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

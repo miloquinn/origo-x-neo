@@ -58,12 +58,12 @@ class ReleaseVersioningPolicyTest(unittest.TestCase):
             ('v2.6.7+260908001', True), ('v2.6.7%2B260908001', True),
             ('v2.6.7%2B260908002', False), ('v2.6.7+260908001?other=1', False),
         ]:
-            namespace = {'repository': 'miloquinn/open-reading', 'tag': 'v2.6.7+260908001',
-                'metadata': {'url': 'https://github.com/miloquinn/open-reading/releases/tag/' + suffix}}
+            namespace = {'repository': 'miloquinn/origo-x', 'tag': 'v2.6.7+260908001',
+                'metadata': {'url': 'https://github.com/miloquinn/origo-x/releases/tag/' + suffix}}
             with self.subTest(suffix=suffix):
                 if accepted:
                     exec(source, namespace)
-                    self.assertEqual(namespace['expected_url'], 'https://github.com/miloquinn/open-reading/releases/tag/v2.6.7+260908001')
+                    self.assertEqual(namespace['expected_url'], 'https://github.com/miloquinn/origo-x/releases/tag/v2.6.7+260908001')
                 else:
                     with self.assertRaises(SystemExit):
                         exec(source, namespace)
@@ -78,7 +78,7 @@ class ReleaseVersioningPolicyTest(unittest.TestCase):
             ]:
                 with self.subTest(tag=tag):
                     result = subprocess.run(command, cwd=directory, capture_output=True, text=True,
-                        env={**os.environ, 'RELEASE_TAG': tag, 'PUBLIC_RELEASE_REPOSITORY': 'miloquinn/open-reading'})
+                        env={**os.environ, 'RELEASE_TAG': tag, 'PUBLIC_RELEASE_REPOSITORY': 'miloquinn/origo-x'})
                     self.assertEqual(result.returncode == 0, accepted, result.stdout + result.stderr)
 
 

@@ -1,6 +1,6 @@
 # Native Flutter Reader Widget-Layer Analysis
 
-**Repo:** `/Users/xiaoyuan/code/open-reading` **Package:** `xxread`
+**Repo:** `/Users/xiaoyuan/code/origo-x` **Package:** `xxread`
 
 This is a “native” (local-file / local-book) reader built in pure Flutter (no webview). The state, paging, caching, parsing and controls all live in one library split into Dart **part files** of `lib/pages/reader/native/native_reader_page.dart` (the `part ...` declarations are at lines 92-110 of that file).
 
