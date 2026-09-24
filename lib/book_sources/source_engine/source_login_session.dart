@@ -52,13 +52,26 @@ class SecureSourceLoginSessionStore implements SourceLoginSessionStore {
     : _storage = storage ?? const FlutterSecureStorage();
 
   static const _prefix = 'origo_x.source_session.';
+  // Sessions saved before the Origo X rename live under this prefix; read()
+  // migrates them lazily and clear() must drop them too, otherwise a logout
+  // would resurrect the pre-rename login on the next read.
+  static const _legacyPrefix = 'open_reading.source_session.';
   final FlutterSecureStorage _storage;
 
   String _key(String sourceId) => '$_prefix$sourceId';
+  String _legacyKey(String sourceId) => '$_legacyPrefix$sourceId';
 
   @override
   Future<SourceLoginSession> read(String sourceId) async {
-    final raw = await _storage.read(key: _key(sourceId));
+    var raw = await _storage.read(key: _key(sourceId));
+    if (raw == null) {
+      final legacy = await _storage.read(key: _legacyKey(sourceId));
+      if (legacy != null && legacy.trim().isNotEmpty) {
+        await _storage.write(key: _key(sourceId), value: legacy);
+        await _storage.delete(key: _legacyKey(sourceId));
+        raw = legacy;
+      }
+    }
     if (raw == null || raw.trim().isEmpty) return const SourceLoginSession();
     try {
       return SourceLoginSession.fromJson(jsonDecode(raw));
@@ -76,7 +89,10 @@ class SecureSourceLoginSessionStore implements SourceLoginSessionStore {
   }
 
   @override
-  Future<void> clear(String sourceId) => _storage.delete(key: _key(sourceId));
+  Future<void> clear(String sourceId) async {
+    await _storage.delete(key: _key(sourceId));
+    await _storage.delete(key: _legacyKey(sourceId));
+  }
 }
 
 Map<String, String> _stringMap(Object? value) {
