@@ -43,8 +43,8 @@ flutter build bundle --no-pub --debug --target-platform=darwin \
   --target=tool/benchmark_tablet_backdrop.dart --asset-dir=/tmp/tablet-blur-bundle
 engine_dir=/Users/xiaoyuan/flutter/bin/cache/artifacts/engine/darwin-x64
 "$engine_dir/impellerc" --runtime-stage-metal --iplr \
-  --input=shaders/tablet_variable_gaussian.frag --input-type=frag \
-  --sl=/tmp/tablet-blur-bundle/shaders/tablet_variable_gaussian.frag \
+  --input=shaders/top_variable_gaussian.frag --input-type=frag \
+  --sl=/tmp/tablet-blur-bundle/shaders/top_variable_gaussian.frag \
   --spirv=/tmp/tablet-blur.spirv --include="$engine_dir/shader_lib"
 "$engine_dir/flutter_tester" --run-forever --enable-impeller \
   --impeller-backend=metal --disable-vm-service --non-interactive \
@@ -70,7 +70,7 @@ engine_dir=/Users/xiaoyuan/flutter/bin/cache/artifacts/engine/darwin-x64
 
 ### 改动文件
 
-- `shaders/tablet_variable_gaussian.frag`：采样坐标计算及边界处理。
+- `shaders/top_variable_gaussian.frag`：采样坐标计算及边界处理（现用资源名）。
 - `lib/pages/home/home_shell_page.dart`：切页完成幂等。
 - `lib/pages/home/parts/home_shell_layout_part.dart`：下载活动状态的选择性订阅。
 - `test/home_tablet_top_backdrop_test.dart`：高 DPR 细条纹、边缘采样及可选 RGBA 导出。

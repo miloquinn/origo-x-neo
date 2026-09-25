@@ -24,7 +24,7 @@ schemaVersion: 1
 ## 实现入口
 
 - lib/widgets/gradient_top_backdrop.dart：手机、平板和桌面共用的高度与开关、Shader资源生命周期、DPR换算、降级。
-- shaders/tablet_variable_gaussian.frag：按输出位置变化的高斯卷积。
+- shaders/top_variable_gaussian.frag：按输出位置变化的高斯卷积，供手机和平板共用。
 - lib/pages/home/parts/home_shell_layout_part.dart：顶部过滤层与清晰控件分层。
 - lib/pages/home/widgets/home_tablet_toolbar.dart：清晰标题及局部文字阴影。
 - pubspec.yaml：Shader资源注册。

@@ -65,7 +65,7 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
       final program =
           _program ??
           await ui.FragmentProgram.fromAsset(
-            'shaders/tablet_variable_gaussian.frag',
+            'shaders/top_variable_gaussian.frag',
           );
       _program = program;
       if (!mounted) return;
