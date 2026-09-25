@@ -358,7 +358,7 @@
 
 ### macOS
 
-- **修复 Finder 无法打开应用**：macOS 应用内部可执行文件改用 ASCII 名称 `OrigoReader`，Finder 和 LaunchServices 不再因中文可执行入口报“应用程序无法打开”。应用在 Finder、菜单栏和窗口中仍显示为“开元阅读”。
+- **修复 Finder 无法打开应用**：macOS 应用内部可执行文件改用兼容的 ASCII 名称，Finder 和 LaunchServices 不再因中文可执行入口报“应用程序无法打开”。应用在 Finder、菜单栏和窗口中仍显示为“开元阅读”。
 - **修复本地书籍导入失败**：从系统文件选择器选中书籍后立即保存到应用沙盒，避免 macOS 临时文件访问权限失效后无法读取；导入完成只清理应用自己的暂存副本，不会删除原文件。
 - **发布流程新增真实启动检查**：签名、公证和 Gatekeeper 验证完成后，流水线会通过 LaunchServices 实际启动应用；无法从 Finder 正常启动时会阻止发布。
 
