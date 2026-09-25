@@ -22,7 +22,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/book_sources/book_sources_page.dart';
 import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/widgets/home_tablet_toolbar.dart';
-import 'package:xxread/pages/home/widgets/home_tablet_top_backdrop.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/utils/layout_helper.dart';
 import 'package:xxread/utils/ui_style.dart';
 
@@ -172,7 +172,7 @@ void main() {
                             top: 0,
                             left: 0,
                             right: 0,
-                            child: HomeTabletTopBackdrop(
+                            child: GradientTopBackdrop(
                               height: metrics.pageTopPadding,
                             ),
                           ),

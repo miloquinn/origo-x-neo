@@ -17,7 +17,7 @@ import 'package:xxread/pages/home/home_shell_page.dart';
 import 'package:xxread/pages/home/widgets/home_bounce_navigation_item.dart';
 import 'package:xxread/pages/home/widgets/home_navigation_item.dart';
 import 'package:xxread/pages/home/widgets/home_tablet_toolbar.dart';
-import 'package:xxread/pages/home/widgets/home_tablet_top_backdrop.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/services/library/download_task_controller.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
@@ -541,25 +541,23 @@ void main() {
     expect(tester.takeException(), isNull);
     // Chapter progress notifications must not rebuild the shell while the
     // download activity flag is unchanged; start/finish still update its icon.
-    final backdropFinder = find.byType(HomeTabletTopBackdrop);
+    final backdropFinder = find.byType(GradientTopBackdrop);
     final downloadIcon = find.descendant(
       of: toolbar,
       matching: find.byIcon(Icons.downloading_rounded),
     );
     final inactiveColor = tester.widget<Icon>(downloadIcon).color;
-    final inactiveBackdrop = tester.widget<HomeTabletTopBackdrop>(
-      backdropFinder,
-    );
+    final inactiveBackdrop = tester.widget<GradientTopBackdrop>(backdropFinder);
     downloads.reportActivity(true);
     await tester.pump();
-    final activeBackdrop = tester.widget<HomeTabletTopBackdrop>(backdropFinder);
+    final activeBackdrop = tester.widget<GradientTopBackdrop>(backdropFinder);
     expect(activeBackdrop, isNot(same(inactiveBackdrop)));
     expect(tester.widget<Icon>(downloadIcon).color, isNot(inactiveColor));
     for (var progress = 0; progress < 3; progress++) {
       downloads.reportActivity(true);
       await tester.pump();
       expect(
-        tester.widget<HomeTabletTopBackdrop>(backdropFinder),
+        tester.widget<GradientTopBackdrop>(backdropFinder),
         same(activeBackdrop),
       );
     }
@@ -760,7 +758,7 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(NavigationRail), findsNothing);
-    expect(find.byType(HomeTabletTopBackdrop), findsOneWidget);
+    expect(find.byType(GradientTopBackdrop), findsOneWidget);
     expect(
       tester.getTopLeft(nav(HomeNavigationDestination.home)).dy,
       lessThan(100),

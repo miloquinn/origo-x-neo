@@ -6,7 +6,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:xxread/pages/home/widgets/home_tablet_top_backdrop.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ Future<void> main() async {
                   child: Stack(
                     children: [
                       Positioned.fill(child: CustomPaint(painter: _Pattern())),
-                      HomeTabletTopBackdrop(height: 208),
+                      GradientTopBackdrop(height: 208),
                     ],
                   ),
                 ),
@@ -73,8 +73,7 @@ Future<void> main() async {
 bool _shaderLoaded(GlobalKey key) {
   var loaded = false;
   void visit(Element element) {
-    if (element.widget.key ==
-        const ValueKey('tablet-variable-gaussian-filter')) {
+    if (element.widget.key == const ValueKey('gradient-top-backdrop-filter')) {
       loaded = true;
     }
     element.visitChildren(visit);

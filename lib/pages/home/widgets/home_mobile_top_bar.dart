@@ -7,7 +7,7 @@ import 'package:xxread/widgets/glass_top_bar.dart';
 
 import '../home_mobile_chrome.dart';
 
-/// 手机首页顶部毛玻璃标题栏。
+/// 手机首页顶部渐变模糊标题栏。
 ///
 /// 只负责显示标题和视觉样式，不处理页面业务逻辑。
 class HomeMobileTopBar extends StatelessWidget {

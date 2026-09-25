@@ -1,9 +1,8 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import '../utils/glass_config.dart';
 import '../utils/ui_style.dart';
+import 'gradient_top_backdrop.dart';
 
 /// The single glass chrome surface shared by the home shell and pushed pages.
 class GlassTopBar extends StatelessWidget {
@@ -42,13 +41,30 @@ class GlassTopBar extends StatelessWidget {
         ).extension<UiStyleThemeExtension>()?.isMaterial3Style ??
         false;
     final useBlur = !isMaterial3Style && !GlassEffectConfig.shouldDisableBlur;
+    final height = topInset + contentHeight;
+    final titleStyle = TextStyle(
+      fontSize: titleFontSize,
+      fontWeight: titleFontWeight,
+      color: scheme.onSurface,
+      height: 1,
+      shadows: useBlur
+          ? [
+              Shadow(
+                color: scheme.surface.withValues(alpha: 0.9),
+                blurRadius: 10,
+              ),
+            ]
+          : null,
+    );
     final content = Container(
       key: const ValueKey('glass-top-bar-surface'),
-      height: topInset + contentHeight,
+      height: height,
       decoration: BoxDecoration(
-        color: isMaterial3Style
+        color: useBlur
+            ? Colors.transparent
+            : isMaterial3Style
             ? scheme.surfaceContainerHigh
-            : GlassEffectConfig.chromeSurfaceColor(context),
+            : scheme.surface,
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -73,12 +89,7 @@ class GlassTopBar extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: titleFontSize,
-                              fontWeight: titleFontWeight,
-                              color: scheme.onSurface,
-                              height: 1,
-                            ),
+                            style: titleStyle,
                           ),
                         ),
                       ),
@@ -94,12 +105,7 @@ class GlassTopBar extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: TextStyle(
-                        fontSize: titleFontSize,
-                        fontWeight: titleFontWeight,
-                        color: scheme.onSurface,
-                        height: 1,
-                      ),
+                      style: titleStyle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -111,16 +117,15 @@ class GlassTopBar extends StatelessWidget {
     );
 
     return ClipRect(
-      child: useBlur
-          ? BackdropFilter(
-              enabled: useBlur,
-              filter: ImageFilter.blur(
-                sigmaX: GlassEffectConfig.appBarBlur,
-                sigmaY: GlassEffectConfig.appBarBlur,
-              ),
-              child: content,
-            )
-          : content,
+      child: Stack(
+        children: [
+          if (useBlur)
+            Positioned.fill(
+              child: GradientTopBackdrop(height: height, fallbackBands: 16),
+            ),
+          content,
+        ],
+      ),
     );
   }
 }

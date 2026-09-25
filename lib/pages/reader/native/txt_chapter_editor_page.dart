@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/txt_edit_service.dart';
+import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
 import 'txt_editor_copy.dart';
@@ -267,23 +268,25 @@ class _TxtChapterEditorPageState extends State<TxtChapterEditorPage> {
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) _tryLeave();
           },
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(chapter?.title ?? copy.editChapter),
-              actions: [
-                IconButton(
-                  tooltip: copy.versionHistory,
-                  onPressed: _busy ? null : _showHistory,
-                  icon: const Icon(Icons.history_rounded),
-                ),
-                TextButton(
+          child: FloatingSubpageScaffold(
+            title: chapter?.title ?? copy.editChapter,
+            actions: [
+              FloatingSubpageAction(
+                icon: Icons.history_rounded,
+                tooltip: copy.versionHistory,
+                onPressed: _busy ? null : _showHistory,
+              ),
+              SizedBox.square(
+                dimension: 48,
+                child: TextButton(
                   onPressed: chapter == null || _busy
                       ? null
                       : () => _save(chapter),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
                   child: Text(copy.save),
                 ),
-              ],
-            ),
+              ),
+            ],
             body: chapter == null
                 ? snapshot.hasError
                       ? Center(

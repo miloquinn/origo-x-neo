@@ -33,6 +33,7 @@ import 'package:xxread/utils/system_ui_helper.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
 import 'package:xxread/widgets/first_home_support_overlay.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 import 'home_dashboard_page.dart';
 import 'home_mobile_chrome.dart';
@@ -40,7 +41,6 @@ import 'home_mobile_dashboard_page.dart';
 import 'widgets/home_bounce_navigation_item.dart';
 import 'widgets/home_mobile_top_bar.dart';
 import 'widgets/home_tablet_toolbar.dart';
-import 'widgets/home_tablet_top_backdrop.dart';
 import 'widgets/home_navigation_item.dart';
 import 'widgets/home_page_wrappers.dart';
 
@@ -55,7 +55,7 @@ part 'parts/home_shell_layout_part.dart';
 ///    - 桌面：复用平板顶部悬浮导航 + 自适应内容区
 ///
 /// 2) 真正的手机首页内容由 HomeMobileDashboardPage 渲染：
-///    - 顶部毛玻璃标题栏
+///    - 顶部渐变模糊标题栏
 ///    - 统计卡片 / 图表 / 最近阅读
 ///
 /// 3) _buildPageWrapper 是关键路由：

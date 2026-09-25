@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 void main() {
   testWidgets('renders secondary navigation without a standard app bar', (
@@ -40,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppBar), findsNothing);
-    expect(find.byType(BackdropFilter), findsOneWidget);
+    expect(find.byType(GradientTopBackdrop), findsOneWidget);
     expect(
       find.byKey(const ValueKey('floating-subpage-header')),
       findsOneWidget,
@@ -53,7 +54,19 @@ void main() {
       find.byKey(const ValueKey('glass-top-bar-surface')),
     );
     expect((glassSurface.decoration! as BoxDecoration).border, isNull);
+    expect(
+      (glassSurface.decoration! as BoxDecoration).color,
+      Colors.transparent,
+    );
     expect(find.byKey(const ValueKey('floating-subpage-back')), findsOneWidget);
+    final backAction = find.descendant(
+      of: find.byKey(const ValueKey('floating-subpage-back')),
+      matching: find.byType(IconButton),
+    );
+    expect(
+      tester.widget<IconButton>(backAction).style?.iconSize?.resolve({}),
+      28,
+    );
     expect(find.text('Cache management'), findsOneWidget);
     expect(find.text('Page tools'), findsOneWidget);
     expect(find.text('Page body'), findsOneWidget);
@@ -118,7 +131,7 @@ void main() {
       tester.getTopLeft(find.text('Content')).dy,
       lessThan(headerRect.bottom),
     );
-    expect(find.byType(BackdropFilter), findsOneWidget);
+    expect(find.byType(GradientTopBackdrop), findsOneWidget);
   });
 
   testWidgets('ellipsizes long titles between the header controls', (

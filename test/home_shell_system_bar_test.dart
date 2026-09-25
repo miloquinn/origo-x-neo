@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
 import 'package:xxread/pages/home/widgets/home_mobile_top_bar.dart';
+import 'package:xxread/widgets/glass_top_bar.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
 import 'package:xxread/utils/book_open_transition.dart';
@@ -51,6 +53,29 @@ void main() {
     expect(topBar, findsOneWidget);
     expect(tester.getTopLeft(topBar), Offset.zero);
     expect(tester.getSize(topBar).height, 84);
+    expect(find.byType(GradientTopBackdrop), findsNothing);
+  });
+
+  testWidgets('mobile glass top bar uses the shared gradient backdrop', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(viewPadding: EdgeInsets.only(top: 24)),
+          child: Scaffold(
+            body: GlassTopBar(title: 'Library', systemTopInset: 24),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(GradientTopBackdrop), findsOneWidget);
+    final backdrop = tester.widget<GradientTopBackdrop>(
+      find.byType(GradientTopBackdrop),
+    );
+    expect(backdrop.height, 84);
+    expect(backdrop.fallbackBands, 16);
   });
 
   testWidgets('book route hides and restores the floating navigation', (

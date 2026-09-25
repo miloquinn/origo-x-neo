@@ -23,7 +23,7 @@ schemaVersion: 1
 
 ## 实现入口
 
-- lib/pages/home/widgets/home_tablet_top_backdrop.dart：高度与开关、Shader资源生命周期、DPR换算、降级。
+- lib/widgets/gradient_top_backdrop.dart：手机、平板和桌面共用的高度与开关、Shader资源生命周期、DPR换算、降级。
 - shaders/tablet_variable_gaussian.frag：按输出位置变化的高斯卷积。
 - lib/pages/home/parts/home_shell_layout_part.dart：顶部过滤层与清晰控件分层。
 - lib/pages/home/widgets/home_tablet_toolbar.dart：清晰标题及局部文字阴影。
@@ -42,7 +42,7 @@ clearHeight = max(0, height - 16dp)。顶部sigma取min(appBarBlur × 2, clearHe
 
 只缓存已完成的FragmentProgram；避免缓存跨widget测试fake async zone的Future。各实例持有、释放两份FragmentShader和种子Image；异步返回检查mounted，Picture用finally释放。加载中透明，加载失败或不支持Shader过滤时降级；主Shader分支必须排除_loadFailed，防止半初始化资源绕过降级。
 
-旧Skia使用32段不同sigma的原生BackdropFilter近似，并非连续Shader实现；不要宣称不同后端完全相同。
+旧Skia使用不同sigma的原生BackdropFilter近似：平板32段、较短的手机顶栏16段；并非连续Shader实现，不要宣称不同后端完全相同。
 
 ## 已踩过的坑
 
@@ -57,8 +57,8 @@ clearHeight = max(0, height - 16dp)。顶部sigma取min(appBarBlur × 2, clearHe
 
 在仓库根目录顺序运行：
 ```sh
-flutter test --no-pub --enable-impeller test/home_tablet_top_backdrop_test.dart
-flutter test --no-pub test/home_tablet_top_backdrop_test.dart
+flutter test --no-pub --enable-impeller test/gradient_top_backdrop_test.dart
+flutter test --no-pub test/gradient_top_backdrop_test.dart
 flutter test --no-pub --enable-impeller test/tablet_home_shell_test.dart
 flutter analyze --no-pub
 git diff --check

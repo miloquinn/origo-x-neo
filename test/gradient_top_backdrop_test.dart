@@ -5,10 +5,39 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:xxread/pages/home/widgets/home_tablet_top_backdrop.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('short phone header fades its blur to a clear tail', (
+    tester,
+  ) async {
+    final blurred = await _renderBackdrop(
+      tester,
+      blurEnabled: true,
+      pattern: _BackdropPattern.verticalEdge,
+      backdropHeight: 84,
+    );
+    final original = await _renderBackdrop(
+      tester,
+      blurEnabled: false,
+      pattern: _BackdropPattern.verticalEdge,
+      backdropHeight: 84,
+    );
+
+    expect(
+      _edgeSpread(blurred, y: 12),
+      greaterThan(_edgeSpread(blurred, y: 36)),
+    );
+    expect(
+      _edgeSpread(blurred, y: 36),
+      greaterThan(_edgeSpread(blurred, y: 60)),
+    );
+    for (final y in [68, 74, 83]) {
+      expect(blurred.pixel(159, y), original.pixel(159, y));
+    }
+  });
 
   testWidgets('uses a continuously decreasing Gaussian radius', (tester) async {
     final blurred = await _renderBackdrop(
@@ -233,7 +262,7 @@ void main() {
     expect(find.byType(BackdropFilter), findsNothing);
     final ignorePointer = tester.widget<IgnorePointer>(
       find.descendant(
-        of: find.byType(HomeTabletTopBackdrop),
+        of: find.byType(GradientTopBackdrop),
         matching: find.byType(IgnorePointer),
       ),
     );
@@ -279,6 +308,7 @@ Future<_PixelBuffer> _renderBackdrop(
   required bool blurEnabled,
   required _BackdropPattern pattern,
   double devicePixelRatio = 1,
+  double backdropHeight = _backdropHeight,
 }) async {
   final boundaryKey = GlobalKey();
   await tester.pumpWidget(
@@ -287,12 +317,13 @@ Future<_PixelBuffer> _renderBackdrop(
       blurEnabled: blurEnabled,
       pattern: pattern,
       devicePixelRatio: devicePixelRatio,
+      backdropHeight: backdropHeight,
     ),
   );
   await tester.pump();
 
   if (blurEnabled && ui.ImageFilter.isShaderFilterSupported) {
-    const filterKey = ValueKey('tablet-variable-gaussian-filter');
+    const filterKey = ValueKey('gradient-top-backdrop-filter');
     for (var attempt = 0; attempt < 120; attempt++) {
       if (find.byKey(filterKey).evaluate().isNotEmpty) break;
       await tester.runAsync(
@@ -427,12 +458,14 @@ class _TestScene extends StatelessWidget {
     required this.blurEnabled,
     required this.pattern,
     required this.devicePixelRatio,
+    this.backdropHeight = _backdropHeight,
   });
 
   final GlobalKey boundaryKey;
   final bool blurEnabled;
   final _BackdropPattern pattern;
   final double devicePixelRatio;
+  final double backdropHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -460,8 +493,8 @@ class _TestScene extends StatelessWidget {
                     CustomPaint(painter: _BackdropPainter(pattern)),
                     Align(
                       alignment: Alignment.topCenter,
-                      child: HomeTabletTopBackdrop(
-                        height: _backdropHeight,
+                      child: GradientTopBackdrop(
+                        height: backdropHeight,
                         blurEnabled: blurEnabled,
                       ),
                     ),

@@ -3,25 +3,30 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../../../utils/glass_config.dart';
+import '../utils/glass_config.dart';
 
 /// Full-width, top-aligned backdrop with a Gaussian radius that decreases with y.
-/// Controls are painted separately by the shell and never enter this filter.
-class HomeTabletTopBackdrop extends StatefulWidget {
-  const HomeTabletTopBackdrop({
+/// Callers paint controls above this filter so they stay sharp.
+class GradientTopBackdrop extends StatefulWidget {
+  const GradientTopBackdrop({
     super.key,
     required this.height,
     this.blurEnabled = true,
-  }) : assert(height >= 0);
+    this.fallbackBands = 32,
+  }) : assert(height >= 0),
+       assert(fallbackBands > 0);
 
   final double height;
   final bool blurEnabled;
 
+  /// Short phone headers need fewer fallback filters than tablet backdrops.
+  final int fallbackBands;
+
   @override
-  State<HomeTabletTopBackdrop> createState() => _HomeTabletTopBackdropState();
+  State<GradientTopBackdrop> createState() => _GradientTopBackdropState();
 }
 
-class _HomeTabletTopBackdropState extends State<HomeTabletTopBackdrop> {
+class _GradientTopBackdropState extends State<GradientTopBackdrop> {
   static const _clearTail = 16.0;
   static ui.FragmentProgram? _program;
   ui.Image? _samplerSeed;
@@ -69,7 +74,7 @@ class _HomeTabletTopBackdropState extends State<HomeTabletTopBackdrop> {
         _horizontal!.setImageSampler(0, seed, filterQuality: FilterQuality.low);
       });
     } catch (error, stack) {
-      debugPrint('Tablet Gaussian shader could not load: $error');
+      debugPrint('Gradient top backdrop shader could not load: $error');
       debugPrintStack(stackTrace: stack);
       if (mounted) setState(() => _loadFailed = true);
     }
@@ -105,7 +110,7 @@ class _HomeTabletTopBackdropState extends State<HomeTabletTopBackdrop> {
       _horizontal!.setFloat(5, 0);
       filter = ClipRect(
         child: BackdropFilter(
-          key: const ValueKey('tablet-variable-gaussian-filter'),
+          key: const ValueKey('gradient-top-backdrop-filter'),
           // Vertical must run FIRST: horizontal sampling then stays on the
           // same y and uses the same sigma for both axes at each output pixel.
           filter: ui.ImageFilter.compose(
@@ -120,7 +125,7 @@ class _HomeTabletTopBackdropState extends State<HomeTabletTopBackdrop> {
       // Older Skia backends cannot run ImageFilter.shader. Approximate the
       // radius curve with narrow native Gaussian bands, never an opacity fade.
       // Draw bottom to top to limit cross-band sampling of stronger blur.
-      const bands = 32;
+      final bands = widget.fallbackBands;
       filter = Stack(
         children: [
           for (var i = bands - 1; i >= 0; i--)

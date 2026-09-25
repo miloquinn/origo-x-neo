@@ -5,12 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/reader/native/txt_chapter_editor_page.dart';
 import 'package:xxread/services/books/txt_edit_service.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 void main() {
   testWidgets('back preserves a dirty draft unless discard is chosen', (
     tester,
   ) async {
     await _open(tester, _EditorService());
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.byType(GradientTopBackdrop), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'Changed text');
     await tester.pump();
     await tester.pageBack();

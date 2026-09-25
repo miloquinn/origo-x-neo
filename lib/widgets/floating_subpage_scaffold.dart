@@ -72,13 +72,14 @@ class FloatingSubpageScaffold extends StatelessWidget {
       contentHeight: chromeContentHeight,
       titleFontSize: 22,
       centerTitleSideInset:
-          ((actions.isEmpty ? 1 : actions.length) * 48).toDouble() + 8,
+          ((actions.isEmpty ? 1 : actions.length) * 48).toDouble() + 16,
       leading: canPop
           ? FloatingSubpageAction(
               key: const ValueKey('floating-subpage-back'),
               tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               onPressed: onBack ?? () => Navigator.of(context).maybePop(),
               icon: Icons.arrow_back_rounded,
+              iconSize: 28,
             )
           : const SizedBox.square(dimension: 48),
       trailing: actions.isNotEmpty
@@ -220,11 +221,13 @@ class FloatingSubpageAction extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.iconSize = 30,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +248,7 @@ class FloatingSubpageAction extends StatelessWidget {
             backgroundColor: Colors.transparent,
             disabledBackgroundColor: Colors.transparent,
             shape: const CircleBorder(),
-            iconSize: 30,
+            iconSize: iconSize,
           ),
         ),
       ),
