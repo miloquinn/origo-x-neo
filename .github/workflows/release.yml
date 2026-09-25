@@ -907,6 +907,7 @@ jobs:
             "OrigoX-Android-arm64-v8a-${version}.apk"
             "OrigoX-Android-armeabi-v7a-${version}.apk"
             "OrigoX-Android-x86_64-${version}.apk"
+            "OrigoX-Android-Play-${version}.aab"
             "OrigoX-iOS-unsigned-${version}.ipa"
             "OrigoX-Windows-x64-${version}.zip"
             "OrigoX-Linux-x64-${version}.tar.gz"
@@ -1412,6 +1413,7 @@ jobs:
             "OrigoX-Android-arm64-v8a-${version}.apk"
             "OrigoX-Android-armeabi-v7a-${version}.apk"
             "OrigoX-Android-x86_64-${version}.apk"
+            "OrigoX-Android-Play-${version}.aab"
             "OrigoX-iOS-unsigned-${version}.ipa"
             "OrigoX-Linux-x64-${version}.tar.gz"
             "OrigoX-Windows-x64-${version}.zip"
@@ -1517,6 +1519,12 @@ jobs:
                   "android",
                   "apk",
                   "x86_64",
+              ),
+              (
+                  f"OrigoX-Android-Play-{version}.aab",
+                  "android",
+                  "aab",
+                  "universal",
               ),
               (f"OrigoX-iOS-unsigned-{version}.ipa", "ios", "ipa", "universal"),
               (f"OrigoX-Windows-x64-{version}.zip", "windows", "zip", "x64"),
