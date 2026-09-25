@@ -76,21 +76,17 @@ jobs:
     environment: release
     timeout-minutes: 5
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Check public release repository access
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "$GH_TOKEN" ]]; then
-            echo "::error::PUBLIC_RELEASE_TOKEN is missing from the release Environment."
-            exit 1
-          fi
-          if [[ "$(gh api "repos/${GH_REPO}" --jq '.permissions.push')" != "true" ]]; then
-            echo "::error::PUBLIC_RELEASE_TOKEN cannot write to ${GH_REPO}."
+          if [[ "$GH_REPO" != "$GITHUB_REPOSITORY" ]]; then
+            echo "::error::The built-in token can publish only to this workflow repository."
             exit 1
           fi
           gh api "repos/${GH_REPO}/git/ref/heads/${PUBLIC_RELEASE_TARGET}" >/dev/null
@@ -853,7 +849,7 @@ jobs:
     environment: release
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Check out release metadata
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -873,17 +869,13 @@ jobs:
 
       - name: Verify public release access
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "$GH_TOKEN" ]]; then
-            echo "::error::PUBLIC_RELEASE_TOKEN is missing from the release Environment."
-            exit 1
-          fi
-          if [[ "$(gh api "repos/${GH_REPO}" --jq '.permissions.push')" != "true" ]]; then
-            echo "::error::PUBLIC_RELEASE_TOKEN cannot write to ${GH_REPO}."
+          if [[ "$GH_REPO" != "$GITHUB_REPOSITORY" ]]; then
+            echo "::error::The built-in token can publish only to this workflow repository."
             exit 1
           fi
           gh api "repos/${GH_REPO}/git/ref/heads/${PUBLIC_RELEASE_TARGET}" >/dev/null
@@ -896,7 +888,7 @@ jobs:
 
       - name: Verify release asset immutability
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
@@ -1017,7 +1009,7 @@ jobs:
 
       - name: Prevent GitHub Latest rollback
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
@@ -1137,7 +1129,7 @@ jobs:
 
       - name: Create or update release
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
           IOS_TESTFLIGHT_URL: ${{ vars.IOS_TESTFLIGHT_URL }}
         shell: bash
@@ -1194,21 +1186,21 @@ jobs:
 
           if [[ "${RELEASE_ALREADY_EXISTS:-false}" == "true" ]]; then
             gh release edit "$RELEASE_TAG" \
-              --title "开元阅读 ${RELEASE_TAG}" \
+              --title "Origo X ${RELEASE_TAG}" \
               --notes-file "$notes_file" \
               --draft=false \
               --latest
           else
             gh release create "$RELEASE_TAG" release-assets/* \
               --target "$PUBLIC_RELEASE_TARGET" \
-              --title "开元阅读 ${RELEASE_TAG}" \
+              --title "Origo X ${RELEASE_TAG}" \
               --notes-file "$notes_file" \
               --latest
           fi
 
       - name: Show published assets
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         run: gh release view "$RELEASE_TAG"
 
@@ -1397,7 +1389,7 @@ jobs:
 
       - name: Download and verify published release assets
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
