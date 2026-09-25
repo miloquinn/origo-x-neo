@@ -206,7 +206,7 @@ void FlutterWindow::HandleDroppedFiles(HDROP drop) {
     std::wstring path(length + 1, L'\0');
     ::DragQueryFileW(drop, index, path.data(), length + 1);
     path.resize(length);
-    const auto utf8_path = Utf8FromUtf16(path);
+    const auto utf8_path = Utf8FromUtf16(path.c_str());
     const auto separator = utf8_path.find_last_of("/\\");
     const auto name = separator == std::string::npos
                           ? utf8_path
