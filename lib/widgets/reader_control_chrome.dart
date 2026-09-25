@@ -706,12 +706,12 @@ class ReaderControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveBorderRadius = borderRadius ?? BorderRadius.circular(999);
     final blurEnabled = !GlassEffectConfig.shouldDisableBlur;
-    // 不叠加预设，直接使用与悬浮导航栏/首页顶栏一致的标准玻璃参数
-    final config = GlassEffectHelper.getReadingControlConfig(
-      isTopBar: isTopBar,
-      brightness: palette.brightness,
-    );
-    final surfaceOpacity = blurEnabled ? config['opacity']! : 1.0;
+    final surfaceOpacity = blurEnabled
+        ? GlassEffectConfig.chromeOpacityFor(palette.brightness)
+        : 1.0;
+    final blur = isTopBar
+        ? GlassEffectConfig.readingTopBarBlur
+        : GlassEffectConfig.readingBottomBarBlur;
     final cleanSurface = blurEnabled
         ? GlassEffectConfig.chromeBaseColor(
             palette.controlBar,
@@ -798,10 +798,7 @@ class ReaderControlBar extends StatelessWidget {
         borderRadius: effectiveBorderRadius,
         child: blurEnabled
             ? BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: config['blur']!,
-                  sigmaY: config['blur']!,
-                ),
+                filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
                 child: panel,
               )
             : panel,

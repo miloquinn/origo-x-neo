@@ -1,4 +1,4 @@
-// 文件说明：AppTheme 和 GlassPreset 显示文案的 i18n 翻译器。
+// 文件说明：主题强调色显示文案的 i18n 翻译器。
 // 技术要点：Flutter 本地化。
 
 import 'package:flutter/widgets.dart';

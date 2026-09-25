@@ -314,6 +314,45 @@ void main() {
       );
     }
   });
+
+  testWidgets('enabling blur after a disabled build loads the filter', (
+    tester,
+  ) async {
+    final boundaryKey = GlobalKey();
+    await tester.pumpWidget(
+      _TestScene(
+        boundaryKey: boundaryKey,
+        blurEnabled: false,
+        pattern: _BackdropPattern.checker,
+        devicePixelRatio: 1,
+      ),
+    );
+    expect(find.byType(BackdropFilter), findsNothing);
+
+    await tester.pumpWidget(
+      _TestScene(
+        boundaryKey: boundaryKey,
+        blurEnabled: true,
+        pattern: _BackdropPattern.checker,
+        devicePixelRatio: 1,
+      ),
+    );
+    if (ui.ImageFilter.isShaderFilterSupported) {
+      for (var attempt = 0; attempt < 120; attempt++) {
+        if (find
+            .byKey(const ValueKey('gradient-top-backdrop-filter'))
+            .evaluate()
+            .isNotEmpty) {
+          break;
+        }
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)),
+        );
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    }
+    expect(find.byType(BackdropFilter), findsWidgets);
+  });
 }
 
 const _sceneSize = Size(320, 200);

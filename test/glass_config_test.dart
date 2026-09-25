@@ -69,18 +69,14 @@ void main() {
   });
 
   test('all floating chrome uses the same adaptive opacity', () {
-    final appBar = GlassEffectHelper.getAppBarConfig(
-      brightness: Brightness.light,
+    expect(
+      GlassEffectConfig.chromeOpacityFor(Brightness.light),
+      closeTo(0.60, 0.001),
     );
-    final navigation = GlassEffectHelper.getNavigationConfig(
-      brightness: Brightness.light,
+    expect(GlassEffectConfig.readingTopBarBlur, GlassEffectConfig.appBarBlur);
+    expect(
+      GlassEffectConfig.readingBottomBarBlur,
+      GlassEffectConfig.navigationBarBlur,
     );
-    final reader = GlassEffectHelper.getReadingControlConfig(
-      brightness: Brightness.light,
-    );
-
-    expect(appBar['opacity'], closeTo(0.60, 0.001));
-    expect(navigation['opacity'], appBar['opacity']);
-    expect(reader['opacity'], appBar['opacity']);
   });
 }

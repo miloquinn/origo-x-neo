@@ -33,12 +33,31 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
   ui.FragmentShader? _vertical;
   ui.FragmentShader? _horizontal;
   bool _loadFailed = false;
+  bool _shaderLoading = false;
   final _fallbackBackdrop = BackdropKey();
 
   @override
   void initState() {
     super.initState();
-    if (ui.ImageFilter.isShaderFilterSupported) _loadShader();
+    _ensureShader();
+  }
+
+  @override
+  void didUpdateWidget(covariant GradientTopBackdrop oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _ensureShader();
+  }
+
+  void _ensureShader() {
+    if (!widget.blurEnabled ||
+        !ui.ImageFilter.isShaderFilterSupported ||
+        _shaderLoading ||
+        _loadFailed ||
+        _vertical != null) {
+      return;
+    }
+    _shaderLoading = true;
+    _loadShader();
   }
 
   Future<void> _loadShader() async {
@@ -77,6 +96,8 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
       debugPrint('Gradient top backdrop shader could not load: $error');
       debugPrintStack(stackTrace: stack);
       if (mounted) setState(() => _loadFailed = true);
+    } finally {
+      _shaderLoading = false;
     }
   }
 
