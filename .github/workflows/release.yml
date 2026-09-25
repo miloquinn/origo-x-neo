@@ -1735,7 +1735,25 @@ jobs:
           ssh "${ssh_options[@]}" "$target" \
             "mkdir -m 0700 -- '${remote_dir}'"
           remote_created=true
-          scp "${scp_options[@]}" "${bundle_dir}/"* "${target}:${remote_dir}/"
+          upload_pids=()
+          upload_failed=false
+          for asset in "${bundle_dir}/"*; do
+            scp "${scp_options[@]}" "$asset" "${target}:${remote_dir}/" &
+            upload_pids+=("$!")
+            if (( ${#upload_pids[@]} == 8 )); then
+              for pid in "${upload_pids[@]}"; do
+                wait "$pid" || upload_failed=true
+              done
+              upload_pids=()
+            fi
+          done
+          for pid in "${upload_pids[@]}"; do
+            wait "$pid" || upload_failed=true
+          done
+          if [[ "$upload_failed" == true ]]; then
+            echo "::error::One or more official-site assets failed to upload."
+            exit 1
+          fi
 
           ssh "${ssh_options[@]}" "$target" \
             "sudo -n -- /usr/local/sbin/open-reading-import-release \
