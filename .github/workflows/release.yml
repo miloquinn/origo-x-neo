@@ -1373,7 +1373,7 @@ jobs:
       (needs.publish.result == 'success' || inputs.deployment_only == true)
     runs-on: ubuntu-latest
     environment: release
-    timeout-minutes: 20
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
@@ -1674,6 +1674,45 @@ jobs:
             || [[ ! "$GITHUB_RUN_ATTEMPT" =~ ^[0-9]+$ ]]; then
             echo "::error::GitHub run identifiers have an invalid format."
             exit 1
+          fi
+
+          if python3 <<'PY'
+          import json
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          manifest = json.loads(Path('official-site-bundle/release-manifest.json').read_text())
+          url = ('https://open.xxread.top/api/releases/latest?run='
+                 f'{os.environ["GITHUB_RUN_ID"]}-{os.environ["GITHUB_RUN_ATTEMPT"]}')
+          try:
+              request = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  releases = json.load(response)['items']
+          except (OSError, ValueError, KeyError) as error:
+              print(f'Official-site mirror probe unavailable: {error}')
+              raise SystemExit(1)
+          actual = {
+              (item['platform'], item['architecture'], item['package_type']): item
+              for item in releases
+          }
+          for asset in manifest['assets']:
+              key = (asset['platform'], asset['architecture'], asset['package_type'])
+              item = actual.get(key)
+              if item is None or not item.get('is_latest') or any(
+                  item.get(field) != expected for field, expected in (
+                      ('version', manifest['version']),
+                      ('build_number', asset['build_number']),
+                      ('sha256', asset['sha256']),
+                      ('file_size', asset['size']),
+                  )
+              ):
+                  print(f'Official-site mirror needs import: {asset["filename"]}')
+                  raise SystemExit(1)
+          print('Official-site mirror already matches every published asset.')
+          PY
+          then
+            exit 0
           fi
 
           umask 077
