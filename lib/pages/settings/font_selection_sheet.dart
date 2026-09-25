@@ -35,9 +35,11 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
       ? FontCatalog.appFonts
       : FontCatalog.readerFonts;
 
-  String get _selectedId => widget.domain == FontDomain.app
-      ? _settings.appFontId
-      : _settings.readerFontId;
+  String get _selectedId => switch (widget.domain) {
+    FontDomain.app => _settings.appFontId,
+    FontDomain.reader => _settings.readerFontId,
+    FontDomain.epubReader => _settings.epubReaderFontId,
+  };
 
   @override
   void initState() {
@@ -85,21 +87,29 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
   }
 
   Future<void> _selectFont(String id) async {
-    if (widget.domain == FontDomain.app) {
-      await _settings.setAppFontId(id);
-    } else {
-      await _settings.setReaderFontId(id);
+    switch (widget.domain) {
+      case FontDomain.app:
+        await _settings.setAppFontId(id);
+        break;
+      case FontDomain.reader:
+        await _settings.setReaderFontId(id);
+        break;
+      case FontDomain.epubReader:
+        await _settings.setEpubReaderFontId(id);
+        break;
     }
-    if (mounted) Navigator.of(context).pop();
+    if (mounted && _selectedId == id) Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
-    final systemOptions = _builtInOptions
-        .where((option) => !option.isOnline)
-        .toList(growable: false);
+    final isEpubReader = widget.domain == FontDomain.epubReader;
+    final systemOptions = <FontOption>[
+      if (isEpubReader) FontCatalog.bookEmbeddedFont,
+      ..._builtInOptions,
+    ].where((option) => !option.isOnline).toList(growable: false);
     final onlineOptions = _builtInOptions
         .where((option) => option.isOnline)
         .toList(growable: false);
@@ -297,7 +307,7 @@ class _FontOptionTile extends StatelessWidget {
         : option.isOnline || option.isCustom
         ? l10n.fontStaticWeight
         : null;
-    final previewProfile = domain == FontDomain.reader
+    final previewProfile = domain != FontDomain.app
         ? resolveReaderFontProfile(
             selection: option,
             locale: Localizations.maybeLocaleOf(context),
@@ -306,8 +316,7 @@ class _FontOptionTile extends StatelessWidget {
     final previewFamily = previewProfile?.fontFamily ?? option.family;
     final previewFallback =
         previewProfile?.fontFamilyFallback ?? option.fallbackFamilies;
-    final description =
-        domain == FontDomain.reader && option.id == FontCatalog.systemId
+    final description = option.id == FontCatalog.bookEmbeddedId
         ? l10n.readerFontBookPriorityHint
         : _description(
             context,

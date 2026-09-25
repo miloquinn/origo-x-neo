@@ -1,6 +1,19 @@
 part of 'book_source_reader_page.dart';
 
 extension _BookSourceReaderShell on _BookSourceReaderPageState {
+  Size _stablePaginationViewport(Size viewport) =>
+      _desktopResizeController.resolve(
+        viewport,
+        enabled:
+            !kIsWeb &&
+            (defaultTargetPlatform == TargetPlatform.macOS ||
+                defaultTargetPlatform == TargetPlatform.windows ||
+                defaultTargetPlatform == TargetPlatform.linux),
+        onSettled: () {
+          if (mounted) _updateReaderState(() {});
+        },
+      );
+
   void _scheduleOpeningContentReady() {
     if (_openingContentReadyScheduled) return;
     _openingContentReadyScheduled = true;
@@ -113,27 +126,35 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
         builder: (context, constraints) {
           final viewport = constraints.biggest;
           _verticalViewportSize = viewport;
+          final paginationViewport = _stablePaginationViewport(viewport);
           if (!_effectiveScrollByChapter) {
             return ReaderAutoScrollSurface(
               controller: _autoPageTurnController,
               ready: _autoContinuousReady,
               onBoundary: () async => !_verticalViewportAtEnd(),
-              child: _buildVerticalReadingWindow(_buildVerticalBook(viewport)),
+              child: _buildVerticalReadingWindow(
+                _buildVerticalBook(paginationViewport),
+              ),
             );
           }
-          final layout = _verticalLayoutFor(_chapterIndex, content, viewport);
+          final layout = _verticalLayoutFor(
+            _chapterIndex,
+            content,
+            paginationViewport,
+          );
           return _buildVerticalReadingWindow(
-            _buildVerticalPageList(layout, viewport),
+            _buildVerticalPageList(layout, paginationViewport),
           );
         },
       );
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final usesTwoPageLayout = _shouldUseTwoPageLayout(constraints.biggest);
+        final viewport = _stablePaginationViewport(constraints.biggest);
+        final usesTwoPageLayout = _shouldUseTwoPageLayout(viewport);
         _usesTwoPageLayout = usesTwoPageLayout;
         final paginationViewport = _paginationViewport(
-          constraints.biggest,
+          viewport,
           usesTwoPageLayout,
         );
         if (_pagedViewportSize != paginationViewport) {

@@ -154,7 +154,7 @@ class BookOpenTransition {
 
   /// 打开动画的完整可见过程（封面飞行 + 正文渐显）结束后变为 true。
   ///
-  /// 路由动画 460ms 结束时正文渐显往往仍在播放；相邻章节排版、系统栏切换
+  /// 路由动画 460ms 结束时正文渐显往往仍在播放；相邻章节排版
   /// 等高成本工作应等待此信号，避免掉帧落在动画后半段。无封面飞行的平滑
   /// 转场在入场完成后即视为结束。不在打开转场路由中时返回 null。
   static ValueListenable<bool>? openingFlightSettledListenableOf(

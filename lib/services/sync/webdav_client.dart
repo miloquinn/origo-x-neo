@@ -153,11 +153,7 @@ class WebDavClient {
       );
       await _request('MKCOL', testCollection);
       try {
-        final put = await _request(
-          'PUT',
-          testFile,
-          data: 'origo-webdav-probe',
-        );
+        final put = await _request('PUT', testFile, data: 'origo-webdav-probe');
         final get = await _request('GET', testFile);
         if (get.data != 'origo-webdav-probe') {
           throw const WebDavSyncFailure(
@@ -369,8 +365,22 @@ class WebDavClient {
           'The WebDAV directory entry has no unique resource address.',
         );
       }
-      final uri = collection.resolve(_decodeXml(hrefs.single.trim()));
-      if (!_sameOrigin(uri, _origin) || uri == collection) continue;
+      // RFC 4918 permits relative hrefs. Resolve them from the collection
+      // directory even when the configured URL has no trailing slash.
+      final collectionDirectory = collection.replace(
+        pathSegments: [
+          ...collection.pathSegments.where((segment) => segment.isNotEmpty),
+          '',
+        ],
+      );
+      final uri = collectionDirectory.resolve(_decodeXml(hrefs.single.trim()));
+      if (!_sameOrigin(uri, _origin) ||
+          uri.pathSegments.where((segment) => segment.isNotEmpty).join('/') ==
+              collection.pathSegments
+                  .where((segment) => segment.isNotEmpty)
+                  .join('/')) {
+        continue;
+      }
       String? etag;
       int? length;
       var isCollection = false;

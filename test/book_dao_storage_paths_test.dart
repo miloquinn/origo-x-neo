@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:xxread/data/migration/book_storage_path_migration.dart';
+import 'package:xxread/data/migration/book_source_reading_progress_schema_migration.dart';
+import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/book_dao.dart';
 import 'package:xxread/services/sync/book_sync_identity.dart';
@@ -31,6 +33,7 @@ void main() {
         source_kind TEXT, source_locator TEXT, source_modified_time INTEGER
       )
     ''');
+    await BookSourceReadingProgressSchemaMigration.migrate(database);
 
     dao = BookDao(
       database: () async => database,
@@ -83,11 +86,198 @@ void main() {
       expect(rebound.contentHash, original.contentHash);
       await expectLater(
         dao.updateSourceBinding(original, original),
-        throwsStateError,
+        throwsA(isA<BookSourceBindingConflictException>()),
       );
       expect((await dao.getBookById(id))!.sourceId, 'new-source');
     },
   );
+
+  test('binding and new source position commit in one transaction', () async {
+    final id = await dao.insertBook(
+      book(filePath: '').copyWith(format: 'source', storageType: 'online'),
+    );
+    await database.update(
+      'books',
+      {
+        'last_canonical_locator': '{"chapterId":"old-chapter"}',
+        'last_rendered_locator': '{"page":2}',
+        'layout_signature': 'old-layout',
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    final original = (await dao.getBookById(id))!;
+    final replacement = original.copyWith(
+      sourceId: 'replacement-source',
+      sourceBookId: 'replacement-book',
+      sourceJson: '{}',
+      sourceBookJson: '{}',
+      currentPage: 3000,
+      totalPages: 10000,
+      readingProgress: 0.3,
+    );
+    final progress = BookSourceReadingProgress(
+      chapterId: 'chapter-3',
+      chapterIndex: 3,
+      chapterProgress: 0,
+      updatedAt: DateTime.utc(2026, 9, 24),
+    );
+    await BookSourceReadingProgressStore.saveWithExecutor(
+      database,
+      sourceId: original.sourceId!,
+      bookId: original.sourceBookId!,
+      progress: BookSourceReadingProgress(
+        chapterId: 'old-chapter',
+        chapterIndex: 8,
+        chapterProgress: 0.5,
+        updatedAt: DateTime.utc(2026, 9, 23),
+      ),
+    );
+
+    final rebound = await dao.updateSourceBindingWithProgress(
+      original,
+      replacement,
+      progress: progress,
+    );
+
+    expect(rebound.sourceId, 'replacement-source');
+    final rows = await database.query('book_source_reading_progress');
+    expect(rows, hasLength(2));
+    expect(
+      rows.singleWhere(
+        (row) => row['source_id'] == 'replacement-source',
+      )['chapter_id'],
+      'chapter-3',
+    );
+    expect(
+      rows.singleWhere(
+        (row) => row['source_id'] == original.sourceId,
+      )['chapter_id'],
+      'old-chapter',
+    );
+    expect((await dao.getBookById(id))?.sourceBookId, 'replacement-book');
+    final storedBook = await stored(id);
+    expect(storedBook['last_canonical_locator'], isNull);
+    expect(storedBook['last_rendered_locator'], isNull);
+    expect(storedBook['layout_signature'], isNull);
+  });
+
+  test('progress write failure rolls back the source binding', () async {
+    final id = await dao.insertBook(
+      book(filePath: '').copyWith(format: 'source', storageType: 'online'),
+    );
+    final original = (await dao.getBookById(id))!;
+    await database.execute('DROP TABLE book_source_reading_progress');
+
+    await expectLater(
+      dao.updateSourceBindingWithProgress(
+        original,
+        original.copyWith(
+          sourceId: 'replacement-source',
+          sourceBookId: 'replacement-book',
+        ),
+        progress: BookSourceReadingProgress(
+          chapterId: 'chapter-3',
+          chapterIndex: 3,
+          chapterProgress: 0,
+          updatedAt: DateTime.utc(2026, 9, 24),
+        ),
+      ),
+      throwsA(anything),
+    );
+
+    expect((await dao.getBookById(id))?.sourceId, original.sourceId);
+    expect((await dao.getBookById(id))?.sourceBookId, original.sourceBookId);
+  });
+
+  test(
+    'online progress changing during validation aborts the binding',
+    () async {
+      final id = await dao.insertBook(
+        book(filePath: '').copyWith(format: 'source', storageType: 'online'),
+      );
+      final original = (await dao.getBookById(id))!;
+      await dao.updateBookProgress(id, 7000, readingProgress: 0.7);
+
+      await expectLater(
+        dao.updateSourceBindingWithProgress(
+          original,
+          original.copyWith(
+            sourceId: 'replacement-source',
+            sourceBookId: 'replacement-book',
+          ),
+          progress: BookSourceReadingProgress(
+            chapterId: 'chapter-3',
+            chapterIndex: 3,
+            chapterProgress: 0,
+            updatedAt: DateTime.utc(2026, 9, 24),
+          ),
+        ),
+        throwsA(
+          isA<BookSourceBindingConflictException>().having(
+            (error) => error.reason,
+            'reason',
+            BookSourceBindingConflictReason.readingPositionChanged,
+          ),
+        ),
+      );
+
+      final unchanged = await dao.getBookById(id);
+      expect(unchanged?.sourceId, original.sourceId);
+      expect(unchanged?.currentPage, 7000);
+      expect(await database.query('book_source_reading_progress'), isEmpty);
+    },
+  );
+
+  test('target identity conflict is detected inside the transaction', () async {
+    final originalId = await dao.insertBook(book(hash: 'original'));
+    final original = (await dao.getBookById(originalId))!;
+    await dao.insertBook(
+      book(hash: 'target').copyWith(
+        sourceId: 'replacement-source',
+        sourceBookId: 'replacement-book',
+      ),
+    );
+
+    await expectLater(
+      dao.updateSourceBinding(
+        original,
+        original.copyWith(
+          sourceId: 'replacement-source',
+          sourceBookId: 'replacement-book',
+        ),
+      ),
+      throwsA(
+        isA<BookSourceBindingConflictException>().having(
+          (error) => error.reason,
+          'reason',
+          BookSourceBindingConflictReason.targetAlreadyBound,
+        ),
+      ),
+    );
+
+    expect((await dao.getBookById(originalId))?.sourceId, original.sourceId);
+  });
+
+  test('late source cover cannot overwrite a newer custom cover', () async {
+    final id = await dao.insertBook(book());
+    final original = (await dao.getBookById(id))!;
+    await dao.updateBookCoverPath(id, '$root/covers/user-new.png');
+
+    final applied = await dao.updateBookCoverPathIfSource(
+      bookId: id,
+      sourceId: original.sourceId!,
+      sourceBookId: original.sourceBookId!,
+      expectedCoverImagePath: original.coverImagePath,
+      coverImagePath: '$root/covers/late-source.png',
+    );
+
+    expect(applied, isFalse);
+    expect(
+      (await dao.getBookById(id))?.coverImagePath,
+      '$root/covers/user-new.png',
+    );
+  });
 
   test(
     'new records stay relative across repeated sandbox relocation',

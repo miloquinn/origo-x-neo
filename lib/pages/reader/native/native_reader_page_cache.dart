@@ -70,7 +70,7 @@ extension _NativeReaderPageCache on _NativeReaderPageState {
           widget.book.format,
         ),
         showDedicatedChapterTitlePage: _chapterTitlePageEnabled,
-        preserveEpubFont: _readerFontProfile.isPlatformDefault,
+        preserveDocumentFont: _preserveDocumentFont,
       ),
     );
     _pageCache[key] = pages;
@@ -194,26 +194,39 @@ extension _NativeReaderPageCache on _NativeReaderPageState {
     Size size,
     TextDirection direction,
     TextScaler textScaler,
-  ) => ReaderLayoutFingerprint(
-    contentKey: '$chapterIndex',
-    viewport: size,
-    fontSize: _fontSize,
-    fontWeight: _fontWeight,
-    lineHeight: _lineHeight,
-    letterSpacing: _letterSpacing,
-    textAlign: _readerTextAlign,
-    horizontalMargin: _horizontalMargin,
-    verticalMargin: _topMargin + _bottomMargin,
-    textScaler: textScaler,
-    locale: Localizations.maybeLocaleOf(context),
-    pageMode: _pageMode,
-    firstLineIndent: _firstLineIndent,
-    paragraphSpacing: _paragraphSpacing,
-    textDirection: direction,
-    extra:
-        '${_pageMode == NativePageMode.verticalScroll ? _verticalChrome.paginationSignature : _readerSafeArea.paginationSignature}:'
-        '${_readerFontProfile.cacheSignature}:'
-        '$_chapterTitlePageEnabled:'
-        '${_replaceRules.rulesSignature}',
-  ).cacheKey('native-line-v11');
+  ) {
+    // Parsed chapter text can keep the same source-file fingerprint while its
+    // per-run fonts change after a parser upgrade. Page boundaries measured
+    // with the old font must never be restored against the new text spans.
+    final parsedTypographyVersion = switch (widget.book.format.toLowerCase()) {
+      'epub' => ':epub-parser-$epubNativeCacheVersion',
+      'mobi' ||
+      'azw' ||
+      'azw3' => ':kindle-parser-$kindleNativeCacheVersion:font-layout-2',
+      _ => '',
+    };
+    return ReaderLayoutFingerprint(
+      contentKey: '$chapterIndex',
+      viewport: size,
+      fontSize: _fontSize,
+      fontWeight: _fontWeight,
+      lineHeight: _lineHeight,
+      letterSpacing: _letterSpacing,
+      textAlign: _readerTextAlign,
+      horizontalMargin: _horizontalMargin,
+      verticalMargin: _topMargin + _bottomMargin,
+      textScaler: textScaler,
+      locale: Localizations.maybeLocaleOf(context),
+      pageMode: _pageMode,
+      firstLineIndent: _firstLineIndent,
+      paragraphSpacing: _paragraphSpacing,
+      textDirection: direction,
+      extra:
+          '${_pageMode == NativePageMode.verticalScroll ? _verticalChrome.paginationSignature : _readerSafeArea.paginationSignature}:'
+          '${_readerFontProfile.cacheSignature}:'
+          '$_chapterTitlePageEnabled:'
+          '${_replaceRules.rulesSignature}'
+          '$parsedTypographyVersion',
+    ).cacheKey('native-line-v12');
+  }
 }

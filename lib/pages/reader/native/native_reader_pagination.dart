@@ -10,7 +10,7 @@ List<_ReaderPageData> _paginateChapter(
   required int paragraphSpacing,
   required bool normalizeParagraphBreaks,
   required bool showDedicatedChapterTitlePage,
-  required bool preserveEpubFont,
+  required bool preserveDocumentFont,
 }) {
   final imageOffsets = <(int, int)>[];
   var searchFrom = 0;
@@ -81,7 +81,7 @@ List<_ReaderPageData> _paginateChapter(
         sourceStart,
         sourceEnd,
         style,
-        preserveEpubFont: preserveEpubFont,
+        preserveDocumentFont: preserveDocumentFont,
       ),
     );
     final result = textPages

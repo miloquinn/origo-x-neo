@@ -12,6 +12,7 @@ class LocalWebDavServer {
   bool rejectOptions = false;
   bool failNextPut = false;
   bool malformedListing = false;
+  bool relativeHrefs = false;
   int uploaded = 0, downloaded = 0, puts = 0;
   final requests = <String>[];
   String get url => 'http://127.0.0.1:${server.port}';
@@ -138,7 +139,9 @@ class LocalWebDavServer {
           final isDirectory = entry is Directory;
           final relative = entry.path.substring(root.path.length);
           final href = Uri(
-            path: '$relative${isDirectory ? '/' : ''}',
+            path: relativeHrefs
+                ? '${entry == entries.first ? '.' : entry.uri.pathSegments.last}${isDirectory ? '/' : ''}'
+                : '$relative${isDirectory ? '/' : ''}',
           ).toString();
           xml.write(
             '<d:response><d:href>${const HtmlEscape().convert(href)}</d:href><d:propstat><d:prop>',

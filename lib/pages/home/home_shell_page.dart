@@ -33,6 +33,7 @@ import 'package:xxread/utils/system_ui_helper.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
 import 'package:xxread/widgets/first_home_support_overlay.dart';
+import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 import 'home_dashboard_page.dart';
@@ -220,9 +221,9 @@ class _HomeShellPageState extends State<HomeShellPage> {
       ),
       HomeNavigationDestination.settings: HomeNavigationItem(
         destination: HomeNavigationDestination.settings,
-        icon: Icons.settings_outlined,
-        selectedIcon: Icons.settings,
-        label: l10n.settings,
+        icon: Icons.person_outline_rounded,
+        selectedIcon: Icons.person_rounded,
+        label: l10n.navMe,
         page: SettingsPage(controller: _settingsController),
       ),
     };

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/core/reader/reader_keep_screen_on.dart';
 import 'package:xxread/core/reader/reader_system_ui.dart';
+import 'package:xxread/services/core/desktop_window_service.dart';
 import 'package:xxread/services/core/settings_page_preferences.dart';
 import 'package:xxread/services/reading/reading_resume_service.dart';
 
@@ -21,6 +22,7 @@ void main() {
       'enableAutoExtractCover': false,
       'enableVolumeKeyTurn': false,
       ReadingResumeService.enabledPreferenceKey: true,
+      DesktopWindowService.closeReaderToLibraryPreferenceKey: true,
       ReaderKeepScreenOnController.preferenceKey: true,
       'enableFullscreen': true,
       'enableDeveloperMode': true,
@@ -40,6 +42,7 @@ void main() {
     expect(settings.enableAutoExtractCover, isFalse);
     expect(settings.enableVolumeKeyTurn, isFalse);
     expect(settings.autoResumeReading, isTrue);
+    expect(settings.closeReaderToLibrary, isTrue);
     expect(settings.keepScreenOn, isTrue);
     expect(settings.readerTopBarStyle, ReaderTopBarStyle.hidden);
     expect(settings.enableFullscreen, isTrue);
@@ -66,6 +69,7 @@ void main() {
     expect(settings.enableAutoExtractCover, isTrue);
     expect(settings.enableVolumeKeyTurn, isFalse);
     expect(settings.autoResumeReading, isFalse);
+    expect(settings.closeReaderToLibrary, isTrue);
     expect(settings.keepScreenOn, isFalse);
     expect(settings.readerTopBarStyle, ReaderTopBarStyle.reader);
     expect(settings.enableFullscreen, isFalse);
@@ -88,6 +92,7 @@ void main() {
       enableAutoExtractCover: false,
       enableVolumeKeyTurn: false,
       autoResumeReading: true,
+      closeReaderToLibrary: true,
       readerTopBarStyle: ReaderTopBarStyle.floating,
       enableFullscreen: true,
       enableDeveloperMode: true,
@@ -106,6 +111,10 @@ void main() {
     expect(prefs.getBool('enableAutoExtractCover'), isFalse);
     expect(prefs.getBool('enableVolumeKeyTurn'), isFalse);
     expect(prefs.getBool(ReadingResumeService.enabledPreferenceKey), isTrue);
+    expect(
+      prefs.getBool(DesktopWindowService.closeReaderToLibraryPreferenceKey),
+      isTrue,
+    );
     expect(prefs.getBool('enableFullscreen'), isTrue);
     expect(prefs.getBool('enableDeveloperMode'), isTrue);
     expect(prefs.getBool('enableDebugLogging'), isTrue);

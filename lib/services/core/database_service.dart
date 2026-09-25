@@ -17,6 +17,7 @@ import 'package:xxread/data/migration/book_note_lookup_index_migration.dart';
 import 'package:xxread/data/migration/reader_annotation_schema_migration.dart';
 import 'package:xxread/data/migration/webdav_sync_schema_migration.dart';
 import 'package:xxread/data/migration/pagination_cache_schema_migration.dart';
+import 'package:xxread/data/migration/book_source_reading_progress_schema_migration.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -25,7 +26,8 @@ class DatabaseService {
 
   static Database? _database;
   static const String _dbName = 'xxread_v2.db';
-  static const int _dbVersion = ReadingCloudSchemaMigration.migrationVersion;
+  static const int _dbVersion =
+      BookSourceReadingProgressSchemaMigration.migrationVersion;
   static Future<Database>? _openingDatabase;
 
   Future<Database> get database async {
@@ -381,6 +383,10 @@ class DatabaseService {
     if (oldVersion < ReadingCloudSchemaMigration.migrationVersion) {
       await ReadingCloudSchemaMigration.migrate(db);
     }
+    if (oldVersion <
+        BookSourceReadingProgressSchemaMigration.migrationVersion) {
+      await BookSourceReadingProgressSchemaMigration.migrate(db);
+    }
   }
 
   Future<void> _createTables(Database db) async {
@@ -485,6 +491,7 @@ class DatabaseService {
     await PaginationCacheSchemaMigration.migrate(db);
     await BookNoteLookupIndexMigration.migrate(db);
     await ReadingCloudSchemaMigration.migrate(db);
+    await BookSourceReadingProgressSchemaMigration.migrate(db);
   }
 
   /// 创建books表索引

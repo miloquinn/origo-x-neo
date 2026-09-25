@@ -11,7 +11,13 @@ import 'package:xxread/services/books/book_services.dart';
 import 'package:xxread/services/reading/reading_stats_dao.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/app_menu.dart';
+import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/floating_pill_navigation_item.dart';
+import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/generated_book_cover.dart';
+
+import '../home/home_mobile_chrome.dart';
+import '../home/widgets/home_bounce_navigation_item.dart';
 
 part 'parts/detailed_stats_achievements_part.dart';
 part 'parts/detailed_stats_books_part.dart';
@@ -168,6 +174,7 @@ class _DetailedStatsPageState extends State<DetailedStatsPage>
         .round();
     if (current == index) return;
 
+    _tabController.index = index;
     _isAnimatingFromTabTap = true;
     try {
       await _pageController.animateToPage(
@@ -325,108 +332,58 @@ class _DetailedStatsPageState extends State<DetailedStatsPage>
   @override
   Widget build(BuildContext context) {
     final palette = _palette;
-    return Scaffold(
+    final compact = MediaQuery.sizeOf(context).width < 390;
+    return FloatingSubpageScaffold(
+      title: context.l10n.statsDetailedTitle,
       backgroundColor: palette.pageEnd,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            stops: const [0, 0.34, 1],
-            colors: [palette.pageStart, palette.pageMiddle, palette.pageEnd],
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              _buildTopBar(),
-              const SizedBox(height: 12),
-              _buildTabBar(),
-              const SizedBox(height: 4),
-              Expanded(
-                child: _isLoading
-                    ? Center(
-                        child: CircularProgressIndicator(
-                          color: palette.accent,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : PageView.builder(
-                        controller: _pageController,
-                        physics: const PageScrollPhysics(),
-                        itemCount: 4,
-                        onPageChanged: (index) {
-                          if (_tabController.index != index) {
-                            _tabController.index = index;
-                          }
-                        },
-                        itemBuilder: (context, index) => switch (index) {
-                          0 => _buildOverviewTab(),
-                          1 => _buildChartsTab(),
-                          2 => _buildBooksTab(),
-                          3 => _buildAchievementsTab(),
-                          _ => const SizedBox.shrink(),
-                        },
-                      ),
-              ),
-            ],
-          ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: const [0, 0.34, 1],
+          colors: [palette.pageStart, palette.pageMiddle, palette.pageEnd],
         ),
       ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    final palette = _palette;
-    final compact = MediaQuery.sizeOf(context).width < 390;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1040),
-          child: SizedBox(
-            height: 58,
-            child: Row(
-              children: [
-                Material(
-                  color: palette.cardStrong,
-                  borderRadius: BorderRadius.circular(999),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(999),
-                    onTap: () => Navigator.of(context).pop(),
-                    child: SizedBox(
-                      width: 46,
-                      height: 46,
-                      child: Icon(
-                        Icons.arrow_back_rounded,
-                        color: palette.ink,
-                        size: 22,
-                      ),
+      actions: [_buildTimeRangeSelector(compact: compact)],
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: palette.accent,
+                      strokeWidth: 2.5,
                     ),
+                  )
+                : PageView.builder(
+                    controller: _pageController,
+                    physics: const PageScrollPhysics(),
+                    itemCount: 4,
+                    onPageChanged: (index) {
+                      if (_isAnimatingFromTabTap &&
+                          index != _tabController.index) {
+                        return;
+                      }
+                      if (_tabController.index != index) {
+                        _tabController.index = index;
+                      }
+                    },
+                    itemBuilder: (context, index) => switch (index) {
+                      0 => _buildOverviewTab(),
+                      1 => _buildChartsTab(),
+                      2 => _buildBooksTab(),
+                      3 => _buildAchievementsTab(),
+                      _ => const SizedBox.shrink(),
+                    },
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    context.l10n.statsDetailedTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: compact ? 27 : 32,
-                      fontWeight: FontWeight.w700,
-                      color: palette.ink,
-                      height: 1,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                _buildTimeRangeSelector(compact: compact),
-              ],
-            ),
           ),
-        ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: MediaQuery.viewPaddingOf(context).bottom + 10,
+            child: Center(child: _buildTabBar()),
+          ),
+        ],
       ),
     );
   }
@@ -477,54 +434,54 @@ class _DetailedStatsPageState extends State<DetailedStatsPage>
   }
 
   Widget _buildTabBar() {
-    final palette = _palette;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1040),
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: palette.card,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: palette.border),
-              boxShadow: [
-                BoxShadow(
-                  color: palette.shadow,
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
+    final l10n = context.l10n;
+    final items = [
+      FloatingPillNavigationItem(
+        icon: Icons.dashboard_outlined,
+        selectedIcon: Icons.dashboard_rounded,
+        label: l10n.statsTabOverview,
+      ),
+      FloatingPillNavigationItem(
+        icon: Icons.bar_chart_outlined,
+        selectedIcon: Icons.bar_chart_rounded,
+        label: l10n.statsTabCharts,
+      ),
+      FloatingPillNavigationItem(
+        icon: Icons.menu_book_outlined,
+        selectedIcon: Icons.menu_book_rounded,
+        label: l10n.statsTabBooks,
+      ),
+      FloatingPillNavigationItem(
+        icon: Icons.emoji_events_outlined,
+        selectedIcon: Icons.emoji_events_rounded,
+        label: l10n.statsTabAchievements,
+      ),
+    ];
+    final dimensions = homeMobileFloatingNavDimensionsFor(
+      screenWidth: MediaQuery.sizeOf(context).width,
+      itemCount: items.length,
+      platform: Theme.of(context).platform,
+      systemBottomInset: MediaQuery.viewPaddingOf(context).bottom,
+    );
+    return RepaintBoundary(
+      child: FloatingPillNavigationSurface(
+        key: const ValueKey('stats-floating-tabs'),
+        width: dimensions.width,
+        height: dimensions.height,
+        child: AnimatedBuilder(
+          animation: _tabController,
+          builder: (context, _) => Row(
+            children: [
+              for (var index = 0; index < items.length; index++)
+                Expanded(
+                  child: FloatingPillNavigationButton(
+                    item: items[index],
+                    isSelected: _tabController.index == index,
+                    showLabel: true,
+                    onTap: () => _handleTabTap(index),
+                  ),
                 ),
-              ],
-            ),
-            child: TabBar(
-              controller: _tabController,
-              onTap: (index) => _handleTabTap(index),
-              dividerColor: Colors.transparent,
-              splashBorderRadius: BorderRadius.circular(14),
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicator: BoxDecoration(
-                color: palette.softAccent,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              labelColor: palette.accent,
-              unselectedLabelColor: palette.mutedInk,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-              tabs: [
-                Tab(text: context.l10n.statsTabOverview),
-                Tab(text: context.l10n.statsTabCharts),
-                Tab(text: context.l10n.statsTabBooks),
-                Tab(text: context.l10n.statsTabAchievements),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -536,9 +493,16 @@ class _DetailedStatsPageState extends State<DetailedStatsPage>
       physics: const BouncingScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         16,
-        12,
+        FloatingSubpageScaffold.headerExtentOf(context) + 12,
         16,
-        MediaQuery.viewPaddingOf(context).bottom + 28,
+        homeMobileFloatingNavDimensionsFor(
+              screenWidth: MediaQuery.sizeOf(context).width,
+              itemCount: 4,
+              platform: Theme.of(context).platform,
+              systemBottomInset: MediaQuery.viewPaddingOf(context).bottom,
+            ).height +
+            MediaQuery.viewPaddingOf(context).bottom +
+            30,
       ),
       child: Align(
         alignment: Alignment.topCenter,

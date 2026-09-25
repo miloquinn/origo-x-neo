@@ -12,8 +12,8 @@ class BookSourceNetworkPolicy {
     this.allowSyntheticDns = false,
   }) : _lookup = lookup ?? InternetAddress.lookup;
 
-  /// Live opt-in used when [allowPrivateNetwork] is omitted.
-  /// Default stays off so third-party source rules cannot reach the LAN.
+  /// Live premium preference used when [allowPrivateNetwork] is omitted.
+  /// Stays off until verified membership and app settings are loaded.
   static bool preferredPrivateNetwork = false;
 
   final BookSourceAddressLookup _lookup;

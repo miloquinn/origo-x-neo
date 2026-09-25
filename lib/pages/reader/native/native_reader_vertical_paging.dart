@@ -338,7 +338,7 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
             sourceStart,
             sourceEnd,
             _readerTextStyle,
-            preserveEpubFont: _readerFontProfile.isPlatformDefault,
+            preserveDocumentFont: _preserveDocumentFont,
           ),
         ).single;
         parts.add(_ContinuousReaderPart(_ReaderPageData.fromTextPage(page)));
@@ -403,8 +403,8 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
       padding: EdgeInsets.symmetric(horizontal: _horizontalMargin),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: readerMaxTextContentWidth,
+          constraints: BoxConstraints(
+            maxWidth: readerTextContentMaxWidth(_horizontalMargin),
           ),
           child: Column(
             key: ValueKey(

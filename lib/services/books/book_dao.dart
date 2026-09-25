@@ -13,6 +13,32 @@ import 'package:xxread/services/books/book_image_map_service.dart';
 import 'package:xxread/services/books/book_import_models.dart';
 import 'package:xxread/services/books/web_book_file_store.dart';
 import 'package:xxread/services/sync/book_sync_identity.dart';
+import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
+
+enum BookSourceBindingConflictReason {
+  bookRemoved,
+  bindingChanged,
+  readingPositionChanged,
+  targetAlreadyBound,
+}
+
+class BookSourceBindingConflictException implements Exception {
+  const BookSourceBindingConflictException(this.reason);
+
+  final BookSourceBindingConflictReason reason;
+
+  @override
+  String toString() => switch (reason) {
+    BookSourceBindingConflictReason.bookRemoved =>
+      'The shelf book was removed while changing source.',
+    BookSourceBindingConflictReason.bindingChanged =>
+      'The shelf binding changed while selecting a source.',
+    BookSourceBindingConflictReason.readingPositionChanged =>
+      'The reading position changed while selecting a source.',
+    BookSourceBindingConflictReason.targetAlreadyBound =>
+      'The selected source version is already on the shelf.',
+  };
+}
 
 class BookDao implements BookImportStore {
   BookDao({
@@ -256,45 +282,138 @@ class BookDao implements BookImportStore {
   Future<Book> updateSourceBinding(Book expected, Book replacement) async {
     final db = await _databaseProvider();
     final stored = await _toStorage(replacement);
+    return db.transaction((txn) => _updateSourceBinding(txn, expected, stored));
+  }
+
+  /// Atomically changes a shelf binding and persists the position belonging
+  /// to that new source. The old source position remains available for
+  /// recovery because it has a different composite key.
+  Future<Book> updateSourceBindingWithProgress(
+    Book expected,
+    Book replacement, {
+    required BookSourceReadingProgress progress,
+  }) async {
+    final db = await _databaseProvider();
+    final stored = await _toStorage(replacement);
     return db.transaction((txn) async {
-      final rows = await txn.query(
+      final updated = await _updateSourceBinding(txn, expected, stored);
+      await BookSourceReadingProgressStore.saveWithExecutor(
+        txn,
+        sourceId: replacement.sourceId!,
+        bookId: replacement.sourceBookId!,
+        progress: progress,
+      );
+      return updated;
+    });
+  }
+
+  Future<Book> _updateSourceBinding(
+    DatabaseExecutor txn,
+    Book expected,
+    Map<String, dynamic> stored,
+  ) async {
+    final rows = await txn.query(
+      'books',
+      where: 'id = ?',
+      whereArgs: [expected.id],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      throw const BookSourceBindingConflictException(
+        BookSourceBindingConflictReason.bookRemoved,
+      );
+    }
+    final current = await _fromStorage(rows.single);
+    if (current.sourceId != expected.sourceId ||
+        current.sourceBookId != expected.sourceBookId ||
+        current.storageType != expected.storageType ||
+        current.filePath != expected.filePath) {
+      throw const BookSourceBindingConflictException(
+        BookSourceBindingConflictReason.bindingChanged,
+      );
+    }
+    if (current.isOnline &&
+        (current.currentPage != expected.currentPage ||
+            current.totalPages != expected.totalPages ||
+            current.readingProgress != expected.readingProgress)) {
+      throw const BookSourceBindingConflictException(
+        BookSourceBindingConflictReason.readingPositionChanged,
+      );
+    }
+    final targetSourceId = stored['source_id'] as String?;
+    final targetBookId = stored['source_book_id'] as String?;
+    if (targetSourceId != null && targetBookId != null) {
+      final conflicts = await txn.query(
         'books',
-        where: 'id = ?',
-        whereArgs: [expected.id],
+        columns: const ['id'],
+        where: 'source_id = ? AND source_book_id = ? AND id != ?',
+        whereArgs: [targetSourceId, targetBookId, expected.id],
         limit: 1,
       );
-      if (rows.isEmpty) throw StateError('Book was removed while binding');
-      final current = await _fromStorage(rows.single);
-      if (current.sourceId != expected.sourceId ||
-          current.sourceBookId != expected.sourceBookId ||
-          current.storageType != expected.storageType ||
-          current.filePath != expected.filePath) {
-        throw StateError('Book binding changed during source selection');
+      if (conflicts.isNotEmpty) {
+        throw const BookSourceBindingConflictException(
+          BookSourceBindingConflictReason.targetAlreadyBound,
+        );
       }
-      await stableBookUidForMap(txn, current.toMap());
-      final values = <String, Object?>{
-        for (final key in [
-          'source_id',
-          'source_book_id',
-          'source_json',
-          'source_book_json',
-        ])
+    }
+    await stableBookUidForMap(txn, current.toMap());
+    final values = <String, Object?>{
+      for (final key in [
+        'source_id',
+        'source_book_id',
+        'source_json',
+        'source_book_json',
+      ])
+        key: stored[key],
+      if (current.coverImagePath == expected.coverImagePath)
+        'cover_image_path': stored['cover_image_path'],
+      if (current.isOnline) ...{
+        for (final key in ['currentPage', 'totalPages', 'reading_progress'])
           key: stored[key],
-        if (current.coverImagePath == expected.coverImagePath)
-          'cover_image_path': stored['cover_image_path'],
-        if (current.isOnline) ...{
-          for (final key in ['currentPage', 'totalPages', 'reading_progress'])
-            key: stored[key],
-        },
-      };
-      await txn.update(
-        'books',
-        values,
-        where: 'id = ?',
-        whereArgs: [expected.id],
+        // Text anchors and rendered layout belong to the previous source's
+        // content, even when the mapped chapter number happens to match.
+        'last_canonical_locator': null,
+        'last_rendered_locator': null,
+        'layout_signature': null,
+      },
+    };
+    final updatedCount = await txn.update(
+      'books',
+      values,
+      where: 'id = ?',
+      whereArgs: [expected.id],
+    );
+    if (updatedCount != 1) {
+      throw const BookSourceBindingConflictException(
+        BookSourceBindingConflictReason.bookRemoved,
       );
-      return _fromStorage({...rows.single, ...values});
-    });
+    }
+    return _fromStorage({...rows.single, ...values});
+  }
+
+  Future<bool> updateBookCoverPathIfSource({
+    required int bookId,
+    required String sourceId,
+    required String sourceBookId,
+    required String? expectedCoverImagePath,
+    required String coverImagePath,
+  }) async {
+    final db = await _databaseProvider();
+    return await db.update(
+          'books',
+          {'cover_image_path': await _encodePath(coverImagePath)},
+          where:
+              'id = ? AND source_id = ? AND source_book_id = ? AND cover_image_path IS ?',
+          whereArgs: [
+            bookId,
+            sourceId,
+            sourceBookId,
+            expectedCoverImagePath == null
+                ? null
+                : await _encodePath(expectedCoverImagePath),
+          ],
+        ) ==
+        1;
   }
 
   Future<void> updateBookTotalPages(int bookId, int totalPages) async {

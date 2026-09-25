@@ -1,6 +1,11 @@
 part of 'native_reader_page.dart';
 
 extension _NativeReaderConfiguration on _NativeReaderPageState {
+  bool get _isEpub => widget.book.format.toLowerCase() == 'epub';
+
+  bool get _preserveDocumentFont =>
+      _readerFontProfile.preservesParsedFontFor(widget.book.format);
+
   Future<void> _loadPageMode() async {
     try {
       final results = await Future.wait<Object?>([
@@ -48,12 +53,14 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
       _autoPageTurnController.setVertical(
         _pageMode == NativePageMode.verticalScroll,
       );
+      _scheduleInitialReaderSystemUi();
       unawaited(_syncVolumeKeyPaging());
     } catch (error, stackTrace) {
       debugPrint('Reader settings failed to load: $error');
       debugPrintStack(stackTrace: stackTrace);
       if (mounted) {
         _setReaderState(() => _readerSettingsLoaded = true);
+        _scheduleInitialReaderSystemUi();
         unawaited(_syncVolumeKeyPaging());
       }
     }
@@ -213,7 +220,7 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
         start,
         end,
         _readerTextStyle,
-        preserveEpubFont: _readerFontProfile.isPlatformDefault,
+        preserveDocumentFont: _preserveDocumentFont,
       ),
       onSaveTextAnnotation: _saveTextAnnotation,
       onAskAiSelection: _askAiAboutSelection,

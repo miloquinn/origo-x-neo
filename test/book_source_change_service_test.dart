@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:xxread/book_sources/models/registered_book_source.dart';
 import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/book_sources/services/book_source_change_service.dart';
@@ -12,9 +13,24 @@ import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/book_dao.dart';
+import 'package:xxread/data/migration/book_source_reading_progress_schema_migration.dart';
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  late Database database;
+  late BookSourceReadingProgressStore progressStore;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+    database = await openDatabase(inMemoryDatabasePath);
+    await BookSourceReadingProgressSchemaMigration.migrate(database);
+    progressStore = BookSourceReadingProgressStore(
+      database: () async => database,
+    );
+  });
+
+  tearDown(() => database.close());
 
   test('normalizes book identity and maps a renamed chapter by number', () {
     expect(sameBookTitle('《测试 小说》', '测试小说'), isTrue);
@@ -58,14 +74,15 @@ void main() {
   test(
     'searches, validates content, and replaces the same shelf row',
     () async {
-      final dao = _MemoryBookDao(_shelfBook);
+      final dao = _MemoryBookDao(_shelfBook, progressStore);
       final shelfService = BookSourceShelfService(bookDao: dao);
       final client = _ChangeClient();
       final service = BookSourceChangeService(
         client: client,
         shelfService: shelfService,
+        progressStore: progressStore,
       );
-      await const BookSourceReadingProgressStore().save(
+      await progressStore.save(
         sourceId: _oldSource.id,
         bookId: _oldBook.id,
         progress: BookSourceReadingProgress(
@@ -94,9 +111,11 @@ void main() {
       expect(events, hasLength(1));
       expect(events.single.candidates, hasLength(1));
       final candidate = events.single.candidates.single;
+      final stages = <BookSourceChangeValidationStage>[];
       final validated = await service.validate(
         candidate: candidate,
         position: position,
+        onStage: stages.add,
       );
       final result = await service.commit(
         validated: validated,
@@ -108,14 +127,83 @@ void main() {
       expect(dao.stored.sourceId, _newSource.id);
       expect(dao.stored.sourceBookId, _newBook.id);
       expect(dao.stored.title, _shelfBook.title);
-      expect(dao.stored.currentPage, 5400);
-      final migrated = await const BookSourceReadingProgressStore().load(
+      expect(dao.stored.currentPage, 5000);
+      final migrated = await progressStore.load(
         sourceId: _newSource.id,
         bookId: _newBook.id,
       );
       expect(migrated?.chapterIndex, 5);
-      expect(migrated?.chapterProgress, 0.4);
+      expect(migrated?.chapterProgress, 0);
       expect(client.contentRequests, 1);
+      expect(
+        validated.mappingConfidence,
+        BookSourceChapterMappingConfidence.exactTitle,
+      );
+      expect(stages, BookSourceChangeValidationStage.values);
+    },
+  );
+
+  test(
+    'manual chapter selection is revalidated and starts at chapter top',
+    () async {
+      final client = _ChangeClient();
+      final service = BookSourceChangeService(client: client);
+
+      final validated = await service.validate(
+        candidate: BookSourceChangeCandidate(
+          source: _newSource,
+          book: _newBook,
+          authorMatches: true,
+        ),
+        position: const BookSourceChangePosition(
+          chapterIndex: 8,
+          chapterProgress: 0.85,
+          chapterTitle: '未匹配章节',
+          chapterCount: 20,
+        ),
+        selectedChapterIndex: 2,
+      );
+
+      expect(validated.chapterIndex, 2);
+      expect(validated.chapterProgress, 0);
+      expect(
+        validated.mappingConfidence,
+        BookSourceChapterMappingConfidence.manual,
+      );
+      expect(client.contentRequests, 1);
+    },
+  );
+
+  test(
+    'transaction target conflict remains a typed source-change conflict',
+    () async {
+      final dao = _MemoryBookDao(_shelfBook, progressStore)
+        ..bindingError = const BookSourceBindingConflictException(
+          BookSourceBindingConflictReason.targetAlreadyBound,
+        );
+      final service = BookSourceChangeService(
+        shelfService: BookSourceShelfService(bookDao: dao),
+        progressStore: progressStore,
+      );
+      final validated = ValidatedBookSourceChange(
+        candidate: BookSourceChangeCandidate(
+          source: _newSource,
+          book: _newBook,
+          authorMatches: true,
+        ),
+        book: _newBook,
+        chapters: const [
+          BookSourceChapter(id: 'chapter-1', title: '第一章', order: 0),
+        ],
+        chapterIndex: 0,
+        chapterProgress: 0,
+        responseTime: Duration.zero,
+      );
+
+      await expectLater(
+        service.commit(validated: validated, shelfBook: _shelfBook),
+        throwsA(isA<BookSourceChangeConflict>()),
+      );
     },
   );
 
@@ -242,6 +330,90 @@ void main() {
     expect(events.last.candidates, hasLength(1));
     expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 300)));
   });
+
+  test('validation timeout cancels the active detail request', () async {
+    final client = _HangingValidationClient();
+    final service = BookSourceChangeService(client: client);
+    final candidate = BookSourceChangeCandidate(
+      source: _newSource,
+      book: _newBook,
+      authorMatches: true,
+    );
+
+    await expectLater(
+      service.validate(
+        candidate: candidate,
+        position: const BookSourceChangePosition(
+          chapterIndex: 0,
+          chapterProgress: 0,
+          chapterTitle: '',
+          chapterCount: 0,
+        ),
+        timeout: const Duration(milliseconds: 35),
+      ),
+      throwsA(isA<BookSourceChangeTimeoutException>()),
+    );
+
+    expect(client.cancelled, isTrue);
+  });
+
+  test(
+    'validation deadline returns when a client ignores cancellation',
+    () async {
+      final service = BookSourceChangeService(
+        client: _CancellationIgnoringClient(),
+      );
+      final stopwatch = Stopwatch()..start();
+
+      await expectLater(
+        service.validate(
+          candidate: BookSourceChangeCandidate(
+            source: _newSource,
+            book: _newBook,
+            authorMatches: true,
+          ),
+          position: const BookSourceChangePosition(
+            chapterIndex: 0,
+            chapterProgress: 0,
+            chapterTitle: '',
+            chapterCount: 0,
+          ),
+          timeout: const Duration(milliseconds: 35),
+        ),
+        throwsA(isA<BookSourceChangeTimeoutException>()),
+      );
+
+      stopwatch.stop();
+      expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 300)));
+    },
+  );
+
+  test(
+    'search deadline releases a worker when a client never returns',
+    () async {
+      final service = BookSourceChangeService(
+        client: _CancellationIgnoringClient(),
+        maxConcurrentSearches: 1,
+        perSourceSearchTimeout: const Duration(milliseconds: 35),
+      );
+      final stopwatch = Stopwatch()..start();
+
+      final events = await service
+          .search(
+            sources: [_source('a-dead', 'A dead'), _source('b-fast', 'B fast')],
+            title: _oldBook.title,
+            author: _oldBook.author,
+            checkAuthor: true,
+          )
+          .toList();
+
+      stopwatch.stop();
+      expect(events, hasLength(2));
+      expect(events.first.error, isA<BookSourceChangeTimeoutException>());
+      expect(events.last.candidates, hasLength(1));
+      expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 300)));
+    },
+  );
 }
 
 final _oldSource = _source('old-source', '旧来源');
@@ -333,6 +505,17 @@ class _ChangeClient extends BookSourceClient {
   }) async => _newBook;
 
   @override
+  Future<BookSourceBook> getBookForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    return _newBook;
+  }
+
+  @override
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
     String bookId, {
@@ -344,6 +527,30 @@ class _ChangeClient extends BookSourceClient {
       title: '第${index + 1}章 标题',
       order: index,
     ),
+  );
+
+  @override
+  Future<List<BookSourceChapter>> getChaptersForDownload(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    return getChapters(source, bookId, sourceVariables: sourceVariables);
+  }
+
+  @override
+  Future<List<BookSourceChapter>> getChaptersForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) => getChaptersForDownload(
+    source,
+    bookId,
+    sourceVariables: sourceVariables,
+    cancellation: cancellation,
   );
 
   @override
@@ -362,6 +569,38 @@ class _ChangeClient extends BookSourceClient {
       contentType: 'text/plain',
     );
   }
+
+  @override
+  Future<BookSourceChapterContent> getChapterContentForDownload(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    return getChapterContent(
+      source,
+      bookId: bookId,
+      chapterId: chapterId,
+      sourceVariables: sourceVariables,
+    );
+  }
+
+  @override
+  Future<BookSourceChapterContent> getChapterContentForValidation(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) => getChapterContentForDownload(
+    source,
+    bookId: bookId,
+    chapterId: chapterId,
+    sourceVariables: sourceVariables,
+    cancellation: cancellation,
+  );
 }
 
 class _ConcurrentSearchClient extends BookSourceClient {
@@ -444,10 +683,70 @@ class _TimeoutAwareClient extends BookSourceClient {
   }
 }
 
+class _HangingValidationClient extends BookSourceClient {
+  bool cancelled = false;
+
+  @override
+  Future<BookSourceBook> getBookForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) async {
+    final completed = Completer<void>();
+    void onCancelled() {
+      cancelled = true;
+      if (!completed.isCompleted) completed.complete();
+    }
+
+    cancellation?.addListener(onCancelled);
+    try {
+      await completed.future;
+      cancellation?.throwIfCancelled();
+      return _newBook;
+    } finally {
+      cancellation?.removeListener(onCancelled);
+    }
+  }
+}
+
+class _CancellationIgnoringClient extends BookSourceClient {
+  @override
+  Future<BookSourceBook> getBookForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) => Completer<BookSourceBook>().future;
+
+  @override
+  Future<BookSourceSearchPage> search(
+    RegisteredBookSource source,
+    String query, {
+    int page = 1,
+    int pageSize = 20,
+    BookDownloadCancellation? cancellation,
+  }) {
+    if (source.id == 'a-dead') {
+      return Completer<BookSourceSearchPage>().future;
+    }
+    return Future.value(
+      BookSourceSearchPage(
+        items: const [_oldBook],
+        page: page,
+        pageSize: pageSize,
+        hasMore: false,
+      ),
+    );
+  }
+}
+
 class _MemoryBookDao extends BookDao {
-  _MemoryBookDao(this.stored);
+  _MemoryBookDao(this.stored, this.progressStore);
 
   Book stored;
+  final BookSourceReadingProgressStore progressStore;
+  Object? bindingError;
 
   @override
   Future<Book?> getBookBySource({
@@ -463,6 +762,23 @@ class _MemoryBookDao extends BookDao {
   @override
   Future<Book> updateSourceBinding(Book expected, Book replacement) async {
     stored = replacement;
+    return stored;
+  }
+
+  @override
+  Future<Book> updateSourceBindingWithProgress(
+    Book expected,
+    Book replacement, {
+    required BookSourceReadingProgress progress,
+  }) async {
+    final error = bindingError;
+    if (error != null) throw error;
+    stored = replacement;
+    await progressStore.save(
+      sourceId: replacement.sourceId!,
+      bookId: replacement.sourceBookId!,
+      progress: progress,
+    );
     return stored;
   }
 

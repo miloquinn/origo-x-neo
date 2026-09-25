@@ -8,6 +8,8 @@ class _NativeChapter {
     required this._blocks,
     this.depth = 0,
     this.isNeedSplitTitle = false,
+    this.sourceChapterId,
+    this.sourceBodyStart = 0,
     this.replaceBookTitle = '',
   }) : _title = chapterTitle,
        _dataPath = null,
@@ -22,6 +24,8 @@ class _NativeChapter {
     required this._endOffset,
     this.depth = 0,
     this.isNeedSplitTitle = false,
+    this.sourceChapterId,
+    this.sourceBodyStart = 0,
     this.replaceBookTitle = '',
   }) : _title = chapterTitle,
        _plainText = null,
@@ -35,6 +39,8 @@ class _NativeChapter {
        _title = descriptor['title'] as String? ?? '',
        depth = descriptor['depth'] as int? ?? 0,
        isNeedSplitTitle = false,
+       sourceChapterId = null,
+       sourceBodyStart = 0,
        _plainText = null,
        _blocks = null,
        _dataPath = null,
@@ -43,10 +49,30 @@ class _NativeChapter {
        _epubDescriptor = descriptor,
        _epubLoadArguments = loadArguments;
 
+  _NativeChapter.lazyKindle({
+    required Map<String, dynamic> descriptor,
+    required Map<String, dynamic> loadArguments,
+    this.replaceBookTitle = '',
+  }) : id = descriptor['id'] as String? ?? '',
+       _title = descriptor['title'] as String? ?? '',
+       depth = descriptor['depth'] as int? ?? 0,
+       isNeedSplitTitle = false,
+       sourceChapterId = null,
+       sourceBodyStart = 0,
+       _plainText = null,
+       _blocks = null,
+       _dataPath = null,
+       _startOffset = 0,
+       _endOffset = 0,
+       _kindleDescriptor = descriptor,
+       _kindleLoadArguments = loadArguments;
+
   final String id;
   final String _title;
   final int depth;
   final bool isNeedSplitTitle;
+  final String? sourceChapterId;
+  final int sourceBodyStart;
   String replaceBookTitle;
   int _replacementRevision = -1;
   final String? _plainText;
@@ -56,6 +82,8 @@ class _NativeChapter {
   final int _endOffset;
   Map<String, dynamic>? _epubDescriptor;
   Map<String, dynamic>? _epubLoadArguments;
+  Map<String, dynamic>? _kindleDescriptor;
+  Map<String, dynamic>? _kindleLoadArguments;
   Map<String, int>? _loadedAnchorOffsets;
   String? _loadedText;
   Future<String>? _textLoad;
@@ -71,10 +99,13 @@ class _NativeChapter {
   bool get hasLoadedText => _plainText != null || _loadedText != null;
 
   bool get isLazyEpub => _epubDescriptor != null;
+  bool get isLazyKindle => _kindleDescriptor != null;
   bool get hasPendingLoad => _pendingLoad != null;
   Future<void>? get pendingLoad => _pendingLoad;
   Map<String, dynamic> get epubDescriptor => _epubDescriptor!;
   Map<String, dynamic> get epubLoadArguments => _epubLoadArguments!;
+  Map<String, dynamic> get kindleDescriptor => _kindleDescriptor!;
+  Map<String, dynamic> get kindleLoadArguments => _kindleLoadArguments!;
 
   /// Replacement work is prepared in catalog-sized batches before chapters are
   /// published to layout/navigation. Getters never execute user regular
@@ -278,8 +309,19 @@ class _NativeChapter {
     _resetReplacementCache();
   }
 
+  void applyKindleResult(Map<String, dynamic> chapter) {
+    _loadedText = chapter['plainText'] as String? ?? '';
+    _loadedBlocks = (chapter['blocks'] as List<dynamic>? ?? const [])
+        .map(
+          (block) =>
+              _NativeBlock.fromMap(Map<String, dynamic>.from(block as Map)),
+        )
+        .toList(growable: false);
+    _resetReplacementCache();
+  }
+
   void unloadLazyContent() {
-    if (!isLazyEpub || _pendingLoad != null) return;
+    if ((!isLazyEpub && !isLazyKindle) || _pendingLoad != null) return;
     _loadedText = null;
     _loadedBlocks = null;
     _loadedAnchorOffsets = null;
@@ -523,16 +565,16 @@ double _nativeDouble(Object? value) => switch (value) {
 @visibleForTesting
 String? resolveNativeReaderFontFamily({
   required String? readerFontFamily,
-  required String? epubFontFamily,
-  bool preserveEpubFont = true,
-}) => preserveEpubFont && epubFontFamily != null
-    ? epubFontFamily
+  required String? documentFontFamily,
+  bool preserveDocumentFont = true,
+}) => preserveDocumentFont && documentFontFamily != null
+    ? documentFontFamily
     : readerFontFamily;
 
 TextStyle _styleForNativeBlock(
   _NativeBlock block,
   TextStyle base, {
-  required bool preserveEpubFont,
+  required bool preserveDocumentFont,
 }) {
   return base.copyWith(
     fontSize: (base.fontSize ?? 19) * block.fontScale,
@@ -540,8 +582,8 @@ TextStyle _styleForNativeBlock(
     fontStyle: block.italic ? FontStyle.italic : base.fontStyle,
     fontFamily: resolveNativeReaderFontFamily(
       readerFontFamily: base.fontFamily,
-      epubFontFamily: block.fontFamily,
-      preserveEpubFont: preserveEpubFont,
+      documentFontFamily: block.fontFamily,
+      preserveDocumentFont: preserveDocumentFont,
     ),
     // Keep EPUB typography, but the reader theme owns foreground color so
     // embedded black/white text cannot disappear in night/day modes.
@@ -554,7 +596,7 @@ TextSpan _styledSpanForRange(
   int start,
   int end,
   TextStyle base, {
-  bool preserveEpubFont = true,
+  bool preserveDocumentFont = true,
 }) {
   if (start >= end) return TextSpan(style: base, text: '');
   final children = <InlineSpan>[];
@@ -589,7 +631,7 @@ TextSpan _styledSpanForRange(
         style: _styleForNativeBlock(
           block,
           base,
-          preserveEpubFont: preserveEpubFont,
+          preserveDocumentFont: preserveDocumentFont,
         ),
       ),
     );

@@ -505,7 +505,7 @@ String _destinationLabel(
     HomeNavigationDestination.library => l10n.library,
     HomeNavigationDestination.discover => l10n.discover,
     HomeNavigationDestination.ai => l10n.navAi,
-    HomeNavigationDestination.settings => l10n.settings,
+    HomeNavigationDestination.settings => l10n.navMe,
   };
 }
 
@@ -515,7 +515,7 @@ IconData _destinationIcon(HomeNavigationDestination destination) {
     HomeNavigationDestination.library => Icons.library_books_outlined,
     HomeNavigationDestination.discover => Icons.explore_outlined,
     HomeNavigationDestination.ai => Icons.auto_awesome_outlined,
-    HomeNavigationDestination.settings => Icons.settings_outlined,
+    HomeNavigationDestination.settings => Icons.person_outline_rounded,
   };
 }
 
@@ -525,6 +525,6 @@ IconData _destinationSelectedIcon(HomeNavigationDestination destination) {
     HomeNavigationDestination.library => Icons.library_books,
     HomeNavigationDestination.discover => Icons.explore_rounded,
     HomeNavigationDestination.ai => Icons.auto_awesome,
-    HomeNavigationDestination.settings => Icons.settings,
+    HomeNavigationDestination.settings => Icons.person_rounded,
   };
 }

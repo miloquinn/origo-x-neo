@@ -698,11 +698,10 @@ class _ReaderShaderPageCurlState extends State<ReaderShaderPageCurl>
     final linearProgress =
         (elapsed.inMicroseconds / _middleDragCatchUpDuration.inMicroseconds)
             .clamp(0.0, 1.0);
-    // A front-loaded ease-out made the first painted fold jump most of the
-    // distance in one or two frames. Ease-in-out keeps the edge origin visible
-    // before accelerating into the live pointer, while remaining short enough
-    // to feel like catch-up rather than a separate animation.
-    final horizontalProgress = Curves.easeInOutCubic.transform(linearProgress);
+    // Keep the edge origin visible, but move it promptly enough that a
+    // middle-of-page drag feels attached to the finger. The cubic variant
+    // spent too much of this 120 ms catch-up barely moving at the edge.
+    final horizontalProgress = Curves.easeInOut.transform(linearProgress);
     // Keep the first part of a middle-origin catch-up as a flat vertical roll.
     // Feeding small pointer-Y jitter into the almost-collapsed right-edge curl
     // rotates a very thin polygon and can produce one or two malformed frames.

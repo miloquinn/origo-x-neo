@@ -394,12 +394,69 @@ void main() {
           expect(coverRequests, 0);
           expect(bound.coverImagePath, customPath);
         } else {
+          await dao.coverSaved.future.timeout(const Duration(seconds: 5));
           expect(coverRequests, 1);
-          expect(await File(bound.coverImagePath!).readAsBytes(), [1, 2, 3]);
+          expect(await File(dao.stored!.coverImagePath!).readAsBytes(), [
+            1,
+            2,
+            3,
+          ]);
         }
       },
     );
   }
+
+  test('source binding commits before a slow replacement cover', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'source-rebind-slow-cover-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final original = Book(
+      id: 7,
+      title: '在线小说',
+      filePath: '',
+      format: 'source',
+      storageType: 'online',
+      sourceId: 'old-source',
+      sourceBookId: 'old-book',
+      sourceJson: '{}',
+      sourceBookJson: '{}',
+    );
+    final dao = _MemoryBookDao()..stored = original;
+    final coverStarted = Completer<void>();
+    final releaseCover = Completer<void>();
+    final cache = SourceCoverCache(
+      cacheDirectory: Directory('${directory.path}/cache'),
+      loader: (_) async {
+        coverStarted.complete();
+        await releaseCover.future;
+        return Uint8List.fromList([1, 2, 3]);
+      },
+    );
+    final service = BookSourceShelfService(
+      bookDao: dao,
+      sourceCoverCache: cache,
+      downloadDirectory: directory,
+    );
+
+    final binding = service.replaceOnlineSourceBinding(
+      shelfBook: original,
+      source: _source,
+      book: _sourceBookWithCover,
+      chapterIndex: 2,
+      chapterCount: 10,
+      chapterProgress: 0,
+    );
+    await coverStarted.future.timeout(const Duration(seconds: 1));
+    final rebound = await binding.timeout(const Duration(seconds: 1));
+
+    expect(rebound.sourceId, _source.id);
+    expect(dao.stored?.sourceBookId, _sourceBookWithCover.id);
+    expect(dao.stored?.coverImagePath, isNull);
+    releaseCover.complete();
+    await dao.coverSaved.future.timeout(const Duration(seconds: 5));
+    expect(dao.stored?.coverImagePath, isNotNull);
+  });
 
   test('returns before a slow online cover finishes', () async {
     final directory = await Directory.systemTemp.createTemp(
@@ -790,6 +847,179 @@ void main() {
       expect(await file.readAsString(), '用户正文');
     },
   );
+
+  test('database conflict restores a downloaded book sidecar', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'source-rebind-rollback-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final file = File('${directory.path}/book.txt');
+    await file.writeAsString('用户正文');
+    final original = Book(
+      id: 7,
+      title: '本地书',
+      filePath: file.path,
+      format: 'txt',
+      storageType: 'local',
+      sourceId: _source.id,
+      sourceBookId: _sourceBook.id,
+      sourceJson: jsonEncode(_source.toJson()),
+      sourceBookJson: jsonEncode(_sourceBook.toJson()),
+    );
+    final stateStore = const SourceChapterStateStore();
+    final originalState = SourceChapterState(
+      schemaVersion: 1,
+      bookUid: 'book-7',
+      sourceId: _source.id,
+      sourceBookId: _sourceBook.id,
+      materializedContentHash: SourceChapterStateStore.hashText('用户正文'),
+      baselineKnown: true,
+      chapters: const [],
+      catalogChapterIds: const [],
+      conflicts: const [],
+      revisionOrigin: SourceRevisionOrigin.initialDownload,
+    );
+    await stateStore.save(original, originalState);
+    final dao = _MemoryBookDao()
+      ..stored = original
+      ..sourceBindingError = const BookSourceBindingConflictException(
+        BookSourceBindingConflictReason.readingPositionChanged,
+      );
+    final service = BookSourceShelfService(
+      bookDao: dao,
+      sourceChapterStateStore: stateStore,
+    );
+
+    await expectLater(
+      service.replaceOnlineSourceBinding(
+        shelfBook: original,
+        source: _sourceWithId('replacement-source'),
+        book: _sourceBook,
+        chapterIndex: 0,
+        chapterCount: 3,
+        chapterProgress: 0,
+      ),
+      throwsA(isA<BookSourceBindingConflictException>()),
+    );
+
+    final restored = await stateStore.load(original);
+    expect(restored?.sourceId, _source.id);
+    expect(restored?.sourceBookId, _sourceBook.id);
+    expect(restored?.baselineKnown, isTrue);
+  });
+
+  test(
+    'committed downloaded binding recovers after sidecar save failure',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'source-rebind-recovery-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final file = File('${directory.path}/book.txt');
+      await file.writeAsString('用户正文');
+      final original = Book(
+        id: 7,
+        title: '本地书',
+        filePath: file.path,
+        format: 'txt',
+        storageType: 'local',
+        sourceId: _source.id,
+        sourceBookId: _sourceBook.id,
+        sourceJson: jsonEncode(_source.toJson()),
+        sourceBookJson: jsonEncode(_sourceBook.toJson()),
+      );
+      final originalState = SourceChapterState(
+        schemaVersion: 1,
+        bookUid: 'book-7',
+        sourceId: _source.id,
+        sourceBookId: _sourceBook.id,
+        materializedContentHash: SourceChapterStateStore.hashText('用户正文'),
+        baselineKnown: true,
+        chapters: const [],
+        catalogChapterIds: const ['old-chapter'],
+        conflicts: const [],
+        revisionOrigin: SourceRevisionOrigin.initialDownload,
+      );
+      const durableStore = SourceChapterStateStore();
+      await durableStore.save(original, originalState);
+      final replacement = _sourceWithId('replacement-source');
+      final dao = _MemoryBookDao()..stored = original;
+      final failingStore = _FailOnceSourceChapterStateStore(
+        replacement.id,
+        isDatabaseCommitted: () => dao.stored?.sourceId == replacement.id,
+      );
+      final service = BookSourceShelfService(
+        bookDao: dao,
+        sourceChapterStateStore: failingStore,
+      );
+
+      final rebound = await service.replaceOnlineSourceBinding(
+        shelfBook: original,
+        source: replacement,
+        book: _sourceBook,
+        chapterIndex: 0,
+        chapterCount: 3,
+        chapterProgress: 0,
+      );
+
+      expect(rebound.sourceId, replacement.id);
+      expect(dao.stored?.sourceId, replacement.id);
+      expect((await durableStore.load(original))?.sourceId, _source.id);
+
+      final restarted = BookSourceShelfService(
+        bookDao: dao,
+        sourceChapterStateStore: durableStore,
+      );
+      final repaired = await restarted.recoverDownloadedSourceBinding(rebound);
+      final repairedJson = jsonEncode(repaired?.toJson());
+      final repairedAgain = await restarted.recoverDownloadedSourceBinding(
+        rebound,
+      );
+
+      expect(repaired?.sourceId, replacement.id);
+      expect(repaired?.sourceBookId, _sourceBook.id);
+      expect(repaired?.baselineKnown, isFalse);
+      expect(repaired?.chapters, isEmpty);
+      expect(repaired?.catalogChapterIds, isEmpty);
+      expect(repaired?.revisionOrigin, SourceRevisionOrigin.sourceRebind);
+      expect(jsonEncode(repairedAgain?.toJson()), repairedJson);
+      expect(failingStore.failureCount, 1);
+      expect(failingStore.databaseWasCommittedAtFailure, isTrue);
+    },
+  );
+
+  test(
+    'post-commit local hash failure does not report source change failure',
+    () async {
+      final missingFile = File('/nonexistent/origo-source-change-book.txt');
+      final original = Book(
+        id: 7,
+        title: '本地书',
+        filePath: missingFile.path,
+        format: 'txt',
+        storageType: 'local',
+        sourceId: _source.id,
+        sourceBookId: _sourceBook.id,
+        sourceJson: jsonEncode(_source.toJson()),
+        sourceBookJson: jsonEncode(_sourceBook.toJson()),
+      );
+      final dao = _MemoryBookDao()..stored = original;
+      final service = BookSourceShelfService(bookDao: dao);
+      final replacement = _sourceWithId('replacement-source');
+
+      final rebound = await service.replaceOnlineSourceBinding(
+        shelfBook: original,
+        source: replacement,
+        book: _sourceBook,
+        chapterIndex: 0,
+        chapterCount: 3,
+        chapterProgress: 0,
+      );
+
+      expect(rebound.sourceId, replacement.id);
+      expect(dao.stored?.sourceId, replacement.id);
+    },
+  );
 }
 
 SourceTxtRevisionCommitter _memoryRevisionCommitter(_MemoryBookDao dao) =>
@@ -816,6 +1046,19 @@ final _source = RegisteredBookSource(
   addedAt: DateTime.utc(2026, 7, 12),
 );
 
+RegisteredBookSource _sourceWithId(String id) => RegisteredBookSource(
+  id: id,
+  name: _source.name,
+  description: _source.description,
+  manifestUrl: _source.manifestUrl,
+  apiBaseUrl: _source.apiBaseUrl,
+  protocolVersion: _source.protocolVersion,
+  languages: _source.languages,
+  capabilities: _source.capabilities,
+  enabled: _source.enabled,
+  addedAt: _source.addedAt,
+);
+
 const _sourceBook = BookSourceBook(
   id: 'book-id',
   title: '测试书籍',
@@ -837,6 +1080,7 @@ class _MemoryBookDao extends BookDao {
   final coverSaved = Completer<void>();
   Book? stored;
   int insertCount = 0;
+  Object? sourceBindingError;
 
   @override
   Future<Book?> getBookById(int id) async => stored;
@@ -857,6 +1101,8 @@ class _MemoryBookDao extends BookDao {
 
   @override
   Future<Book> updateSourceBinding(Book expected, Book replacement) async {
+    final error = sourceBindingError;
+    if (error != null) throw error;
     final current = stored!;
     stored = replacement.copyWith(
       currentPage: current.isOnline
@@ -911,6 +1157,46 @@ class _MemoryBookDao extends BookDao {
   Future<void> updateBookCoverPath(int bookId, String? coverImagePath) async {
     stored = stored?.copyWith(coverImagePath: coverImagePath);
     if (!coverSaved.isCompleted) coverSaved.complete();
+  }
+
+  @override
+  Future<bool> updateBookCoverPathIfSource({
+    required int bookId,
+    required String sourceId,
+    required String sourceBookId,
+    required String? expectedCoverImagePath,
+    required String coverImagePath,
+  }) async {
+    if (stored?.id != bookId ||
+        stored?.sourceId != sourceId ||
+        stored?.sourceBookId != sourceBookId ||
+        stored?.coverImagePath != expectedCoverImagePath) {
+      return false;
+    }
+    await updateBookCoverPath(bookId, coverImagePath);
+    return true;
+  }
+}
+
+class _FailOnceSourceChapterStateStore extends SourceChapterStateStore {
+  _FailOnceSourceChapterStateStore(
+    this.failedSourceId, {
+    required this.isDatabaseCommitted,
+  });
+
+  final String failedSourceId;
+  final bool Function() isDatabaseCommitted;
+  int failureCount = 0;
+  bool? databaseWasCommittedAtFailure;
+
+  @override
+  Future<void> save(Book book, SourceChapterState state) async {
+    if (state.sourceId == failedSourceId && failureCount == 0) {
+      failureCount++;
+      databaseWasCommittedAtFailure = isDatabaseCommitted();
+      throw const FileSystemException('Injected sidecar save failure');
+    }
+    await super.save(book, state);
   }
 }
 

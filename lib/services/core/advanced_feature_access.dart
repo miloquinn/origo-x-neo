@@ -22,6 +22,6 @@ class AdvancedFeatureAccess {
   static Future<bool> additionalProtocolsEnabled() async {
     final preferences = await SharedPreferences.getInstance();
     return premiumUnlocked &&
-        preferences.getBool(additionalSourceProtocolsPreferenceKey) == true;
+        preferences.getBool(additionalSourceProtocolsPreferenceKey) != false;
   }
 }

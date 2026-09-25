@@ -433,22 +433,26 @@ extension _NativeReaderControls on _NativeReaderPageState {
       backgroundColor: Colors.transparent,
       builder: (_) => FontSelectionSheet(
         settings: appSettings,
-        domain: FontDomain.reader,
+        domain: _isEpub ? FontDomain.epubReader : FontDomain.reader,
         title: context.l10n.readerFont,
         description: context.l10n.readerFontSelectionDescription,
       ),
     );
     if (!mounted) return null;
-    final selected = appSettings.readerFont;
+    final selected = _isEpub
+        ? appSettings.epubReaderFont
+        : appSettings.readerFont;
     final profile = resolveReaderFontProfile(
       selection: selected,
       locale: Localizations.maybeLocaleOf(context),
     );
     return ReaderFontChoice(
       valueLabel: FontCatalog.labelFor(context.l10n, selected),
-      hint: profile.isPlatformDefault
+      hint: profile.preservesParsedFontFor(widget.book.format)
           ? context.l10n.readerFontBookPriorityHint
-          : context.l10n.readerFontOverrideHint,
+          : _isEpub
+          ? context.l10n.readerFontOverrideHint
+          : FontCatalog.descriptionFor(context.l10n, selected),
       family: profile.fontFamily,
       fallbackFamilies: profile.fontFamilyFallback,
       supportsVariableWeight: selected.supportsVariableWeight,
@@ -500,9 +504,11 @@ extension _NativeReaderControls on _NativeReaderPageState {
         tabletTwoPageHint: context.l10n.readerTabletTwoPageHint,
         fontFamilyLabel: context.l10n.fontFamilyLabel,
         fontFamilyValueLabel: FontCatalog.labelFor(context.l10n, _readerFont),
-        fontFamilyHint: _readerFontProfile.isPlatformDefault
+        fontFamilyHint: _preserveDocumentFont
             ? context.l10n.readerFontBookPriorityHint
-            : context.l10n.readerFontOverrideHint,
+            : _isEpub
+            ? context.l10n.readerFontOverrideHint
+            : FontCatalog.descriptionFor(context.l10n, _readerFont),
         onFontFamilyTap: _showReaderFontPicker,
         fontSizeLabel: context.l10n.fontSizeLabel,
         textBrightnessLabel: context.l10n.readerTextBrightnessLabel,

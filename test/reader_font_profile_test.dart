@@ -4,6 +4,36 @@ import 'package:xxread/core/reader/reader_font_profile.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
 
 void main() {
+  test('EPUB book font and system font have distinct pagination contracts', () {
+    final embedded = resolveReaderFontProfile(
+      selection: FontCatalog.bookEmbeddedFont,
+      platform: TargetPlatform.android,
+      isWeb: false,
+    );
+    final system = resolveReaderFontProfile(
+      selection: FontCatalog.systemFont,
+      platform: TargetPlatform.android,
+      isWeb: false,
+    );
+
+    expect(embedded.preservesBookFont, isTrue);
+    expect(system.preservesBookFont, isFalse);
+    expect(embedded.fontFamily, system.fontFamily);
+    expect(embedded.cacheSignature, isNot(system.cacheSignature));
+    expect(embedded.preservesParsedFontFor('epub'), isTrue);
+    expect(system.preservesParsedFontFor('epub'), isFalse);
+    expect(system.preservesParsedFontFor('azw3'), isTrue);
+    expect(system.preservesParsedFontFor('mobi'), isTrue);
+    expect(
+      resolveReaderFontProfile(
+        selection: FontCatalog.sourceHanSerif,
+        platform: TargetPlatform.android,
+        isWeb: false,
+      ).preservesParsedFontFor('azw3'),
+      isFalse,
+    );
+  });
+
   test('Android platform default uses generic sans-serif', () {
     final profile = resolveReaderFontProfile(
       selection: FontCatalog.systemFont,

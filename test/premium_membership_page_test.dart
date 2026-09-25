@@ -127,6 +127,30 @@ void main() {
     },
   );
 
+  for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+    testWidgets('direct entry reveals billing actions on $platform', (
+      tester,
+    ) async {
+      _usePlatform(platform);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(tester.view.reset);
+      final store = _FakeAppleStore();
+      final account = _TestAccount(store: store);
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+
+      await _pumpPage(tester, account: account, focusBilling: true);
+      await tester.pumpAndSettle();
+      final action = platform == TargetPlatform.iOS
+          ? const ValueKey('account-apple-purchase')
+          : const ValueKey('account-redemption-code');
+      expect(find.byKey(action).hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      _resetPlatform();
+    });
+  }
+
   testWidgets(
     'keeps restore but removes refund actions for an active iOS member',
     (tester) async {
@@ -418,37 +442,39 @@ void main() {
   );
 
   for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-    testWidgets('exports active phone membership in ${mode.name}', (
-      tester,
-    ) async {
-      _usePlatform(TargetPlatform.iOS);
-      addTearDown(_resetPlatform);
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final store = _FakeAppleStore();
-      final account = _TestAccount(store: store, premium: true);
-      addTearDown(account.dispose);
-      addTearDown(store.close);
-      final previewKey = GlobalKey();
-      await _pumpPage(
-        tester,
-        account: account,
-        previewKey: previewKey,
-        previewFont: true,
-        themeMode: mode,
-      );
-      await tester.pumpAndSettle();
-      await _loadBrandIcon(tester);
-      expect(tester.takeException(), isNull);
-      await _capture(
-        tester,
-        previewKey,
-        '$screenshotDirectory/premium-active-phone-${mode.name}.png',
-      );
-      _resetPlatform();
-    }, skip: screenshotDirectory == null);
+    testWidgets(
+      'exports active phone membership in ${mode.name}',
+      (tester) async {
+        _usePlatform(TargetPlatform.iOS);
+        addTearDown(_resetPlatform);
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final store = _FakeAppleStore();
+        final account = _TestAccount(store: store, premium: true);
+        addTearDown(account.dispose);
+        addTearDown(store.close);
+        final previewKey = GlobalKey();
+        await _pumpPage(
+          tester,
+          account: account,
+          previewKey: previewKey,
+          previewFont: true,
+          themeMode: mode,
+        );
+        await tester.pumpAndSettle();
+        await _loadBrandIcon(tester);
+        expect(tester.takeException(), isNull);
+        await _capture(
+          tester,
+          previewKey,
+          '$screenshotDirectory/premium-active-phone-${mode.name}.png',
+        );
+        _resetPlatform();
+      },
+      skip: screenshotDirectory == null,
+    );
   }
 
   testWidgets(
@@ -488,6 +514,7 @@ void main() {
 Future<void> _pumpPage(
   WidgetTester tester, {
   required MemberAccountController account,
+  bool focusBilling = false,
   ThemeMode themeMode = ThemeMode.light,
   TextScaler textScaler = TextScaler.noScaling,
   GlobalKey? previewKey,
@@ -507,7 +534,10 @@ Future<void> _pumpPage(
       ),
       home: RepaintBoundary(
         key: previewKey,
-        child: PremiumMembershipPage(account: account),
+        child: PremiumMembershipPage(
+          account: account,
+          focusBilling: focusBilling,
+        ),
       ),
     ),
   );

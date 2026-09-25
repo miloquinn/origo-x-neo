@@ -3,22 +3,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:xxread/models/home_navigation_destination.dart';
+import 'package:xxread/widgets/floating_pill_navigation_item.dart';
 
 /// 首页导航项模型。
 ///
 /// 壳层只依赖这个结构来绘制导航，不关心页面内部实现。
-class HomeNavigationItem {
+class HomeNavigationItem extends FloatingPillNavigationItem {
   final HomeNavigationDestination destination;
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
   final Widget page;
 
   const HomeNavigationItem({
     required this.destination,
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
+    required super.icon,
+    required super.selectedIcon,
+    required super.label,
     required this.page,
   });
 }

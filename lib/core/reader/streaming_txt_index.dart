@@ -177,10 +177,9 @@ _NormalizedSource _normalizeToUtf8Cache({
     if (temporary.existsSync()) temporary.deleteSync();
     Error.throwWithStackTrace(conversionError, conversionStack!);
   }
-  // Strict validation is performed by the scanner for UTF-8 and by the
-  // streaming decoders for legacy encodings.
+  // The section scanner validates every UTF-8 scalar. Running a separate
+  // validation pass here would read a large book twice before splitting it.
   try {
-    _validateUtf8File(temporary);
     if (target.existsSync()) target.deleteSync();
     temporary.renameSync(target.path);
   } catch (_) {
@@ -276,15 +275,6 @@ class _GbkStreamDecoder {
   String close() {
     if (_lead != null) throw const FormatException('Incomplete GBK sequence');
     return '';
-  }
-}
-
-void _validateUtf8File(File file) {
-  final reader = _Utf8ScalarReader(file);
-  try {
-    while (reader.next() != null) {}
-  } finally {
-    reader.close();
   }
 }
 
@@ -508,7 +498,10 @@ List<_PartRange> _splitSourceRange(
   int sourceEnd,
   int maxChars,
 ) {
-  if (sourceStart == sourceEnd) {
+  // Every valid UTF-8 scalar uses at least as many bytes as UTF-16 units.
+  // Short byte ranges therefore fit without opening and scanning the chapter
+  // again; most novels have thousands of these ordinary-sized chapters.
+  if (sourceEnd - sourceStart <= maxChars) {
     return <_PartRange>[
       _PartRange(start: sourceStart, end: sourceEnd, sourceBodyStart: 0),
     ];

@@ -20,6 +20,10 @@ void main() {
     expect(catalog.hasChildren, [true, true, false, false]);
     expect(catalog.normalizedTitles.first, '第一部');
     expect(catalog.positionsByChapter[1], [1, 2]);
+    expect(catalog.ordinalForChapter(0), 1);
+    expect(catalog.ordinalForChapter(1), 2);
+    expect(catalog.ordinalForChapter(2), 3);
+    expect(catalog.ordinalForChapter(9), isNull);
     expect(catalog.chapterIndexById['part-1'], 0);
     expect(catalog.chapterIndexByTitle['第二章'], 2);
     expect(catalog.initialPositionForChapter(1), 1);
@@ -73,9 +77,7 @@ void main() {
     );
   });
 
-  testWidgets('Origo current-position icon assets are bundled', (
-    tester,
-  ) async {
+  testWidgets('Origo current-position icon assets are bundled', (tester) async {
     final svg = await rootBundle.load(OrigoReaderIconAssets.currentReadingSvg);
     final png = await rootBundle.load(OrigoReaderIconAssets.currentReadingPng);
 
@@ -136,6 +138,41 @@ void main() {
     expect(emptyBookmarksTitle.style?.color, ReaderThemes.green.text);
   });
 
+  testWidgets('navigation refreshes its colors when the reader theme changes', (
+    tester,
+  ) async {
+    Widget sheetWith(ReaderThemePalette palette) => MaterialApp(
+      locale: const Locale('zh'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: ReaderNavigationSheet(
+          palette: palette,
+          chapters: const [ReaderNavigationChapter(title: '第一章', index: 0)],
+          currentChapterIndex: 0,
+          bookmarks: const [],
+          onChapterSelected: (_) {},
+          onBookmarkSelected: (_) {},
+          onBookmarkDeleted: (_) {},
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(sheetWith(ReaderThemes.day));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(sheetWith(ReaderThemes.night));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<Text>(find.text('阅读导航')).style?.color,
+      ReaderThemes.night.text,
+    );
+    expect(
+      tester.widget<Text>(find.text('第一章')).style?.color,
+      ReaderThemes.night.accent,
+    );
+  });
+
   testWidgets('navigation sheet catalog marks the current chapter', (
     tester,
   ) async {
@@ -186,7 +223,11 @@ void main() {
 
     expect(find.byType(OrigoReaderCurrentIcon), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
-    expect(find.byType(IconButton), findsOneWidget);
+    expect(find.byTooltip('关闭'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('reader-navigation-toggle-4')),
+      findsOneWidget,
+    );
     expect(
       tester
           .widgetList<Container>(find.byType(Container))
@@ -264,6 +305,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(OrigoReaderCurrentIcon), findsOneWidget);
+    expect(find.text('第 1/1 章'), findsOneWidget);
     expect(find.text('当前'), findsNWidgets(2));
     expect(
       tester.widget<Text>(find.text('学习就是将错误降到最低')).style?.color,
@@ -386,6 +428,105 @@ void main() {
       tester.widget<Text>(find.text('学习限定了搜索空间')).style?.color,
       ReaderThemes.day.text,
     );
+  });
+
+  testWidgets('navigation refreshes the current subsection as offset changes', (
+    tester,
+  ) async {
+    const chapterText = '第一节\n\n正文一。\n\n第二节\n\n正文二。';
+
+    Widget sheetAt(int offset) => MaterialApp(
+      locale: const Locale('zh'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: ReaderNavigationSheet(
+          palette: ReaderThemes.day,
+          chapters: const [
+            ReaderNavigationChapter(title: '第一节', index: 0),
+            ReaderNavigationChapter(title: '第二节', index: 0, depth: 1),
+          ],
+          currentChapterIndex: 0,
+          currentChapterText: chapterText,
+          currentChapterOffset: offset,
+          bookmarks: const [],
+          onChapterSelected: (_) {},
+          onBookmarkSelected: (_) {},
+          onBookmarkDeleted: (_) {},
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(sheetAt(0));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('第一节')).style?.color,
+      ReaderThemes.day.accent,
+    );
+
+    await tester.pumpWidget(sheetAt(chapterText.indexOf('第二节') + 1));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('第二节')).style?.color,
+      ReaderThemes.day.accent,
+    );
+  });
+
+  testWidgets('navigation stays usable on a narrow large-text screen', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('zh'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(1.5)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: ReaderNavigationSheet(
+            palette: ReaderThemes.night,
+            chapters: const [
+              ReaderNavigationChapter(title: '第一部 漫长的旅程', index: 0),
+              ReaderNavigationChapter(
+                title: '第一章 在大雨到来之前离开旧城',
+                index: 1,
+                depth: 1,
+              ),
+              ReaderNavigationChapter(
+                title: '第二章 漫过山坡的灯火和回忆',
+                index: 2,
+                depth: 1,
+              ),
+            ],
+            currentChapterIndex: 1,
+            bookmarks: const [],
+            onChapterSelected: (_) {},
+            onBookmarkSelected: (_) {},
+            onBookmarkDeleted: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('第一章 在大雨到来之前离开旧城'), findsOneWidget);
+    expect(tester.widget<ListView>(find.byType(ListView)).itemExtent, 96);
+    expect(
+      find.byKey(const ValueKey('reader-navigation-current-chapter-button')),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('书签'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('还没有书签'), findsOneWidget);
   });
 
   testWidgets('navigation sheet opens a deeply nested catalog', (tester) async {

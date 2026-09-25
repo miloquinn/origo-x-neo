@@ -3,6 +3,25 @@ import 'package:xxread/services/sync/secure_sync_config.dart';
 import 'package:xxread/services/sync/sync_models.dart';
 
 void main() {
+  test(
+    'new WebDAV connections default to OrigoX without changing saved paths',
+    () {
+      const fresh = WebDavSyncConfigDraft(
+        serverUrl: 'https://dav.example.com',
+        username: 'reader',
+        password: 'secret',
+      );
+      expect(fresh.rootPath, 'OrigoX');
+      expect(
+        WebDavSyncConfiguration.fromJson({
+          'server_url': 'https://dav.example.com',
+          'username': 'reader',
+          'root_path': 'OrigoReader',
+        }).rootPath,
+        'OrigoReader',
+      );
+    },
+  );
   test('password is stored only in secure storage', () async {
     final secrets = _MemorySecrets();
     final preferences = _MemoryPreferences();

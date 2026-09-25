@@ -64,11 +64,14 @@ extension _NativeReaderHorizontalPaging on _NativeReaderPageState {
         direction,
         textScaler,
       );
-      // 打开动画播完前，相邻章节若未命中分页缓存，也转入预热队列，
-      // 避免整章排版挤在飞行帧里同步执行。
+      // Pages before the restored chapter must be present from the first
+      // PageView build. Inserting them later shifts every controller index
+      // and can overwrite the restored position with the previous chapter.
+      // Forward chapters can still warm after the opening animation.
       if (chapterIndex != _chapterIndex &&
           (!chapter.hasLoadedText ||
-              (!_openingFlightSettledNow &&
+              (chapterIndex > _chapterIndex &&
+                  !_openingFlightSettledNow &&
                   !_pageCache.containsKey(layoutFingerprint)))) {
         _scheduleBookPaginationWarm(
           chapters,

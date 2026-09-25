@@ -145,10 +145,20 @@ class SourceRuntimeRequests
     );
     final stopwatch = _trace.startNetwork();
     try {
-      final response = await _transport.send(
+      final received = await _transport.send(
         outgoing,
         cancellation: cancellation,
       );
+      final response = outgoing.syntheticBody == null
+          ? received
+          : SourceResponse(
+              body: received.body,
+              finalUri: received.finalUri,
+              statusCode: received.statusCode,
+              headers: received.headers,
+              cookies: received.cookies,
+              scriptBaseUrl: expandedTemplate,
+            );
       cancellation?.throwIfCancelled();
       await _sessions.flush(source);
       _trace.networkSuccess(outgoing, response, stopwatch);
@@ -204,6 +214,7 @@ class SourceRuntimeRequests
       scriptContext: scriptContext(
         source,
         baseUrl: response.finalUri,
+        scriptBaseUrl: response.scriptBaseUrl,
         variables: requestVariables(state, variables),
         book: book,
         chapter: chapter,
@@ -217,6 +228,7 @@ class SourceRuntimeRequests
     ReadingSourceConfig source, {
     Object? result,
     Uri? baseUrl,
+    String? scriptBaseUrl,
     Map<String, String> variables = const {},
     Map<String, Object?> book = const {},
     Map<String, Object?> chapter = const {},
@@ -236,6 +248,7 @@ class SourceRuntimeRequests
       source: source,
       result: result,
       baseUrl: baseUrl,
+      scriptBaseUrl: scriptBaseUrl,
       variables: variables,
       book: book,
       chapter: chapter,
@@ -467,6 +480,7 @@ class SourceRuntimeRequests
           : response.statusCode,
       headers: _responseStringMap(checked['headers'], response.headers),
       cookies: _responseStringMap(checked['cookies'], response.cookies),
+      scriptBaseUrl: response.scriptBaseUrl,
     );
   }
 

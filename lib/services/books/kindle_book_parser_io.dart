@@ -173,12 +173,34 @@ KindleBookContent parseKindleContent(Uint8List bytes) {
         if (flow.kind == FlowKind.css && flow.bytes.isNotEmpty)
           _decodeKindleText(flow.bytes, textEncoding),
     ];
+    final fontBytesByBlockIndex = <int, Uint8List>{};
+    final resourceStart = book.section.mobi.firstImageIndex;
+    if (resourceStart > 0 && resourceStart < book.pdb.records.length) {
+      for (var i = resourceStart; i < book.pdb.records.length; i++) {
+        final record = book.pdb.records[i].data;
+        if (record.length < 4 ||
+            record[0] != 0x46 ||
+            record[1] != 0x4f ||
+            record[2] != 0x4e ||
+            record[3] != 0x54) {
+          continue;
+        }
+        try {
+          fontBytesByBlockIndex[i - resourceStart] = FontResource.parse(
+            record,
+          ).payload;
+        } on HeaderException {
+          // A damaged optional font must not make readable text fail to open.
+        }
+      }
+    }
     return KindleBookContent(
       metadata: metadata,
       htmlParts: htmlParts,
       imagesByName: imagesByName,
       imageNameByBlockIndex: imageNameByBlockIndex,
       cssParts: cssParts,
+      fontBytesByBlockIndex: fontBytesByBlockIndex,
     );
   } on KindleDrmException {
     rethrow;

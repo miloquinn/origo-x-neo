@@ -20,7 +20,7 @@ class _WebDavSetupPageState extends State<WebDavSetupPage> {
   final _serverController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _rootController = TextEditingController(text: 'OrigoReader');
+  final _rootController = TextEditingController(text: 'OrigoX');
 
   var _obscurePassword = true;
   var _saving = false;
@@ -33,7 +33,7 @@ class _WebDavSetupPageState extends State<WebDavSetupPage> {
     final sync = context.read<WebDavBackupController>();
     _serverController.text = sync.serverUrl ?? '';
     _usernameController.text = sync.username ?? '';
-    _rootController.text = sync.rootPath ?? 'OrigoReader';
+    _rootController.text = sync.rootPath ?? 'OrigoX';
   }
 
   @override
@@ -119,25 +119,28 @@ class _WebDavSetupPageState extends State<WebDavSetupPage> {
                     _ConnectionHeader(
                       key: const ValueKey('webdav-connection-header'),
                       title: l10n.webDavConnectionTitle,
-                      description: l10n.webDavSecurityNotice,
+                      description:
+                          Localizations.localeOf(context).languageCode == 'zh'
+                          ? '填写你的 WebDAV 服务地址与应用密码。'
+                          : 'Enter your WebDAV address and app password.',
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                     Theme(
                       data: Theme.of(context).copyWith(
                         inputDecorationTheme: InputDecorationTheme(
                           filled: true,
-                          fillColor: palette.cardStrong.withValues(alpha: 0.58),
+                          fillColor: palette.cardStrong.withValues(alpha: 0.82),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 16,
                           ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: palette.border),
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: palette.border),
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide.none,
                           ),
                         ),
                       ),
@@ -160,7 +163,7 @@ class _WebDavSetupPageState extends State<WebDavSetupPage> {
                                   : l10n.webDavErrorUnknown;
                             },
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
                           TextFormField(
                             enabled: !_saving,
                             controller: _usernameController,
@@ -177,7 +180,7 @@ class _WebDavSetupPageState extends State<WebDavSetupPage> {
                                 ? null
                                 : l10n.webDavErrorAuthentication,
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
                           TextFormField(
                             enabled: !_saving,
                             controller: _passwordController,
@@ -210,13 +213,30 @@ class _WebDavSetupPageState extends State<WebDavSetupPage> {
                                 ? null
                                 : l10n.webDavErrorAuthentication,
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 24),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              l10n.webDavRootPath,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
                           TextFormField(
                             enabled: !_saving,
                             controller: _rootController,
                             decoration: InputDecoration(
                               labelText: l10n.webDavRootPath,
                               prefixIcon: const Icon(Icons.folder_outlined),
+                              helperText: hasStoredConfiguration
+                                  ? null
+                                  : (Localizations.localeOf(
+                                              context,
+                                            ).languageCode ==
+                                            'zh'
+                                        ? '默认 OrigoX，备份会保存在该目录下。'
+                                        : 'Defaults to OrigoX. Backups are stored here.'),
                             ),
                             onChanged: _clearError,
                             validator: (value) =>
@@ -275,7 +295,15 @@ class _WebDavSetupPageState extends State<WebDavSetupPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 14),
+                    Text(
+                      l10n.webDavSecurityNotice,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: palette.textMuted,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(

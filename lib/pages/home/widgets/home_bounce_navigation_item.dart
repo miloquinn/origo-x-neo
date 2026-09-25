@@ -5,19 +5,21 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'home_navigation_item.dart';
 import '../home_mobile_chrome.dart';
 import 'package:xxread/utils/ui_style.dart';
+import 'package:xxread/widgets/floating_pill_navigation_item.dart';
+
+import 'home_navigation_item.dart';
 
 /// 底部导航单个按钮（带按压回弹动效）。
-class HomeBounceNavigationItem extends StatefulWidget {
-  final HomeNavigationItem item;
+class FloatingPillNavigationButton extends StatefulWidget {
+  final FloatingPillNavigationItem item;
   final bool isSelected;
   final bool showLabel;
   final bool horizontal;
   final VoidCallback onTap;
 
-  const HomeBounceNavigationItem({
+  const FloatingPillNavigationButton({
     super.key,
     required this.item,
     required this.isSelected,
@@ -27,11 +29,27 @@ class HomeBounceNavigationItem extends StatefulWidget {
   });
 
   @override
-  State<HomeBounceNavigationItem> createState() =>
-      _HomeBounceNavigationItemState();
+  State<FloatingPillNavigationButton> createState() =>
+      _FloatingPillNavigationButtonState();
 }
 
-class _HomeBounceNavigationItemState extends State<HomeBounceNavigationItem>
+/// Keeps the home navigation's typed item contract for existing callers.
+class HomeBounceNavigationItem extends FloatingPillNavigationButton {
+  const HomeBounceNavigationItem({
+    super.key,
+    required HomeNavigationItem item,
+    required super.isSelected,
+    super.showLabel,
+    super.horizontal,
+    required super.onTap,
+  }) : super(item: item);
+
+  @override
+  HomeNavigationItem get item => super.item as HomeNavigationItem;
+}
+
+class _FloatingPillNavigationButtonState
+    extends State<FloatingPillNavigationButton>
     with TickerProviderStateMixin {
   static const _selectionDuration = Duration(milliseconds: 260);
   static const _deselectionDuration = Duration(milliseconds: 180);
@@ -78,7 +96,7 @@ class _HomeBounceNavigationItemState extends State<HomeBounceNavigationItem>
   }
 
   @override
-  void didUpdateWidget(covariant HomeBounceNavigationItem oldWidget) {
+  void didUpdateWidget(covariant FloatingPillNavigationButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isSelected != widget.isSelected) {
       if (widget.isSelected) {

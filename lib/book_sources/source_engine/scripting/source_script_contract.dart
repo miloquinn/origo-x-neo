@@ -8,7 +8,9 @@ class SourceScriptContext {
   const SourceScriptContext({
     required this.source,
     this.result,
+    this.defaultRuleContent,
     this.baseUrl,
+    this.scriptBaseUrl,
     this.variables = const {},
     this.book = const {},
     this.chapter = const {},
@@ -31,7 +33,9 @@ class SourceScriptContext {
 
   final ReadingSourceConfig source;
   final Object? result;
+  final Object? defaultRuleContent;
   final Uri? baseUrl;
+  final String? scriptBaseUrl;
   final Map<String, String> variables;
   final Map<String, Object?> book;
   final Map<String, Object?> chapter;
@@ -65,7 +69,9 @@ class SourceScriptContext {
   SourceScriptContext copyWith({
     void Function(String message)? messageWriter,
     Object? result,
+    Object? defaultRuleContent,
     Uri? baseUrl,
+    String? scriptBaseUrl,
     Map<String, String>? variables,
     Map<String, Object?>? book,
     Map<String, Object?>? chapter,
@@ -75,7 +81,9 @@ class SourceScriptContext {
     source: source,
     messageWriter: messageWriter ?? this.messageWriter,
     result: result ?? this.result,
+    defaultRuleContent: defaultRuleContent ?? this.defaultRuleContent,
     baseUrl: baseUrl ?? this.baseUrl,
+    scriptBaseUrl: scriptBaseUrl ?? this.scriptBaseUrl,
     variables: variables ?? this.variables,
     book: book ?? this.book,
     chapter: chapter ?? this.chapter,

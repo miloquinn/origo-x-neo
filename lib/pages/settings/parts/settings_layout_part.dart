@@ -1,12 +1,12 @@
 part of '../settings_page.dart';
 
 extension _SettingsLayoutPart on _SettingsPageState {
-  Widget _buildSettingsTopRow(AppLocalizations l10n, bool useRailNavigation) {
+  Widget _buildSettingsTopRow(AppLocalizations l10n) {
     final palette = PageStyleHelper.palette(context);
     return Row(
       children: [
         Text(
-          l10n.settings,
+          l10n.navMe,
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
             fontWeight: FontWeight.w700,
             height: 1.05,
@@ -77,104 +77,6 @@ extension _SettingsLayoutPart on _SettingsPageState {
     );
   }
 
-  Widget _buildSettingsLayout({
-    required AppLocalizations l10n,
-    required ThemeNotifier themeNotifier,
-    required AppSettingsNotifier appSettings,
-    required WebDavBackupController webDavSync,
-    required bool useRailNavigation,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (useRailNavigation) ...[
-          _buildSettingsTopRow(l10n, useRailNavigation),
-          const SizedBox(height: 24),
-        ],
-        const SettingsAccountCard(),
-        const SizedBox(height: 24),
-        Row(
-          key: const ValueKey('settings-wide-layout'),
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                key: const ValueKey('settings-primary-column'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildAppearanceSettingsSection(
-                    l10n,
-                    themeNotifier,
-                    appSettings,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildReadingSettingsSection(l10n),
-                  const SizedBox(height: 20),
-                  _buildGeneralSettingsSection(l10n, appSettings),
-                ],
-              ),
-            ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: Column(
-                key: const ValueKey('settings-secondary-column'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildDataServicesSection(l10n, webDavSync),
-                  const SizedBox(height: 20),
-                  if (appSettings.advancedFeaturesUnlocked) ...[
-                    _buildAdvancedSettingsSection(l10n, appSettings),
-                    const SizedBox(height: 20),
-                  ],
-                  _buildSupportSettingsSection(l10n),
-                  const SizedBox(height: 20),
-                  _buildAboutCard(),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 100),
-      ],
-    );
-  }
-
-  List<Widget> _buildSettingsSingleColumnChildren({
-    required AppLocalizations l10n,
-    required ThemeNotifier themeNotifier,
-    required AppSettingsNotifier appSettings,
-    required WebDavBackupController webDavSync,
-    required bool useRailNavigation,
-  }) {
-    return [
-      if (useRailNavigation) ...[
-        _buildSettingsTopRow(l10n, useRailNavigation),
-        const SizedBox(height: 24),
-      ],
-      const KeyedSubtree(
-        key: ValueKey('settings-single-column-layout'),
-        child: SettingsAccountCard(),
-      ),
-      const SizedBox(height: 20),
-      _buildAppearanceSettingsSection(l10n, themeNotifier, appSettings),
-      const SizedBox(height: 20),
-      _buildReadingSettingsSection(l10n),
-      const SizedBox(height: 20),
-      _buildDataServicesSection(l10n, webDavSync),
-      const SizedBox(height: 20),
-      _buildGeneralSettingsSection(l10n, appSettings),
-      const SizedBox(height: 20),
-      if (appSettings.advancedFeaturesUnlocked) ...[
-        _buildAdvancedSettingsSection(l10n, appSettings),
-        const SizedBox(height: 20),
-      ],
-      _buildSupportSettingsSection(l10n),
-      const SizedBox(height: 20),
-      _buildAboutCard(),
-      const SizedBox(height: 100),
-    ];
-  }
-
   Widget _buildAppearanceSettingsSection(
     AppLocalizations l10n,
     ThemeNotifier themeNotifier,
@@ -190,6 +92,7 @@ extension _SettingsLayoutPart on _SettingsPageState {
         _buildAppFontSelector(appSettings),
         _buildAppTextSizeSelector(appSettings),
         _buildReaderFontSelector(appSettings),
+        _buildEpubReaderFontSelector(appSettings),
         _buildCustomFontsManager(appSettings),
         _buildActionSetting(
           title: l10n.settingsLibraryLayoutTitle,
@@ -238,6 +141,15 @@ extension _SettingsLayoutPart on _SettingsPageState {
           onChanged: (value) => _mutate(() => _autoResumeReading = value),
           icon: Icons.restore,
         ),
+        if (DesktopWindowService.isDesktopPlatform)
+          _buildSwitchSetting(
+            key: const ValueKey('settings-close-reader-to-library'),
+            title: l10n.settingsCloseReaderToLibraryTitle,
+            subtitle: l10n.settingsCloseReaderToLibrarySubtitle,
+            value: _closeReaderToLibrary,
+            onChanged: (value) => _mutate(() => _closeReaderToLibrary = value),
+            icon: Icons.keyboard_return_rounded,
+          ),
         _buildActionSetting(
           title: l10n.readerTopBarStyleTitle,
           subtitle: _readerTopBarStyleTitle(_readerTopBarStyle),
@@ -248,26 +160,14 @@ extension _SettingsLayoutPart on _SettingsPageState {
     );
   }
 
-  Widget _buildDataServicesSection(
+  Widget _buildDataSyncSettingsSection(
     AppLocalizations l10n,
     WebDavBackupController webDavSync,
   ) {
     return _buildSectionCard(
-      title: l10n.settingsSectionDataServices,
-      icon: Icons.hub_outlined,
+      title: l10n.settingsDataSyncTitle,
+      icon: Icons.cloud_sync_outlined,
       children: [
-        _buildActionSetting(
-          title: l10n.bookSourceManagementTitle,
-          subtitle: l10n.settingsContentSourcesSubtitle,
-          onTap: _openBookSourceManagement,
-          icon: Icons.travel_explore_outlined,
-        ),
-        _buildActionSetting(
-          title: l10n.replaceRulesTitle,
-          subtitle: l10n.replaceRulesSettingsSubtitle,
-          onTap: _openReplaceRules,
-          icon: Icons.find_replace_outlined,
-        ),
         _buildActionSetting(
           title: BackupCopy.of(context).title,
           subtitle: _webDavSyncSubtitle(webDavSync),
@@ -286,6 +186,27 @@ extension _SettingsLayoutPart on _SettingsPageState {
           ),
           onTap: () => unawaited(_openCacheManagement()),
           icon: Icons.cleaning_services_outlined,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContentServicesSection(AppLocalizations l10n) {
+    return _buildSectionCard(
+      title: l10n.settingsContentServicesTitle,
+      icon: Icons.hub_outlined,
+      children: [
+        _buildActionSetting(
+          title: l10n.bookSourceManagementTitle,
+          subtitle: l10n.settingsContentSourcesSubtitle,
+          onTap: _openBookSourceManagement,
+          icon: Icons.travel_explore_outlined,
+        ),
+        _buildActionSetting(
+          title: l10n.replaceRulesTitle,
+          subtitle: l10n.replaceRulesSettingsSubtitle,
+          onTap: _openReplaceRules,
+          icon: Icons.find_replace_outlined,
         ),
         _buildActionSetting(
           title: l10n.settingsAiAssistantTitle,
@@ -390,20 +311,17 @@ extension _SettingsLayoutPart on _SettingsPageState {
     if (AppDistribution.usesAppleBilling) {
       return const SizedBox.shrink();
     }
-    return KeyedSubtree(
-      key: _supportSectionKey,
-      child: _buildSectionCard(
-        title: l10n.settingsSectionAboutSupport,
-        icon: Icons.volunteer_activism_outlined,
-        children: [
-          DeveloperSupportCard(
-            onWechatTap: () =>
-                _showDonationDialog(DeveloperDonationMethod.wechat),
-            onAlipayTap: () =>
-                _showDonationDialog(DeveloperDonationMethod.alipay),
-          ),
-        ],
-      ),
+    return _buildSectionCard(
+      title: l10n.settingsSectionAboutSupport,
+      icon: Icons.volunteer_activism_outlined,
+      children: [
+        DeveloperSupportCard(
+          onWechatTap: () =>
+              _showDonationDialog(DeveloperDonationMethod.wechat),
+          onAlipayTap: () =>
+              _showDonationDialog(DeveloperDonationMethod.alipay),
+        ),
+      ],
     );
   }
 }

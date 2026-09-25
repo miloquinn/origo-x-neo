@@ -107,6 +107,7 @@ class FloatingSubpageScaffold extends StatelessWidget {
               children: [
                 SafeArea(
                   top: false,
+                  bottom: false,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -170,7 +171,7 @@ EdgeInsets floatingSubpagePadding(
             )
           : 0),
   right,
-  bottom,
+  bottom + MediaQuery.viewPaddingOf(context).bottom,
 );
 
 class _SubpageSystemUi extends StatefulWidget {

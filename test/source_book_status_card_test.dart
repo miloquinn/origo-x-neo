@@ -107,6 +107,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('open details apply source metadata events for their book', (
+    tester,
+  ) async {
+    final original = _book();
+    Book? delivered;
+    await show(
+      tester,
+      SourceBookStatusCard(
+        book: original,
+        onBookChanged: (book) => delivered = book,
+      ),
+    );
+    final encoded = const SourceBookUpdateInfo(
+      status: SourceBookCheckStatus.available,
+      newChapterCount: 2,
+    ).encodeInto(original);
+    LibraryEventBus().notifySourceMetadataChanged(original, encoded);
+    await tester.pumpAndSettle();
+
+    expect(find.text('有新章节'), findsOneWidget);
+    expect(delivered?.sourceBookJson, encoded);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'unbound TXT offers binding and explanation without update button',
     (tester) async {

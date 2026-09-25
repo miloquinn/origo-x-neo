@@ -38,7 +38,9 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
           child: FutureBuilder<List<_NativeChapter>>(
             future: _chaptersFuture,
             builder: (context, snapshot) {
-              if (!_readerSettingsLoaded || !_readerFontReady) {
+              if (!_readerSettingsLoaded ||
+                  !_readerFontReady ||
+                  !_readerSystemUiApplied) {
                 return _buildOpeningScaffold(
                   key: const ValueKey('native-reader-opening-placeholder'),
                   showLoader: false,
@@ -104,9 +106,26 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                     builder: (context, constraints) {
                       final size = constraints.biggest;
                       _readerViewportSize = size;
-                      final usesTwoPageLayout = _usesTwoPageLayout(size);
+                      final paginationViewport = _desktopResizeController
+                          .resolve(
+                            size,
+                            enabled:
+                                !kIsWeb &&
+                                (defaultTargetPlatform ==
+                                        TargetPlatform.macOS ||
+                                    defaultTargetPlatform ==
+                                        TargetPlatform.windows ||
+                                    defaultTargetPlatform ==
+                                        TargetPlatform.linux),
+                            onSettled: () {
+                              if (mounted) _setReaderState(() {});
+                            },
+                          );
+                      final usesTwoPageLayout = _usesTwoPageLayout(
+                        paginationViewport,
+                      );
                       final paginationSize = _paginationSize(
-                        size,
+                        paginationViewport,
                         usesTwoPageLayout,
                       );
                       final paginationGeometryChanged =
@@ -132,7 +151,7 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                       if (_pageMode == NativePageMode.verticalScroll) {
                         _visibleContinuousParts = _continuousPartsFor(
                           chapter,
-                          size,
+                          paginationViewport,
                         );
                         _visiblePages = _visibleContinuousParts
                             .map((part) => part.content)
@@ -398,7 +417,7 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                                                 textDirection,
                                                 textScaler,
                                               ),
-                                              size,
+                                              paginationViewport,
                                             ),
                                           ),
                                         ),

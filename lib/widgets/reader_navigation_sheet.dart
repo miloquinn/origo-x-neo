@@ -108,6 +108,22 @@ class ReaderNavigationCatalog {
         : positions.first;
   }
 
+  int? ordinalForChapter(int chapterIndex) {
+    var low = 0;
+    var high = sortedChapterIndexes.length;
+    while (low < high) {
+      final middle = low + ((high - low) >> 1);
+      final value = sortedChapterIndexes[middle];
+      if (value == chapterIndex) return middle + 1;
+      if (value < chapterIndex) {
+        low = middle + 1;
+      } else {
+        high = middle;
+      }
+    }
+    return null;
+  }
+
   int lastPositionBeforeChapter(int chapterIndex) {
     var low = 0;
     var high = sortedChapterIndexes.length;
@@ -185,8 +201,7 @@ class ReaderNavigationSheet extends StatefulWidget {
 
 class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     with SingleTickerProviderStateMixin {
-  static const _chapterExtent = 64.0;
-  static const _treeIndent = 16.0;
+  static const _catalogTopPadding = 4.0;
   static const _navigationResolveDelay = Duration(milliseconds: 300);
 
   late final TabController _tabController;
@@ -198,8 +213,12 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
   late ReaderNavigationCatalog _catalog;
   List<int>? _visibleCache;
   int? _resolvedNavigationPosition;
+  int? _currentPositionCache;
   bool _navigationPositionResolved = false;
   Timer? _navigationResolveTimer;
+  ThemeData? _sheetTheme;
+  ReaderThemePalette? _themePalette;
+  TextTheme? _themeTypography;
 
   @override
   void initState() {
@@ -235,13 +254,23 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
   @override
   void didUpdateWidget(covariant ReaderNavigationSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.catalog, widget.catalog) ||
-        !identical(oldWidget.chapters, widget.chapters)) {
+    final catalogChanged =
+        !identical(oldWidget.catalog, widget.catalog) ||
+        !identical(oldWidget.chapters, widget.chapters);
+    if (catalogChanged) {
       _collapsedChapterPositions.clear();
       _catalog = widget.catalog ?? ReaderNavigationCatalog(widget.chapters);
       _visibleCache = null;
     }
-    if (oldWidget.currentChapterIndex != widget.currentChapterIndex) {
+    if (catalogChanged ||
+        oldWidget.currentChapterIndex != widget.currentChapterIndex ||
+        oldWidget.currentNavigationPosition !=
+            widget.currentNavigationPosition ||
+        oldWidget.currentChapterOffset != widget.currentChapterOffset ||
+        !identical(oldWidget.currentChapterText, widget.currentChapterText) ||
+        oldWidget.resolveCurrentNavigationPosition !=
+            widget.resolveCurrentNavigationPosition) {
+      _currentPositionCache = null;
       _resolvedNavigationPosition = widget.currentNavigationPosition;
       _navigationPositionResolved =
           widget.resolveCurrentNavigationPosition == null;
@@ -265,6 +294,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     final resolver = widget.resolveCurrentNavigationPosition;
     if (resolver != null && !_navigationPositionResolved) {
       _resolvedNavigationPosition = resolver();
+      _currentPositionCache = null;
       _navigationPositionResolved = true;
       if (mounted) setState(() {});
     }
@@ -311,7 +341,10 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     return visible;
   }
 
-  int get _currentChapterPosition {
+  int get _currentChapterPosition =>
+      _currentPositionCache ??= _findCurrentChapterPosition();
+
+  int _findCurrentChapterPosition() {
     final suppliedPosition = _resolvedNavigationPosition;
     if (suppliedPosition != null &&
         suppliedPosition >= 0 &&
@@ -399,14 +432,15 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
             (position) => position == currentPosition,
           );
     if (visiblePosition < 0) return;
+    final chapterExtent = _chapterExtent;
     final position = _chapterScrollController.position;
-    final currentTop = visiblePosition * _chapterExtent;
-    final currentBottom = currentTop + _chapterExtent;
+    final currentTop = _catalogTopPadding + visiblePosition * chapterExtent;
+    final currentBottom = currentTop + chapterExtent;
     final visibleTop = position.pixels;
     final visibleBottom = visibleTop + position.viewportDimension;
     if (currentTop >= visibleTop && currentBottom <= visibleBottom) return;
     final rawTarget = currentTop - position.viewportDimension * 0.32;
-    final alignedTarget = (rawTarget / _chapterExtent).floor() * _chapterExtent;
+    final alignedTarget = (rawTarget / chapterExtent).floor() * chapterExtent;
     final target = alignedTarget.clamp(0.0, position.maxScrollExtent);
     if (animate) {
       _chapterScrollController.animateTo(
@@ -419,13 +453,21 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     }
   }
 
+  double get _chapterExtent =>
+      (68 * MediaQuery.textScalerOf(context).scale(16) / 16).clamp(68.0, 96.0);
+
   @override
   Widget build(BuildContext context) {
-    final theme = widget.palette.toThemeData(
-      typography: Theme.of(context).textTheme,
-    );
+    final typography = Theme.of(context).textTheme;
+    if (_sheetTheme == null ||
+        !identical(widget.palette, _themePalette) ||
+        !identical(typography, _themeTypography)) {
+      _themePalette = widget.palette;
+      _themeTypography = typography;
+      _sheetTheme = widget.palette.toThemeData(typography: typography);
+    }
     return Theme(
-      data: theme,
+      data: _sheetTheme!,
       child: Builder(
         builder: (themedContext) => Material(
           color: widget.palette.surface,
@@ -439,7 +481,6 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                 _buildDragHandle(),
                 _buildHeader(themedContext),
                 _buildTabs(themedContext),
-                Divider(height: 1, color: widget.palette.border),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -478,8 +519,12 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
   }
 
   Widget _buildHeader(BuildContext context) {
+    final chapterCount = _catalog.sortedChapterIndexes.length;
+    final chapterOrdinal = _catalog.ordinalForChapter(
+      widget.currentChapterIndex,
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 12, 10),
+      padding: const EdgeInsets.fromLTRB(22, 18, 16, 12),
       child: Row(
         children: [
           Expanded(
@@ -488,26 +533,36 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
               children: [
                 Text(
                   context.l10n.readerNavigationTitle,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.l10n.readerNavigationPosition(
-                    widget.currentChapterIndex + 1,
-                    _catalog.chapters.length,
-                  ),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: widget.palette.secondaryText,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: widget.palette.text,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
                   ),
                 ),
+                const SizedBox(height: 4),
+                if (chapterOrdinal != null)
+                  Text(
+                    context.l10n.readerNavigationPosition(
+                      chapterOrdinal,
+                      chapterCount,
+                    ),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: widget.palette.secondaryText,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
               ],
             ),
           ),
-          TextButton(
+          IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(MaterialLocalizations.of(context).closeButtonTooltip),
+            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+            style: IconButton.styleFrom(
+              backgroundColor: widget.palette.controlBar,
+              foregroundColor: widget.palette.secondaryText,
+              minimumSize: const Size(44, 44),
+            ),
+            icon: const Icon(Icons.close_rounded, size: 20),
           ),
         ],
       ),
@@ -516,40 +571,30 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
 
   Widget _buildTabs(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: widget.palette.controlBar,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: widget.palette.border.withValues(alpha: 0.72),
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: TabBar(
+        controller: _tabController,
+        labelColor: widget.palette.accent,
+        unselectedLabelColor: widget.palette.secondaryText,
+        labelStyle: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        unselectedLabelStyle: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+        dividerColor: widget.palette.border.withValues(alpha: 0.65),
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(color: widget.palette.accent, width: 3),
+          insets: const EdgeInsets.symmetric(horizontal: 22),
         ),
-        child: TabBar(
-          controller: _tabController,
-          dividerColor: Colors.transparent,
-          indicatorSize: TabBarIndicatorSize.tab,
-          indicator: BoxDecoration(
-            color: widget.palette.controlFill,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: widget.palette.shadow.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+        tabs: [
+          Tab(
+            height: 52,
+            child: _tabLabel(label: context.l10n.readerToolbarTOC),
           ),
-          tabs: [
-            Tab(
-              height: 42,
-              child: _tabLabel(label: context.l10n.readerToolbarTOC),
-            ),
-            Tab(height: 42, child: _tabLabel(label: context.l10n.bookmarks)),
-            Tab(height: 42, child: _tabLabel(label: context.l10n.notes)),
-          ],
-        ),
+          Tab(height: 52, child: _tabLabel(label: context.l10n.bookmarks)),
+          Tab(height: 52, child: _tabLabel(label: context.l10n.notes)),
+        ],
       ),
     );
   }
@@ -566,10 +611,11 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
   Widget _buildCatalog(BuildContext context) {
     final chapters = _visibleChapters;
     final currentPosition = _currentChapterPosition;
+    final chapterExtent = _chapterExtent;
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
           child: Row(
             children: [
               Expanded(
@@ -582,20 +628,35 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
                     hintText: context.l10n.readerSearchChapters,
-                    filled: true,
-                    fillColor: widget.palette.controlBar,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      size: 21,
+                      color: widget.palette.secondaryText,
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
+                    filled: true,
+                    fillColor: widget.palette.controlBar.withValues(
+                      alpha: 0.72,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 13,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: widget.palette.border.withValues(alpha: 0.72),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: widget.palette.accent.withValues(alpha: 0.75),
+                      ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Tooltip(
                 message: context.l10n.readerBackToCurrentChapter,
                 child: TextButton(
@@ -604,10 +665,10 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                   ),
                   onPressed: _scrollToCurrent,
                   style: TextButton.styleFrom(
-                    minimumSize: const Size(60, 48),
-                    backgroundColor: widget.palette.controlFill,
+                    foregroundColor: widget.palette.accent,
+                    minimumSize: const Size(60, 52),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: Text(context.l10n.readerCurrentChapter),
@@ -620,6 +681,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
           child: chapters.isEmpty
               ? _emptyState(
                   context,
+                  icon: Icons.manage_search_rounded,
                   title: context.l10n.readerNoChapterResults,
                   message: context.l10n.readerNoChapterResultsHint,
                 )
@@ -641,8 +703,13 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                   trackBorderColor: Colors.transparent,
                   child: ListView.builder(
                     controller: _chapterScrollController,
-                    padding: const EdgeInsets.fromLTRB(8, 2, 20, 20),
-                    itemExtent: _chapterExtent,
+                    padding: const EdgeInsets.fromLTRB(
+                      8,
+                      _catalogTopPadding,
+                      20,
+                      20,
+                    ),
+                    itemExtent: chapterExtent,
                     itemCount: chapters.length,
                     itemBuilder: (context, visibleIndex) {
                       final position = chapters[visibleIndex];
@@ -665,7 +732,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     final title = normalizedTitle.isEmpty
         ? context.l10n.readerChapterFallback(chapter.index + 1)
         : normalizedTitle;
-    final displayDepth = chapter.depth.clamp(0, 8);
+    final displayDepth = chapter.depth.clamp(0, 4);
     final isSearching = _query.trim().isNotEmpty;
     return Semantics(
       container: true,
@@ -684,47 +751,51 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
               widget.onChapterSelected(chapter.index);
             }
           },
-          borderRadius: BorderRadius.circular(16),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.only(left: 4, right: 8),
-            decoration: BoxDecoration(
-              color: selected
-                  ? widget.palette.accent.withValues(alpha: 0.08)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(13),
-            ),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.only(left: 4, right: 6),
+            decoration: selected
+                ? BoxDecoration(
+                    color: widget.palette.accent.withValues(alpha: 0.09),
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                : null,
             child: Row(
               children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 3,
-                  height: selected ? 30 : 0,
-                  decoration: BoxDecoration(
-                    color: widget.palette.accent,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _buildDepthGuides(displayDepth),
+                if (selected)
+                  Container(
+                    width: 3,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: widget.palette.accent,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  )
+                else
+                  const SizedBox(width: 3),
+                SizedBox(width: 8 + displayDepth * 16),
                 Expanded(
                   child: Text(
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: selected
+                          ? FontWeight.w700
+                          : displayDepth == 0
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       color: selected
                           ? widget.palette.accent
                           : widget.palette.text,
+                      height: 1.3,
                     ),
                   ),
                 ),
                 if (selected) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   OrigoReaderCurrentIcon(
-                    size: 20,
+                    size: 18,
                     color: widget.palette.accent,
                   ),
                   const SizedBox(width: 4),
@@ -737,7 +808,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                   ),
                 ],
                 if (_catalog.hasChildren[position]) ...[
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 2),
                   _buildTreeControl(
                     context,
                     position: position,
@@ -749,28 +820,6 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDepthGuides(int depth) {
-    if (depth <= 0) return const SizedBox.shrink();
-    return SizedBox(
-      width: depth * _treeIndent,
-      child: Row(
-        children: [
-          for (var level = 0; level < depth; level++)
-            SizedBox(
-              width: _treeIndent,
-              child: Center(
-                child: Container(
-                  width: 1,
-                  height: _chapterExtent,
-                  color: widget.palette.border.withValues(alpha: 0.62),
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -788,8 +837,8 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     final expanded = !_collapsedChapterPositions.contains(position);
     final localizations = MaterialLocalizations.of(context);
     return SizedBox(
-      width: 34,
-      height: 42,
+      width: 44,
+      height: 44,
       child: Tooltip(
         message: expanded
             ? localizations.expandedIconTapHint
@@ -800,7 +849,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
           ),
           onPressed: enabled ? () => _toggleChapter(position) : null,
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 34, height: 42),
+          constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           visualDensity: VisualDensity.compact,
           icon: AnimatedRotation(
             turns: expanded ? 0.25 : 0,
@@ -821,6 +870,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     if (widget.bookmarks.isEmpty) {
       return _emptyState(
         context,
+        icon: Icons.bookmark_border_rounded,
         title: context.l10n.readerNoBookmarks,
         message: context.l10n.readerNoBookmarksHint,
       );
@@ -846,6 +896,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     if (annotations.isEmpty) {
       return _emptyState(
         context,
+        icon: Icons.notes_rounded,
         title: context.l10n.readerNoAnnotations,
         message: context.l10n.readerNoAnnotationsHint,
       );
@@ -919,13 +970,16 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
       _ => context.l10n.noteTypeHighlight,
     };
     return Material(
-      color: widget.palette.controlBar.withValues(alpha: 0.72),
-      borderRadius: BorderRadius.circular(18),
+      color: widget.palette.controlBar.withValues(alpha: 0.48),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: widget.palette.border.withValues(alpha: 0.55)),
+      ),
       child: InkWell(
         onTap: widget.onAnnotationSelected == null || !navigable
             ? null
             : () => widget.onAnnotationSelected!(annotation),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
           child: Row(
@@ -951,7 +1005,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                               ? Icons.mode_comment_outlined
                               : annotation.type == readerAnnotationTypeUnderline
                               ? Icons.format_underlined_rounded
-                              : Icons.auto_awesome_rounded,
+                              : Icons.border_color_outlined,
                           size: 17,
                           color: color,
                         ),
@@ -1050,12 +1104,19 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
       label: chapterTitle,
       child: Material(
         color: current
-            ? widget.palette.accent.withValues(alpha: 0.10)
-            : widget.palette.controlBar.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(18),
+            ? widget.palette.accent.withValues(alpha: 0.08)
+            : widget.palette.controlBar.withValues(alpha: 0.48),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: current
+                ? widget.palette.accent.withValues(alpha: 0.30)
+                : widget.palette.border.withValues(alpha: 0.55),
+          ),
+        ),
         child: InkWell(
           onTap: navigable ? () => widget.onBookmarkSelected(bookmark) : null,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
             child: Row(
@@ -1128,20 +1189,6 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                 ),
                 AppPopupMenuButton<String>(
                   tooltip: MaterialLocalizations.of(context).showMenuTooltip,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-                    child: Text(
-                      MaterialLocalizations.of(context).showMenuTooltip,
-                      style: TextStyle(
-                        color: widget.palette.secondaryText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
                   onSelected: (value) {
                     if (value == 'copy') {
                       unawaited(
@@ -1177,6 +1224,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
 
   Widget _emptyState(
     BuildContext context, {
+    required IconData icon,
     required String title,
     required String message,
   }) {
@@ -1188,6 +1236,20 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: widget.palette.controlBar,
+                  borderRadius: BorderRadius.circular(17),
+                ),
+                child: Icon(
+                  icon,
+                  size: 26,
+                  color: widget.palette.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 18),
               Text(
                 title,
                 textAlign: TextAlign.center,

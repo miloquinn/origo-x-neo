@@ -136,6 +136,38 @@
       }
     }
   },
+  "bookSourceChangeConfirmTitle": "Confirm source change",
+  "bookSourceChangeQuickProgress": "Quick search: {completed}/{batch} · {total} sources available",
+  "@bookSourceChangeQuickProgress": {"placeholders": {"completed": {"type": "int"}, "batch": {"type": "int"}, "total": {"type": "int"}}},
+  "bookSourceChangeStopSearch": "Stop searching",
+  "bookSourceChangeLoadFailed": "Could not load sources",
+  "bookSourceChangeLoadFailedHint": "Check your connection and try again.",
+  "bookSourceChangeChecking": "Checking this source",
+  "bookSourceChangeCheckingPosition": "Reading your current position…",
+  "bookSourceChangeCheckingDetail": "Loading book details…",
+  "bookSourceChangeCheckingCatalog": "Loading the chapter list…",
+  "bookSourceChangeCheckingContent": "Checking the current chapter…",
+  "bookSourceChangeSlow": "This source is responding slowly. You can cancel and try another.",
+  "bookSourceChangeCheckTimedOut": "The check timed out. Try again or choose another source.",
+  "bookSourceChangeCheckFailed": "Could not verify this source. Try again or choose another.",
+  "bookSourceChangeCommitFailed": "Could not finish changing the source. Check your bookshelf before retrying.",
+  "bookSourceChangeReaderOpenFailed": "The source changed, but this chapter could not be opened. Try again or return to your bookshelf.",
+  "bookSourceChangeReadingPosition": "Reading position",
+  "bookSourceChangeOriginalChapter": "Current: chapter {number} · {title}",
+  "@bookSourceChangeOriginalChapter": {"placeholders": {"number": {"type": "int"}, "title": {"type": "String"}}},
+  "bookSourceChangeNewChapter": "New: chapter {number} · {title}",
+  "@bookSourceChangeNewChapter": {"placeholders": {"number": {"type": "int"}, "title": {"type": "String"}}},
+  "bookSourceChangeMappingTitle": "Matched by chapter title",
+  "bookSourceChangeMappingNumber": "Matched by chapter number; please check the position",
+  "bookSourceChangeMappingManual": "Chapter chosen by you",
+  "bookSourceChangeMappingEstimate": "Estimated from chapter position",
+  "bookSourceChangeMappingNeedsChoice": "Check the chapter before switching; the estimate may be wrong.",
+  "bookSourceChangePositionUnavailable": "Your previous reading position is unavailable. Choose the chapter to open.",
+  "bookSourceChangeChooseChapter": "Choose a chapter",
+  "bookSourceChangeLocalImpact": "Your downloaded text and reading position stay unchanged. Only the source for future updates changes.",
+  "bookSourceChangeOnlineImpact": "The bookshelf source and reading position will change. Your old source position remains saved.",
+  "bookSourceChangeConfirmAction": "Change to {source}",
+  "@bookSourceChangeConfirmAction": {"placeholders": {"source": {"type": "String"}}},
   "bookSourceChannelCount": "{count} channels",
   "@bookSourceChannelCount": {
     "placeholders": {
@@ -809,11 +841,11 @@
   "@readerFont": {
     "description": "Reader content font setting"
   },
-  "readerFontDescription": "Used only for book text and chapter headings. It does not change the app interface.",
+  "readerFontDescription": "Used for TXT and online books. EPUB has a separate font setting.",
   "@readerFontDescription": {
     "description": "Explains the scope of the reading font"
   },
-  "readerFontSelectionDescription": "Choose the typeface used for reading. Platform Default keeps fonts embedded by EPUB publishers when available.",
+  "readerFontSelectionDescription": "Choose the font for reading. EPUB offers the book font, the system font, and your installed fonts.",
   "@readerFontSelectionDescription": {
     "description": "Explains reader font selection and EPUB embedded-font behavior"
   },
@@ -825,6 +857,7 @@
   "@readerFontOverrideHint": {
     "description": "Hint shown when a personalized reader font is selected"
   },
+  "fontBookEmbedded": "Book Embedded",
   "fontSystem": "Platform Default",
   "@fontSystem": {
     "description": "System default font"
@@ -2658,9 +2691,9 @@
   "@settingsPrivateBookSourceNetworkTitle": {
     "description": "Settings toggle that allows book sources on LAN, loopback, and other private addresses"
   },
-  "settingsPrivateBookSourceNetworkSubtitle": "Allow book sources on this device, the local network, and other private addresses. Leave this off unless you trust the source.",
+  "settingsPrivateBookSourceNetworkSubtitle": "Allow sources to access this device, the local network, and other private addresses. On by default with Premium; use only sources you trust.",
   "@settingsPrivateBookSourceNetworkSubtitle": {
-    "description": "Warning that private-network book sources are an explicit opt-in"
+    "description": "Warning that private-network book sources are enabled by default with Premium"
   },
   "additionalSourcesImport": "Import more source protocols",
   "additionalSourcesImportTitle": "Import source JSON",
@@ -5063,7 +5096,7 @@
     }
   },
   "settingsCacheReadingCache": "Local reading cache",
-  "settingsCacheReadingCacheSubtitle": "Rebuildable EPUB/TXT parsing cache · {size}",
+  "settingsCacheReadingCacheSubtitle": "Rebuildable EPUB/TXT/Kindle parsing cache · {size}",
   "@settingsCacheReadingCacheSubtitle": {
     "placeholders": {
       "size": {
@@ -6057,7 +6090,7 @@
   "@premiumSourceNotice": {
     "description": "Premium does not include books or source addresses. Third-party services may charge separately."
   },
-  "premiumSetupHint": "After unlocking, enable these options in Settings → Advanced features.",
+  "premiumSetupHint": "Enabled by default after unlocking. You can turn them off in Settings → Advanced features.",
   "@premiumSetupHint": {
     "description": "After unlocking, enable these options in Settings → Advanced features."
   },
@@ -6625,5 +6658,22 @@
   "bookSourceContinueUpdate": "Download new chapters",
   "@bookSourceContinueUpdate": {
     "description": "bookSourceContinueUpdate"
-  }
+  },
+  "settingsCloseReaderToLibraryTitle": "Close reader to return to library",
+  "settingsCloseReaderToLibrarySubtitle": "When a book is open, the window close button returns to the main window instead of quitting the app",
+  "navMe": "Me",
+  "settingsPreferencesTitle": "Preferences",
+  "settingsPreferencesSubtitle": "Appearance, reading, language",
+  "settingsManagementTitle": "Settings & management",
+  "settingsDataSyncSubtitle": "WebDAV backup, cache",
+  "settingsContentServicesTitle": "Content & services",
+  "settingsContentServicesSubtitle": "Sources, AI, read aloud",
+  "settingsAboutSupportSubtitle": "Version, updates, open source",
+  "settingsPremiumSubtitle": "More source options and private network access",
+  "settingsGuestTitle": "Not signed in",
+  "settingsGuestSubtitle": "Local reading does not require an account",
+  "settingsWebDavConfigured": "WebDAV backup configured",
+  "settingsPremiumActive": "Premium active",
+  "settingsPremiumSyncFailed": "Could not sync membership status",
+  "settingsWebDavWorking": "WebDAV is working"
 }

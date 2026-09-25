@@ -142,7 +142,8 @@ class BookFormatRegistry {
       normalizesParagraphBreaks: true,
       notes:
           'kindle_unpack 解析（KF8 skeleton 分段 / MOBI7 按 pagebreak 切章），'
-          'XHTML 走 EPUB 同款章节转换；DRM 书籍仅元数据与封面，正文提示不可读。'
+          'XHTML 走 EPUB 同款章节转换，KF8 内嵌字体按 CSS 使用；'
+          'DRM 书籍仅元数据与封面，正文提示不可读。'
           'Web 端无解析器，不放行阅读。',
       lightinkNote: '有图标与 MIME，无本地 mobi 解析模块；OR 能力已超出 Lightink。',
     ),

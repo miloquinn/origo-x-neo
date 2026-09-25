@@ -224,7 +224,6 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
     final mediaQuery = MediaQuery.of(context);
     final wideTopNavigation = LayoutHelper.usesTabletLayout(context);
     final scheme = Theme.of(context).colorScheme;
-    final isLightTheme = scheme.brightness == Brightness.light;
     final stableSystemInsets = _mobileSystemInsets.resolve(
       mediaQuery,
       lockForReaderTransition: BookOpenTransition.hasActiveReaderActivity,
@@ -291,9 +290,6 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
     // 键盘可见性必须在 Scaffold 外层读取：resizeToAvoidBottomInset 会把
     // 键盘 inset 从子树 MediaQuery 中消费掉，Scaffold 内读到的恒为 0。
     final keyboardVisible = mediaQuery.viewInsets.bottom > 0;
-    final navBorderRadius = BorderRadius.circular(
-      metrics.floatingNavHeight / 2,
-    );
 
     return Scaffold(
       extendBody: true, // 让body延伸到底部导航栏后面
@@ -457,103 +453,29 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
                                     ? 0
                                     : metrics.navBottomInset,
                               ),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: navBorderRadius,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _isMaterial3Style
-                                          ? scheme.shadow.withValues(alpha: 0.1)
-                                          : GlassEffectConfig.chromeShadowColor(
-                                              source: scheme.shadow,
-                                              brightness: scheme.brightness,
-                                              darkOpacity: 0.16,
-                                            ),
-                                      blurRadius: _isMaterial3Style
-                                          ? 18
-                                          : (isLightTheme ? 24 : 32),
-                                      offset: const Offset(0, 9),
-                                    ),
-                                    if (!_isMaterial3Style && !isLightTheme)
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.08,
-                                        ),
-                                        blurRadius: 48,
-                                        offset: const Offset(0, 16),
-                                      ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: navBorderRadius,
-                                  child: (() {
-                                    final navBar = Container(
-                                      width: navWidth,
-                                      height: metrics.floatingNavHeight,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal:
-                                            kHomeMobileFloatingNavHorizontalPadding,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _isMaterial3Style
-                                            ? scheme.surfaceContainerHigh
-                                            : GlassEffectConfig.chromeSurfaceColor(
-                                                context,
-                                              ),
-                                        borderRadius: navBorderRadius,
-                                        border: Border.all(
-                                          color: scheme.outline.withValues(
-                                            alpha: _isMaterial3Style
-                                                ? 0.18
-                                                : (isLightTheme ? 0.08 : 0.14),
+                              child: FloatingPillNavigationSurface(
+                                width: navWidth,
+                                height: metrics.floatingNavHeight,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: _navigationItems
+                                      .asMap()
+                                      .entries
+                                      .map((entry) {
+                                        final index = entry.key;
+                                        final item = entry.value;
+                                        return Expanded(
+                                          child: HomeBounceNavigationItem(
+                                            item: item,
+                                            isSelected:
+                                                visualSelectedIndex == index,
+                                            showLabel: showNavigationLabels,
+                                            horizontal: wideTopNavigation,
+                                            onTap: () => _switchToTab(index),
                                           ),
-                                          width: 0.6,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: _navigationItems
-                                            .asMap()
-                                            .entries
-                                            .map((entry) {
-                                              final index = entry.key;
-                                              final item = entry.value;
-                                              final isSelected =
-                                                  visualSelectedIndex == index;
-
-                                              return Expanded(
-                                                child: HomeBounceNavigationItem(
-                                                  item: item,
-                                                  isSelected: isSelected,
-                                                  showLabel:
-                                                      showNavigationLabels,
-                                                  horizontal: wideTopNavigation,
-                                                  onTap: () =>
-                                                      _switchToTab(index),
-                                                ),
-                                              );
-                                            })
-                                            .toList(),
-                                      ),
-                                    );
-
-                                    if (_disableShellBlur) {
-                                      return navBar;
-                                    }
-                                    return BackdropFilter(
-                                      enabled: !_disableShellBlur,
-                                      filter: ImageFilter.blur(
-                                        sigmaX:
-                                            GlassEffectConfig.navigationBarBlur,
-                                        sigmaY:
-                                            GlassEffectConfig.navigationBarBlur,
-                                      ),
-                                      child: navBar,
-                                    );
-                                  })(),
+                                        );
+                                      })
+                                      .toList(),
                                 ),
                               ),
                             ),
@@ -589,7 +511,7 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
       );
       if (settingsIndex >= 0) {
         trailing = _buildTopBarActionButton(
-          icon: Icons.settings_outlined,
+          icon: Icons.person_outline_rounded,
           onTap: () => _switchToTab(settingsIndex),
         );
       }

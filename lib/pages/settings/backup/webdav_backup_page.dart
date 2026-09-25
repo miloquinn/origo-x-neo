@@ -26,14 +26,28 @@ class _WebDavBackupPageState extends State<WebDavBackupPage> {
   String? _message;
   WebDavSyncFailure? _failure;
   bool _restored = false;
+  bool _preparingBookFiles = false;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && context.read<WebDavBackupController>().isConfigured) {
-        _run(context.read<WebDavBackupController>().refresh);
+        final backup = context.read<WebDavBackupController>();
+        _prepareBookFiles(backup);
+        _run(backup.refresh);
       }
     });
+  }
+
+  Future<void> _prepareBookFiles(WebDavBackupController backup) async {
+    setState(() => _preparingBookFiles = true);
+    try {
+      await backup.prepareDefaultBookSelection();
+    } catch (_) {
+      if (mounted) setState(() => _message = BackupCopy.of(context).failed);
+    } finally {
+      if (mounted) setState(() => _preparingBookFiles = false);
+    }
   }
 
   Future<void> _run(Future<void> Function() action, {String? success}) async {
@@ -72,12 +86,162 @@ class _WebDavBackupPageState extends State<WebDavBackupPage> {
     final palette = PageStyleHelper.palette(context);
     return Material(
       color: palette.card,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: palette.border),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       clipBehavior: Clip.antiAlias,
       child: child,
+    );
+  }
+
+  Widget _connectionCard(
+    BuildContext context,
+    WebDavBackupController backup,
+    BackupCopy copy,
+    bool otherWrites,
+  ) {
+    final palette = PageStyleHelper.palette(context);
+    final scheme = Theme.of(context).colorScheme;
+    final host = Uri.tryParse(backup.serverUrl ?? '')?.host;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [palette.hero, palette.cardStrong],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(Icons.cloud_outlined, color: scheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      backup.isConfigured
+                          ? copy.connectedTitle
+                          : copy.unconnectedTitle,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      backup.isConfigured
+                          ? (host?.isNotEmpty == true
+                                ? host!
+                                : backup.serverUrl ?? '')
+                          : copy.connectionPrompt,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: palette.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (backup.isConfigured)
+                IconButton(
+                  tooltip: copy.configure,
+                  onPressed: backup.busy || otherWrites
+                      ? null
+                      : () => _openSetup(backup),
+                  icon: const Icon(Icons.tune_rounded),
+                ),
+            ],
+          ),
+          if (!backup.isConfigured) ...[
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: backup.busy || otherWrites
+                    ? null
+                    : () => _openSetup(backup),
+                icon: const Icon(Icons.add_link_rounded),
+                label: Text(copy.connect),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openSetup(WebDavBackupController backup) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const WebDavSetupPage()));
+    if (mounted && backup.isConfigured) {
+      await _prepareBookFiles(backup);
+      if (mounted) await _run(backup.refresh);
+    }
+  }
+
+  Widget _operationMessage(
+    BuildContext context,
+    String message,
+    WebDavSyncFailure? failure,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final hasError = failure != null;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: hasError
+            ? scheme.errorContainer.withValues(alpha: 0.65)
+            : scheme.primaryContainer.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                hasError
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_outline_rounded,
+                size: 21,
+                color: hasError
+                    ? scheme.onErrorContainer
+                    : scheme.onPrimaryContainer,
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          if (failure != null) ...[
+            const SizedBox(height: 8),
+            Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text(BackupCopy.of(context).errorDetails),
+                children: [WebDavSyncFailureDetails(failure: failure)],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -114,86 +278,47 @@ class _WebDavBackupPageState extends State<WebDavBackupPage> {
                 child: Text(copy.restart),
               ),
             ] else ...[
-              _card(
-                context,
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.history_rounded,
-                        size: 28,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        copy.zh ? '留住每一次阅读' : 'Keep your reading journey',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        copy.description,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: PageStyleHelper.palette(context).iconMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (otherWrites) Text(copy.waitForTasks),
-              const SizedBox(height: 12),
-              Text(
-                copy.privacy,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: PageStyleHelper.palette(context).iconMuted,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _card(
-                context,
-                ListTile(
-                  title: Text(copy.configure),
-                  subtitle: Text(
-                    backup.isConfigured
-                        ? (backup.serverUrl ?? '')
-                        : (copy.zh ? '连接你的云端空间' : 'Connect your storage'),
-                  ),
-                  leading: const Icon(Icons.cloud_outlined),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: backup.busy || otherWrites
-                      ? null
-                      : () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const WebDavSetupPage(),
-                            ),
-                          );
-                          if (mounted && backup.isConfigured) {
-                            await _run(backup.refresh);
-                          }
-                        },
-                ),
-              ),
+              _connectionCard(context, backup, copy, otherWrites),
+              if (otherWrites) ...[
+                const SizedBox(height: 12),
+                Text(copy.waitForTasks),
+              ],
               if (backup.isConfigured) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 22),
+                Text(
+                  copy.backupSection,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 _card(context, BackupSelectionPanel(controller: backup)),
-                const SizedBox(height: 8),
-                FilledButton.icon(
-                  onPressed:
-                      backup.busy || otherWrites || backup.selection.isEmpty
-                      ? null
-                      : () => _run(backup.backup, success: copy.done),
-                  icon: const Icon(Icons.backup_outlined),
-                  label: Text(copy.backup),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed:
+                        backup.busy ||
+                            otherWrites ||
+                            _preparingBookFiles ||
+                            backup.selection.isEmpty
+                        ? null
+                        : () => _run(backup.backup, success: copy.done),
+                    icon: const Icon(Icons.backup_outlined),
+                    label: Text(copy.backup),
+                  ),
                 ),
-                TextButton(
-                  onPressed: backup.busy ? null : () => _run(backup.disconnect),
-                  child: Text(copy.disconnect),
-                ),
+                if (_preparingBookFiles)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(copy.preparingBookFiles),
+                  ),
               ],
               if (backup.busy) ...[
                 const SizedBox(height: 12),
@@ -215,36 +340,41 @@ class _WebDavBackupPageState extends State<WebDavBackupPage> {
                   Text('${backupBytes(backup.bytesPerSecond)}/s'),
                 Text(copy.working),
               ],
-              if (_message != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Text(_message!),
+              if (_message != null) ...[
+                const SizedBox(height: 16),
+                _operationMessage(context, _message!, _failure),
+              ],
+              if (backup.isConfigured) ...[
+                const SizedBox(height: 26),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        copy.history,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: copy.refresh,
+                      onPressed: backup.busy
+                          ? null
+                          : () => _run(backup.refresh),
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
+                  ],
                 ),
-              if (_failure != null)
-                WebDavSyncFailureDetails(failure: _failure!),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
+                if (backup.backups.isEmpty && !backup.busy && _failure == null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
                     child: Text(
-                      copy.history,
-                      style: Theme.of(context).textTheme.titleLarge,
+                      copy.empty,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: PageStyleHelper.palette(context).textMuted,
+                      ),
                     ),
                   ),
-                  IconButton(
-                    tooltip: copy.refresh,
-                    onPressed: backup.busy || !backup.isConfigured
-                        ? null
-                        : () => _run(backup.refresh),
-                    icon: const Icon(Icons.refresh),
-                  ),
-                ],
-              ),
-              if (backup.isConfigured &&
-                  backup.backups.isEmpty &&
-                  !backup.busy &&
-                  _message == null)
-                Text(copy.empty),
+              ],
               for (final item in backup.backups)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -269,6 +399,24 @@ class _WebDavBackupPageState extends State<WebDavBackupPage> {
                         child: Text(copy.restore),
                       ),
                     ),
+                  ),
+                ),
+              const SizedBox(height: 22),
+              Text(
+                copy.privacy,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: PageStyleHelper.palette(context).textMuted,
+                  height: 1.5,
+                ),
+              ),
+              if (backup.isConfigured)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: backup.busy
+                        ? null
+                        : () => _run(backup.disconnect),
+                    child: Text(copy.disconnect),
                   ),
                 ),
             ],

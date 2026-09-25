@@ -17,6 +17,7 @@ import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/reader/book_source/book_source_reader_page.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
+import 'package:xxread/widgets/reader_progress_footer.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
 
 import 'support/reader_cache_test_utils.dart';
@@ -175,7 +176,7 @@ void main() {
     final statusFinder = find.byKey(
       const ValueKey('book-source-reader-status'),
     );
-    final statusBeforeEdgeTap = tester.widget<Text>(statusFinder).data;
+    final statusBeforeEdgeTap = _readerStatusText(tester, statusFinder);
     final surfaceRect = tester.getRect(surface);
     await tester.tapAt(Offset(surfaceRect.right - 8, surfaceRect.center.dy));
     await tester.pump();
@@ -187,7 +188,7 @@ void main() {
           .top,
       -130,
     );
-    expect(tester.widget<Text>(statusFinder).data, statusBeforeEdgeTap);
+    expect(_readerStatusText(tester, statusFinder), statusBeforeEdgeTap);
 
     await tester.tapAt(tester.getRect(surface).center);
     await tester.pump();
@@ -204,6 +205,8 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'native_reader_page_mode': 'verticalScroll',
         ReaderSettingsStore.scrollByChapterKey: false,
+        ReaderSettingsStore.chapterProgressStyleKey:
+            ReaderChapterProgressStyle.fraction.name,
       });
 
       await tester.pumpWidget(_testApp());
@@ -222,10 +225,10 @@ void main() {
       await _pumpUntilFound(tester, fixedSecondChapter);
 
       expect(fixedSecondChapter, findsOneWidget);
-      final status = tester.widget<Text>(
+      final status = tester.widget<ReaderProgressFooter>(
         find.byKey(const ValueKey('book-source-reader-status')),
       );
-      expect(status.data, contains('2/2'));
+      expect(status.chapterLabel, contains('2/2'));
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     },
@@ -546,6 +549,8 @@ void main() {
     (tester) async {
       SharedPreferences.setMockInitialValues({
         'native_reader_page_mode': 'verticalScroll',
+        ReaderSettingsStore.chapterProgressStyleKey:
+            ReaderChapterProgressStyle.fraction.name,
       });
       await tester.pumpWidget(_testApp());
       final statusFinder = find.byKey(
@@ -574,12 +579,16 @@ void main() {
           tester.getSize(find.byType(ScrollablePositionedList)).height,
         ),
       );
-      final status = tester.widget<Text>(statusFinder).data!;
-      final fractions = RegExp(r'(\d+)/(\d+)').allMatches(status).toList();
-      expect(fractions.length, 2);
-      expect(int.parse(fractions[1].group(2)!), 1, reason: status);
+      final status = tester.widget<ReaderProgressFooter>(statusFinder);
+      expect(status.chapterLabel, contains('1/2'));
+      expect(status.pageLabel, '1 / 2');
     },
   );
+}
+
+String _readerStatusText(WidgetTester tester, Finder finder) {
+  final footer = tester.widget<ReaderProgressFooter>(finder);
+  return '${footer.chapterLabel} ${footer.pageLabel}';
 }
 
 Widget _testApp({

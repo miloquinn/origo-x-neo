@@ -125,7 +125,12 @@ class SourceRuleScript {
         ? context ?? document.scriptResultValue
         : selectors.evaluateList(document, context, scripted.selector);
     final script = interpolateScript(document, input, scripted.script);
-    final output = _evaluate(document, input, script);
+    final output = _evaluate(
+      document,
+      input,
+      script,
+      defaultRuleContent: context ?? document.value,
+    );
     if (scripted.suffix.trim().isNotEmpty) {
       final nextDocument = _outputDocument(document, output);
       return selectors.evaluateList(
@@ -155,7 +160,12 @@ class SourceRuleScript {
       input,
       scripted.script,
     );
-    final output = await _evaluateAsync(document, input, script);
+    final output = await _evaluateAsync(
+      document,
+      input,
+      script,
+      defaultRuleContent: context ?? document.value,
+    );
     if (scripted.suffix.trim().isNotEmpty) {
       final nextDocument = _outputDocument(document, output);
       return selectors.evaluateListAsync(
@@ -186,7 +196,12 @@ class SourceRuleScript {
             regexDotAll: regexDotAll,
           );
     final script = interpolateScript(document, input, scripted.script);
-    final output = _evaluate(document, input, script);
+    final output = _evaluate(
+      document,
+      input,
+      script,
+      defaultRuleContent: context ?? document.value,
+    );
     var value = '';
     if (scripted.suffix.trim().isNotEmpty) {
       final nextDocument = _outputDocument(document, output);
@@ -235,7 +250,12 @@ class SourceRuleScript {
       input,
       scripted.script,
     );
-    final output = await _evaluateAsync(document, input, script);
+    final output = await _evaluateAsync(
+      document,
+      input,
+      script,
+      defaultRuleContent: context ?? document.value,
+    );
     var value = '';
     if (scripted.suffix.trim().isNotEmpty) {
       final nextDocument = _outputDocument(document, output);
@@ -293,8 +313,9 @@ class SourceRuleScript {
   Object? _evaluate(
     SourceRuleDocument document,
     Object? result,
-    String script,
-  ) {
+    String script, {
+    Object? defaultRuleContent,
+  }) {
     if (script.trim().isEmpty) return result;
     final evaluator = scriptEvaluatorProvider?.call();
     final context = document.scriptContext;
@@ -305,15 +326,22 @@ class SourceRuleScript {
     }
     return evaluator.evaluate(
       script,
-      _context(context, document.baseUri, result, asynchronous: false),
+      _context(
+        context,
+        document.baseUri,
+        result,
+        asynchronous: false,
+        defaultRuleContent: defaultRuleContent,
+      ),
     );
   }
 
   Future<Object?> _evaluateAsync(
     SourceRuleDocument document,
     Object? result,
-    String script,
-  ) {
+    String script, {
+    Object? defaultRuleContent,
+  }) {
     if (script.trim().isEmpty) return Future.value(result);
     final evaluator = scriptEvaluatorProvider?.call();
     final context = document.scriptContext;
@@ -324,7 +352,13 @@ class SourceRuleScript {
     }
     return evaluator.evaluateAsync(
       script,
-      _context(context, document.baseUri, result, asynchronous: true),
+      _context(
+        context,
+        document.baseUri,
+        result,
+        asynchronous: true,
+        defaultRuleContent: defaultRuleContent,
+      ),
     );
   }
 
@@ -353,11 +387,14 @@ class SourceRuleScript {
     Uri baseUri,
     Object? result, {
     required bool asynchronous,
+    Object? defaultRuleContent,
   }) {
     return SourceScriptContext(
       source: context.source,
       result: sourceRuleScriptInput(result),
+      defaultRuleContent: sourceRuleScriptInput(defaultRuleContent),
       baseUrl: baseUri,
+      scriptBaseUrl: context.scriptBaseUrl,
       variables: context.variables,
       book: context.book,
       chapter: context.chapter,

@@ -26,11 +26,21 @@ abstract interface class OrspBookSourceBackendPort {
     int pageSize = 20,
   });
   Future<BookSourceBook> getBook(RegisteredBookSource source, String bookId);
+  Future<BookSourceBook> getBookForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    BookDownloadCancellation? cancellation,
+  });
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
     String bookId,
   );
   Future<List<BookSourceChapter>> getChaptersForDownload(
+    RegisteredBookSource source,
+    String bookId, {
+    BookDownloadCancellation? cancellation,
+  });
+  Future<List<BookSourceChapter>> getChaptersForValidation(
     RegisteredBookSource source,
     String bookId, {
     BookDownloadCancellation? cancellation,
@@ -41,6 +51,12 @@ abstract interface class OrspBookSourceBackendPort {
     required String chapterId,
   });
   Future<BookSourceChapterContent> getChapterContentForDownload(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    BookDownloadCancellation? cancellation,
+  });
+  Future<BookSourceChapterContent> getChapterContentForValidation(
     RegisteredBookSource source, {
     required String bookId,
     required String chapterId,
@@ -267,6 +283,41 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
   }
 
   @override
+  Future<BookSourceBook> getBookForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    final uri = OrspHttpPipeline.apiUri(
+      source.apiBaseUrl,
+      'v1/books/${Uri.encodeComponent(bookId)}',
+    );
+    try {
+      final json = await _pipeline.cachedJson(
+        key: OrspHttpPipeline.cacheKey(source, 'book', [bookId]),
+        ttl: bookDetailCacheTtl,
+        uri: uri,
+        cancellation: cancellation,
+        deduplicateInFlight: false,
+        validate: (json) =>
+            BookSourceBook.fromJson(json, baseUri: source.apiBaseUrl),
+      );
+      cancellation?.throwIfCancelled();
+      final book = BookSourceBook.fromJson(json, baseUri: source.apiBaseUrl);
+      if (book.id != bookId) {
+        throw const BookSourceProtocolException(
+          'Book detail response does not match the requested book.',
+        );
+      }
+      return book;
+    } on DioException catch (error) {
+      cancellation?.throwIfCancelled();
+      throw _pipeline.mapDioException(error);
+    }
+  }
+
+  @override
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
     String bookId,
@@ -306,6 +357,22 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
       receiveTimeout: OrspHttpPipeline.downloadReceiveTimeout,
       cancellation: cancellation,
     ),
+  );
+
+  @override
+  Future<List<BookSourceChapter>> getChaptersForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    BookDownloadCancellation? cancellation,
+  }) => _fetchAllChapters(
+    OrspHttpPipeline.apiUri(
+      source.apiBaseUrl,
+      'v1/books/${Uri.encodeComponent(bookId)}/chapters',
+    ),
+    pageSize: _chapterPageSizeFor(source),
+    maxBytes: OrspHttpPipeline.maxDownloadResponseBytes,
+    receiveTimeout: OrspHttpPipeline.downloadReceiveTimeout,
+    cancellation: cancellation,
   );
 
   @override
@@ -363,6 +430,35 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
     );
     cancellation?.throwIfCancelled();
     return content;
+  }
+
+  @override
+  Future<BookSourceChapterContent> getChapterContentForValidation(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    try {
+      return await _pipeline.withRetries(() async {
+        final content = BookSourceChapterContent.fromJson(
+          decodeBookSourceJson(
+            await _pipeline.getBounded(
+              _chapterUri(source, bookId, chapterId),
+              maxBytes: OrspHttpPipeline.maxDownloadResponseBytes,
+              receiveTimeout: OrspHttpPipeline.downloadReceiveTimeout,
+              cancellation: cancellation,
+            ),
+          ),
+        );
+        _validateChapterContentIdentity(content, bookId, chapterId);
+        return content;
+      }, cancellation: cancellation);
+    } on DioException catch (error) {
+      cancellation?.throwIfCancelled();
+      throw _pipeline.mapDioException(error);
+    }
   }
 
   @override

@@ -17,7 +17,8 @@ extension _NativeReaderLoading on _NativeReaderPageState {
       // Large books already retain substantial parsed chapter and image data
       // in memory. Keeping that graph in the static reopen cache prevents it
       // from being released after leaving the reader and can push Android into
-      // heavy GC or an OOM. Disk caches still cover indexed TXT and pagination.
+      // heavy GC or an OOM. Disk caches still cover indexed text, Kindle
+      // chapters, and pagination.
       _pageCache = <String, List<_ReaderPageData>>{};
       _chaptersFuture = _prepareLoadedChapters(_loadBook());
       _readerDependenciesInitialized = true;
@@ -160,6 +161,13 @@ extension _NativeReaderLoading on _NativeReaderPageState {
     if (epubChapters.isNotEmpty) {
       await _loadEpubChapterBatch(epubChapters);
     }
+    final kindleChapters = indexes
+        .map((index) => chapters[index])
+        .where((chapter) => chapter.isLazyKindle)
+        .toList(growable: false);
+    if (kindleChapters.isNotEmpty) {
+      await _loadKindleChapterBatch(kindleChapters);
+    }
     await Future.wait<void>([
       for (final index in indexes)
         chapters[index].prepareReplacementAsync(_replaceRules),
@@ -217,7 +225,7 @@ extension _NativeReaderLoading on _NativeReaderPageState {
             Map<String, String>.from(result['fonts'] as Map? ?? const {}),
           );
         }
-        await _registerEpubFonts(fonts);
+        await _registerEmbeddedFonts(fonts);
         for (var index = 0; index < missing.length; index++) {
           missing[index].applyEpubResult(
             Map<String, dynamic>.from(results[index]),
@@ -227,6 +235,66 @@ extension _NativeReaderLoading on _NativeReaderPageState {
       } catch (error, stackTrace) {
         debugPrint('EPUB batch failed: $error');
         debugPrintStack(stackTrace: stackTrace);
+        for (final completer in completers.values) {
+          if (!completer.isCompleted) {
+            completer.completeError(error, stackTrace);
+          }
+        }
+        rethrow;
+      } finally {
+        for (final chapter in missing) {
+          chapter.clearPendingLoad();
+        }
+        unawaited(NativeReaderCacheStore.instance.release(operation));
+      }
+    }
+    await Future.wait<void>(pending);
+  }
+
+  Future<void> _loadKindleChapterBatch(List<_NativeChapter> chapters) async {
+    final pending = chapters
+        .where((chapter) => chapter.hasPendingLoad)
+        .map((chapter) => chapter.pendingLoad!)
+        .toList(growable: false);
+    final missing = chapters
+        .where((chapter) => !chapter.hasLoadedText && !chapter.hasPendingLoad)
+        .toList(growable: false);
+    if (missing.isNotEmpty) {
+      final arguments = missing.first.kindleLoadArguments;
+      final cacheDirectory = arguments['cacheDirectory'] as String;
+      final operation = Object();
+      NativeReaderCacheStore.instance.retain(operation, cacheDirectory);
+      final completers = <_NativeChapter, Completer<void>>{
+        for (final chapter in missing) chapter: Completer<void>(),
+      };
+      for (final entry in completers.entries) {
+        entry.key.attachPendingLoad(entry.value.future);
+      }
+      try {
+        final request = <String, dynamic>{
+          'cacheDirectory': cacheDirectory,
+          'chapters': missing
+              .map((chapter) => chapter.kindleDescriptor)
+              .toList(growable: false),
+        };
+        var results = await compute(loadKindleNativeChapters, request);
+        if (results == null) {
+          // An interrupted/externally deleted cache is rebuildable from the
+          // original source. Keep the same descriptors and retry this window.
+          await compute(_buildKindleReaderCache, arguments);
+          results = await compute(loadKindleNativeChapters, request);
+        }
+        if (results == null || results.length != missing.length) {
+          throw StateError('Kindle chapter cache could not be restored');
+        }
+        for (var index = 0; index < missing.length; index++) {
+          missing[index].applyKindleResult(results[index]);
+          completers[missing[index]]!.complete();
+        }
+        NativeReaderCacheStore.instance.scheduleMaintenance(
+          Directory(cacheDirectory).parent,
+        );
+      } catch (error, stackTrace) {
         for (final completer in completers.values) {
           if (!completer.isCompleted) {
             completer.completeError(error, stackTrace);
@@ -325,13 +393,9 @@ extension _NativeReaderLoading on _NativeReaderPageState {
       if (!useParsedCache) {
         final indexPath = '$cachePath.index';
         final dataPath = '$cachePath.data';
-        // A cached index avoids the expensive scan, but materializing its
-        // chapter descriptors and loading the initial text window can still
-        // be substantial for very large books. Keep that work out of the
-        // cover flight just like first-time indexing.
-        if (!await _waitForOpeningRouteToSettle()) {
-          return const <_NativeChapter>[];
-        }
+        // Disk-cache lookup and JSON decoding happen in a worker isolate, so
+        // start them during the cover flight. Previously every reopen paid the
+        // whole route duration before cache lookup even began.
         final cachedIndex = await compute(_readLargeTxtIndexCache, indexPath);
         if (cachedIndex != null) {
           return _nativeChaptersFromFileIndex(
@@ -340,10 +404,9 @@ extension _NativeReaderLoading on _NativeReaderPageState {
           );
         }
 
-        // A first-time 70 MB index can saturate CPU and storage bandwidth even
-        // though it runs in another isolate. Keep it completely outside the
-        // cover flight and cover-to-loader handoff so opening motion stays
-        // responsive; cached indexes only wait for the route itself above.
+        // A first-time index can saturate CPU and storage bandwidth even in a
+        // worker isolate. Start it as soon as the route stops producing frames;
+        // an additional fixed delay only made the loader sit idle.
         if (!await _waitForLargeTxtIndexingWindow()) {
           return const <_NativeChapter>[];
         }
@@ -473,6 +536,59 @@ extension _NativeReaderLoading on _NativeReaderPageState {
       return chapters;
     }
 
+    if ((format == 'mobi' || format == 'azw' || format == 'azw3') && !kIsWeb) {
+      final sourceFile = File(_activeBook.filePath);
+      final cacheBase = await getApplicationSupportDirectory();
+      final cacheDirectory = Directory(
+        path.join(cacheBase.path, 'native_reader_cache', 'kindle'),
+      );
+      final cacheKey = sha1.convert(utf8.encode(_bookCacheKey)).toString();
+      final cacheRoot = path.join(cacheDirectory.path, cacheKey);
+      final cacheStore = NativeReaderCacheStore.instance;
+      await cacheStore.acquire(operation, cacheRoot);
+      if (cacheGeneration != cacheStore.generation) {
+        cacheStore.discardWhenReleased(cacheRoot);
+      }
+      if (mounted) cacheStore.retain(this, cacheRoot);
+      if (cacheGeneration == cacheStore.generation &&
+          _bookMemoryCache.containsKey(_bookCacheKey)) {
+        cacheStore.retain(_bookCacheKey, cacheRoot);
+      }
+      cacheStore.scheduleMaintenance(cacheDirectory);
+      final sourceStat = await sourceFile.stat();
+      final arguments = <String, dynamic>{
+        'sourcePath': sourceFile.path,
+        'cacheDirectory': cacheRoot,
+        'sourceSize': sourceStat.size,
+        'sourceModifiedMicros': sourceStat.modified.microsecondsSinceEpoch,
+      };
+      var index = await compute(readKindleNativeIndex, arguments);
+      if (index == null) {
+        final staleCache = Directory(cacheRoot);
+        if (await staleCache.exists()) {
+          await staleCache.delete(recursive: true);
+        }
+        try {
+          index = await compute(_buildKindleReaderCache, arguments);
+        } on KindleDrmException {
+          throw _ReaderBookLoadException(l10n.readerKindleDrmProtected);
+        }
+        cacheStore.scheduleMaintenance(cacheDirectory, force: true);
+      }
+      await _registerEmbeddedFonts(
+        Map<String, String>.from(index!['fonts'] as Map),
+      );
+      return (index['chapters'] as List<dynamic>)
+          .map(
+            (chapter) => _NativeChapter.lazyKindle(
+              descriptor: Map<String, dynamic>.from(chapter as Map),
+              loadArguments: arguments,
+              replaceBookTitle: widget.book.title,
+            ),
+          )
+          .toList(growable: false);
+    }
+
     final bytes = webBytes ?? await File(widget.book.filePath).readAsBytes();
     switch (format) {
       case 'epub':
@@ -525,19 +641,11 @@ extension _NativeReaderLoading on _NativeReaderPageState {
     }
   }
 
-  Future<bool> _waitForOpeningRouteToSettle() async {
-    return waitForReaderOpeningRouteToSettle(
+  Future<bool> _waitForLargeTxtIndexingWindow() async {
+    return waitForLargeTxtIndexingWindow(
       routeAnimation: _routeAnimation,
       routeEntranceCompleted: _routeEntranceCompleted,
       isMounted: () => mounted,
     );
-  }
-
-  Future<bool> _waitForLargeTxtIndexingWindow() async {
-    if (!await _waitForOpeningRouteToSettle()) return false;
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-    return mounted &&
-        (_routeAnimation == null ||
-            _routeAnimation!.status == AnimationStatus.completed);
   }
 }

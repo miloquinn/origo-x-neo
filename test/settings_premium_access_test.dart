@@ -13,6 +13,7 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/core/core_services.dart';
 import 'package:xxread/services/backup/webdav_backup_controller.dart';
+import 'package:xxread/widgets/premium_card_style.dart';
 
 import 'support/premium_account.dart';
 
@@ -64,10 +65,7 @@ void main() {
         tester.view.devicePixelRatio = 1;
         tester.view.physicalSize = Size(width, 5000);
         addTearDown(tester.view.reset);
-        SharedPreferences.setMockInitialValues({
-          additionalSourceProtocolsPreferenceKey: true,
-          privateBookSourceNetworkPreferenceKey: true,
-        });
+        SharedPreferences.setMockInitialValues({});
         final account = PremiumTestAccount(premium: false);
         final appSettings = (await tester.runAsync(() async {
           final settings = AppSettingsNotifier(account: account);
@@ -134,16 +132,71 @@ void main() {
         }
 
         expectSection(false);
-        expect(find.text('WebDAV backups'), findsOneWidget);
+        expect(find.text(l10n.accountSupportAction), findsOneWidget);
+        final inactiveCardHeight = tester
+            .getSize(
+              find.byKey(const ValueKey('settings-combined-account-card')),
+            )
+            .height;
+        await tester.tap(
+          find.byKey(const ValueKey('settings-category-contentServices')),
+        );
+        await tester.pumpAndSettle();
         expect(find.text(l10n.bookSourceManagementTitle), findsOneWidget);
         account.setPremium(true);
         await tester.pump();
         expectSection(true);
         expect(appSettings.additionalSourceProtocolsEnabled, isTrue);
+        expect(appSettings.privateBookSourceNetworkEnabled, isTrue);
         account.setPremium(false);
         await tester.pump();
         expectSection(false);
         expect(appSettings.additionalSourceProtocolsEnabled, isFalse);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        account.setPremium(true);
+        await tester.pump();
+        expect(find.text(l10n.settingsPremiumActive), findsNothing);
+        expect(find.text(l10n.accountSupportAction), findsNothing);
+        expect(
+          find.byKey(const ValueKey('settings-membership-entry')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('settings-account-premium-badge')),
+          findsOneWidget,
+        );
+        final memberCard = tester.widget<Container>(
+          find.byKey(const ValueKey('settings-combined-account-card')),
+        );
+        expect(
+          (memberCard.decoration! as BoxDecoration).gradient,
+          premiumCardGradient,
+        );
+        expect(
+          tester
+              .getSize(
+                find.byKey(const ValueKey('settings-combined-account-card')),
+              )
+              .height,
+          lessThan(inactiveCardHeight),
+        );
+        account.setPremium(false);
+        await tester.pump();
+        expect(find.text(l10n.accountSupportAction), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('settings-membership-entry')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('settings-account-premium-badge')),
+          findsNothing,
+        );
+        await tester.tap(
+          find.byKey(const ValueKey('settings-category-dataSync')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('WebDAV backups'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(seconds: 1));

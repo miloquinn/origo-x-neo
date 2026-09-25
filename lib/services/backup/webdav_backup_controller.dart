@@ -38,6 +38,7 @@ class WebDavBackupController extends ChangeNotifier {
   double? progress;
   RestoreSelection restoreSelection = const RestoreSelection();
   BackupSelection selection = const BackupSelection();
+  bool _bookSelectionCustomized = false;
   List<BackupBook> books = const [];
   String stage = '';
   int completedBytes = 0, totalBytes = 0;
@@ -51,8 +52,28 @@ class WebDavBackupController extends ChangeNotifier {
     _changed();
   }
 
+  Future<void> prepareDefaultBookSelection() async {
+    if (_bookSelectionCustomized) return;
+    await loadBooks();
+    if (_bookSelectionCustomized || _disposed) return;
+    selection = BackupSelection(
+      reading: selection.reading,
+      statistics: selection.statistics,
+      sources: selection.sources,
+      settings: selection.settings,
+      bookIds: books
+          .where((book) => book.available)
+          .map((book) => book.id)
+          .toSet(),
+    );
+    _changed();
+  }
+
   void setSelection(BackupSelection value) {
     if (busy) return;
+    if (!setEquals(selection.bookIds, value.bookIds)) {
+      _bookSelectionCustomized = true;
+    }
     selection = value;
     _changed();
   }
@@ -250,9 +271,7 @@ class WebDavBackupController extends ChangeNotifier {
     final client = _clientFactory(await _credentials());
     final archive = await _archiveFactory();
     await archive.recoverInterruptedRestore();
-    final temporary = await Directory.systemTemp.createTemp(
-      'origo-x-backup-',
-    );
+    final temporary = await Directory.systemTemp.createTemp('origo-x-backup-');
     final name =
         'origo-x-${DateTime.now().toUtc().millisecondsSinceEpoch}-${const Uuid().v4()}.zip';
     final remote = client.rootPath([..._folder, name]);
@@ -301,9 +320,7 @@ class WebDavBackupController extends ChangeNotifier {
     final client = _clientFactory(await _credentials());
     final archive = await _archiveFactory();
     await archive.recoverInterruptedRestore();
-    final temporary = await Directory.systemTemp.createTemp(
-      'origo-x-restore-',
-    );
+    final temporary = await Directory.systemTemp.createTemp('origo-x-restore-');
     ValidatedBackup? validated;
     try {
       final hash = await client.getText(

@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/core/reader/reader_settings.dart';
@@ -14,7 +15,10 @@ import 'package:xxread/core/reader/reader_layout.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/reader/native/native_reader_page.dart';
+import 'package:xxread/services/core/app_settings_service.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
+import 'package:xxread/utils/font_catalog_helper.dart';
+import 'package:xxread/widgets/reader_annotated_text_page.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 import 'package:xxread/widgets/reader_shader_page_curl.dart';
 
@@ -53,24 +57,157 @@ void main() {
     supportDirectory.deleteSync(recursive: true);
   });
 
-  test('reader font overrides EPUB font except for the platform default', () {
+  test('only book-embedded mode preserves EPUB font', () {
     expect(
       resolveNativeReaderFontFamily(
         readerFontFamily: 'sans-serif',
-        epubFontFamily: 'Embedded EPUB Font',
-        preserveEpubFont: true,
+        documentFontFamily: 'Embedded EPUB Font',
+        preserveDocumentFont: true,
       ),
       'Embedded EPUB Font',
     );
     expect(
       resolveNativeReaderFontFamily(
         readerFontFamily: 'PingFang SC',
-        epubFontFamily: 'Embedded EPUB Font',
-        preserveEpubFont: false,
+        documentFontFamily: 'Embedded EPUB Font',
+        preserveDocumentFont: false,
       ),
       'PingFang SC',
     );
+    expect(
+      resolveNativeReaderFontFamily(
+        readerFontFamily: 'sans-serif',
+        documentFontFamily: 'serif',
+        preserveDocumentFont: false,
+      ),
+      'sans-serif',
+    );
   });
+
+  testWidgets(
+    'switching EPUB font updates the visible and adjacent text pages',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      await tester.binding.setSurfaceSize(const Size(480, 800));
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+      });
+      final directory = Directory.systemTemp.createTempSync(
+        'origo-x-epub-font-switch-',
+      );
+      final epub = File(
+        '${directory.path}/font-switch.epub',
+      )..writeAsBytesSync(_epubFixture(chapterCount: 1, serifParagraphs: true));
+      late final AppSettingsNotifier settings;
+      try {
+        await tester.runAsync(() async {
+          settings = AppSettingsNotifier();
+          for (
+            var attempt = 0;
+            attempt < 100 && !settings.isInitialized;
+            attempt++
+          ) {
+            await Future<void>.delayed(const Duration(milliseconds: 20));
+          }
+          expect(settings.isInitialized, isTrue);
+        });
+        await tester.pumpWidget(
+          ChangeNotifierProvider<AppSettingsNotifier>.value(
+            value: settings,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: NativeReaderPage(
+                replaceRuleService: replaceRuleService,
+                book: Book(
+                  title: 'EPUB font switch fixture',
+                  filePath: epub.path,
+                  format: 'epub',
+                  fileModifiedTime: epub
+                      .lastModifiedSync()
+                      .millisecondsSinceEpoch,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.runAsync(() async {
+          for (var attempt = 0; attempt < 60; attempt++) {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
+            if (find.byType(ReaderAnnotatedTextPage).evaluate().isNotEmpty) {
+              return;
+            }
+          }
+        });
+        await _pumpUntil(
+          tester,
+          () => find.byType(ReaderAnnotatedTextPage).evaluate().isNotEmpty,
+        );
+
+        ReaderAnnotatedTextPage visiblePage() =>
+            tester.widget<ReaderAnnotatedTextPage>(
+              find.byType(ReaderAnnotatedTextPage).first,
+            );
+        final firstPage = visiblePage();
+        expect(firstPage.bodyStyle.fontFamily, 'sans-serif');
+        expect(
+          _leafFontFamilies(
+            firstPage.baseSourceSpanBuilder!(
+              firstPage.page.startOffset,
+              firstPage.page.endOffset,
+            ),
+          ),
+          contains('serif'),
+        );
+
+        await settings.setEpubReaderFontId(FontCatalog.systemId);
+        await tester.pumpAndSettle();
+        final systemPage = visiblePage();
+        expect(systemPage.bodyStyle.fontFamily, 'sans-serif');
+        expect(
+          _leafFontFamilies(
+            systemPage.baseSourceSpanBuilder!(
+              systemPage.page.startOffset,
+              systemPage.page.endOffset,
+            ),
+          ),
+          isNot(contains('serif')),
+        );
+        final firstPageIndex = systemPage.pageIndex;
+        final turn = tester
+            .widget<PageView>(find.byType(PageView))
+            .controller!
+            .nextPage(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.linear,
+            );
+        await tester.pumpAndSettle();
+        await turn;
+        final adjacentPage = visiblePage();
+        expect(adjacentPage.pageIndex, isNot(firstPageIndex));
+        expect(
+          _leafFontFamilies(
+            adjacentPage.baseSourceSpanBuilder!(
+              adjacentPage.page.startOffset,
+              adjacentPage.page.endOffset,
+            ),
+          ),
+          isNot(contains('serif')),
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        settings.dispose();
+        await drainReaderCache(tester);
+        await tester.binding.setSurfaceSize(null);
+        debugDefaultTargetPlatformOverride = null;
+        directory.deleteSync(recursive: true);
+      }
+    },
+  );
 
   testWidgets(
     'EPUB precaches adjacent horizontal images before the first turn',
@@ -764,6 +901,15 @@ Future<void> _pumpUntil(WidgetTester tester, bool Function() condition) async {
   fail('Timed out waiting for EPUB reader state.');
 }
 
+List<String?> _leafFontFamilies(InlineSpan span) {
+  if (span is! TextSpan) return const [];
+  final children = span.children;
+  if (children == null || children.isEmpty) {
+    return span.text?.isNotEmpty == true ? [span.style?.fontFamily] : const [];
+  }
+  return [for (final child in children) ..._leafFontFamilies(child)];
+}
+
 List<int> _nearbyPageIndexes(
   WidgetTester tester,
   Finder pageView,
@@ -815,6 +961,7 @@ List<int> _epubFixture({
   int chapterCount = 4,
   int imageOnlyChapterCount = 0,
   bool uniqueImagePerChapter = false,
+  bool serifParagraphs = false,
 }) {
   final archive = Archive();
   void add(String name, String content) {
@@ -863,7 +1010,7 @@ List<int> _epubFixture({
   for (var chapter = 1; chapter <= chapterCount; chapter++) {
     add('OEBPS/chapter$chapter.xhtml', '''<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter $chapter</title></head><body>
-${chapter <= imageOnlyChapterCount ? '<img src="${uniqueImagePerChapter ? 'stripe$chapter.png' : 'stripe.png'}" alt=""/>' : '<h1>Chapter $chapter</h1>${List.generate(40, (index) => '<p>Chapter $chapter paragraph $index contains enough text to create several deterministic reader pages for transition testing.</p>').join()}'}
+${chapter <= imageOnlyChapterCount ? '<img src="${uniqueImagePerChapter ? 'stripe$chapter.png' : 'stripe.png'}" alt=""/>' : '<h1>Chapter $chapter</h1>${List.generate(40, (index) => '<p${serifParagraphs ? ' style="font-family: serif"' : ''}>Chapter $chapter paragraph $index contains enough text to create several deterministic reader pages for transition testing.</p>').join()}'}
 </body></html>''');
   }
   return ZipEncoder().encode(archive)!;

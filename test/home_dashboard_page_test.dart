@@ -119,7 +119,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('阅读排行榜'), findsOneWidget);
-    expect(find.text('登录后同步阅读记录，参与周榜'), findsOneWidget);
+    expect(find.text('本机本周阅读'), findsOneWidget);
+    expect(find.text('登录后可参与'), findsOneWidget);
+    expect(find.text('查看周榜'), findsOneWidget);
     expect(find.text('最近阅读'), findsOneWidget);
     expect(find.text('今日阅读计划'), findsNothing);
     expect(find.textContaining('AI'), findsNothing);

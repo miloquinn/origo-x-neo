@@ -184,6 +184,111 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get bookSourceChangeConfirmTitle => 'Confirm source change';
+
+  @override
+  String bookSourceChangeQuickProgress(int completed, int batch, int total) {
+    return 'Quick search: $completed/$batch · $total sources available';
+  }
+
+  @override
+  String get bookSourceChangeStopSearch => 'Stop searching';
+
+  @override
+  String get bookSourceChangeLoadFailed => 'Could not load sources';
+
+  @override
+  String get bookSourceChangeLoadFailedHint =>
+      'Check your connection and try again.';
+
+  @override
+  String get bookSourceChangeChecking => 'Checking this source';
+
+  @override
+  String get bookSourceChangeCheckingPosition =>
+      'Reading your current position…';
+
+  @override
+  String get bookSourceChangeCheckingDetail => 'Loading book details…';
+
+  @override
+  String get bookSourceChangeCheckingCatalog => 'Loading the chapter list…';
+
+  @override
+  String get bookSourceChangeCheckingContent => 'Checking the current chapter…';
+
+  @override
+  String get bookSourceChangeSlow =>
+      'This source is responding slowly. You can cancel and try another.';
+
+  @override
+  String get bookSourceChangeCheckTimedOut =>
+      'The check timed out. Try again or choose another source.';
+
+  @override
+  String get bookSourceChangeCheckFailed =>
+      'Could not verify this source. Try again or choose another.';
+
+  @override
+  String get bookSourceChangeCommitFailed =>
+      'Could not finish changing the source. Check your bookshelf before retrying.';
+
+  @override
+  String get bookSourceChangeReaderOpenFailed =>
+      'The source changed, but this chapter could not be opened. Try again or return to your bookshelf.';
+
+  @override
+  String get bookSourceChangeReadingPosition => 'Reading position';
+
+  @override
+  String bookSourceChangeOriginalChapter(int number, String title) {
+    return 'Current: chapter $number · $title';
+  }
+
+  @override
+  String bookSourceChangeNewChapter(int number, String title) {
+    return 'New: chapter $number · $title';
+  }
+
+  @override
+  String get bookSourceChangeMappingTitle => 'Matched by chapter title';
+
+  @override
+  String get bookSourceChangeMappingNumber =>
+      'Matched by chapter number; please check the position';
+
+  @override
+  String get bookSourceChangeMappingManual => 'Chapter chosen by you';
+
+  @override
+  String get bookSourceChangeMappingEstimate =>
+      'Estimated from chapter position';
+
+  @override
+  String get bookSourceChangeMappingNeedsChoice =>
+      'Check the chapter before switching; the estimate may be wrong.';
+
+  @override
+  String get bookSourceChangePositionUnavailable =>
+      'Your previous reading position is unavailable. Choose the chapter to open.';
+
+  @override
+  String get bookSourceChangeChooseChapter => 'Choose a chapter';
+
+  @override
+  String get bookSourceChangeLocalImpact =>
+      'Your downloaded text and reading position stay unchanged. Only the source for future updates changes.';
+
+  @override
+  String get bookSourceChangeOnlineImpact =>
+      'The bookshelf source and reading position will change. Your old source position remains saved.';
+
+  @override
+  String bookSourceChangeConfirmAction(String source) {
+    return 'Change to $source';
+  }
+
+  @override
   String bookSourceChannelCount(int count) {
     return '$count チャンネル';
   }
@@ -1036,11 +1141,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get readerFont => '読書フォント';
 
   @override
-  String get readerFontDescription => '書籍本文と章見出しだけに使用します。アプリ画面には影響しません。';
+  String get readerFontDescription => 'TXT とオンラインの書籍に適用します。EPUB のフォントは別に設定します。';
 
   @override
   String get readerFontSelectionDescription =>
-      '読書に使う書体を選びます。「プラットフォーム標準」では、EPUB に出版社の埋め込みフォントがある場合はそれを優先します。';
+      '読書用フォントを選択します。EPUB では書籍内蔵、システム、インストール済みのフォントを選べます。';
 
   @override
   String get readerFontBookPriorityHint =>
@@ -1048,6 +1153,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get readerFontOverrideHint => '出版社が書籍に埋め込んだフォントより優先します。';
+
+  @override
+  String get fontBookEmbedded => '書籍内蔵';
 
   @override
   String get fontSystem => 'プラットフォーム標準';
@@ -2565,7 +2673,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      'この端末、ローカルネットワーク、その他のプライベートアドレス上のソースへのアクセスを許可します。信頼できる場合のみ有効にしてください。';
+      '書籍ソースからこの端末、ローカルネットワーク、その他のプライベートアドレスへのアクセスを許可します。プレミアムでは標準で有効です。信頼できるソースのみ使用してください。';
 
   @override
   String get additionalSourcesImport => '追加プロトコルのソースをインポート';
@@ -4786,7 +4894,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String settingsCacheReadingCacheSubtitle(String size) {
-    return 'ローカルEPUB/TXTの解析で生成される再構築可能なキャッシュ · $size';
+    return 'ローカルEPUB/TXT/Kindleの解析で生成される再構築可能なキャッシュ · $size';
   }
 
   @override
@@ -6084,7 +6192,7 @@ class AppLocalizationsJa extends AppLocalizations {
       '書籍やソースのURLは含まれません。第三者のサービスには別途料金が発生する場合があります。';
 
   @override
-  String get premiumSetupHint => '購入後、「設定 → 高度な機能」で必要な機能を有効にしてください。';
+  String get premiumSetupHint => '購入後は標準で有効になります。「設定 → 高度な機能」で無効にできます。';
 
   @override
   String get premiumBillingTitle => '購入について';
@@ -6689,4 +6797,57 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get bookSourceContinueUpdate => '新しい章をダウンロード';
+
+  @override
+  String get settingsCloseReaderToLibraryTitle =>
+      'Close reader to return to library';
+
+  @override
+  String get settingsCloseReaderToLibrarySubtitle =>
+      'When a book is open, the window close button returns to the main window instead of quitting the app';
+
+  @override
+  String get navMe => 'マイページ';
+
+  @override
+  String get settingsPreferencesTitle => '環境設定';
+
+  @override
+  String get settingsPreferencesSubtitle => '外観、読書、言語';
+
+  @override
+  String get settingsManagementTitle => '設定と管理';
+
+  @override
+  String get settingsDataSyncSubtitle => 'WebDAVバックアップ、キャッシュ';
+
+  @override
+  String get settingsContentServicesTitle => 'コンテンツとサービス';
+
+  @override
+  String get settingsContentServicesSubtitle => '書籍ソース、AI、読み上げ';
+
+  @override
+  String get settingsAboutSupportSubtitle => 'バージョン、更新、オープンソース';
+
+  @override
+  String get settingsPremiumSubtitle => '追加の書籍ソースとプライベートネットワーク';
+
+  @override
+  String get settingsGuestTitle => '未ログイン';
+
+  @override
+  String get settingsGuestSubtitle => '端末内の読書にログインは不要です';
+
+  @override
+  String get settingsWebDavConfigured => 'WebDAVバックアップ設定済み';
+
+  @override
+  String get settingsPremiumActive => 'プレミアムが有効です';
+
+  @override
+  String get settingsPremiumSyncFailed => '会員状態を同期できません';
+
+  @override
+  String get settingsWebDavWorking => 'WebDAVを処理中';
 }

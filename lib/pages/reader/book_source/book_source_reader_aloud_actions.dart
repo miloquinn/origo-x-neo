@@ -262,9 +262,7 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
     );
     return ReaderFontChoice(
       valueLabel: FontCatalog.labelFor(context.l10n, selected),
-      hint: profile.isPlatformDefault
-          ? context.l10n.readerFontBookPriorityHint
-          : context.l10n.readerFontOverrideHint,
+      hint: FontCatalog.descriptionFor(context.l10n, selected),
       family: profile.fontFamily,
       fallbackFamilies: profile.fontFamilyFallback,
       supportsVariableWeight: selected.supportsVariableWeight,
@@ -314,9 +312,7 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
         tabletTwoPageHint: context.l10n.readerTabletTwoPageHint,
         fontFamilyLabel: context.l10n.fontFamilyLabel,
         fontFamilyValueLabel: FontCatalog.labelFor(context.l10n, _readerFont),
-        fontFamilyHint: _readerFontProfile.isPlatformDefault
-            ? context.l10n.readerFontBookPriorityHint
-            : context.l10n.readerFontOverrideHint,
+        fontFamilyHint: FontCatalog.descriptionFor(context.l10n, _readerFont),
         onFontFamilyTap: _showReaderFontPicker,
         fontSizeLabel: context.l10n.fontSizeLabel,
         textBrightnessLabel: context.l10n.readerTextBrightnessLabel,
@@ -449,28 +445,91 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
       ),
     );
     if (!mounted || result == null) return;
-    showSideToast(
-      context,
-      context.l10n.bookSourceChangeSuccess(result.source.name),
-    );
     unawaited(_flushReadingSession());
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => BookSourceReaderPage(
-          source: result.source,
-          book: result.book,
-          replaceRuleService: _replaceRules,
-          client: _client,
-          progressStore: widget.progressStore,
-          shelfService: _shelfService,
-          initialTheme: _readerTheme,
-        ),
+    final readerKey = GlobalKey<_BookSourceReaderPageState>();
+    final route = MaterialPageRoute<void>(
+      builder: (_) => BookSourceReaderPage(
+        key: readerKey,
+        source: result.source,
+        book: result.book,
+        replaceRuleService: _replaceRules,
+        client: _client,
+        progressStore: widget.progressStore,
+        shelfService: _shelfService,
+        initialTheme: _readerTheme,
       ),
     );
+    final handoff = BookSourceChangeReaderHandoff(
+      isActive: () => route.isActive,
+      hasReadableContent: () =>
+          readerKey.currentState?._hasReadableBookSourceContent ?? false,
+      loadError: () => readerKey.currentState?._bookSourceChangeOpenError,
+      onReady: () {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final state = readerKey.currentState;
+          if (state == null || !state._hasReadableBookSourceContent) return;
+          showSideToast(
+            state.context,
+            state.context.l10n.bookSourceChangeSuccess(result.source.name),
+            kind: SideToastKind.success,
+          );
+        });
+      },
+      onLoadError: () {
+        final state = readerKey.currentState;
+        if (state == null) return;
+        showSideToast(
+          state.context,
+          state.context.l10n.bookSourceChangeReaderOpenFailed,
+          kind: SideToastKind.warning,
+          duration: const Duration(seconds: 8),
+          actionLabel: state.context.l10n.library,
+          onAction: () {
+            final readerContext = readerKey.currentContext;
+            if (readerContext != null &&
+                (ModalRoute.of(readerContext)?.isCurrent ?? false)) {
+              Navigator.of(readerContext).pop();
+            }
+          },
+        );
+      },
+    )..start();
+    try {
+      await Navigator.of(context).push<void>(route);
+    } finally {
+      handoff.dispose();
+    }
     if (!mounted) return;
     BookOpenTransition.beginExit();
     _updateReaderState(() => _allowPop = true);
     Navigator.of(context).pop();
+  }
+
+  bool get _hasReadableBookSourceContent {
+    if (!_openingContentReadyScheduled || _bodyStateName != 'content') {
+      return false;
+    }
+    final content = _content;
+    if (content == null) return false;
+    if (isImageOnlyBookSourceChapter(content)) return true;
+    return (_readableChapterText[_chapterIndex] ?? '').trim().isNotEmpty;
+  }
+
+  Object? get _bookSourceChangeOpenError {
+    final error = _error;
+    if (error != null) return error;
+    if (_openingContentReadyScheduled && _bodyStateName == 'empty') {
+      return context.l10n.readerNoContent;
+    }
+    final content = _content;
+    if (_openingContentReadyScheduled &&
+        content != null &&
+        !isImageOnlyBookSourceChapter(content) &&
+        _readableChapterText.containsKey(_chapterIndex) &&
+        _readableChapterText[_chapterIndex]!.trim().isEmpty) {
+      return context.l10n.readerNoContent;
+    }
+    return null;
   }
 
   Future<void> _showCustomThemeEditor() async {
@@ -554,5 +613,57 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
     if (selectedStyle == null || !mounted) return;
     Navigator.of(context).pop();
     await _setTopBarStyle(selectedStyle);
+  }
+}
+
+@visibleForTesting
+class BookSourceChangeReaderHandoff {
+  BookSourceChangeReaderHandoff({
+    required this.isActive,
+    required this.hasReadableContent,
+    required this.loadError,
+    required this.onReady,
+    required this.onLoadError,
+    this.pollInterval = const Duration(milliseconds: 100),
+  });
+
+  final bool Function() isActive;
+  final bool Function() hasReadableContent;
+  final Object? Function() loadError;
+  final VoidCallback onReady;
+  final VoidCallback onLoadError;
+  final Duration pollInterval;
+
+  Timer? _timer;
+  bool _reportedError = false;
+
+  void start() {
+    if (_timer != null) return;
+    _timer = Timer.periodic(pollInterval, (_) => _inspect());
+  }
+
+  void _inspect() {
+    if (!isActive()) {
+      dispose();
+      return;
+    }
+    if (hasReadableContent()) {
+      dispose();
+      onReady();
+      return;
+    }
+    final error = loadError();
+    if (error == null) {
+      _reportedError = false;
+      return;
+    }
+    if (_reportedError) return;
+    _reportedError = true;
+    onLoadError();
+  }
+
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
   }
 }

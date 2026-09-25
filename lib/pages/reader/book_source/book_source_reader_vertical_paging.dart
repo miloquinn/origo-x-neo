@@ -393,8 +393,8 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
       padding: EdgeInsets.symmetric(horizontal: _horizontalMargin),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: readerMaxTextContentWidth,
+          constraints: BoxConstraints(
+            maxWidth: readerTextContentMaxWidth(_horizontalMargin),
           ),
           child: Column(
             key: ValueKey(

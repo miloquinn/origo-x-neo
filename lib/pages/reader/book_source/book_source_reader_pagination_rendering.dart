@@ -46,7 +46,7 @@ extension _BookSourceReaderPaginationRendering on _BookSourceReaderPageState {
           '${_readerFontProfile.cacheSignature}:'
           '${_replaceRules.rulesSignature}:'
           '$_chapterTitlePageEnabled:$chapterTitle',
-    ).cacheKey('book-source-line-v7');
+    ).cacheKey('book-source-line-v8');
     final style = _bodyTextStyle;
     final textDirection = Directionality.of(context);
     return _BookSourcePagedLayoutInput(
@@ -300,8 +300,8 @@ extension _BookSourceReaderPaginationRendering on _BookSourceReaderPageState {
         ),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: readerMaxTextContentWidth,
+            constraints: BoxConstraints(
+              maxWidth: readerTextContentMaxWidth(_horizontalMargin),
             ),
             child: SizedBox.expand(
               child: _buildAnnotatedTextPage(

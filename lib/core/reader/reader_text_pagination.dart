@@ -12,10 +12,18 @@ import 'reader_text_layout.dart';
 /// this same rule so an identical chapter produces identical line breaks.
 const double readerMaxTextContentWidth = 760;
 
+/// Reserve the chosen page margins inside the capped text column as well.
+/// Otherwise wide desktop windows hide every margin change behind the cap.
+double readerTextContentMaxWidth(double horizontalMargin) =>
+    (readerMaxTextContentWidth - horizontalMargin * 2).clamp(
+      0.0,
+      readerMaxTextContentWidth,
+    );
+
 double readerTextContentWidth(double viewportWidth, double horizontalMargin) =>
     (viewportWidth - horizontalMargin * 2).clamp(
       0.0,
-      readerMaxTextContentWidth,
+      readerTextContentMaxWidth(horizontalMargin),
     );
 
 double readerTextContentHeight(

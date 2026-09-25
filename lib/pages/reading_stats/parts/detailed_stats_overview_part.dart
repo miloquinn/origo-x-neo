@@ -49,6 +49,7 @@ extension _DetailedStatsOverviewView on _DetailedStatsPageState {
         : (_dailyStats.last['readingTime'] as int?) ?? 0;
 
     return Container(
+      key: const ValueKey('stats-overview-hero'),
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
         color: palette.hero,
@@ -213,6 +214,7 @@ extension _DetailedStatsOverviewView on _DetailedStatsPageState {
         final columns = constraints.maxWidth >= 760 ? 4 : 2;
         return GridView.builder(
           shrinkWrap: true,
+          padding: EdgeInsets.zero,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
@@ -224,6 +226,7 @@ extension _DetailedStatsOverviewView on _DetailedStatsPageState {
           itemBuilder: (context, index) {
             final stat = stats[index];
             return _buildStatCard(
+              key: ValueKey('stats-overview-stat-$index'),
               title: stat.$1,
               value: stat.$2,
               unit: stat.$3,
@@ -237,6 +240,7 @@ extension _DetailedStatsOverviewView on _DetailedStatsPageState {
   }
 
   Widget _buildStatCard({
+    Key? key,
     required String title,
     required String value,
     required String unit,
@@ -245,6 +249,7 @@ extension _DetailedStatsOverviewView on _DetailedStatsPageState {
   }) {
     final palette = _palette;
     return Container(
+      key: key,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.cardStrong,

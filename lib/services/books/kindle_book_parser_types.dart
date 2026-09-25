@@ -52,6 +52,7 @@ class KindleBookContent {
     this.imagesByName = const <String, Uint8List>{},
     this.imageNameByBlockIndex = const <int, String>{},
     this.cssParts = const <String>[],
+    this.fontBytesByBlockIndex = const <int, Uint8List>{},
   });
 
   final KindleBookMetadata metadata;
@@ -66,6 +67,9 @@ class KindleBookContent {
 
   /// KF8 CSS flow 文本（MOBI7 无独立 CSS，恒为空）。
   final List<String> cssParts;
+
+  /// KF8 resource block index (zero-based) → decoded embedded FONT bytes.
+  final Map<int, Uint8List> fontBytesByBlockIndex;
 }
 
 /// 把正文里的 Kindle 图片引用重写成 `image00007.jpg` 形式的文件名，

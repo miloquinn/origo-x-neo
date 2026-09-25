@@ -33,6 +33,7 @@ import 'package:xxread/core/reader/reader_leaf_status.dart';
 import 'package:xxread/core/reader/reader_layout.dart';
 import 'package:xxread/core/reader/reader_keep_screen_on.dart';
 import 'package:xxread/core/reader/reader_margin_settings.dart';
+import 'package:xxread/core/reader/reader_desktop_resize_controller.dart';
 import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/core/reader/reader_position_save_queue.dart';
 import 'package:xxread/core/reader/reader_safe_area.dart';
@@ -61,6 +62,8 @@ import 'package:xxread/services/books/bookmark_dao.dart';
 import 'package:xxread/services/books/enhanced_txt_import_service.dart';
 import 'package:xxread/services/books/epub_native_parser.dart';
 import 'package:xxread/services/books/kindle_book_parser.dart';
+import 'package:xxread/services/books/kindle_embedded_fonts.dart';
+import 'package:xxread/services/books/kindle_native_cache.dart';
 import 'package:xxread/services/books/pagination_cache_dao.dart';
 import 'package:xxread/services/books/native_reader_cache_store.dart';
 import 'package:xxread/services/books/web_book_file_store.dart';
@@ -139,6 +142,7 @@ typedef NativePageMode = ReaderPageMode;
 const int _largeTxtFileThreshold = 2 * 1024 * 1024;
 const int _largeInMemoryBookCacheThreshold = 16 * 1024 * 1024;
 const int _txtChapterCacheVersion = 6;
+const int _parsedTxtChapterCacheVersion = 7;
 const double _imagePageGap = 10;
 const int _imagePageImageFlex = 5;
 const int _imagePageTextFlex = 6;
@@ -148,7 +152,7 @@ final Map<String, Future<List<_NativeChapter>>> _bookMemoryCache = {};
 final Map<String, List<ReaderNavigationChapter>> _navigationMemoryCache = {};
 final Map<String, Map<String, List<_ReaderPageData>>> _paginationMemoryCache =
     {};
-final Map<String, Future<void>> _epubFontLoads = <String, Future<void>>{};
+final Map<String, Future<void>> _embeddedFontLoads = <String, Future<void>>{};
 
 /// Drops reopen-only reader caches when Android/iOS reports memory pressure.
 /// Active readers keep their loaded chapters through their State fields and
@@ -165,18 +169,22 @@ void clearNativeReaderMemoryCaches() {
   _paginationMemoryCache.clear();
 }
 
-Future<void> _registerEpubFonts(Map<String, String> fonts) => Future.wait(
-  fonts.entries.map((entry) {
-    return _epubFontLoads.putIfAbsent(entry.key, () async {
-      try {
-        final bytes = await File(entry.value).readAsBytes();
-        final loader = FontLoader(entry.key)
-          ..addFont(Future<ByteData>.value(ByteData.sublistView(bytes)));
-        await loader.load();
-      } catch (error) {
-        debugPrint('EPUB font registration failed (${entry.key}): $error');
-      }
+Future<void> _registerEmbeddedFonts(Map<String, String> fonts) => Future.wait(
+  fonts.entries.map((entry) async {
+    final loading = _embeddedFontLoads.putIfAbsent(entry.key, () async {
+      final bytes = await File(entry.value).readAsBytes();
+      final loader = FontLoader(entry.key)
+        ..addFont(Future<ByteData>.value(ByteData.sublistView(bytes)));
+      await loader.load();
     });
+    try {
+      await loading;
+    } catch (error) {
+      if (identical(_embeddedFontLoads[entry.key], loading)) {
+        _embeddedFontLoads.remove(entry.key);
+      }
+      debugPrint('Embedded font registration failed (${entry.key}): $error');
+    }
   }),
 );
 
@@ -228,6 +236,17 @@ Future<bool> waitForReaderOpeningRouteToSettle({
   routeAnimation.removeStatusListener(handleStatus);
   return routeOpened && isMounted();
 }
+
+@visibleForTesting
+Future<bool> waitForLargeTxtIndexingWindow({
+  required Animation<double>? routeAnimation,
+  required bool routeEntranceCompleted,
+  required bool Function() isMounted,
+}) => waitForReaderOpeningRouteToSettle(
+  routeAnimation: routeAnimation,
+  routeEntranceCompleted: routeEntranceCompleted,
+  isMounted: isMounted,
+);
 
 class NativeReaderPage extends StatefulWidget {
   const NativeReaderPage({
@@ -398,6 +417,8 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   final BookNoteDao _bookNoteDao = BookNoteDao();
   final TxtEditReferenceService _txtEditReferenceService =
       TxtEditReferenceService();
+  final ReaderDesktopResizeController _desktopResizeController =
+      ReaderDesktopResizeController();
   final ReaderSettingsStore _readerSettingsStore = const ReaderSettingsStore();
   final ReaderCustomThemeStore _customThemeStore =
       const ReaderCustomThemeStore();
@@ -503,12 +524,18 @@ class _NativeReaderPageState extends State<NativeReaderPage>
     _bindRouteAnimation();
     _bindOpeningFlightSettled();
     _bindOpeningCoverHold();
-    var nextReaderFont = FontCatalog.defaultReaderFont;
+    var nextReaderFont = _isEpub
+        ? FontCatalog.bookEmbeddedFont
+        : FontCatalog.defaultReaderFont;
     var nextReaderFontReady = true;
     try {
       final appSettings = context.watch<AppSettingsNotifier>();
       nextReaderFontReady = appSettings.isInitialized;
-      if (nextReaderFontReady) nextReaderFont = appSettings.readerFont;
+      if (nextReaderFontReady) {
+        nextReaderFont = _isEpub
+            ? appSettings.epubReaderFont
+            : appSettings.readerFont;
+      }
     } on ProviderNotFoundException {
       // Reader widgets remain embeddable in tests and isolated previews.
     }
@@ -534,8 +561,8 @@ class _NativeReaderPageState extends State<NativeReaderPage>
 
   /// 打开动画（封面飞行 + 正文渐显）是否已完全结束。
   ///
-  /// 路由动画结束时正文渐显往往仍在播放；相邻章节的整章排版、系统栏切换
-  /// 都等待该信号，避免这些主线程重活掉帧落在动画后半段。
+  /// 路由动画结束时正文渐显往往仍在播放；相邻章节的整章排版
+  /// 等待该信号，避免主线程重活掉帧落在动画后半段。
   bool get _openingFlightSettledNow => _openingFlightSettled?.value ?? true;
 
   void _bindOpeningFlightSettled() {
@@ -551,7 +578,6 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   void _onOpeningFlightSettledChanged() {
     _openingFlightSettled?.removeListener(_onOpeningFlightSettledChanged);
     if (!mounted) return;
-    _scheduleInitialReaderSystemUi();
     setState(() {});
   }
 
@@ -620,24 +646,23 @@ class _NativeReaderPageState extends State<NativeReaderPage>
 
   void _scheduleInitialReaderSystemUi() {
     if (!_routeEntranceCompleted ||
-        !_openingFlightSettledNow ||
+        !_readerSettingsLoaded ||
         _readerSystemUiApplied ||
         _readerSystemUiApplyScheduled) {
       return;
     }
     _readerSystemUiApplyScheduled = true;
-    // Changing window insets while the cover flight or the reveal crossfade
-    // is still playing forces the live reader route to relayout mid-flight.
-    // Wait for the whole visible opening animation to settle, then apply the
-    // saved reader chrome on the following frame.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || _readerSystemUiApplied) return;
-      final topBarStyle = await ReaderSystemUiController.applySavedPreference(
+      await ReaderSystemUiController.apply(
+        style: _topBarStyle,
         overlayStyle: _readerSystemUiOverlayStyle,
       );
+      // Let Android deliver the new window insets before the first text page
+      // is measured. A later inset change would rebuild pagination on screen.
+      await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
       setState(() {
-        _topBarStyle = topBarStyle;
         _readerSystemUiApplied = true;
       });
     });
@@ -709,6 +734,7 @@ class _NativeReaderPageState extends State<NativeReaderPage>
     WidgetsBinding.instance.removeObserver(this);
     _openingLoaderTimer?.cancel();
     _controlsTimer?.cancel();
+    _desktopResizeController.dispose();
     _routeAnimation?.removeStatusListener(_onRouteAnimationStatusChanged);
     _openingFlightSettled?.removeListener(_onOpeningFlightSettledChanged);
     _openingCoverHoldReached?.removeListener(_onOpeningCoverHoldChanged);
@@ -887,10 +913,26 @@ class _NativeReaderPageState extends State<NativeReaderPage>
     _savedChapterResolved = true;
     final savedChapterId = _savedChapterId;
     if (savedChapterId == null || savedChapterId.isEmpty) return;
-    final resolvedIndex = chapters.indexWhere(
+    var resolvedIndex = chapters.indexWhere(
       (chapter) => chapter.id == savedChapterId,
     );
     if (resolvedIndex < 0) return;
+    final matchedIndex = resolvedIndex;
+    final savedOffset = _anchorOffset;
+    if (savedOffset != null) {
+      for (var index = resolvedIndex + 1; index < chapters.length; index++) {
+        final candidate = chapters[index];
+        if (candidate.sourceChapterId != savedChapterId ||
+            candidate.sourceBodyStart > savedOffset) {
+          break;
+        }
+        resolvedIndex = index;
+      }
+      final sourceBodyStart = chapters[resolvedIndex].sourceBodyStart;
+      if (resolvedIndex != matchedIndex && sourceBodyStart > 0) {
+        _anchorOffset = savedOffset - sourceBodyStart;
+      }
+    }
     _chapterIndex = resolvedIndex;
     _resetHorizontalPagingWindow(resolvedIndex, chapterCount: chapters.length);
   }

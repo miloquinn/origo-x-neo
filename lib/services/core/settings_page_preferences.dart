@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/core/reader/reader_keep_screen_on.dart';
 import 'package:xxread/core/reader/reader_system_ui.dart';
+import 'package:xxread/services/core/desktop_window_service.dart';
 import 'package:xxread/services/reading/reading_resume_service.dart';
 
 class SettingsPagePreferences {
@@ -15,6 +16,7 @@ class SettingsPagePreferences {
     this.enableAutoExtractCover = true,
     this.enableVolumeKeyTurn = false,
     this.autoResumeReading = false,
+    this.closeReaderToLibrary = true,
     this.readerTopBarStyle = ReaderTopBarStyle.reader,
     this.enableFullscreen = false,
     this.enableDeveloperMode = false,
@@ -30,6 +32,7 @@ class SettingsPagePreferences {
   final bool enableAutoExtractCover;
   final bool enableVolumeKeyTurn;
   final bool autoResumeReading;
+  final bool closeReaderToLibrary;
   final ReaderTopBarStyle readerTopBarStyle;
   final bool enableFullscreen;
   final bool enableDeveloperMode;
@@ -77,6 +80,11 @@ class SharedPreferencesSettingsPagePreferencesStore
       enableVolumeKeyTurn: prefs.getBool('enableVolumeKeyTurn') ?? false,
       autoResumeReading:
           prefs.getBool(ReadingResumeService.enabledPreferenceKey) ?? false,
+      closeReaderToLibrary:
+          prefs.getBool(
+            DesktopWindowService.closeReaderToLibraryPreferenceKey,
+          ) ??
+          true,
       readerTopBarStyle: readerTopBarStyle,
       enableFullscreen: prefs.getBool('enableFullscreen') ?? false,
       enableDeveloperMode: prefs.getBool('enableDeveloperMode') ?? false,
@@ -102,6 +110,10 @@ class SharedPreferencesSettingsPagePreferencesStore
     await prefs.setBool(
       ReadingResumeService.enabledPreferenceKey,
       preferences.autoResumeReading,
+    );
+    await prefs.setBool(
+      DesktopWindowService.closeReaderToLibraryPreferenceKey,
+      preferences.closeReaderToLibrary,
     );
     await _saveReaderTopBarStyle(preferences.readerTopBarStyle);
     await prefs.setBool('enableFullscreen', preferences.enableFullscreen);

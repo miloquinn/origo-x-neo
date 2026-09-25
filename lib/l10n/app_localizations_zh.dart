@@ -182,6 +182,98 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get bookSourceChangeConfirmTitle => '确认换源';
+
+  @override
+  String bookSourceChangeQuickProgress(int completed, int batch, int total) {
+    return '快速查找：$completed/$batch · 共 $total 个可用书源';
+  }
+
+  @override
+  String get bookSourceChangeStopSearch => '停止查找';
+
+  @override
+  String get bookSourceChangeLoadFailed => '无法加载书源';
+
+  @override
+  String get bookSourceChangeLoadFailedHint => '请检查网络后重试。';
+
+  @override
+  String get bookSourceChangeChecking => '检查新来源';
+
+  @override
+  String get bookSourceChangeCheckingPosition => '读取当前阅读位置…';
+
+  @override
+  String get bookSourceChangeCheckingDetail => '读取书籍详情…';
+
+  @override
+  String get bookSourceChangeCheckingCatalog => '读取章节目录…';
+
+  @override
+  String get bookSourceChangeCheckingContent => '检查当前章节正文…';
+
+  @override
+  String get bookSourceChangeSlow => '这个来源响应较慢，可以取消后试试其他来源。';
+
+  @override
+  String get bookSourceChangeCheckTimedOut => '检查超时，请重试或选择其他来源。';
+
+  @override
+  String get bookSourceChangeCheckFailed => '无法验证这个来源，请重试或选择其他来源。';
+
+  @override
+  String get bookSourceChangeCommitFailed => '换源未能完成，请先查看书架状态再重试。';
+
+  @override
+  String get bookSourceChangeReaderOpenFailed => '来源已切换，但新章节暂时打不开。请重试或返回书架。';
+
+  @override
+  String get bookSourceChangeReadingPosition => '阅读位置';
+
+  @override
+  String bookSourceChangeOriginalChapter(int number, String title) {
+    return '原：第 $number 章 · $title';
+  }
+
+  @override
+  String bookSourceChangeNewChapter(int number, String title) {
+    return '新：第 $number 章 · $title';
+  }
+
+  @override
+  String get bookSourceChangeMappingTitle => '按章节标题匹配';
+
+  @override
+  String get bookSourceChangeMappingNumber => '按章节号匹配，请核对位置';
+
+  @override
+  String get bookSourceChangeMappingManual => '已手动选择章节';
+
+  @override
+  String get bookSourceChangeMappingEstimate => '按章节位置估算';
+
+  @override
+  String get bookSourceChangeMappingNeedsChoice => '估算位置可能不准，请先选择正确章节。';
+
+  @override
+  String get bookSourceChangePositionUnavailable => '暂时无法读取原阅读位置，请选择要打开的章节。';
+
+  @override
+  String get bookSourceChangeChooseChapter => '选择章节';
+
+  @override
+  String get bookSourceChangeLocalImpact => '本地正文与阅读位置保持不变，只更改后续更新使用的书源。';
+
+  @override
+  String get bookSourceChangeOnlineImpact => '将更新书架来源和阅读位置；原来源的位置仍会保留。';
+
+  @override
+  String bookSourceChangeConfirmAction(String source) {
+    return '确认换到 $source';
+  }
+
+  @override
   String bookSourceChannelCount(int count) {
     return '$count 个频道';
   }
@@ -1022,17 +1114,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerFont => '阅读字体';
 
   @override
-  String get readerFontDescription => '仅用于书籍正文和章节标题，不影响 App 界面。';
+  String get readerFontDescription => '用于 TXT 和书源正文；EPUB 字体单独设置。';
 
   @override
   String get readerFontSelectionDescription =>
-      '选择阅读正文使用的字体。选用“平台默认”时，EPUB 如有出版社内嵌字体会优先保留。';
+      '选择阅读正文的字体。EPUB 可选书籍内置、系统字体或其他已安装字体。';
 
   @override
   String get readerFontBookPriorityHint => '书籍有内嵌字体时优先使用，否则使用平台默认阅读字体。';
 
   @override
   String get readerFontOverrideHint => '覆盖出版社在书籍中内嵌的字体。';
+
+  @override
+  String get fontBookEmbedded => '书籍内置';
 
   @override
   String get fontSystem => '平台默认';
@@ -2538,7 +2633,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      '允许访问本机、局域网和其他私网地址上的书源。只在你信任该来源时开启。';
+      '允许书源访问本机、局域网和其他私网地址。高级版默认开启；请只使用你信任的书源。';
 
   @override
   String get additionalSourcesImport => '导入更多协议书源';
@@ -4732,7 +4827,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String settingsCacheReadingCacheSubtitle(String size) {
-    return '解析本地 EPUB/TXT 生成的可重建缓存 · $size';
+    return '解析本地 EPUB/TXT/Kindle 生成的可重建缓存 · $size';
   }
 
   @override
@@ -5996,7 +6091,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get premiumSourceNotice => '会员不提供书籍内容或书源地址，第三方服务可能另行收费。';
 
   @override
-  String get premiumSetupHint => '解锁后，可在“设置 → 高级功能”中按需开启。';
+  String get premiumSetupHint => '解锁后默认开启，可在“设置 → 高级功能”中关闭。';
 
   @override
   String get premiumBillingTitle => '购买说明';
@@ -6585,6 +6680,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get bookSourceContinueUpdate => '下载新章节';
+
+  @override
+  String get settingsCloseReaderToLibraryTitle => '关闭阅读时返回主窗口';
+
+  @override
+  String get settingsCloseReaderToLibrarySubtitle =>
+      '阅读中点击窗口关闭按钮时返回软件主窗口，而不是退出应用';
+
+  @override
+  String get navMe => '我的';
+
+  @override
+  String get settingsPreferencesTitle => '偏好设置';
+
+  @override
+  String get settingsPreferencesSubtitle => '外观、阅读、语言';
+
+  @override
+  String get settingsManagementTitle => '设置与管理';
+
+  @override
+  String get settingsDataSyncSubtitle => 'WebDAV 备份、缓存管理';
+
+  @override
+  String get settingsContentServicesTitle => '内容与服务';
+
+  @override
+  String get settingsContentServicesSubtitle => '书源、AI、听书';
+
+  @override
+  String get settingsAboutSupportSubtitle => '版本、更新、开源项目';
+
+  @override
+  String get settingsPremiumSubtitle => '扩展书源能力与私有网络访问';
+
+  @override
+  String get settingsGuestTitle => '未登录';
+
+  @override
+  String get settingsGuestSubtitle => '本地阅读无需登录';
+
+  @override
+  String get settingsWebDavConfigured => 'WebDAV 备份已配置';
+
+  @override
+  String get settingsPremiumActive => '高级版已开通';
+
+  @override
+  String get settingsPremiumSyncFailed => '暂时无法同步会员状态';
+
+  @override
+  String get settingsWebDavWorking => 'WebDAV 正在处理';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -6762,6 +6909,98 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String bookSourceChangeSuccess(String source) {
     return '已切換到 $source';
+  }
+
+  @override
+  String get bookSourceChangeConfirmTitle => '確認更換來源';
+
+  @override
+  String bookSourceChangeQuickProgress(int completed, int batch, int total) {
+    return '快速搜尋：$completed/$batch · 共 $total 個可用書源';
+  }
+
+  @override
+  String get bookSourceChangeStopSearch => '停止搜尋';
+
+  @override
+  String get bookSourceChangeLoadFailed => '無法載入書源';
+
+  @override
+  String get bookSourceChangeLoadFailedHint => '請檢查網路後重試。';
+
+  @override
+  String get bookSourceChangeChecking => '檢查新來源';
+
+  @override
+  String get bookSourceChangeCheckingPosition => '讀取目前閱讀位置…';
+
+  @override
+  String get bookSourceChangeCheckingDetail => '讀取書籍詳情…';
+
+  @override
+  String get bookSourceChangeCheckingCatalog => '讀取章節目錄…';
+
+  @override
+  String get bookSourceChangeCheckingContent => '檢查目前章節正文…';
+
+  @override
+  String get bookSourceChangeSlow => '這個來源回應較慢，可以取消後試試其他來源。';
+
+  @override
+  String get bookSourceChangeCheckTimedOut => '檢查逾時，請重試或選擇其他來源。';
+
+  @override
+  String get bookSourceChangeCheckFailed => '無法驗證這個來源，請重試或選擇其他來源。';
+
+  @override
+  String get bookSourceChangeCommitFailed => '更換來源未能完成，請先查看書架狀態再重試。';
+
+  @override
+  String get bookSourceChangeReaderOpenFailed => '來源已切換，但新章節暫時無法開啟。請重試或返回書架。';
+
+  @override
+  String get bookSourceChangeReadingPosition => '閱讀位置';
+
+  @override
+  String bookSourceChangeOriginalChapter(int number, String title) {
+    return '原：第 $number 章 · $title';
+  }
+
+  @override
+  String bookSourceChangeNewChapter(int number, String title) {
+    return '新：第 $number 章 · $title';
+  }
+
+  @override
+  String get bookSourceChangeMappingTitle => '依章節標題配對';
+
+  @override
+  String get bookSourceChangeMappingNumber => '依章節編號配對，請核對位置';
+
+  @override
+  String get bookSourceChangeMappingManual => '已手動選擇章節';
+
+  @override
+  String get bookSourceChangeMappingEstimate => '依章節位置估算';
+
+  @override
+  String get bookSourceChangeMappingNeedsChoice => '估算位置可能不準，請先選擇正確章節。';
+
+  @override
+  String get bookSourceChangePositionUnavailable => '暫時無法讀取原閱讀位置，請選擇要開啟的章節。';
+
+  @override
+  String get bookSourceChangeChooseChapter => '選擇章節';
+
+  @override
+  String get bookSourceChangeLocalImpact => '本機正文與閱讀位置保持不變，只更改後續更新使用的書源。';
+
+  @override
+  String get bookSourceChangeOnlineImpact => '將更新書架來源和閱讀位置；原來源的位置仍會保留。';
+
+  @override
+  String bookSourceChangeConfirmAction(String source) {
+    return '切換到 $source';
   }
 
   @override
@@ -7605,17 +7844,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get readerFont => '閱讀字體';
 
   @override
-  String get readerFontDescription => '僅用於書籍正文和章節標題，不影響 App 介面。';
+  String get readerFontDescription => '用於 TXT 和書源正文；EPUB 字體另外設定。';
 
   @override
   String get readerFontSelectionDescription =>
-      '選擇閱讀正文使用的字體。選用「平台預設」時，EPUB 如有出版社內嵌字體會優先保留。';
+      '選擇閱讀正文的字體。EPUB 可選書籍內建、系統字體或其他已安裝字體。';
 
   @override
   String get readerFontBookPriorityHint => '書籍有內嵌字體時優先使用，否則使用平台預設閱讀字體。';
 
   @override
   String get readerFontOverrideHint => '覆蓋出版社在書籍中內嵌的字體。';
+
+  @override
+  String get fontBookEmbedded => '書籍內建';
 
   @override
   String get fontSystem => '平台預設';
@@ -9121,7 +9363,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      '允許存取本機、區域網路和其他私網位址上的書源。只在你信任該來源時開啟。';
+      '允許書源存取本機、區域網路和其他私網位址。高級版預設開啟；請只使用你信任的書源。';
 
   @override
   String get additionalSourcesImport => '匯入更多協議書源';
@@ -11315,7 +11557,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String settingsCacheReadingCacheSubtitle(String size) {
-    return '解析本機 EPUB/TXT 產生的可重建快取 · $size';
+    return '解析本機 EPUB/TXT/Kindle 產生的可重建快取 · $size';
   }
 
   @override
@@ -12579,7 +12821,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get premiumSourceNotice => '會員不提供書籍內容或書源網址，第三方服務可能另行收費。';
 
   @override
-  String get premiumSetupHint => '解鎖後，可在「設定 → 高級功能」中按需開啟。';
+  String get premiumSetupHint => '解鎖後預設開啟，可在「設定 → 高級功能」中關閉。';
 
   @override
   String get premiumBillingTitle => '購買說明';
@@ -13169,4 +13411,56 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get bookSourceContinueUpdate => '下載新章節';
+
+  @override
+  String get settingsCloseReaderToLibraryTitle => '關閉閱讀時返回主視窗';
+
+  @override
+  String get settingsCloseReaderToLibrarySubtitle =>
+      '閱讀中點擊視窗關閉按鈕時返回軟體主視窗，而不是結束應用程式';
+
+  @override
+  String get navMe => '我的';
+
+  @override
+  String get settingsPreferencesTitle => '偏好設定';
+
+  @override
+  String get settingsPreferencesSubtitle => '外觀、閱讀、語言';
+
+  @override
+  String get settingsManagementTitle => '設定與管理';
+
+  @override
+  String get settingsDataSyncSubtitle => 'WebDAV 備份、快取管理';
+
+  @override
+  String get settingsContentServicesTitle => '內容與服務';
+
+  @override
+  String get settingsContentServicesSubtitle => '書源、AI、聽書';
+
+  @override
+  String get settingsAboutSupportSubtitle => '版本、更新、開源專案';
+
+  @override
+  String get settingsPremiumSubtitle => '擴充書源能力與私人網路存取';
+
+  @override
+  String get settingsGuestTitle => '未登入';
+
+  @override
+  String get settingsGuestSubtitle => '本機閱讀無需登入';
+
+  @override
+  String get settingsWebDavConfigured => 'WebDAV 備份已設定';
+
+  @override
+  String get settingsPremiumActive => '高級版已開通';
+
+  @override
+  String get settingsPremiumSyncFailed => '暫時無法同步會員狀態';
+
+  @override
+  String get settingsWebDavWorking => 'WebDAV 正在處理';
 }

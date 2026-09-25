@@ -198,7 +198,7 @@ List<_NativeChapter> _parseTxtChapters(
   String fallbackTitle,
   String prefaceTitle,
 ) {
-  return parseTxtChapterSections(
+  return parseBoundedTxtChapterSections(
         text,
         fallbackTitle: fallbackTitle,
         prefaceTitle: prefaceTitle,
@@ -211,6 +211,8 @@ List<_NativeChapter> _parseTxtChapters(
           plainText: body,
           blocks: <_NativeBlock>[_NativeBlock.text(body)],
           isNeedSplitTitle: section.isNeedSplitTitle,
+          sourceChapterId: section.sourceChapterId,
+          sourceBodyStart: section.sourceBodyStart,
         );
       })
       .toList(growable: false);

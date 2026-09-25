@@ -12,7 +12,7 @@ void main() {
       const source = '\u3000\u3000第一段\n第二段';
       final layout = ReaderTextLayout.build(source, firstLineIndent: 2);
 
-      expect(layout.text, '\u3164\u3164第一段\n\u3164\u3164第二段');
+      expect(layout.text, '\u3000\u3000第一段\n\u3000\u3000第二段');
       expect(layout.sourceOffsetForDisplayOffset(0), 0);
       expect(
         layout.sourceOffsetForDisplayOffset(layout.text.length),
@@ -44,11 +44,11 @@ void main() {
 
     expect(
       layout.text,
-      '\u3164\u3164第一段\u2028'
-      '\u3164\u3164第二段\u2029'
-      '\u3164\u3164第三段\u0085'
-      '\u3164\u3164第四段\u000b'
-      '\u3164\u3164第五段',
+      '\u3000\u3000第一段\u2028'
+      '\u3000\u3000第二段\u2029'
+      '\u3000\u3000第三段\u0085'
+      '\u3000\u3000第四段\u000b'
+      '\u3000\u3000第五段',
     );
     expect(
       layout.sourceOffsetForDisplayOffset(layout.text.length),
@@ -62,9 +62,9 @@ void main() {
 
     expect(
       layout.text,
-      '\u3164\u3164“中文引号段落”\n'
-      '\u3164\u3164"English quote"\n'
-      '\u3164\u3164普通段落',
+      '\u3000\u3000“中文引号段落”\n'
+      '\u3000\u3000"English quote"\n'
+      '\u3000\u3000普通段落',
     );
     expect(
       layout.sourceOffsetForDisplayOffset(layout.text.length),

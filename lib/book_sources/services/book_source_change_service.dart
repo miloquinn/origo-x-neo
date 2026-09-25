@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:xxread/models/book.dart';
+import 'package:xxread/services/books/book_dao.dart';
 
 import '../source_engine/source_config.dart';
 import '../models/registered_book_source.dart';
@@ -50,6 +51,25 @@ class BookSourceChangeSearchEvent {
   final Object? error;
 }
 
+enum BookSourceChangeValidationStage { detail, catalog, content }
+
+enum BookSourceChapterMappingConfidence {
+  exactTitle,
+  chapterNumber,
+  proportional,
+  start,
+  manual,
+}
+
+class BookSourceChangeTimeoutException implements Exception {
+  const BookSourceChangeTimeoutException(this.timeout);
+
+  final Duration timeout;
+
+  @override
+  String toString() => 'Book source change timed out after $timeout.';
+}
+
 class ValidatedBookSourceChange {
   const ValidatedBookSourceChange({
     required this.candidate,
@@ -58,6 +78,7 @@ class ValidatedBookSourceChange {
     required this.chapterIndex,
     required this.chapterProgress,
     required this.responseTime,
+    this.mappingConfidence = BookSourceChapterMappingConfidence.proportional,
   });
 
   final BookSourceChangeCandidate candidate;
@@ -66,6 +87,7 @@ class ValidatedBookSourceChange {
   final int chapterIndex;
   final double chapterProgress;
   final Duration responseTime;
+  final BookSourceChapterMappingConfidence mappingConfidence;
 
   BookSourceChapter get chapter => chapters[chapterIndex];
 }
@@ -139,6 +161,8 @@ class BookSourceChangeService {
     required RegisteredBookSource source,
     required BookSourceBook book,
     Book? shelfBook,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 8),
   }) async {
     final saved = await progressStore.load(
       sourceId: source.id,
@@ -147,12 +171,19 @@ class BookSourceChangeService {
     var chapters = const <BookSourceChapter>[];
     try {
       chapters = [
-        ...await client.getChapters(
-          source,
-          book.id,
-          sourceVariables: book.sourceVariables,
+        ...await _runBounded(
+          timeout: timeout,
+          cancellation: cancellation,
+          operation: (token) => client.getChaptersForValidation(
+            source,
+            book.id,
+            sourceVariables: book.sourceVariables,
+            cancellation: token,
+          ),
         ),
       ]..sort(compareBookSourceChapters);
+    } on BookDownloadCancelledException {
+      rethrow;
     } catch (_) {
       // A broken current source must not prevent the user from finding a new one.
     }
@@ -214,16 +245,12 @@ class BookSourceChangeService {
         Object? error;
         final requestCancellation = BookDownloadCancellation();
         activeCancellations.add(requestCancellation);
-        final timeoutTimer = Timer(
-          perSourceSearchTimeout,
-          requestCancellation.cancel,
-        );
         try {
-          final page = await client.search(
-            source,
-            title,
-            pageSize: 30,
+          final page = await _runBounded(
+            timeout: perSourceSearchTimeout,
             cancellation: requestCancellation,
+            operation: (token) =>
+                client.search(source, title, pageSize: 30, cancellation: token),
           );
           candidates = page.items
               .where((book) => sameBookTitle(book.title, title))
@@ -244,7 +271,6 @@ class BookSourceChangeService {
         } catch (caught) {
           error = caught;
         } finally {
-          timeoutTimer.cancel();
           activeCancellations.remove(requestCancellation);
         }
         candidateCount += candidates.length;
@@ -283,51 +309,78 @@ class BookSourceChangeService {
   Future<ValidatedBookSourceChange> validate({
     required BookSourceChangeCandidate candidate,
     required BookSourceChangePosition position,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 20),
+    void Function(BookSourceChangeValidationStage stage)? onStage,
+    int? selectedChapterIndex,
   }) async {
     final stopwatch = Stopwatch()..start();
-    final detail = await client.getBook(
-      candidate.source,
-      candidate.book.id,
-      sourceVariables: candidate.book.sourceVariables,
+    final validation = await _runBounded(
+      timeout: timeout,
+      cancellation: cancellation,
+      operation: (token) async {
+        onStage?.call(BookSourceChangeValidationStage.detail);
+        final detail = await client.getBookForValidation(
+          candidate.source,
+          candidate.book.id,
+          sourceVariables: candidate.book.sourceVariables,
+          cancellation: token,
+        );
+        token.throwIfCancelled();
+        onStage?.call(BookSourceChangeValidationStage.catalog);
+        final chapters = [
+          ...await client.getChaptersForValidation(
+            candidate.source,
+            detail.id,
+            sourceVariables: detail.sourceVariables,
+            cancellation: token,
+          ),
+        ]..sort(compareBookSourceChapters);
+        if (chapters.isEmpty) {
+          throw const BookSourceProtocolException(
+            'The selected source returned an empty chapter catalog.',
+          );
+        }
+        final mapping = selectedChapterIndex == null
+            ? _matchBookSourceChapter(
+                oldIndex: position.chapterIndex,
+                oldTitle: position.chapterTitle,
+                oldChapterCount: position.chapterCount,
+                newChapters: chapters,
+              )
+            : (
+                index: selectedChapterIndex.clamp(0, chapters.length - 1),
+                confidence: BookSourceChapterMappingConfidence.manual,
+              );
+        final chapter = chapters[mapping.index];
+        onStage?.call(BookSourceChangeValidationStage.content);
+        final content = await client.getChapterContentForValidation(
+          candidate.source,
+          bookId: detail.id,
+          chapterId: chapter.id,
+          sourceVariables: detail.sourceVariables,
+          cancellation: token,
+        );
+        token.throwIfCancelled();
+        if (content.content.trim().isEmpty) {
+          throw const BookSourceProtocolException(
+            'The selected source returned empty chapter content.',
+          );
+        }
+        return (detail: detail, chapters: chapters, mapping: mapping);
+      },
     );
-    final chapters = [
-      ...await client.getChapters(
-        candidate.source,
-        detail.id,
-        sourceVariables: detail.sourceVariables,
-      ),
-    ]..sort(compareBookSourceChapters);
-    if (chapters.isEmpty) {
-      throw const BookSourceProtocolException(
-        'The selected source returned an empty chapter catalog.',
-      );
-    }
-    final mappedIndex = matchBookSourceChapter(
-      oldIndex: position.chapterIndex,
-      oldTitle: position.chapterTitle,
-      oldChapterCount: position.chapterCount,
-      newChapters: chapters,
-    );
-    final chapter = chapters[mappedIndex];
-    final content = await client.getChapterContent(
-      candidate.source,
-      bookId: detail.id,
-      chapterId: chapter.id,
-      sourceVariables: detail.sourceVariables,
-    );
-    if (content.content.trim().isEmpty) {
-      throw const BookSourceProtocolException(
-        'The selected source returned empty chapter content.',
-      );
-    }
     stopwatch.stop();
     return ValidatedBookSourceChange(
       candidate: candidate,
-      book: detail,
-      chapters: chapters,
-      chapterIndex: mappedIndex,
-      chapterProgress: position.chapterProgress.clamp(0, 1),
+      book: validation.detail,
+      chapters: validation.chapters,
+      chapterIndex: validation.mapping.index,
+      // A matching chapter title or number does not establish a safe text
+      // anchor within different source content.
+      chapterProgress: 0,
       responseTime: stopwatch.elapsed,
+      mappingConfidence: validation.mapping.confidence,
     );
   }
 
@@ -358,14 +411,9 @@ class BookSourceChangeService {
       chapterProgress: validated.chapterProgress,
       updatedAt: DateTime.now().toUtc(),
     );
-    await progressStore.save(
-      sourceId: targetSource.id,
-      bookId: targetBook.id,
-      progress: progress,
-    );
     Book? updatedShelfBook;
-    try {
-      if (shelfBook?.id != null) {
+    if (shelfBook?.id != null) {
+      try {
         updatedShelfBook = await shelfService.replaceOnlineSourceBinding(
           shelfBook: shelfBook!,
           source: targetSource,
@@ -373,14 +421,21 @@ class BookSourceChangeService {
           chapterIndex: validated.chapterIndex,
           chapterCount: validated.chapters.length,
           chapterProgress: validated.chapterProgress,
+          sourceProgress: progress,
         );
+      } on BookSourceBindingConflictException catch (error) {
+        if (error.reason ==
+            BookSourceBindingConflictReason.targetAlreadyBound) {
+          throw const BookSourceChangeConflict();
+        }
+        rethrow;
       }
-    } catch (_) {
-      await progressStore.delete(
+    } else {
+      await progressStore.save(
         sourceId: targetSource.id,
         bookId: targetBook.id,
+        progress: progress,
       );
-      rethrow;
     }
     return BookSourceChangeResult(
       source: targetSource,
@@ -391,6 +446,44 @@ class BookSourceChangeService {
       shelfBook: updatedShelfBook,
     );
   }
+}
+
+Future<T> _runBounded<T>({
+  required Duration timeout,
+  required BookDownloadCancellation? cancellation,
+  required Future<T> Function(BookDownloadCancellation token) operation,
+}) async {
+  final token = cancellation ?? BookDownloadCancellation();
+  token.throwIfCancelled();
+  final completion = Completer<T>();
+  var timedOut = false;
+  final timer = Timer(timeout, () {
+    timedOut = true;
+    token.cancel();
+  });
+  unawaited(
+    Future<T>.sync(() => operation(token)).then(
+      (result) {
+        if (!completion.isCompleted) completion.complete(result);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (!completion.isCompleted) {
+          completion.completeError(error, stackTrace);
+        }
+      },
+    ),
+  );
+  unawaited(
+    token.whenCancelled.then((_) {
+      if (completion.isCompleted) return;
+      if (timedOut) {
+        completion.completeError(BookSourceChangeTimeoutException(timeout));
+      } else {
+        completion.completeError(const BookDownloadCancelledException());
+      }
+    }),
+  );
+  return completion.future.whenComplete(timer.cancel);
 }
 
 List<RegisteredBookSource> _selectChangeSearchTargets({
@@ -587,8 +680,24 @@ int matchBookSourceChapter({
   required int oldChapterCount,
   required List<BookSourceChapter> newChapters,
 }) {
-  if (newChapters.isEmpty) return 0;
-  if (oldIndex <= 0) return 0;
+  return _matchBookSourceChapter(
+    oldIndex: oldIndex,
+    oldTitle: oldTitle,
+    oldChapterCount: oldChapterCount,
+    newChapters: newChapters,
+  ).index;
+}
+
+({int index, BookSourceChapterMappingConfidence confidence})
+_matchBookSourceChapter({
+  required int oldIndex,
+  required String oldTitle,
+  required int oldChapterCount,
+  required List<BookSourceChapter> newChapters,
+}) {
+  if (newChapters.isEmpty || oldIndex <= 0) {
+    return (index: 0, confidence: BookSourceChapterMappingConfidence.start);
+  }
   final normalizedOld = normalizeChapterTitle(oldTitle);
   final oldNumber = chapterNumberFromTitle(oldTitle);
   final proportional = oldChapterCount <= 0
@@ -602,7 +711,10 @@ int matchBookSourceChapter({
   if (normalizedOld.isNotEmpty) {
     for (var index = boundedStart; index <= boundedEnd; index++) {
       if (normalizeChapterTitle(newChapters[index].title) == normalizedOld) {
-        return index;
+        return (
+          index: index,
+          confidence: BookSourceChapterMappingConfidence.exactTitle,
+        );
       }
     }
   }
@@ -617,11 +729,24 @@ int matchBookSourceChapter({
         closestIndex = index;
         closestDistance = distance;
       }
-      if (distance == 0) return index;
+      if (distance == 0) {
+        return (
+          index: index,
+          confidence: BookSourceChapterMappingConfidence.chapterNumber,
+        );
+      }
     }
-    if (closestIndex >= 0 && closestDistance <= 1) return closestIndex;
+    if (closestIndex >= 0 && closestDistance <= 1) {
+      return (
+        index: closestIndex,
+        confidence: BookSourceChapterMappingConfidence.chapterNumber,
+      );
+    }
   }
-  return proportional.clamp(0, newChapters.length - 1);
+  return (
+    index: proportional.clamp(0, newChapters.length - 1),
+    confidence: BookSourceChapterMappingConfidence.proportional,
+  );
 }
 
 String normalizeChapterTitle(String value) =>

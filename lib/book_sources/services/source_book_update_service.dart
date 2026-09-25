@@ -106,7 +106,7 @@ class SourceBookUpdateService {
     // A source change, download, or another metadata revision wins over this
     // stale network response. Progress and covers are never part of this write.
     if (await _dao.updateSourceBookMetadata(book, encoded)) {
-      LibraryEventBus().notifyLibraryChanged();
+      LibraryEventBus().notifySourceMetadataChanged(book, encoded);
     }
     return await _dao.getBookById(book.id!) ?? book;
   }
@@ -194,8 +194,9 @@ class SourceBookUpdateService {
       'status': SourceBookCheckStatus.current.name,
       'newChapterCount': 0,
     };
-    if (await _dao.updateSourceBookMetadata(current, jsonEncode(json))) {
-      LibraryEventBus().notifyLibraryChanged();
+    final encoded = jsonEncode(json);
+    if (await _dao.updateSourceBookMetadata(current, encoded)) {
+      LibraryEventBus().notifySourceMetadataChanged(current, encoded);
     }
   }
 }

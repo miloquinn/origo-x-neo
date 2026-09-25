@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -6,8 +7,10 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/pages/account/account_page.dart';
 import 'package:xxread/pages/settings/about/open_source_licenses_page.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
+import 'package:xxread/pages/account/premium_membership_page.dart';
 import 'package:xxread/pages/settings/cloud_tts_settings_page.dart';
 import 'package:xxread/services/reader_aloud_service.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
@@ -118,7 +121,19 @@ Future<void> _disposeSettingsPage(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 1));
 }
 
+Future<void> _openSettingsCategory(
+  WidgetTester tester,
+  SettingsCategory category,
+) async {
+  final entry = find.byKey(ValueKey('settings-category-${category.name}'));
+  await tester.ensureVisible(entry);
+  await tester.pumpAndSettle();
+  await tester.tap(entry);
+  await tester.pumpAndSettle();
+}
+
 Future<void> _scrollToAboutCard(WidgetTester tester) async {
+  await _openSettingsCategory(tester, SettingsCategory.aboutSupport);
   await tester.scrollUntilVisible(
     find.byKey(const ValueKey('settings-about-card')),
     500,
@@ -159,8 +174,39 @@ void main() {
   });
 
   tearDown(() {
+    debugDefaultTargetPlatformOverride = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
+  });
+
+  testWidgets('desktop reading settings default window close to the library', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    await _pumpSettingsPage(tester, locale: const Locale('zh'));
+    await _openSettingsCategory(tester, SettingsCategory.preferences);
+    final setting = find.byKey(
+      const ValueKey('settings-close-reader-to-library'),
+    );
+    await tester.scrollUntilVisible(
+      setting,
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(setting, findsOneWidget);
+    expect(
+      tester
+          .widget<Switch>(
+            find.descendant(of: setting, matching: find.byType(Switch)),
+          )
+          .value,
+      isTrue,
+    );
+    await _disposeSettingsPage(tester);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('cloud TTS settings entry uses the shared playback service', (
@@ -173,6 +219,7 @@ void main() {
       locale: const Locale('zh'),
       aloudService: aloud,
     );
+    await _openSettingsCategory(tester, SettingsCategory.contentServices);
     await tester.scrollUntilVisible(
       find.text('云端 TTS'),
       350,
@@ -197,6 +244,107 @@ void main() {
     await _disposeSettingsPage(tester);
   });
 
+  testWidgets('My page keeps account, membership, and all settings reachable', (
+    tester,
+  ) async {
+    await _pumpSettingsPage(tester, locale: const Locale('zh'));
+    final context = tester.element(find.byType(SettingsPage));
+    final l10n = AppLocalizations.of(context);
+    expect(find.text(l10n.settingsGuestTitle), findsOneWidget);
+    expect(find.text(l10n.settingsGuestSubtitle), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-membership-entry')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('settings-combined-account-card')),
+        matching: find.byType(Divider),
+      ),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('settings-premium-card')), findsNothing);
+    expect(find.text(l10n.settingsVolumeKeyTurnTitle), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('settings-membership-entry')));
+    await tester.pumpAndSettle();
+    expect(find.byType(PremiumMembershipPage), findsOneWidget);
+    expect(
+      tester
+          .widget<PremiumMembershipPage>(find.byType(PremiumMembershipPage))
+          .focusBilling,
+      isTrue,
+    );
+    expect(find.byKey(const ValueKey('premium-sign-in')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
+    await tester.pumpAndSettle();
+
+    await _openSettingsCategory(tester, SettingsCategory.preferences);
+    expect(find.text(l10n.settingsVolumeKeyTurnTitle), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
+    await tester.pumpAndSettle();
+
+    await _openSettingsCategory(tester, SettingsCategory.dataSync);
+    expect(find.text('WebDAV 备份'), findsOneWidget);
+    expect(find.text(l10n.settingsCacheManagementTitle), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
+    await tester.pumpAndSettle();
+
+    await _openSettingsCategory(tester, SettingsCategory.contentServices);
+    expect(find.text(l10n.bookSourceManagementTitle), findsOneWidget);
+    expect(find.text(l10n.settingsAiAssistantTitle), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
+    await tester.pumpAndSettle();
+
+    await _openSettingsCategory(tester, SettingsCategory.aboutSupport);
+    expect(find.byKey(const ValueKey('settings-about-card')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await _disposeSettingsPage(tester);
+  });
+
+  testWidgets('account area of the combined card opens the account page', (
+    tester,
+  ) async {
+    await _pumpSettingsPage(tester, locale: const Locale('zh'));
+    await tester.tap(find.byKey(const ValueKey('settings-account-card')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(AccountPage), findsOneWidget);
+    expect(find.byType(PremiumMembershipPage), findsNothing);
+    await _disposeSettingsPage(tester);
+  });
+
+  testWidgets('guest can continue from the purchase page to sign in', (
+    tester,
+  ) async {
+    await _pumpSettingsPage(tester, locale: const Locale('zh'));
+    await tester.tap(find.byKey(const ValueKey('settings-membership-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('premium-sign-in')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(AccountPage), findsOneWidget);
+    await _disposeSettingsPage(tester);
+  });
+
+  testWidgets('combined card fits a narrow screen with large text', (
+    tester,
+  ) async {
+    await _pumpSettingsPage(
+      tester,
+      locale: const Locale('zh'),
+      surfaceSize: const Size(320, 1200),
+      textScaleFactor: 2,
+    );
+    expect(find.byKey(const ValueKey('settings-account-card')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-membership-entry')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    await _disposeSettingsPage(tester);
+  });
+
   testWidgets(
     'complete settings page mounts with its provider graph',
     (tester) async {
@@ -211,6 +359,7 @@ void main() {
         find.byKey(const ValueKey('settings-account-card')),
         findsOneWidget,
       );
+      await _openSettingsCategory(tester, SettingsCategory.aboutSupport);
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('settings-changelog-link')),
         500,
@@ -320,12 +469,14 @@ void main() {
       listen: false,
     );
     final l10n = AppLocalizations.of(settingsContext);
+    await _openSettingsCategory(tester, SettingsCategory.preferences);
 
     await tester.scrollUntilVisible(
       find.text(l10n.appTextSize),
       350,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 120));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.appTextSize));
     await tester.pumpAndSettle();

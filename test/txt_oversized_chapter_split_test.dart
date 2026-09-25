@@ -4,6 +4,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/core/reader/txt_chapter_parser.dart';
 
 void main() {
+  test('reader TXT parsing bounds a heading-less desktop-sized book', () {
+    final source = List.generate(
+      36000,
+      (index) => '${index + 1}. 这是没有章节标题的连续正文。\n',
+    ).join();
+
+    final sections = parseBoundedTxtChapterSections(
+      source,
+      fallbackTitle: '本地书',
+      prefaceTitle: '前言',
+    );
+
+    expect(source.length, greaterThan(700000));
+    expect(sections.length, greaterThan(20));
+    expect(
+      sections.every(
+        (section) => section.bodyEnd - section.bodyStart <= 32 * 1024,
+      ),
+      isTrue,
+    );
+    expect(sections.map((section) => section.bodyIn(source)).join(), source);
+  });
+
   test('problematic multi-megabyte numbered TXT stays in bounded sections', () {
     final source = List.generate(
       70000,

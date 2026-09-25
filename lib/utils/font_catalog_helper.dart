@@ -8,7 +8,7 @@ import '../services/core/online_font_models.dart';
 
 enum FontTone { system, serif, sansSerif, monospace }
 
-enum FontDomain { app, reader }
+enum FontDomain { app, reader, epubReader }
 
 class FontOption {
   final String id;
@@ -58,6 +58,7 @@ class FontOption {
 }
 
 class FontCatalog {
+  static const String bookEmbeddedId = 'book_embedded';
   static const String systemId = 'system';
   static const String sourceHanSerifId = 'source_han_serif';
   static const String sourceHanSansId = 'source_han_sans';
@@ -94,6 +95,15 @@ class FontCatalog {
 
   static const FontOption systemFont = FontOption(
     id: systemId,
+    family: null,
+    fallbackFamilies: [],
+    tone: FontTone.system,
+  );
+
+  /// EPUB-only choice. Text without a declared book font falls back to the
+  /// platform reading font.
+  static const FontOption bookEmbeddedFont = FontOption(
+    id: bookEmbeddedId,
     family: null,
     fallbackFamilies: [],
     tone: FontTone.system,
@@ -280,11 +290,21 @@ class FontCatalog {
     );
   }
 
+  static FontOption epubReaderFontForId(
+    String? id, {
+    List<FontOption> customFonts = const <FontOption>[],
+  }) => _fontForId(
+    id,
+    options: <FontOption>[
+      bookEmbeddedFont,
+      ...readerFontsForPlatform(defaultTargetPlatform),
+      ...customFonts,
+    ],
+    fallback: bookEmbeddedFont,
+  );
+
   static FontOption appFontForFamily(String? family) =>
       _fontForFamily(family, options: appFonts, fallback: defaultAppFont);
-
-  static FontOption readerFontForFamily(String? family) =>
-      _fontForFamily(family, options: readerFonts, fallback: defaultReaderFont);
 
   static FontOption _fontForId(
     String? id, {
@@ -316,6 +336,8 @@ class FontCatalog {
       return option.displayName!;
     }
     switch (option.id) {
+      case bookEmbeddedId:
+        return l10n.fontBookEmbedded;
       case systemId:
         return l10n.fontSystem;
       case sourceHanSerifId:

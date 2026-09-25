@@ -151,6 +151,11 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
       widget.sourceShelfService ??
       (widget.sourceShelfServiceFactory ?? BookSourceShelfService.new)();
   StreamSubscription<void>? _librarySubscription;
+  StreamSubscription<LibrarySourceMetadataChange>? _sourceMetadataSubscription;
+  Timer? _libraryRefreshDebounce;
+  int _booksLoadGeneration = 0;
+  bool _loadingBooks = false;
+  final List<LibrarySourceMetadataChange> _metadataChangesDuringLoad = [];
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
   Timer? _sourceUpdateTimer;
@@ -308,10 +313,15 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
       (_) => unawaited(_checkSourceUpdates()),
     );
     _librarySubscription = LibraryEventBus().stream.listen((_) {
-      if (mounted) {
-        _loadBooks();
-      }
+      if (!mounted) return;
+      _libraryRefreshDebounce?.cancel();
+      _libraryRefreshDebounce = Timer(const Duration(milliseconds: 100), () {
+        if (mounted) unawaited(_loadBooks());
+      });
     });
+    _sourceMetadataSubscription = LibraryEventBus().sourceMetadataStream.listen(
+      _applySourceMetadataChange,
+    );
   }
 
   @override
@@ -328,19 +338,27 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     }
     final librarySubscription = _librarySubscription;
     _librarySubscription = null;
+    final sourceMetadataSubscription = _sourceMetadataSubscription;
+    _sourceMetadataSubscription = null;
+    _booksLoadGeneration++;
     _booksRevision++;
+    _libraryRefreshDebounce?.cancel();
     _sourceUpdateTimer?.cancel();
     _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
-    unawaited(_closeOwnedResources(librarySubscription));
+    unawaited(
+      _closeOwnedResources(librarySubscription, sourceMetadataSubscription),
+    );
     super.dispose();
   }
 
   Future<void> _closeOwnedResources(
     StreamSubscription<void>? librarySubscription,
+    StreamSubscription<LibrarySourceMetadataChange>? sourceMetadataSubscription,
   ) async {
     await librarySubscription?.cancel();
+    await sourceMetadataSubscription?.cancel();
     if (_ownsSourceShelfService) _sourceShelfService.close();
   }
 
@@ -488,10 +506,18 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadBooks() async {
+    final generation = ++_booksLoadGeneration;
+    _loadingBooks = true;
     try {
-      final books =
-          await (widget.booksLoader?.call() ?? _bookDao.getAllBooks());
-      if (mounted) {
+      final books = List<Book>.of(
+        await (widget.booksLoader?.call() ?? _bookDao.getAllBooks()),
+      );
+      if (mounted && generation == _booksLoadGeneration) {
+        for (final change in _metadataChangesDuringLoad) {
+          _patchSourceMetadata(books, change);
+        }
+        _metadataChangesDuringLoad.clear();
+        _loadingBooks = false;
         setState(() {
           _books = books;
           _booksRevision++;
@@ -505,13 +531,48 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     } catch (error, stackTrace) {
       debugPrint('Failed to load library books: $error');
       debugPrintStack(stackTrace: stackTrace);
-      if (mounted) {
+      if (mounted && generation == _booksLoadGeneration) {
+        _metadataChangesDuringLoad.clear();
+        _loadingBooks = false;
         setState(() {
           _loadError = error;
           _isInitialLoading = false;
         });
       }
     }
+  }
+
+  bool _patchSourceMetadata(
+    List<Book> books,
+    LibrarySourceMetadataChange change,
+  ) {
+    final index = books.indexWhere((book) => book.id == change.previous.id);
+    if (index < 0) return false;
+    final current = books[index];
+    if (!_hasMatchingSourceMetadata(current, change)) return false;
+    books[index] = current.copyWith(sourceBookJson: change.sourceBookJson);
+    return true;
+  }
+
+  bool _hasMatchingSourceMetadata(
+    Book current,
+    LibrarySourceMetadataChange change,
+  ) =>
+      current.sourceId == change.previous.sourceId &&
+      current.sourceBookId == change.previous.sourceBookId &&
+      current.sourceBookJson == change.previous.sourceBookJson;
+
+  void _applySourceMetadataChange(LibrarySourceMetadataChange change) {
+    if (!mounted || change.previous.id == null) return;
+    if (_loadingBooks) _metadataChangesDuringLoad.add(change);
+    final index = _books.indexWhere((book) => book.id == change.previous.id);
+    if (index < 0 || !_hasMatchingSourceMetadata(_books[index], change)) {
+      return;
+    }
+    setState(() {
+      _patchSourceMetadata(_books, change);
+      _patchSourceMetadata(_visibleBooksCache, change);
+    });
   }
 
   @override

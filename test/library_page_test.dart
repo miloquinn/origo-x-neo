@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,11 +7,13 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
+import 'package:xxread/book_sources/models/source_book_update_info.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/library/library_page.dart';
 import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
+import 'package:xxread/services/library/library_event_bus_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -160,6 +164,138 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
+  });
+
+  testWidgets('large library patches source metadata without reloading books', (
+    tester,
+  ) async {
+    final sourceBook = Book(
+      id: 1,
+      title: 'Serial Book',
+      filePath: '/tmp/serial.txt',
+      format: 'TXT',
+      sourceId: 'source',
+      sourceBookId: 'serial',
+      sourceJson: '{}',
+      sourceBookJson: '{"id":"serial"}',
+    );
+    final books = [
+      sourceBook,
+      ...List.generate(
+        499,
+        (index) => Book(
+          id: index + 2,
+          title: 'Book $index',
+          filePath: '/tmp/book-$index.txt',
+          format: 'TXT',
+        ),
+      ),
+    ];
+    var loads = 0;
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => AppSettingsNotifier(),
+        child: MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: LibraryPage(
+            booksLoader: () async {
+              loads++;
+              return books;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(loads, 1);
+    expect(
+      find.byKey(const ValueKey('book-cover-update-indicator')),
+      findsNothing,
+    );
+
+    LibraryEventBus().notifySourceMetadataChanged(
+      sourceBook,
+      const SourceBookUpdateInfo(
+        status: SourceBookCheckStatus.available,
+        newChapterCount: 2,
+      ).encodeInto(sourceBook),
+    );
+    await tester.pump();
+    expect(loads, 1);
+    expect(
+      find.byKey(const ValueKey('book-cover-update-indicator')),
+      findsOneWidget,
+    );
+
+    for (var i = 0; i < 20; i++) {
+      LibraryEventBus().notifyLibraryChanged();
+    }
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump();
+    expect(loads, 2);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('source metadata survives an in-flight library reload', (
+    tester,
+  ) async {
+    final book = Book(
+      id: 1,
+      title: 'Serial Book',
+      filePath: '/tmp/serial.txt',
+      format: 'TXT',
+      sourceId: 'source',
+      sourceBookId: 'serial',
+      sourceJson: '{}',
+      sourceBookJson: '{"id":"serial"}',
+    );
+    final pendingReload = Completer<List<Book>>();
+    var loads = 0;
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => AppSettingsNotifier(),
+        child: MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: LibraryPage(
+            booksLoader: () {
+              loads++;
+              return loads == 1 ? Future.value([book]) : pendingReload.future;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    LibraryEventBus().notifyLibraryChanged();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(loads, 2);
+
+    LibraryEventBus().notifySourceMetadataChanged(
+      book,
+      const SourceBookUpdateInfo(
+        status: SourceBookCheckStatus.available,
+        newChapterCount: 1,
+      ).encodeInto(book),
+    );
+    await tester.pump();
+    pendingReload.complete([book]);
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('book-cover-update-indicator')),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('shows an explicit load error and retries', (tester) async {

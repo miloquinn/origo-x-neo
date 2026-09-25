@@ -93,6 +93,46 @@ class _BurstOnlineFontService extends OnlineFontService {
   }
 }
 
+class _StaleOnlineFontService extends OnlineFontService {
+  bool downloaded = true;
+  int discarded = 0;
+  int retried = 0;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  bool get isSupported => true;
+
+  @override
+  bool isDownloaded(String fontId) => downloaded;
+
+  @override
+  Future<bool> ensureLoaded(
+    String fontId, {
+    required List<OnlineFontFile> files,
+    required String family,
+  }) async => false;
+
+  @override
+  Future<void> deleteDownload(String fontId) async {
+    downloaded = false;
+    discarded++;
+  }
+
+  @override
+  Future<OnlineFontRecord> download({
+    required String fontId,
+    required String family,
+    required List<OnlineFontFile> files,
+    OnlineFontProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  }) async {
+    retried++;
+    throw const OnlineFontException(OnlineFontErrorCode.networkFailed);
+  }
+}
+
 Uint8List _customVariableTtfBytes() {
   final bytes = Uint8List(68);
   final data = ByteData.sublistView(bytes);
@@ -139,8 +179,9 @@ Future<AppSettingsNotifier> _loadNotifier({
 /// 预置在线字体清单与占位文件，模拟"用户此前已下载完成"的磁盘状态，
 /// 使 AppSettingsNotifier 恢复选择时无需真实网络下载即可 ensureLoaded 成功。
 Future<OnlineFontService> _seededOnlineFontService(
-  List<FontOption> alreadyDownloaded,
-) async {
+  List<FontOption> alreadyDownloaded, {
+  bool failRegistration = false,
+}) async {
   final sandbox = await Directory.systemTemp.createTemp(
     'online-font-settings-test-',
   );
@@ -176,7 +217,9 @@ Future<OnlineFontService> _seededOnlineFontService(
 
   return OnlineFontService(
     supportDirectory: () async => sandbox,
-    registrar: (family, bytes, style) async {},
+    registrar: (family, bytes, style) async {
+      if (failRegistration) throw StateError('font registration failed');
+    },
   );
 }
 
@@ -187,7 +230,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('fresh install defaults both domains to the system font', () async {
+  test('fresh install defaults EPUB to book font and TXT to system', () async {
     final notifier = await _loadNotifier();
     addTearDown(notifier.dispose);
 
@@ -195,6 +238,95 @@ void main() {
     expect(notifier.appFontFamily, isNull);
     expect(notifier.readerFontId, FontCatalog.systemId);
     expect(notifier.readerFont.family, isNull);
+    expect(notifier.epubReaderFontId, FontCatalog.bookEmbeddedId);
+    expect(
+      FontCatalog.readerFontForId(FontCatalog.bookEmbeddedId).id,
+      FontCatalog.systemId,
+    );
+  });
+
+  test('EPUB selection persists independently from TXT selection', () async {
+    final onlineFontService = await _seededOnlineFontService([
+      FontCatalog.newsreader,
+    ]);
+    final notifier = await _loadNotifier(onlineFontService: onlineFontService);
+    addTearDown(notifier.dispose);
+
+    await notifier.setEpubReaderFontId(FontCatalog.systemId);
+    expect(notifier.epubReaderFontId, FontCatalog.systemId);
+    expect(notifier.readerFontId, FontCatalog.systemId);
+
+    await notifier.setReaderFontId(FontCatalog.newsreaderId);
+    expect(notifier.epubReaderFontId, FontCatalog.systemId);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('epub_reader_font_id_v1'), FontCatalog.systemId);
+
+    final restored = await _loadNotifier(onlineFontService: onlineFontService);
+    addTearDown(restored.dispose);
+    expect(restored.epubReaderFontId, FontCatalog.systemId);
+    expect(restored.readerFontId, FontCatalog.newsreaderId);
+  });
+
+  test('EPUB font download does not change TXT font', () async {
+    final onlineFontService = await _seededOnlineFontService([
+      FontCatalog.newsreader,
+    ]);
+    final notifier = await _loadNotifier(onlineFontService: onlineFontService);
+    addTearDown(notifier.dispose);
+
+    await notifier.downloadOnlineFont(
+      FontCatalog.newsreaderId,
+      domain: FontDomain.epubReader,
+    );
+
+    expect(notifier.epubReaderFontId, FontCatalog.newsreaderId);
+    expect(notifier.readerFontId, FontCatalog.systemId);
+  });
+
+  test('invalid EPUB font selection returns to book font', () async {
+    SharedPreferences.setMockInitialValues({
+      'epub_reader_font_id_v1': 'missing-font',
+      'reader_font_id_v2': FontCatalog.systemId,
+    });
+    final notifier = await _loadNotifier();
+    addTearDown(notifier.dispose);
+
+    expect(notifier.epubReaderFontId, FontCatalog.bookEmbeddedId);
+    expect(notifier.readerFontId, FontCatalog.systemId);
+  });
+
+  test('a downloaded font that cannot load is never selected', () async {
+    SharedPreferences.setMockInitialValues({
+      'reader_font_id_v2': FontCatalog.newsreaderId,
+      'epub_reader_font_id_v1': FontCatalog.newsreaderId,
+    });
+    final service = await _seededOnlineFontService([
+      FontCatalog.newsreader,
+    ], failRegistration: true);
+    final notifier = await _loadNotifier(onlineFontService: service);
+    addTearDown(notifier.dispose);
+
+    expect(notifier.readerFontId, FontCatalog.systemId);
+    expect(notifier.epubReaderFontId, FontCatalog.bookEmbeddedId);
+
+    await notifier.setEpubReaderFontId(FontCatalog.newsreaderId);
+    expect(notifier.epubReaderFontId, FontCatalog.bookEmbeddedId);
+  });
+
+  test('retrying a stale font discards its broken download', () async {
+    final service = _StaleOnlineFontService();
+    final notifier = await _loadNotifier(onlineFontService: service);
+    addTearDown(notifier.dispose);
+
+    await notifier.downloadOnlineFont(
+      FontCatalog.newsreaderId,
+      domain: FontDomain.epubReader,
+    );
+
+    expect(service.discarded, 1);
+    expect(service.retried, 1);
+    expect(notifier.epubReaderFontId, FontCatalog.bookEmbeddedId);
   });
 
   test('font selections persist as stable ids once downloaded', () async {
@@ -337,10 +469,10 @@ void main() {
   });
 
   test('Newsreader keeps CJK fallback in the same serif family', () {
-    expect(
-      FontCatalog.newsreader.fallbackFamilies,
-      <String>['SourceHanSerifCN', 'serif'],
-    );
+    expect(FontCatalog.newsreader.fallbackFamilies, <String>[
+      'SourceHanSerifCN',
+      'serif',
+    ]);
   });
 
   test('PingFang is offered only on Apple reader platforms', () {
@@ -407,10 +539,15 @@ void main() {
       expect(customOption.variableWeightMax, 900);
 
       await notifier.setAppFontId(customId);
+      await notifier.setEpubReaderFontId(customId);
+      await notifier.setReaderFontId(FontCatalog.systemId);
       expect(notifier.appFontId, customId);
+      expect(notifier.epubReaderFontId, customId);
+      expect(notifier.isReaderFont(customId), isTrue);
       await notifier.deleteCustomFont(customId);
       expect(notifier.appFontId, FontCatalog.defaultAppFont.id);
       expect(notifier.readerFontId, FontCatalog.defaultReaderFont.id);
+      expect(notifier.epubReaderFontId, FontCatalog.bookEmbeddedId);
     },
   );
 }

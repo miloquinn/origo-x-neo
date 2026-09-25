@@ -197,6 +197,111 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get bookSourceChangeConfirmTitle => 'Confirm source change';
+
+  @override
+  String bookSourceChangeQuickProgress(int completed, int batch, int total) {
+    return 'Quick search: $completed/$batch · $total sources available';
+  }
+
+  @override
+  String get bookSourceChangeStopSearch => 'Stop searching';
+
+  @override
+  String get bookSourceChangeLoadFailed => 'Could not load sources';
+
+  @override
+  String get bookSourceChangeLoadFailedHint =>
+      'Check your connection and try again.';
+
+  @override
+  String get bookSourceChangeChecking => 'Checking this source';
+
+  @override
+  String get bookSourceChangeCheckingPosition =>
+      'Reading your current position…';
+
+  @override
+  String get bookSourceChangeCheckingDetail => 'Loading book details…';
+
+  @override
+  String get bookSourceChangeCheckingCatalog => 'Loading the chapter list…';
+
+  @override
+  String get bookSourceChangeCheckingContent => 'Checking the current chapter…';
+
+  @override
+  String get bookSourceChangeSlow =>
+      'This source is responding slowly. You can cancel and try another.';
+
+  @override
+  String get bookSourceChangeCheckTimedOut =>
+      'The check timed out. Try again or choose another source.';
+
+  @override
+  String get bookSourceChangeCheckFailed =>
+      'Could not verify this source. Try again or choose another.';
+
+  @override
+  String get bookSourceChangeCommitFailed =>
+      'Could not finish changing the source. Check your bookshelf before retrying.';
+
+  @override
+  String get bookSourceChangeReaderOpenFailed =>
+      'The source changed, but this chapter could not be opened. Try again or return to your bookshelf.';
+
+  @override
+  String get bookSourceChangeReadingPosition => 'Reading position';
+
+  @override
+  String bookSourceChangeOriginalChapter(int number, String title) {
+    return 'Current: chapter $number · $title';
+  }
+
+  @override
+  String bookSourceChangeNewChapter(int number, String title) {
+    return 'New: chapter $number · $title';
+  }
+
+  @override
+  String get bookSourceChangeMappingTitle => 'Matched by chapter title';
+
+  @override
+  String get bookSourceChangeMappingNumber =>
+      'Matched by chapter number; please check the position';
+
+  @override
+  String get bookSourceChangeMappingManual => 'Chapter chosen by you';
+
+  @override
+  String get bookSourceChangeMappingEstimate =>
+      'Estimated from chapter position';
+
+  @override
+  String get bookSourceChangeMappingNeedsChoice =>
+      'Check the chapter before switching; the estimate may be wrong.';
+
+  @override
+  String get bookSourceChangePositionUnavailable =>
+      'Your previous reading position is unavailable. Choose the chapter to open.';
+
+  @override
+  String get bookSourceChangeChooseChapter => 'Choose a chapter';
+
+  @override
+  String get bookSourceChangeLocalImpact =>
+      'Your downloaded text and reading position stay unchanged. Only the source for future updates changes.';
+
+  @override
+  String get bookSourceChangeOnlineImpact =>
+      'The bookshelf source and reading position will change. Your old source position remains saved.';
+
+  @override
+  String bookSourceChangeConfirmAction(String source) {
+    return 'Change to $source';
+  }
+
+  @override
   String bookSourceChannelCount(int count) {
     return '$count canais';
   }
@@ -1082,11 +1187,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get readerFontDescription =>
-      'Usada apenas para o texto do livro e títulos de capítulos. Não altera a interface do app.';
+      'Para livros TXT e online. EPUB tem uma configuração de fonte separada.';
 
   @override
   String get readerFontSelectionDescription =>
-      'Escolha a tipografia usada para ler. O Padrão da plataforma mantém as fontes incorporadas pelos editores de EPUB, quando disponíveis.';
+      'Escolha a fonte de leitura. EPUB oferece a fonte do livro, a do sistema e as fontes instaladas.';
 
   @override
   String get readerFontBookPriorityHint =>
@@ -1095,6 +1200,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get readerFontOverrideHint =>
       'Substitui as fontes incorporadas pelo editor.';
+
+  @override
+  String get fontBookEmbedded => 'Incorporada no livro';
 
   @override
   String get fontSystem => 'Padrão da plataforma';
@@ -2688,7 +2796,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      'Permitir fontes neste dispositivo, na rede local e em outros endereços privados. Deixe desativado, exceto se confiar na fonte.';
+      'Permite que fontes acessem este dispositivo, a rede local e outros endereços privados. Ativado por padrão com Premium; use apenas fontes confiáveis.';
 
   @override
   String get additionalSourcesImport => 'Importar mais protocolos de fontes';
@@ -5026,7 +5134,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String settingsCacheReadingCacheSubtitle(String size) {
-    return 'Cache de análise de EPUB/TXT reconstruível · $size';
+    return 'Cache de análise de EPUB/TXT/Kindle reconstruível · $size';
   }
 
   @override
@@ -6412,7 +6520,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get premiumSetupHint =>
-      'Após desbloquear, ative estas opções em Configurações → Recursos avançados.';
+      'Ativadas por padrão após o desbloqueio. Você pode desativá-las em Configurações → Recursos avançados.';
 
   @override
   String get premiumBillingTitle => 'Detalhes da compra';
@@ -7059,4 +7167,60 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get bookSourceContinueUpdate => 'Baixar novos capítulos';
+
+  @override
+  String get settingsCloseReaderToLibraryTitle =>
+      'Close reader to return to library';
+
+  @override
+  String get settingsCloseReaderToLibrarySubtitle =>
+      'When a book is open, the window close button returns to the main window instead of quitting the app';
+
+  @override
+  String get navMe => 'Meu espaço';
+
+  @override
+  String get settingsPreferencesTitle => 'Preferências';
+
+  @override
+  String get settingsPreferencesSubtitle => 'Aparência, leitura, idioma';
+
+  @override
+  String get settingsManagementTitle => 'Configurações e gestão';
+
+  @override
+  String get settingsDataSyncSubtitle => 'Backup WebDAV, cache';
+
+  @override
+  String get settingsContentServicesTitle => 'Conteúdo e serviços';
+
+  @override
+  String get settingsContentServicesSubtitle =>
+      'Fontes, IA, leitura em voz alta';
+
+  @override
+  String get settingsAboutSupportSubtitle =>
+      'Versão, atualizações, código aberto';
+
+  @override
+  String get settingsPremiumSubtitle => 'Mais fontes e acesso à rede privada';
+
+  @override
+  String get settingsGuestTitle => 'Não conectado';
+
+  @override
+  String get settingsGuestSubtitle => 'A leitura local não requer uma conta';
+
+  @override
+  String get settingsWebDavConfigured => 'Backup WebDAV configurado';
+
+  @override
+  String get settingsPremiumActive => 'Premium ativo';
+
+  @override
+  String get settingsPremiumSyncFailed =>
+      'Não foi possível sincronizar a assinatura';
+
+  @override
+  String get settingsWebDavWorking => 'WebDAV em andamento';
 }

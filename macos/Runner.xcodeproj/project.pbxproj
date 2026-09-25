@@ -503,7 +503,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.niki.xxread.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/xxread.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/xxread";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/开元阅读.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OrigoReader";
 			};
 			name = Debug;
 		};
@@ -518,7 +518,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.niki.xxread.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/xxread.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/xxread";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/开元阅读.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OrigoReader";
 			};
 			name = Release;
 		};
@@ -533,7 +533,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.niki.xxread.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/xxread.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/xxread";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/开元阅读.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/OrigoReader";
 			};
 			name = Profile;
 		};

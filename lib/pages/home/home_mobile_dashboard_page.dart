@@ -721,6 +721,52 @@ class _HomeMobileDashboardPageState extends State<HomeMobileDashboardPage>
   Widget _buildReadingRhythmCard(List<double> bars) {
     final palette = _palette;
     final weekdays = _weekDayLabels();
+    final header = Row(
+      children: [
+        Text(
+          context.l10n.homeReadingRhythm,
+          style: TextStyle(
+            color: palette.primaryTextColor,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const Spacer(),
+        Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 13,
+          color: palette.secondaryTextColor,
+        ),
+      ],
+    );
+    final metrics = Row(
+      children: [
+        _buildMetric(
+          value: _formatNumber(_todayMinutes),
+          label: context.l10n.statsToday,
+        ),
+        _buildMetricDivider(),
+        _buildMetric(
+          value: _formatNumber(_weekMinutes),
+          label: context.l10n.homeWeeklyTotal,
+        ),
+        _buildMetricDivider(),
+        _buildMetric(
+          value: _formatNumber(_totalMinutes),
+          label: context.l10n.homeTotalReading,
+        ),
+      ],
+    );
+    final weekChart = SizedBox(
+      height: 62,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(
+          7,
+          (index) => _buildWeekBar(bars[index], weekdays[index], palette),
+        ),
+      ),
+    );
 
     return Material(
       color: Colors.transparent,
@@ -735,86 +781,42 @@ class _HomeMobileDashboardPageState extends State<HomeMobileDashboardPage>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Text(
-                    context.l10n.homeReadingRhythm,
-                    style: TextStyle(
-                      color: palette.primaryTextColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 13,
-                    color: palette.secondaryTextColor,
-                  ),
-                ],
-              ),
+              header,
               const SizedBox(height: 18),
-              Row(
-                children: [
-                  _buildMetric(
-                    value: _formatNumber(_todayMinutes),
-                    label: context.l10n.statsToday,
-                  ),
-                  _buildMetricDivider(),
-                  _buildMetric(
-                    value: _formatNumber(_weekMinutes),
-                    label: context.l10n.homeWeeklyTotal,
-                  ),
-                  _buildMetricDivider(),
-                  _buildMetric(
-                    value: _formatNumber(_totalMinutes),
-                    label: context.l10n.homeTotalReading,
-                  ),
-                ],
-              ),
+              metrics,
               const SizedBox(height: 22),
-              SizedBox(
-                height: 62,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(7, (index) {
-                    final value = bars[index];
-                    final height = value <= 0 ? 5.0 : 8 + (value * 28);
-                    return Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
-                            width: 7,
-                            height: height,
-                            decoration: BoxDecoration(
-                              color: value <= 0
-                                  ? palette.mutedColor
-                                  : palette.accentColor.withValues(
-                                      alpha: 0.48 + value * 0.52,
-                                    ),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                          ),
-                          const SizedBox(height: 7),
-                          Text(
-                            weekdays[index],
-                            style: TextStyle(
-                              color: palette.secondaryTextColor,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ),
-              ),
+              weekChart,
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildWeekBar(double value, String label, _HomePalette palette) {
+    final height = value <= 0 ? 5.0 : 8 + (value * 28);
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            width: 7,
+            height: height,
+            decoration: BoxDecoration(
+              color: value <= 0
+                  ? palette.mutedColor
+                  : palette.accentColor.withValues(alpha: 0.48 + value * 0.52),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            label,
+            style: TextStyle(color: palette.secondaryTextColor, fontSize: 11),
+          ),
+        ],
       ),
     );
   }
@@ -839,20 +841,116 @@ class _HomeMobileDashboardPageState extends State<HomeMobileDashboardPage>
     final seconds = (summary?['week_seconds'] as num?)?.toInt() ?? 0;
     final rank = (me?['rank'] as num?)?.toInt();
     final isChinese = Localizations.localeOf(context).languageCode == 'zh';
+    final hasCloudSummary = signedIn && summary != null;
+    final readingSeconds = hasCloudSummary
+        ? seconds
+        : (_summaryStats['week'] ?? 0);
+    final syncing = signedIn && cloud?.busy == true && summary == null;
+    final readingLabel = hasCloudSummary
+        ? (isChinese ? '我的本周阅读' : 'My reading this week')
+        : (isChinese ? '本机本周阅读' : 'On this device this week');
+    final statusLabel = rank != null
+        ? (isChinese ? '第 $rank 名' : 'Rank $rank')
+        : syncing
+        ? (isChinese ? '同步中…' : 'Syncing…')
+        : (isChinese ? '查看周榜' : 'View board');
 
-    final subtitle = !signedIn
-        ? (isChinese
-              ? '登录后同步阅读记录，参与周榜'
-              : 'Sign in to sync reading and join the weekly board')
-        : cloud?.busy == true && summary == null
-        ? (isChinese ? '正在同步本周阅读数据…' : 'Syncing this week…')
-        : rank != null
-        ? (isChinese
-              ? '本周 ${_compactDuration(seconds, chinese: true)} · 第 $rank 名'
-              : 'This week ${_compactDuration(seconds, chinese: false)} · Rank $rank')
-        : (isChinese
-              ? '本周 ${_compactDuration(seconds, chinese: true)} · 查看我的排名'
-              : 'This week ${_compactDuration(seconds, chinese: false)} · View my rank');
+    final heading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isChinese ? '阅读排行榜' : 'Reading leaderboard',
+          style: TextStyle(
+            color: palette.primaryTextColor,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          isChinese ? '看看本周公开榜单' : "Explore this week's public board",
+          style: TextStyle(color: palette.secondaryTextColor, fontSize: 13),
+        ),
+      ],
+    );
+    final arrow = Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: palette.accentColor.withValues(alpha: 0.09),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.arrow_forward_rounded,
+        size: 20,
+        color: palette.accentColor,
+      ),
+    );
+    final reading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          readingLabel,
+          style: TextStyle(color: palette.secondaryTextColor, fontSize: 12),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _compactDuration(readingSeconds, chinese: isChinese),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: palette.primaryTextColor,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.4,
+          ),
+        ),
+      ],
+    );
+    final status = Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          statusLabel,
+          style: TextStyle(
+            color: palette.accentColor,
+            fontSize: rank != null ? 20 : 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (!signedIn) ...[
+          const SizedBox(height: 5),
+          Text(
+            isChinese ? '登录后可参与' : 'Sign in to join',
+            style: TextStyle(color: palette.secondaryTextColor, fontSize: 11),
+          ),
+        ],
+      ],
+    );
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: heading),
+            const SizedBox(width: 12),
+            arrow,
+          ],
+        ),
+        const SizedBox(height: 18),
+        Container(height: 1, color: palette.outlineColor),
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(child: reading),
+            const SizedBox(width: 12),
+            status,
+          ],
+        ),
+      ],
+    );
 
     return Material(
       color: Colors.transparent,
@@ -861,81 +959,9 @@ class _HomeMobileDashboardPageState extends State<HomeMobileDashboardPage>
         onTap: _openLeaderboard,
         borderRadius: BorderRadius.circular(22),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.all(20),
           decoration: _cardDecoration(color: palette.cardColor, radius: 22),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: palette.accentColor.withValues(alpha: 0.11),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.emoji_events_outlined,
-                  size: 23,
-                  color: palette.accentColor,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isChinese ? '阅读排行榜' : 'Reading leaderboard',
-                      style: TextStyle(
-                        color: palette.primaryTextColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: palette.secondaryTextColor,
-                        fontSize: 13,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (rank != null) ...[
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: palette.accentColor.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(
-                    '#$rank',
-                    style: TextStyle(
-                      color: palette.accentColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 13,
-                color: palette.secondaryTextColor,
-              ),
-            ],
-          ),
+          child: content,
         ),
       ),
     );

@@ -106,4 +106,10 @@ void main() {
     expect((chapters.first as Map)['id'], 'txt-0');
     expect((chapters.last as Map)['id'], 'txt-0-part-31');
   });
+
+  test('section scan rejects malformed UTF-8 after normalization', () {
+    source.writeAsBytesSync(<int>[0x41, 0xc0, 0xaf, 0x42]);
+
+    expect(() => build(encoding: 'utf8'), throwsFormatException);
+  });
 }

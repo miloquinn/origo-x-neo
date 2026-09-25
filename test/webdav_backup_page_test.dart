@@ -11,6 +11,26 @@ import 'package:xxread/services/backup/backup_selection.dart';
 import 'package:xxread/services/sync/sync_models.dart';
 
 void main() {
+  testWidgets('new connection starts with OrigoX and a compact entry', (
+    tester,
+  ) async {
+    final controller = _Controller()..configured = false;
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller, const WebDavBackupPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('备份到你的云端'), findsOneWidget);
+    expect(find.text('连接 WebDAV'), findsOneWidget);
+    expect(find.text('备份记录'), findsNothing);
+    await tester.tap(find.text('连接 WebDAV'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextFormField>(find.widgetWithText(TextFormField, '远端目录'))
+          .controller!
+          .text,
+      'OrigoX',
+    );
+  });
   testWidgets('one manual backup action; no sync schedules or scopes', (
     tester,
   ) async {
@@ -34,9 +54,12 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller, const WebDavBackupPage()));
     await tester.pumpAndSettle();
-    expect(controller.selection.bookIds, isEmpty);
+    expect(controller.selection.bookIds, {1, 2});
     await tester.tap(find.text('备份内容'));
     await tester.pumpAndSettle();
+    final backupTile = tester.widget<ExpansionTile>(find.byType(ExpansionTile));
+    expect(backupTile.shape, const Border());
+    expect(backupTile.collapsedShape, const Border());
     await tester.scrollUntilVisible(
       find.text('选择书籍正文'),
       250,
@@ -46,7 +69,7 @@ void main() {
     await tester.tap(find.text('选择书籍正文'));
     await tester.pumpAndSettle();
     expect(find.text('3.00 GB'), findsOneWidget);
-    await tester.tap(find.text('Small book'));
+    await tester.tap(find.text('Large book'));
     await tester.pumpAndSettle();
     expect(find.text('已选 1 本 · 1.0 KB'), findsOneWidget);
     await tester.tap(find.text('确定'));
@@ -57,6 +80,73 @@ void main() {
     await tester.tap(find.text('书源'));
     await tester.pumpAndSettle();
     expect(controller.selection.sources, isFalse);
+  });
+
+  testWidgets('book picker selects or deselects every book across search', (
+    tester,
+  ) async {
+    final controller = _Controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller, const WebDavBackupPage()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('备份内容'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('选择书籍正文'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('选择书籍正文'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('取消全选'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选 0 本 · 0 B'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Small');
+    await tester.pumpAndSettle();
+    expect(find.text('Large book'), findsNothing);
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选 2 本 · 3.00 GB'), findsOneWidget);
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(controller.selection.bookIds, {1, 2});
+
+    await tester.ensureVisible(find.text('选择书籍正文'));
+    await tester.tap(find.text('选择书籍正文'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('取消全选'));
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    expect(controller.selection.bookIds, isEmpty);
+  });
+
+  testWidgets('book picker keeps its actions on a small large-text screen', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    addTearDown(tester.view.reset);
+    final controller = _Controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _app(controller, const WebDavBackupPage(), scale: 1.6),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('备份内容'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('选择书籍正文'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('全选').hitTestable(), findsOneWidget);
+    expect(find.text('取消全选').hitTestable(), findsOneWidget);
+    expect(find.text('确定').hitTestable(), findsOneWidget);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 240);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('确定').hitTestable(), findsOneWidget);
   });
 
   testWidgets('transfer shows stage percentage bytes and speed', (
@@ -104,7 +194,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('恢复'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('未备份的类别'), findsOneWidget);
+    expect(find.textContaining('正文会随新备份恢复'), findsOneWidget);
     await tester.tap(find.text('取消'));
     await tester.pumpAndSettle();
     expect(controller.restoreCalls, 0);
@@ -256,9 +346,10 @@ class _Controller extends WebDavBackupController {
       testCalls = 0,
       configureCalls = 0;
   bool fails = false;
+  bool configured = true;
   Completer<ConnectionTestResult>? pending;
   @override
-  bool get isConfigured => true;
+  bool get isConfigured => configured;
   @override
   Future<void> refresh() async {
     refreshCalls++;

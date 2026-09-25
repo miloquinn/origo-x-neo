@@ -3,6 +3,7 @@ package com.niki.xxread
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
@@ -373,13 +374,19 @@ internal fun isSafeSourceBrowserUrl(raw: String): Boolean = try {
 
 internal fun configureSourceBrowserWindow(activity: Activity, root: android.view.View) {
     WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+    activity.window.statusBarColor = Color.TRANSPARENT
+    activity.window.navigationBarColor = Color.TRANSPARENT
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        activity.window.isNavigationBarContrastEnforced = false
+        activity.window.isStatusBarContrastEnforced = false
+    }
     WindowCompat.getInsetsController(activity.window, root).apply {
         isAppearanceLightStatusBars = true
         isAppearanceLightNavigationBars = true
     }
     ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
         val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-        view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+        view.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
         insets
     }
     ViewCompat.requestApplyInsets(root)

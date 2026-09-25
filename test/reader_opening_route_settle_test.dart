@@ -4,6 +4,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/pages/reader/native/native_reader_page.dart';
 
 void main() {
+  testWidgets('large TXT indexing starts as soon as route motion stops', (
+    tester,
+  ) async {
+    final controller = AnimationController(
+      vsync: tester,
+      duration: const Duration(milliseconds: 460),
+    );
+    addTearDown(controller.dispose);
+    var ready = false;
+
+    final future = waitForLargeTxtIndexingWindow(
+      routeAnimation: controller,
+      routeEntranceCompleted: false,
+      isMounted: () => true,
+    ).then((value) => ready = value);
+    controller.forward();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 459));
+    expect(ready, isFalse);
+
+    await tester.pump(const Duration(milliseconds: 2));
+    expect(await future, isTrue);
+    expect(ready, isTrue);
+  });
+
   testWidgets('large-reader work stays blocked until the entrance completes', (
     tester,
   ) async {

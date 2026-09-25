@@ -38,12 +38,24 @@ abstract interface class ReadingSourceBackendPort {
     String bookId, {
     Map<String, String> sourceVariables = const {},
   });
+  Future<BookSourceBook> getBookForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  });
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
   });
   Future<List<BookSourceChapter>> getChaptersForDownload(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  });
+  Future<List<BookSourceChapter>> getChaptersForValidation(
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
@@ -56,6 +68,13 @@ abstract interface class ReadingSourceBackendPort {
     Map<String, String> sourceVariables = const {},
   });
   Future<BookSourceChapterContent> getChapterContentForDownload(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  });
+  Future<BookSourceChapterContent> getChapterContentForValidation(
     RegisteredBookSource source, {
     required String bookId,
     required String chapterId,
@@ -172,6 +191,22 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
   }
 
   @override
+  Future<BookSourceBook> getBookForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) async {
+    await _ensureEnabled();
+    return _runtime().getBook(
+      source,
+      bookId,
+      sourceVariables: sourceVariables,
+      cancellation: cancellation,
+    );
+  }
+
+  @override
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
     String bookId, {
@@ -209,10 +244,27 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
         source,
         bookId,
         sourceVariables: sourceVariables,
+        cancellation: cancellation,
       ),
     );
     cancellation?.throwIfCancelled();
     return chapters;
+  }
+
+  @override
+  Future<List<BookSourceChapter>> getChaptersForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) async {
+    await _ensureEnabled();
+    return _runtime().getChapters(
+      source,
+      bookId,
+      sourceVariables: sourceVariables,
+      cancellation: cancellation,
+    );
   }
 
   @override
@@ -258,10 +310,29 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
         bookId: bookId,
         chapterId: chapterId,
         sourceVariables: sourceVariables,
+        cancellation: cancellation,
       ),
     );
     cancellation?.throwIfCancelled();
     return content;
+  }
+
+  @override
+  Future<BookSourceChapterContent> getChapterContentForValidation(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) async {
+    await _ensureEnabled();
+    return _runtime().getChapterContent(
+      source,
+      bookId: bookId,
+      chapterId: chapterId,
+      sourceVariables: sourceVariables,
+      cancellation: cancellation,
+    );
   }
 
   Future<String> _cacheRevision(

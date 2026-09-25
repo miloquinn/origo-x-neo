@@ -104,6 +104,7 @@ Map<String, dynamic>? _chapterMapFromHtmlDocument({
   required html_dom.Document document,
   required Map<String, Uint8List> imagesByName,
   required Map<String, String> cssRules,
+  KindleEmbeddedFonts? embeddedFonts,
 }) {
   final blocks = <Map<String, String>>[];
   final plainText = StringBuffer();
@@ -191,6 +192,10 @@ Map<String, dynamic>? _chapterMapFromHtmlDocument({
             '${tag == 'em' || tag == 'i' || styleSource.contains('font-style:italic') || styleSource.contains('font-style: italic')}',
       };
       if (color != null) block['color'] = color;
+      if (embeddedFonts != null) {
+        final family = embeddedFonts.forElement(element, cssRules);
+        if (family != null) block['fontFamily'] = family;
+      }
       blocks.add(block);
     }
   }
@@ -231,6 +236,10 @@ Future<Map<String, dynamic>> _parseKindleChapters(Uint8List bytes) async {
       entry.key.toLowerCase(): entry.value,
   };
   final cssRules = _cssRulesFromSources(content.cssParts);
+  final embeddedFonts = KindleEmbeddedFonts.fromCss(
+    content.cssParts,
+    content.fontBytesByBlockIndex,
+  );
 
   final sections = <String>[];
   if (content.htmlParts.length == 1) {
@@ -263,10 +272,27 @@ Future<Map<String, dynamic>> _parseKindleChapters(Uint8List bytes) async {
       document: document,
       imagesByName: imagesByName,
       cssRules: cssRules,
+      embeddedFonts: embeddedFonts,
     );
     if (chapter != null) result.add(chapter);
   }
-  return <String, dynamic>{'chapters': result, 'images': imagesByName};
+  return <String, dynamic>{
+    'chapters': result,
+    'images': imagesByName,
+    'fonts': embeddedFonts.bytesByFamily,
+  };
+}
+
+Future<Map<String, dynamic>> _buildKindleReaderCache(
+  Map<String, dynamic> arguments,
+) async {
+  final parsed = await _parseKindleChapters(
+    File(arguments['sourcePath'] as String).readAsBytesSync(),
+  );
+  return writeKindleNativeCache(<String, dynamic>{
+    ...arguments,
+    'parsed': parsed,
+  });
 }
 
 bool _hasEpubTextBlockAncestor(html_dom.Element element) {
@@ -359,6 +385,8 @@ List<Map<String, dynamic>> _parseTxtFileInBackground(
           'depth': chapter.depth,
           'plainText': chapter.plainText,
           'isNeedSplitTitle': chapter.isNeedSplitTitle,
+          'sourceChapterId': chapter.sourceChapterId,
+          'sourceBodyStart': chapter.sourceBodyStart,
         },
       )
       .toList(growable: false);
@@ -407,7 +435,7 @@ List<Map<String, dynamic>>? _readParsedChapterCache(String cachePath) {
     if (!file.existsSync()) return null;
     final decoded = jsonDecode(file.readAsStringSync());
     if (decoded is! Map<String, dynamic> ||
-        decoded['version'] != _txtChapterCacheVersion) {
+        decoded['version'] != _parsedTxtChapterCacheVersion) {
       file.deleteSync();
       return null;
     }
@@ -431,7 +459,7 @@ void _writeParsedChapterCache(Map<String, dynamic> arguments) {
   final temporary = File('$cachePath.tmp');
   temporary.writeAsStringSync(
     jsonEncode(<String, dynamic>{
-      'version': _txtChapterCacheVersion,
+      'version': _parsedTxtChapterCacheVersion,
       'chapters': arguments['chapters'],
     }),
     flush: true,
@@ -494,6 +522,8 @@ _NativeChapter _nativeChapterFromMap(
     chapterTitle: chapter['title'] as String? ?? '',
     depth: chapter['depth'] as int? ?? 0,
     isNeedSplitTitle: chapter['isNeedSplitTitle'] as bool? ?? false,
+    sourceChapterId: chapter['sourceChapterId'] as String?,
+    sourceBodyStart: chapter['sourceBodyStart'] as int? ?? 0,
     plainText: text,
     blocks: <_NativeBlock>[_NativeBlock.text(text)],
     replaceBookTitle: bookTitle,
@@ -514,6 +544,8 @@ List<_NativeChapter> _nativeChaptersFromFileIndex(
           chapterTitle: values['title'] as String? ?? '',
           depth: values['depth'] as int? ?? 0,
           isNeedSplitTitle: values['isNeedSplitTitle'] as bool? ?? false,
+          sourceChapterId: values['sourceChapterId'] as String?,
+          sourceBodyStart: values['sourceBodyStart'] as int? ?? 0,
           dataPath: dataPath,
           startOffset: values['start'] as int? ?? 0,
           endOffset: values['end'] as int? ?? 0,

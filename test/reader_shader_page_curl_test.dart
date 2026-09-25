@@ -408,6 +408,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 40));
     final middle = controller.debugTouchPosition!.dx;
     expect(middle, greaterThan(rect.width * 0.72));
+    expect(middle, lessThan(rect.width * 0.88));
     expect(middle, lessThan(rect.width - 0.5));
     expect(
       controller.debugTouchPosition!.dy,

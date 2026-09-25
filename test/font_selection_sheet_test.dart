@@ -15,6 +15,7 @@ class _DeferredOnlineFontService extends OnlineFontService {
   OnlineFontDownloadProgress? currentProgress;
   bool started = false;
   bool downloaded = false;
+  bool loadSucceeds = true;
 
   @override
   Future<void> initialize() async {}
@@ -24,6 +25,13 @@ class _DeferredOnlineFontService extends OnlineFontService {
 
   @override
   bool isDownloaded(String fontId) => downloaded;
+
+  @override
+  Future<bool> ensureLoaded(
+    String fontId, {
+    required List<OnlineFontFile> files,
+    required String family,
+  }) async => loadSucceeds;
 
   @override
   OnlineFontDownloadProgress? progressFor(String fontId) =>
@@ -99,7 +107,7 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('reader system font explains EPUB embedded-font priority', (
+  testWidgets('EPUB shows separate book and system font options', (
     tester,
   ) async {
     final settings = (await tester.runAsync(_loadNotifier))!;
@@ -113,7 +121,7 @@ void main() {
         home: Scaffold(
           body: FontSelectionSheet(
             settings: settings,
-            domain: FontDomain.reader,
+            domain: FontDomain.epubReader,
             title: 'Reading font',
             description: 'Choose a reading font.',
           ),
@@ -121,6 +129,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('font-option-book_embedded')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('font-option-system')), findsOneWidget);
 
     expect(
       find.text(
@@ -206,6 +220,57 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(settings.appFontId, FontCatalog.instrumentSansId);
+    expect(find.byType(FontSelectionSheet), findsOneWidget);
+  });
+
+  testWidgets('failed font registration keeps EPUB selection visible', (
+    tester,
+  ) async {
+    final onlineService = _DeferredOnlineFontService()
+      ..downloaded = true
+      ..loadSucceeds = false;
+    final settings = (await tester.runAsync(
+      () => _loadNotifier(onlineFontService: onlineService),
+    ))!;
+    addTearDown(settings.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                builder: (_) => FontSelectionSheet(
+                  settings: settings,
+                  domain: FontDomain.epubReader,
+                  title: 'Reading font',
+                  description: 'Choose a reading font.',
+                ),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    final onlineOption = find.byKey(
+      const ValueKey('font-option-source_han_sans'),
+    );
+    await tester.scrollUntilVisible(
+      onlineOption,
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(onlineOption);
+    await tester.pumpAndSettle();
+
+    expect(settings.epubReaderFontId, FontCatalog.bookEmbeddedId);
     expect(find.byType(FontSelectionSheet), findsOneWidget);
   });
 }

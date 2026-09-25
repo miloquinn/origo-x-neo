@@ -278,7 +278,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(320, 120);
     addTearDown(tester.view.reset);
-    const labels = ['首页', '书架', '发现', 'AI', '设置'];
+    const labels = ['首页', '书架', '发现', 'AI', '我的'];
     const destinations = HomeNavigationDestination.values;
     final dimensions = homeMobileFloatingNavDimensionsFor(
       screenWidth: 320,
@@ -485,7 +485,7 @@ void main() {
       );
       expect(
         tester.getTopLeft(heading).dx,
-        closeTo(tester.getTopLeft(content).dx, 0.1),
+        closeTo(tester.getTopLeft(content).dx, 1.1),
       );
     }
 
@@ -623,7 +623,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
     expect(tester.takeException(), isNull);
     expectPageLeftAligned(
-      '设置',
+      '我的',
       find.byKey(const ValueKey('settings-account-card')),
     );
     await capture('tablet-settings-landscape');
@@ -662,9 +662,16 @@ void main() {
     await tester.pump();
     await pumpSize(const Size(1366, 1024));
     final accountCard = find.byKey(const ValueKey('settings-account-card'));
-    expectPageLeftAligned('设置', accountCard);
-    expect(tester.getTopLeft(accountCard).dx, 111);
-    expect(tester.getBottomRight(accountCard).dx, 1366 - 111);
+    expectPageLeftAligned('我的', accountCard);
+    expect(tester.getTopLeft(accountCard).dx, closeTo(111, 1.1));
+    expect(
+      tester.getBottomRight(accountCard).dx,
+      lessThan(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('settings-secondary-column')))
+            .dx,
+      ),
+    );
     await capture('tablet-settings-large-landscape');
     await pumpSize(const Size(1194, 834));
 

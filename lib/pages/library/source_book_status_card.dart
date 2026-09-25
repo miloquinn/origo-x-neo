@@ -53,6 +53,7 @@ class _SourceBookStatusCardState extends State<SourceBookStatusCard> {
   bool _failed = false;
   int _reloadRevision = 0;
   StreamSubscription<void>? _librarySubscription;
+  StreamSubscription<LibrarySourceMetadataChange>? _sourceMetadataSubscription;
 
   @override
   void initState() {
@@ -60,12 +61,29 @@ class _SourceBookStatusCardState extends State<SourceBookStatusCard> {
     _librarySubscription = LibraryEventBus().stream.listen(
       (_) => unawaited(_refreshBook()),
     );
+    _sourceMetadataSubscription = LibraryEventBus().sourceMetadataStream.listen(
+      (change) {
+        if (!mounted ||
+            _busy ||
+            _book.id != change.previous.id ||
+            _book.sourceId != change.previous.sourceId ||
+            _book.sourceBookId != change.previous.sourceBookId ||
+            _book.sourceBookJson != change.previous.sourceBookJson) {
+          return;
+        }
+        final updated = _book.copyWith(sourceBookJson: change.sourceBookJson);
+        _reloadRevision++;
+        setState(() => _book = updated);
+        widget.onBookChanged?.call(updated);
+      },
+    );
   }
 
   @override
   void dispose() {
     _reloadRevision++;
     unawaited(_librarySubscription?.cancel());
+    unawaited(_sourceMetadataSubscription?.cancel());
     super.dispose();
   }
 

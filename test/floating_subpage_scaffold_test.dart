@@ -4,6 +4,34 @@ import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 void main() {
+  testWidgets('content extends behind the gesture area with safe scroll end', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.padding = const FakeViewPadding(bottom: 24);
+    tester.view.viewPadding = tester.view.padding;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => FloatingSubpageScaffold(
+            title: 'Stats',
+            body: ListView(
+              padding: floatingSubpagePadding(context, bottom: 20),
+              children: const [SizedBox(height: 900, child: Text('Content'))],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getBottomLeft(find.byType(ListView)).dy, 800);
+    final list = tester.widget<ListView>(find.byType(ListView));
+    expect((list.padding! as EdgeInsets).bottom, 44);
+  });
+
   testWidgets('renders secondary navigation without a standard app bar', (
     tester,
   ) async {

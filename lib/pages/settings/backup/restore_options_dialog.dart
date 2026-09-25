@@ -36,8 +36,8 @@ class _RestoreOptionsDialogState extends State<RestoreOptionsDialog> {
             children: [
               Text(
                 zh
-                    ? '仅恢复备份中包含的内容，未备份的类别保持不变。'
-                    : 'Only included categories can be restored. Omitted categories stay unchanged.',
+                    ? '仅恢复备份中包含的内容。正文会随新备份恢复；旧备份若未包含正文，则无法补回。'
+                    : 'Only included content can be restored. Book files return when present in the backup; older backups may omit them.',
               ),
               option(zh ? '书架、进度与笔记' : 'Library, progress and notes', reading, (
                 v,
@@ -62,7 +62,7 @@ class _RestoreOptionsDialogState extends State<RestoreOptionsDialog> {
                 settings,
                 (v) => settings = v,
               ),
-              const Divider(height: 28),
+              const SizedBox(height: 20),
               option(
                 zh ? '允许覆盖现有数据' : 'Replace existing data',
                 overwrite,

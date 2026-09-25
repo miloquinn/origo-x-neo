@@ -83,10 +83,7 @@ void main() {
 
       expect(find.text('Current source'), findsOneWidget);
       expect(find.text('New source'), findsOneWidget);
-      final before = tester.widget<FilledButton>(
-        find.byKey(const Key('bookSourceChangeCommit')),
-      );
-      expect(before.onPressed, isNull);
+      expect(find.byKey(const Key('bookSourceChangeCommit')), findsNothing);
       expect(tester.takeException(), isNull);
 
       await tester.tap(
@@ -283,6 +280,311 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('leaving confirmation ignores a late validation result', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    final service = _LateValidationService();
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BookSourceChangePage(
+          sources: [_oldSource, _newSource],
+          currentSource: _oldSource,
+          currentBook: _oldBook,
+          service: service,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('bookSourceChangeCandidate-new-source')),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('bookSourceChangeCommit')), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    service.release();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('bookSourceChangeConfirmation')), findsNothing);
+    expect(find.byKey(const Key('bookSourceChangeCommit')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uncertain chapter mapping requires an explicit choice', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    final service = _ManualMappingService();
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BookSourceChangePage(
+          sources: [_oldSource, _newSource],
+          currentSource: _oldSource,
+          currentBook: _oldBook,
+          service: service,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('bookSourceChangeCandidate-new-source')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('bookSourceChangeCommit')))
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.byKey(const Key('bookSourceChangeChooseChapter')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('3. Chapter 3'));
+    await tester.pumpAndSettle();
+    expect(service.selectedChapterIndex, 2);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('bookSourceChangeCommit')))
+          .onPressed,
+      isNotNull,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unavailable old position still allows manual source change', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    final service = _UnavailablePositionService();
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BookSourceChangePage(
+          sources: [_oldSource, _newSource],
+          currentSource: _oldSource,
+          currentBook: _oldBook,
+          service: service,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('bookSourceChangeCandidate-new-source')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('previous reading position'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('bookSourceChangeCommit')))
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.byKey(const Key('bookSourceChangeChooseChapter')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('3. Chapter 3'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('bookSourceChangeCommit')))
+          .onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets('stopping search preserves candidates and restores controls', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    final service = _SlowSearchService();
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BookSourceChangePage(
+          sources: [_oldSource, _newSource, _matchSource],
+          currentSource: _oldSource,
+          currentBook: _oldBook,
+          service: service,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(
+      find.byKey(const ValueKey('bookSourceChangeCandidate-new-source')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('bookSourceChangeStopSearch')));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('bookSourceChangeCandidate-new-source')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('bookSourceChangeStopSearch')), findsNothing);
+    expect(find.byKey(const Key('bookSourceChangeQuery')), findsOneWidget);
+    service.release();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('search action aligns with the search field on a phone', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    final service = _SlowSearchService();
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BookSourceChangePage(
+          sources: [_oldSource, _newSource, _matchSource],
+          currentSource: _oldSource,
+          currentBook: _oldBook,
+          service: service,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    final search = tester.getRect(
+      find.byKey(const Key('bookSourceChangeQuery')),
+    );
+    final stop = tester.getRect(
+      find.byKey(const Key('bookSourceChangeStopSearch')),
+    );
+    expect(stop.left, closeTo(search.left, 0.5));
+    expect(stop.right, closeTo(search.right, 0.5));
+    await tester.tap(find.byKey(const Key('bookSourceChangeStopSearch')));
+    await tester.pump();
+    final remaining = tester.getRect(
+      find.byKey(const Key('bookSourceChangeSearchRemaining')),
+    );
+    expect(remaining.left, closeTo(search.left, 0.5));
+    expect(remaining.right, closeTo(search.right, 0.5));
+    service.release();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('narrow large-text layout keeps search and confirmation usable', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 700);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: BookSourceChangePage(
+            sources: [_oldSource, _newSource],
+            currentSource: _oldSource,
+            currentBook: _oldBook,
+            service: _PageChangeService(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      MediaQuery.textScalerOf(
+        tester.element(find.byKey(const Key('bookSourceChangeQuery'))),
+      ).scale(14),
+      closeTo(21, 0.01),
+    );
+    expect(find.byKey(const Key('bookSourceChangeQuery')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(
+      find.byKey(const ValueKey('bookSourceChangeCandidate-new-source')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('bookSourceChangeCommit')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('validation deadline offers a recoverable timeout state', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BookSourceChangePage(
+          sources: [_oldSource, _newSource],
+          currentSource: _oldSource,
+          currentBook: _oldBook,
+          service: _TimeoutValidationService(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('bookSourceChangeCandidate-new-source')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('check timed out'), findsOneWidget);
+    expect(find.byKey(const Key('bookSourceChangeRetryCheck')), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('bookSourceChangeCommit')))
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('three thousand sources keep the initial search bounded', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    final client = _FastEmptyClient();
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BookSourceChangePage(
+          sources: [
+            _oldSource,
+            for (var index = 0; index < 3000; index++)
+              _source('many-$index', 'Many $index'),
+          ],
+          currentSource: _oldSource,
+          currentBook: _oldBook,
+          service: BookSourceChangeService(client: client),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(client.searchCount, 60);
+    expect(find.textContaining('3000 sources available'), findsOneWidget);
+    expect(find.byKey(const Key('bookSourceChangeQuery')), findsOneWidget);
+    expect(
+      find.byKey(const Key('bookSourceChangeSearchRemaining')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
 }
 
 final _oldSource = _source('old-source', 'Old source');
@@ -331,6 +633,8 @@ class _PageChangeService extends BookSourceChangeService {
     required RegisteredBookSource source,
     required BookSourceBook book,
     Book? shelfBook,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 8),
   }) async => const BookSourceChangePosition(
     chapterIndex: 4,
     chapterProgress: 0.5,
@@ -360,6 +664,10 @@ class _PageChangeService extends BookSourceChangeService {
   Future<ValidatedBookSourceChange> validate({
     required BookSourceChangeCandidate candidate,
     required BookSourceChangePosition position,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 20),
+    void Function(BookSourceChangeValidationStage stage)? onStage,
+    int? selectedChapterIndex,
   }) async => ValidatedBookSourceChange(
     candidate: candidate,
     book: _newBook,
@@ -373,6 +681,7 @@ class _PageChangeService extends BookSourceChangeService {
     ),
     chapterIndex: 4,
     chapterProgress: 0.5,
+    mappingConfidence: BookSourceChapterMappingConfidence.exactTitle,
     responseTime: const Duration(milliseconds: 240),
   );
 }
@@ -387,6 +696,8 @@ class _CandidateOrderService extends BookSourceChangeService {
     required RegisteredBookSource source,
     required BookSourceBook book,
     Book? shelfBook,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 8),
   }) async => const BookSourceChangePosition(
     chapterIndex: 0,
     chapterProgress: 0,
@@ -508,6 +819,8 @@ class _DeferredPreparationService extends BookSourceChangeService {
     required RegisteredBookSource source,
     required BookSourceBook book,
     Book? shelfBook,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 8),
   }) => _position.future;
 
   @override
@@ -546,6 +859,8 @@ class _DeferredCandidateService extends BookSourceChangeService {
     required RegisteredBookSource source,
     required BookSourceBook book,
     Book? shelfBook,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 8),
   }) => _position.future;
 
   @override
@@ -576,6 +891,10 @@ class _DeferredCandidateService extends BookSourceChangeService {
   Future<ValidatedBookSourceChange> validate({
     required BookSourceChangeCandidate candidate,
     required BookSourceChangePosition position,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 20),
+    void Function(BookSourceChangeValidationStage stage)? onStage,
+    int? selectedChapterIndex,
   }) async {
     validateCount++;
     return ValidatedBookSourceChange(
@@ -586,7 +905,108 @@ class _DeferredCandidateService extends BookSourceChangeService {
       ],
       chapterIndex: 0,
       chapterProgress: position.chapterProgress,
+      mappingConfidence: BookSourceChapterMappingConfidence.exactTitle,
       responseTime: const Duration(milliseconds: 120),
     );
   }
+}
+
+class _LateValidationService extends _PageChangeService {
+  final Completer<void> _release = Completer();
+
+  void release() => _release.complete();
+
+  @override
+  Future<ValidatedBookSourceChange> validate({
+    required BookSourceChangeCandidate candidate,
+    required BookSourceChangePosition position,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 20),
+    void Function(BookSourceChangeValidationStage stage)? onStage,
+    int? selectedChapterIndex,
+  }) async {
+    await _release.future;
+    return super.validate(candidate: candidate, position: position);
+  }
+}
+
+class _ManualMappingService extends _PageChangeService {
+  int? selectedChapterIndex;
+
+  @override
+  Future<ValidatedBookSourceChange> validate({
+    required BookSourceChangeCandidate candidate,
+    required BookSourceChangePosition position,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 20),
+    void Function(BookSourceChangeValidationStage stage)? onStage,
+    int? selectedChapterIndex,
+  }) async {
+    this.selectedChapterIndex = selectedChapterIndex;
+    final result = await super.validate(
+      candidate: candidate,
+      position: position,
+    );
+    return ValidatedBookSourceChange(
+      candidate: result.candidate,
+      book: result.book,
+      chapters: result.chapters,
+      chapterIndex: selectedChapterIndex ?? result.chapterIndex,
+      chapterProgress: 0,
+      mappingConfidence: selectedChapterIndex == null
+          ? BookSourceChapterMappingConfidence.proportional
+          : BookSourceChapterMappingConfidence.manual,
+      responseTime: result.responseTime,
+    );
+  }
+}
+
+class _UnavailablePositionService extends _ManualMappingService {
+  @override
+  Future<BookSourceChangePosition> loadPosition({
+    required RegisteredBookSource source,
+    required BookSourceBook book,
+    Book? shelfBook,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 8),
+  }) async => throw StateError('old catalog is unavailable');
+}
+
+class _SlowSearchService extends _PageChangeService {
+  final Completer<void> _release = Completer();
+
+  void release() => _release.complete();
+
+  @override
+  Stream<BookSourceChangeSearchEvent> search({
+    required Iterable<RegisteredBookSource> sources,
+    required String title,
+    required String author,
+    required bool checkAuthor,
+    String? currentSourceId,
+    Set<String> excludedSourceIds = const {},
+    int? sourceLimit,
+    int? candidateLimit,
+  }) async* {
+    yield BookSourceChangeSearchEvent(
+      source: _newSource,
+      completed: 1,
+      candidates: [candidate],
+    );
+    await _release.future;
+    yield BookSourceChangeSearchEvent(source: _matchSource, completed: 2);
+  }
+}
+
+class _TimeoutValidationService extends _PageChangeService {
+  @override
+  Future<ValidatedBookSourceChange> validate({
+    required BookSourceChangeCandidate candidate,
+    required BookSourceChangePosition position,
+    BookDownloadCancellation? cancellation,
+    Duration timeout = const Duration(seconds: 20),
+    void Function(BookSourceChangeValidationStage stage)? onStage,
+    int? selectedChapterIndex,
+  }) async =>
+      throw const BookSourceChangeTimeoutException(Duration(seconds: 20));
 }

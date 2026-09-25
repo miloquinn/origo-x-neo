@@ -22,6 +22,8 @@ import 'package:xxread/pages/reader/native/native_reader_page.dart';
 import 'package:xxread/services/books/book_dao.dart';
 import 'package:xxread/services/reading/reading_resume_service.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
+import 'package:xxread/utils/book_open_transition.dart';
+import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_annotated_text_page.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
@@ -55,6 +57,205 @@ void main() {
           const MethodChannel('plugins.flutter.io/path_provider'),
           (_) async => databaseDirectory.path,
         );
+  });
+
+  testWidgets(
+    'oversized heading-less TXT restores an old unsplit text anchor',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      await tester.binding.setSurfaceSize(const Size(480, 800));
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
+      });
+      final directory = Directory.systemTemp.createTempSync(
+        'origo-x-txt-bounded-progress-',
+      );
+      final text = List.generate(
+        7000,
+        (index) => '段落 $index：这是用于恢复阅读位置的连续正文。\n',
+      ).join();
+      final txt = File('${directory.path}/bounded-progress.txt')
+        ..writeAsStringSync(text);
+      const oldAnchorOffset = 70000;
+      final locator = CanonicalLocator.fromComponents(
+        format: BookFormat.txt,
+        chapterId: 'txt-0',
+        offset: oldAnchorOffset,
+        excerpt: text.substring(oldAnchorOffset, oldAnchorOffset + 24),
+      );
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NativeReaderPage(
+              replaceRuleService: replaceRuleService,
+              book: Book(
+                title: 'Bounded TXT fixture',
+                filePath: txt.path,
+                format: 'txt',
+                textEncoding: 'utf8',
+                currentPage: 0,
+                lastCanonicalLocator: LocatorCodec.encodeCanonicalLocator(
+                  locator,
+                ),
+                fileModifiedTime: txt.lastModifiedSync().millisecondsSinceEpoch,
+              ),
+            ),
+          ),
+        );
+        await tester.runAsync(() async {
+          for (var attempt = 0; attempt < 60; attempt++) {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
+            if (find.byType(PageView).evaluate().isNotEmpty) return;
+          }
+        });
+        await _pumpUntil(
+          tester,
+          () => find.byType(PageView).evaluate().isNotEmpty,
+        );
+
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        final delegate =
+            pageView.childrenDelegate as SliverChildBuilderDelegate;
+        final initialLeaf =
+            delegate.builder(
+                  tester.element(find.byType(PageView)),
+                  pageView.controller!.initialPage,
+                )!
+                as ReaderPaperPageLeaf;
+
+        expect(initialLeaf.metadata.chapterTitle, contains('3/'));
+        expect(initialLeaf.metadata.pageNumber, greaterThan(1));
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        await drainReaderCache(tester);
+        await tester.binding.setSurfaceSize(null);
+        debugDefaultTargetPlatformOverride = null;
+        directory.deleteSync(recursive: true);
+      }
+    },
+  );
+
+  testWidgets('oversized TXT restores a saved offset inside a split chapter', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    await tester.binding.setSurfaceSize(const Size(480, 800));
+    SharedPreferences.setMockInitialValues({
+      ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
+    });
+    final directory = Directory.systemTemp.createTempSync(
+      'origo-x-txt-split-progress-',
+    );
+    final text = List.generate(
+      7000,
+      (index) => '段落 $index：这是用于恢复阅读位置的连续正文。\n',
+    ).join();
+    final txt = File('${directory.path}/split-progress.txt')
+      ..writeAsStringSync(text);
+    const localOffset = 12000;
+    final locator = CanonicalLocator.fromComponents(
+      format: BookFormat.txt,
+      chapterId: 'txt-0-part-1',
+      offset: localOffset,
+      excerpt: text.substring(32767 + localOffset, 32767 + localOffset + 24),
+    );
+
+    try {
+      final navigatorKey = GlobalKey<NavigatorState>();
+      final coverKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigatorKey,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              key: coverKey,
+              width: 120,
+              height: 180,
+              child: const ColoredBox(color: Colors.brown),
+            ),
+          ),
+        ),
+      );
+      navigatorKey.currentState!.push<void>(
+        BookOpenTransition.createRoute<void>(
+          NativeReaderPage(
+            replaceRuleService: replaceRuleService,
+            initialTheme: ReaderThemes.day,
+            book: Book(
+              title: 'Split TXT fixture',
+              filePath: txt.path,
+              format: 'txt',
+              textEncoding: 'utf8',
+              currentPage: 0,
+              lastCanonicalLocator: LocatorCodec.encodeCanonicalLocator(
+                locator,
+              ),
+              fileModifiedTime: txt.lastModifiedSync().millisecondsSinceEpoch,
+            ),
+          ),
+          animation: BookOpenAnimation.fromCoverKey(
+            coverKey,
+            radius: BorderRadius.circular(12),
+            coverBuilder: (_) => const ColoredBox(color: Colors.brown),
+          ),
+          readerBackgroundColor: ReaderThemes.day.background,
+          waitForReaderReady: true,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.runAsync(() async {
+        for (var attempt = 0; attempt < 60; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+          if (find.byType(PageView).evaluate().isNotEmpty) return;
+        }
+      });
+      await _pumpUntil(
+        tester,
+        () => find.byType(PageView).evaluate().isNotEmpty,
+      );
+      await tester.runAsync(() async {
+        for (var attempt = 0; attempt < 30; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+        }
+      });
+
+      final pageView = tester.widget<PageView>(find.byType(PageView));
+      final visibleLeaves = tester
+          .widgetList<ReaderPaperPageLeaf>(
+            find.byType(ReaderPaperPageLeaf).hitTestable(),
+          )
+          .toList();
+      expect(visibleLeaves, isNotEmpty);
+      expect(
+        visibleLeaves.any(
+          (leaf) =>
+              leaf.metadata.chapterTitle.contains('2/') &&
+              leaf.metadata.pageNumber > 1,
+        ),
+        isTrue,
+      );
+      expect(
+        pageView.controller!.page!.round(),
+        pageView.controller!.initialPage,
+      );
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await drainReaderCache(tester);
+      await tester.binding.setSurfaceSize(null);
+      debugDefaultTargetPlatformOverride = null;
+      directory.deleteSync(recursive: true);
+    }
   });
 
   testWidgets(

@@ -42,6 +42,7 @@ import 'services/core/background_download_notifier.dart';
 import 'services/core/app_settings_service.dart';
 import 'services/core/theme_notifier.dart';
 import 'services/core/display_refresh_rate_controller.dart';
+import 'services/core/desktop_window_service.dart';
 import 'services/library/download_task_controller.dart';
 import 'services/backup/webdav_backup_controller.dart';
 import 'utils/app_themes.dart';
@@ -226,6 +227,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    DesktopWindowService.initialize(_navigatorKey);
     WidgetsBinding.instance.addObserver(this);
     _incomingBookService = IncomingBookService(
       bridge: IncomingBookPlatformBridge(),
@@ -258,6 +260,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    DesktopWindowService.dispose();
     _notificationTapSubscription?.cancel();
     _sourceInteractionSubscription?.cancel();
     widget._coordinator.cancelAll();
@@ -810,7 +813,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
   }) {
     final isDark = brightness == Brightness.dark;
     final isMaterial3Style = uiStyle == AppUiStyle.material3;
-    final systemBarColor = isMaterial3Style
+    final appBarColor = isMaterial3Style
         ? colorScheme.surface
         : Colors.transparent;
 
@@ -832,13 +835,13 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: systemBarColor,
+        backgroundColor: appBarColor,
         surfaceTintColor: Colors.transparent,
         systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarColor: systemBarColor,
+          statusBarColor: Colors.transparent,
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
           statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-          systemNavigationBarColor: systemBarColor,
+          systemNavigationBarColor: Colors.transparent,
           systemNavigationBarIconBrightness: isDark
               ? Brightness.light
               : Brightness.dark,

@@ -2,25 +2,243 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../pages/account/account_page.dart';
+import '../pages/account/premium_membership_page.dart';
 import '../services/account/account.dart';
 import '../utils/localization_extension.dart';
+import '../utils/page_style_helper.dart';
 import 'account_avatar_image.dart';
 import 'premium_card_style.dart';
 
 class SettingsAccountCard extends StatelessWidget {
-  const SettingsAccountCard({super.key});
+  const SettingsAccountCard({
+    super.key,
+    this.quiet = false,
+    this.showMembershipSection = false,
+  }) : assert(!showMembershipSection || quiet);
+
+  final bool quiet;
+  final bool showMembershipSection;
 
   @override
   Widget build(BuildContext context) {
     final account = context.watch<MemberAccountController>();
     final summary = account.summary;
-    final premium = account.hasPremiumAccess;
+    final premium = account.hasPremiumAccess && !quiet;
     final scheme = Theme.of(context).colorScheme;
+    final palette = PageStyleHelper.palette(context);
     final title =
-        summary?.effectiveName ?? context.l10n.settingsAccountGuestTitle;
+        summary?.effectiveName ??
+        (quiet
+            ? context.l10n.settingsGuestTitle
+            : context.l10n.settingsAccountGuestTitle);
     final subtitle = summary == null
-        ? context.l10n.settingsAccountGuestSubtitle
+        ? quiet
+              ? context.l10n.settingsGuestSubtitle
+              : context.l10n.settingsAccountGuestSubtitle
         : '@${summary.username} · ${account.membership == null || account.membershipSyncFailed ? context.l10n.premiumSyncPending : context.l10n.settingsAccountVerified}';
+
+    if (showMembershipSection) {
+      final l10n = context.l10n;
+      final premiumActive = account.hasPremiumAccess;
+      final membershipTitle = account.membershipSyncFailed
+          ? l10n.settingsPremiumSyncFailed
+          : account.isAuthenticated && account.membership == null
+          ? l10n.premiumSyncPending
+          : l10n.accountSupportAction;
+      return Container(
+        key: const ValueKey('settings-combined-account-card'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          color: premiumActive ? null : palette.card,
+          gradient: premiumActive ? premiumCardGradient : null,
+          border: Border.all(
+            color: premiumActive
+                ? premiumGold.withValues(alpha: 0.72)
+                : palette.border,
+            width: premiumActive ? 1.5 : 1,
+          ),
+          boxShadow: premiumActive
+              ? [
+                  BoxShadow(
+                    color: premiumGold.withValues(alpha: 0.2),
+                    blurRadius: 28,
+                    offset: const Offset(0, 10),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              if (premiumActive)
+                const Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(painter: _PremiumCardPattern()),
+                  ),
+                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Semantics(
+                    button: true,
+                    label: l10n.settingsAccountOpen,
+                    child: InkWell(
+                      key: const ValueKey('settings-account-card'),
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(builder: (_) => const AccountPage()),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          18,
+                          premiumActive ? 14 : 12,
+                          16,
+                          premiumActive ? 14 : 18,
+                        ),
+                        child: Row(
+                          children: [
+                            _AccountAvatar(
+                              effectiveName: summary?.effectiveName,
+                              avatarUrl: summary?.avatarUrl,
+                              premium: premiumActive,
+                              quiet: !premiumActive,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          title,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color: premiumActive
+                                                    ? premiumIvory
+                                                    : scheme.onSurface,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                        ),
+                                      ),
+                                      if (premiumActive) ...[
+                                        const SizedBox(width: 8),
+                                        _PremiumBadge(
+                                          label: l10n.accountSupporterBadge,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    subtitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: premiumActive
+                                              ? premiumIvory.withValues(
+                                                  alpha: 0.7,
+                                                )
+                                              : scheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (account.loading && summary == null)
+                              SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: premiumActive
+                                      ? premiumGold
+                                      : scheme.primary,
+                                ),
+                              )
+                            else
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: premiumActive
+                                    ? premiumGold
+                                    : scheme.onSurfaceVariant,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (!premiumActive) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+                      child: Material(
+                        color: scheme.primary.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(12),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          key: const ValueKey('settings-membership-entry'),
+                          onTap: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => PremiumMembershipPage(
+                                account: account,
+                                focusBilling: true,
+                              ),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 9,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.workspace_premium_rounded,
+                                  color: scheme.primary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    membershipTitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: scheme.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 18,
+                                  color: scheme.primary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Semantics(
       button: true,
@@ -37,27 +255,34 @@ class SettingsAccountCard extends StatelessWidget {
           child: Ink(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              gradient: premium
+              color: quiet ? palette.card : null,
+              gradient: quiet
+                  ? null
+                  : premium
                   ? premiumCardGradient
                   : const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [Color(0xFF123456), Color(0xFF1768B4)],
                     ),
-              border: premium
+              border: quiet
+                  ? Border.all(color: palette.border)
+                  : premium
                   ? Border.all(
                       color: premiumGold.withValues(alpha: 0.78),
                       width: 1.5,
                     )
                   : null,
-              boxShadow: [
-                BoxShadow(
-                  color: (premium ? premiumGold : const Color(0xFF1768B4))
-                      .withValues(alpha: premium ? 0.24 : 0.2),
-                  blurRadius: premium ? 30 : 28,
-                  offset: const Offset(0, 12),
-                ),
-              ],
+              boxShadow: quiet
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: (premium ? premiumGold : const Color(0xFF1768B4))
+                            .withValues(alpha: premium ? 0.24 : 0.2),
+                        blurRadius: premium ? 30 : 28,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
             ),
             child: Stack(
               children: [
@@ -67,7 +292,7 @@ class SettingsAccountCard extends StatelessWidget {
                       child: CustomPaint(painter: _PremiumCardPattern()),
                     ),
                   )
-                else
+                else if (!quiet)
                   const Positioned(
                     right: -18,
                     bottom: -32,
@@ -84,6 +309,7 @@ class SettingsAccountCard extends StatelessWidget {
                             effectiveName: summary?.effectiveName,
                             avatarUrl: summary?.avatarUrl,
                             premium: premium,
+                            quiet: quiet,
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -102,7 +328,9 @@ class SettingsAccountCard extends StatelessWidget {
                                             .textTheme
                                             .titleMedium
                                             ?.copyWith(
-                                              color: premium
+                                              color: quiet
+                                                  ? scheme.onSurface
+                                                  : premium
                                                   ? premiumIvory
                                                   : Colors.white,
                                               fontWeight: FontWeight.w800,
@@ -126,9 +354,11 @@ class SettingsAccountCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
-                                        color: Colors.white.withValues(
-                                          alpha: premium ? 0.68 : 0.72,
-                                        ),
+                                        color: quiet
+                                            ? scheme.onSurfaceVariant
+                                            : Colors.white.withValues(
+                                                alpha: premium ? 0.68 : 0.72,
+                                              ),
                                       ),
                                 ),
                               ],
@@ -147,18 +377,28 @@ class SettingsAccountCard extends StatelessWidget {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(
-                                  alpha: premium ? 0.1 : 0.12,
-                                ),
+                                color: (quiet ? scheme.primary : Colors.white)
+                                    .withValues(alpha: premium ? 0.1 : 0.12),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: (premium ? premiumGold : Colors.white)
-                                      .withValues(alpha: premium ? 0.28 : 0.14),
+                                  color:
+                                      (quiet
+                                              ? scheme.primary
+                                              : premium
+                                              ? premiumGold
+                                              : Colors.white)
+                                          .withValues(
+                                            alpha: premium ? 0.28 : 0.14,
+                                          ),
                                 ),
                               ),
                               child: Icon(
                                 Icons.arrow_forward_rounded,
-                                color: premium ? premiumIvory : scheme.surface,
+                                color: quiet
+                                    ? scheme.onSurfaceVariant
+                                    : premium
+                                    ? premiumIvory
+                                    : scheme.surface,
                                 size: 20,
                               ),
                             ),
@@ -297,14 +537,22 @@ class _AccountAvatar extends StatelessWidget {
     required this.effectiveName,
     required this.avatarUrl,
     required this.premium,
+    required this.quiet,
   });
 
   final String? effectiveName;
   final String? avatarUrl;
   final bool premium;
+  final bool quiet;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fallbackColor = quiet
+        ? scheme.primary
+        : premium
+        ? premiumIvory
+        : Colors.white;
     final resolvedAvatarUrl = avatarUrl;
     final initial = (effectiveName?.trim().isNotEmpty ?? false)
         ? effectiveName!.trim().characters.first.toUpperCase()
@@ -316,12 +564,16 @@ class _AccountAvatar extends StatelessWidget {
       width: outerSize,
       height: outerSize,
       decoration: BoxDecoration(
-        color: premium
+        color: quiet
+            ? scheme.primary.withValues(alpha: 0.12)
+            : premium
             ? premiumGold.withValues(alpha: 0.18)
             : Colors.white.withValues(alpha: 0.13),
         shape: BoxShape.circle,
         border: Border.all(
-          color: premium
+          color: quiet
+              ? scheme.primary.withValues(alpha: 0.2)
+              : premium
               ? premiumGold.withValues(alpha: 0.95)
               : Colors.white.withValues(alpha: 0.2),
           width: premium ? 2.2 : 1,
@@ -345,30 +597,26 @@ class _AccountAvatar extends StatelessWidget {
           child: resolvedAvatarUrl != null
               ? AccountAvatarImage(
                   url: Uri.parse(resolvedAvatarUrl),
-                  fallback: _avatarFallback(initial),
+                  fallback: _avatarFallback(initial, fallbackColor),
                   width: imageSize,
                   height: imageSize,
                   fit: BoxFit.cover,
                 )
-              : _avatarFallback(initial),
+              : _avatarFallback(initial, fallbackColor),
         ),
       ),
     );
   }
 
-  Widget _avatarFallback(String? initial) => Center(
+  Widget _avatarFallback(String? initial, Color color) => Center(
     key: const ValueKey('settings-account-avatar-fallback'),
     child: initial == null
-        ? Icon(
-            Icons.person_outline_rounded,
-            color: premium ? premiumIvory : Colors.white,
-            size: 27,
-          )
+        ? Icon(Icons.person_outline_rounded, color: color, size: 27)
         : Text(
             initial,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: premium ? premiumIvory : Colors.white,
+              color: color,
               fontSize: 20,
               fontWeight: FontWeight.w800,
               height: 1,

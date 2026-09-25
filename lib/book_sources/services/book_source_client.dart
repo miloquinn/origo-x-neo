@@ -207,6 +207,28 @@ class BookSourceClient implements BookSourceGateway {
     return _resources.orspBackend.getBook(source, bookId);
   }
 
+  /// Detail lookup for bounded workflows such as source replacement.
+  Future<BookSourceBook> getBookForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) {
+    if (source.sourceProtocol == BookSourceProtocolKind.readingSource) {
+      return _resources.readingBackend.getBookForValidation(
+        source,
+        bookId,
+        sourceVariables: sourceVariables,
+        cancellation: cancellation,
+      );
+    }
+    return _resources.orspBackend.getBookForValidation(
+      source,
+      bookId,
+      cancellation: cancellation,
+    );
+  }
+
   @override
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
@@ -239,6 +261,27 @@ class BookSourceClient implements BookSourceGateway {
       );
     }
     return _resources.orspBackend.getChaptersForDownload(
+      source,
+      bookId,
+      cancellation: cancellation,
+    );
+  }
+
+  Future<List<BookSourceChapter>> getChaptersForValidation(
+    RegisteredBookSource source,
+    String bookId, {
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) {
+    if (source.sourceProtocol == BookSourceProtocolKind.readingSource) {
+      return _resources.readingBackend.getChaptersForValidation(
+        source,
+        bookId,
+        sourceVariables: sourceVariables,
+        cancellation: cancellation,
+      );
+    }
+    return _resources.orspBackend.getChaptersForValidation(
       source,
       bookId,
       cancellation: cancellation,
@@ -285,6 +328,30 @@ class BookSourceClient implements BookSourceGateway {
       );
     }
     return _resources.orspBackend.getChapterContentForDownload(
+      source,
+      bookId: bookId,
+      chapterId: chapterId,
+      cancellation: cancellation,
+    );
+  }
+
+  Future<BookSourceChapterContent> getChapterContentForValidation(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) {
+    if (source.sourceProtocol == BookSourceProtocolKind.readingSource) {
+      return _resources.readingBackend.getChapterContentForValidation(
+        source,
+        bookId: bookId,
+        chapterId: chapterId,
+        sourceVariables: sourceVariables,
+        cancellation: cancellation,
+      );
+    }
+    return _resources.orspBackend.getChapterContentForValidation(
       source,
       bookId: bookId,
       chapterId: chapterId,

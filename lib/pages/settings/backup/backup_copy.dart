@@ -9,10 +9,20 @@ class BackupCopy {
       ? '请等待书籍下载或书源整理完成，再备份或恢复。'
       : 'Wait for downloads or source maintenance to finish before backing up or restoring.';
   String get title => zh ? 'WebDAV 备份' : 'WebDAV backups';
+  String get connectedTitle => zh ? '云端空间已配置' : 'Cloud storage configured';
+  String get unconnectedTitle => zh ? '备份到你的云端' : 'Back up to your cloud';
+  String get connectionPrompt => zh
+      ? '连接 WebDAV 后，随时备份与恢复阅读数据。'
+      : 'Connect WebDAV to back up and restore your reading data.';
+  String get connect => zh ? '连接 WebDAV' : 'Connect WebDAV';
+  String get backupSection => zh ? '创建备份' : 'Create a backup';
+  String get preparingBookFiles =>
+      zh ? '正在统计可备份的书籍正文…' : 'Checking available book files…';
+  String get errorDetails => zh ? '查看错误详情' : 'View error details';
   String get summary => zh ? '一键备份，按时间恢复' : 'Back up now, restore a snapshot';
   String get description => zh
-      ? '每次备份生成一份独立 ZIP，旧备份会保留。可选择数据类别和书籍正文，正文默认不备份。'
-      : 'Each backup is a separate ZIP. Choose data categories and book files; book files are excluded by default. Earlier backups are kept.';
+      ? '每次备份生成一份独立 ZIP，旧备份会保留。可选择数据类别和书籍正文。'
+      : 'Each backup is a separate ZIP. Choose data categories and book files. Earlier backups are kept.';
   String get privacy => zh
       ? '备份未加密，包含书源配置；请使用你信任的 WebDAV。账号登录和 WebDAV 密码不在备份中。'
       : 'Backups are not encrypted and include source configurations. Use a trusted WebDAV server. Account sessions and WebDAV passwords are excluded.';
@@ -20,7 +30,7 @@ class BackupCopy {
   String get restore => zh ? '恢复' : 'Restore';
   String get history => zh ? '备份记录' : 'Backup history';
   String get empty => zh
-      ? '还没有备份，点击“立即备份”创建第一份。'
+      ? '云端还没有备份，点击“立即备份”创建第一份。'
       : 'No backups yet. Choose Back up now to create one.';
   String get refresh => zh ? '刷新备份列表' : 'Refresh backups';
   String get configure => zh ? '连接设置' : 'Connection settings';

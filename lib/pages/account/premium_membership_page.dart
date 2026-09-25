@@ -12,12 +12,18 @@ import '../../utils/page_style_helper.dart';
 import '../../widgets/premium_card_style.dart';
 import '../../widgets/app_brand_icon.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import 'account_page.dart';
 import 'premium_policy_page.dart';
 
 class PremiumMembershipPage extends StatefulWidget {
-  const PremiumMembershipPage({super.key, required this.account});
+  const PremiumMembershipPage({
+    super.key,
+    required this.account,
+    this.focusBilling = false,
+  });
 
   final MemberAccountController account;
+  final bool focusBilling;
 
   @override
   State<PremiumMembershipPage> createState() => _PremiumMembershipPageState();
@@ -26,6 +32,7 @@ class PremiumMembershipPage extends StatefulWidget {
 class _PremiumMembershipPageState extends State<PremiumMembershipPage>
     with WidgetsBindingObserver {
   final _redemptionCode = TextEditingController();
+  final _billingKey = GlobalKey();
   late final _changes = Listenable.merge([
     widget.account,
     widget.account.applePurchase,
@@ -41,6 +48,14 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
     WidgetsBinding.instance.addObserver(this);
     if (_usesAppleBilling && widget.account.isAuthenticated) {
       unawaited(widget.account.applePurchase.initialize());
+    }
+    if (widget.focusBilling) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final billingContext = _billingKey.currentContext;
+        if (mounted && billingContext != null) {
+          Scrollable.ensureVisible(billingContext, alignment: 0.05);
+        }
+      });
     }
   }
 
@@ -96,6 +111,15 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
       _redemptionCode.clear();
       if (mounted) _showMessage(context.l10n.premiumPurchaseSuccess);
     });
+  }
+
+  Future<void> _openSignIn() async {
+    await Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute(builder: (_) => const AccountPage()));
+    if (mounted && _usesAppleBilling && widget.account.isAuthenticated) {
+      unawaited(widget.account.applePurchase.initialize());
+    }
   }
 
   Future<void> _openUrl(
@@ -206,9 +230,15 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                             ? l10n.premiumAccountBindingTitle
                             : l10n.premiumBillingTitle,
                         [
-                          if (!account.isAuthenticated)
-                            Text(l10n.premiumSignInRequired)
-                          else if (_usesAppleBilling) ...[
+                          if (!account.isAuthenticated) ...[
+                            Text(l10n.premiumSignInRequired),
+                            const SizedBox(height: 12),
+                            FilledButton(
+                              key: const ValueKey('premium-sign-in'),
+                              onPressed: _openSignIn,
+                              child: Text(l10n.accountSignIn),
+                            ),
+                          ] else if (_usesAppleBilling) ...[
                             if (!premium ||
                                 account.membership?.premiumExpiresAt !=
                                     null) ...[
@@ -347,6 +377,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                             ),
                           ],
                         ],
+                        key: _billingKey,
                       ),
                     const SizedBox(height: 22),
                     if (!premium)
@@ -554,9 +585,10 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
     );
   }
 
-  Widget _section(String title, List<Widget> children) {
+  Widget _section(String title, List<Widget> children, {Key? key}) {
     final colors = Theme.of(context).colorScheme;
     return DecoratedBox(
+      key: key,
       decoration: BoxDecoration(
         color: PageStyleHelper.palette(context).card,
         border: Border.all(

@@ -27,7 +27,7 @@ env:
   FLUTTER_VERSION: "3.44.4"
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
   INCLUDE_MACOS: ${{ vars.MACOS_RELEASE_ENABLED == 'true' && 'true' || 'false' }}
-  PUBLIC_RELEASE_REPOSITORY: "miloquinn/origo-x"
+  PUBLIC_RELEASE_REPOSITORY: "miloquinn/origo-x-neo"
   PUBLIC_RELEASE_TARGET: "main"
 
 jobs:
@@ -221,12 +221,14 @@ jobs:
           chmod 600 "$keystore_path"
           echo "ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
 
-      - name: Build release APKs
+      - name: Build release APKs and Play bundle
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: flutter build apk --release --split-per-abi
+        run: |
+          flutter build apk --release --split-per-abi
+          flutter build appbundle --release
 
       - name: Verify APK signing identity
         shell: bash
@@ -271,6 +273,20 @@ jobs:
               <<< "$certificate_report"
           done
 
+          bundle="build/app/outputs/bundle/release/app-release.aab"
+          jarsigner -verify "$bundle" >/dev/null
+          bundle_digest="$(
+            keytool -printcert -jarfile "$bundle" \
+              | sed -n 's/^[[:space:]]*SHA256: //p' \
+              | head -n 1 \
+              | tr -d ':' \
+              | tr '[:upper:]' '[:lower:]'
+          )"
+          if [[ -z "$bundle_digest" || "$bundle_digest" != "$expected_digest" ]]; then
+            echo "::error::Android App Bundle signing certificate does not match the release key."
+            exit 1
+          fi
+
       - name: Name Android packages
         shell: bash
         run: |
@@ -283,6 +299,8 @@ jobs:
             "release-assets/OrigoReader-Android-armeabi-v7a-${version}.apk"
           cp build/app/outputs/flutter-apk/app-x86_64-release.apk \
             "release-assets/OrigoReader-Android-x86_64-${version}.apk"
+          cp build/app/outputs/bundle/release/app-release.aab \
+            "release-assets/OrigoReader-Android-Play-${version}.aab"
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -1156,7 +1174,7 @@ jobs:
 
           | 平台 | 下载 |
           | --- | --- |
-          | Android | [![Android APK ARM64-v8a](https://img.shields.io/badge/Android-APK%20ARM64--v8a-3DDC84?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-arm64-v8a-${version}.apk) [![Android APK ARMv7](https://img.shields.io/badge/Android-APK%20ARMv7-69C36D?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-armeabi-v7a-${version}.apk) [![Android APK x86_64](https://img.shields.io/badge/Android-APK%20x86__64-8BC34A?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-x86_64-${version}.apk) |
+          | Android | [![Android APK ARM64-v8a](https://img.shields.io/badge/Android-APK%20ARM64--v8a-3DDC84?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-arm64-v8a-${version}.apk) [![Android APK ARMv7](https://img.shields.io/badge/Android-APK%20ARMv7-69C36D?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-armeabi-v7a-${version}.apk) [![Android APK x86_64](https://img.shields.io/badge/Android-APK%20x86__64-8BC34A?logo=android&logoColor=white)](${release_url}/OrigoReader-Android-x86_64-${version}.apk) [![Google Play AAB](https://img.shields.io/badge/Google%20Play-AAB-4285F4?logo=googleplay&logoColor=white)](${release_url}/OrigoReader-Android-Play-${version}.aab) |
           ${ios_download_row}
           | Web | [![Origo X Platform](https://img.shields.io/badge/Web-在线阅读-287FCD?logo=googlechrome&logoColor=white)](https://read.xxread.top/) |
           ${macos_download_row}

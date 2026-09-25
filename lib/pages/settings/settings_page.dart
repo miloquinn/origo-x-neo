@@ -47,6 +47,7 @@ import 'package:xxread/widgets/accent_color_picker_sheet.dart';
 import 'package:xxread/widgets/developer_support_card.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
 import 'package:xxread/widgets/settings_account_card.dart';
+import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/side_toast.dart';
 import 'package:xxread/widgets/update_check_gate.dart';
 
@@ -56,6 +57,9 @@ import 'custom_fonts_page.dart';
 part 'parts/settings_appearance_part.dart';
 part 'parts/settings_about_part.dart';
 part 'parts/settings_layout_part.dart';
+part 'parts/settings_hub_part.dart';
+
+enum SettingsCategory { preferences, dataSync, contentServices, aboutSupport }
 
 class SettingsPageController extends ChangeNotifier {
   int _supportRevealRequest = 0;
@@ -72,12 +76,14 @@ class SettingsPage extends StatefulWidget {
   const SettingsPage({
     super.key,
     this.controller,
+    this.category,
     this.cacheManager,
     this.preferencesStore,
     this.aiService,
   });
 
   final SettingsPageController? controller;
+  final SettingsCategory? category;
   final AppCacheManager? cacheManager;
   final SettingsPagePreferencesStore? preferencesStore;
   final ConfigurableAIService? aiService;
@@ -88,7 +94,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey _supportSectionKey = GlobalKey();
   late final AppCacheManager _cacheManager;
   late final SettingsPagePreferencesStore _preferencesStore;
   late final ConfigurableAIService _aiService;
@@ -100,6 +105,7 @@ class _SettingsPageState extends State<SettingsPage> {
   // 阅读设置
   bool _enableVolumeKeyTurn = false;
   bool _autoResumeReading = false;
+  bool _closeReaderToLibrary = false;
   ReaderTopBarStyle _readerTopBarStyle = ReaderTopBarStyle.reader;
 
   bool _enableAutoExtractCover = true;
@@ -130,9 +136,16 @@ class _SettingsPageState extends State<SettingsPage> {
         widget.preferencesStore ??
         SharedPreferencesSettingsPagePreferencesStore();
     _aiService = widget.aiService ?? ReaderHttpAIService();
-    unawaited(_loadAppVersion());
-    unawaited(_refreshCacheUsage());
-    _loadSettings();
+    if (widget.category == SettingsCategory.aboutSupport) {
+      unawaited(_loadAppVersion());
+    }
+    if (widget.category == SettingsCategory.dataSync) {
+      unawaited(_refreshCacheUsage());
+    }
+    if (widget.category == SettingsCategory.preferences ||
+        widget.category == SettingsCategory.contentServices) {
+      _loadSettings();
+    }
     _attachSettingsController(widget.controller);
   }
 
@@ -162,28 +175,8 @@ class _SettingsPageState extends State<SettingsPage> {
   void _scheduleSupportSectionReveal() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final sectionContext = _supportSectionKey.currentContext;
-      if (sectionContext == null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _revealSupportSection();
-        });
-        return;
-      }
-      _revealSupportSection();
+      _openCategory(SettingsCategory.aboutSupport);
     });
-  }
-
-  void _revealSupportSection() {
-    final sectionContext = _supportSectionKey.currentContext;
-    if (sectionContext == null) return;
-    unawaited(
-      Scrollable.ensureVisible(
-        sectionContext,
-        alignment: 0.12,
-        duration: const Duration(milliseconds: 620),
-        curve: Curves.easeInOutCubic,
-      ),
-    );
   }
 
   @override
@@ -206,6 +199,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _enableAutoExtractCover = preferences.enableAutoExtractCover;
       _enableVolumeKeyTurn = preferences.enableVolumeKeyTurn;
       _autoResumeReading = preferences.autoResumeReading;
+      _closeReaderToLibrary = preferences.closeReaderToLibrary;
       _readerTopBarStyle = preferences.readerTopBarStyle;
       _enableFullscreen = preferences.enableFullscreen;
       _enableDeveloperMode = preferences.enableDeveloperMode;
@@ -277,6 +271,7 @@ class _SettingsPageState extends State<SettingsPage> {
         enableAutoExtractCover: _enableAutoExtractCover,
         enableVolumeKeyTurn: _enableVolumeKeyTurn,
         autoResumeReading: _autoResumeReading,
+        closeReaderToLibrary: _closeReaderToLibrary,
         readerTopBarStyle: _readerTopBarStyle,
         enableFullscreen: _enableFullscreen,
         enableDeveloperMode: _enableDeveloperMode,
@@ -337,8 +332,14 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
     final appSettings = Provider.of<AppSettingsNotifier>(context);
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final isMaterial3Style = themeNotifier.uiStyle == AppUiStyle.material3;
+
+    if (widget.category != null) {
+      return FloatingSubpageScaffold(
+        title: _categoryTitle(context.l10n, widget.category!),
+        body: _buildCategoryContent(themeNotifier, appSettings),
+      );
+    }
 
     // 检查是否在侧边导航栏模式下
     final navContext = NavigationContext.of(context);
@@ -346,7 +347,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     // 在侧边导航栏模式下，不显示 Scaffold 和 AppBar
     if (useRailNavigation) {
-      return _buildContent(context, themeNotifier, appSettings, isDarkMode);
+      return _buildContent(context);
     }
 
     // 手机模式：显示完整的 Scaffold + AppBar
@@ -363,19 +364,13 @@ class _SettingsPageState extends State<SettingsPage> {
           Theme.of(context).brightness,
         ),
       ),
-      body: _buildContent(context, themeNotifier, appSettings, isDarkMode),
+      body: _buildContent(context),
     );
   }
 
   // 提取页面内容部分，在两种模式下共用
-  Widget _buildContent(
-    BuildContext context,
-    ThemeNotifier themeNotifier,
-    AppSettingsNotifier appSettings,
-    bool isDarkMode,
-  ) {
+  Widget _buildContent(BuildContext context) {
     final l10n = context.l10n;
-    final webDavSync = Provider.of<WebDavBackupController>(context);
     final useRailNavigation =
         NavigationContext.of(context)?.useRailNavigation ?? false;
     final useTabletLayout = LayoutHelper.usesTabletLayout(context);
@@ -418,23 +413,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   alignment: Alignment.topCenter,
                   child: SizedBox(
                     width: availableWidth,
-                    child: _buildSettingsLayout(
-                      l10n: l10n,
-                      themeNotifier: themeNotifier,
-                      appSettings: appSettings,
-                      webDavSync: webDavSync,
-                      useRailNavigation: useRailNavigation,
-                    ),
+                    child: _buildMyPageWide(l10n),
                   ),
                 )
               else
-                ..._buildSettingsSingleColumnChildren(
-                  l10n: l10n,
-                  themeNotifier: themeNotifier,
-                  appSettings: appSettings,
-                  webDavSync: webDavSync,
-                  useRailNavigation: useRailNavigation,
-                ),
+                ..._buildMyPageSingleColumn(l10n),
             ],
           );
         },

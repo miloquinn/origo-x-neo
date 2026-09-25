@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -450,6 +451,85 @@ void main() {
       tester,
       find.byKey(const ValueKey('native-reader-content')),
     );
+  });
+
+  testWidgets('applies reader system UI before revealing the first text page', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final applyStarted = Completer<void>();
+    final finishApply = Completer<void>();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(fullscreenChannel, (call) async {
+          if (call.method == 'hideSystemUI') {
+            if (!applyStarted.isCompleted) applyStarted.complete();
+            await finishApply.future;
+          }
+          return null;
+        });
+
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NativeReaderPage(
+            replaceRuleService: replaceRuleService,
+            book: Book(
+              title: 'Stable opening geometry',
+              filePath: bookFile.path,
+              format: 'txt',
+              textEncoding: 'utf8',
+              fileModifiedTime: bookFile
+                  .lastModifiedSync()
+                  .millisecondsSinceEpoch,
+            ),
+          ),
+        ),
+      );
+      await tester.runAsync(() async {
+        for (var attempt = 0; attempt < 30; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+          if (applyStarted.isCompleted) return;
+        }
+      });
+      expect(applyStarted.isCompleted, isTrue);
+      await tester.runAsync(() async {
+        for (var attempt = 0; attempt < 30; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+          if (find
+              .byKey(const ValueKey('native-reader-content'))
+              .evaluate()
+              .isNotEmpty) {
+            break;
+          }
+        }
+      });
+      expect(find.byKey(const ValueKey('native-reader-content')), findsNothing);
+
+      finishApply.complete();
+      await tester.runAsync(() async {
+        for (var attempt = 0; attempt < 30; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+          if (find
+              .byKey(const ValueKey('native-reader-content'))
+              .evaluate()
+              .isNotEmpty) {
+            return;
+          }
+        }
+      });
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey('native-reader-content')),
+      );
+    } finally {
+      if (!finishApply.isCompleted) finishApply.complete();
+    }
   });
 
   testWidgets(

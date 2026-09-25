@@ -88,6 +88,23 @@ List<TxtChapterSection> parseTxtChapterSections(
   return chapters;
 }
 
+/// Parses TXT headings and bounds every resulting body section so reader
+/// pagination never has to lay out an entire heading-less book in one frame.
+List<TxtChapterSection> parseBoundedTxtChapterSections(
+  String text, {
+  required String fallbackTitle,
+  required String prefaceTitle,
+  int maxCharsPerSection = 32 * 1024,
+}) => splitOversizedTxtSections(
+  text,
+  parseTxtChapterSections(
+    text,
+    fallbackTitle: fallbackTitle,
+    prefaceTitle: prefaceTitle,
+  ),
+  maxCharsPerSection: maxCharsPerSection,
+);
+
 /// Breaks every oversized TXT chapter into bounded lazy-load sections.
 ///
 /// Without this guard, either a heading-less 70 MB document or one unusually

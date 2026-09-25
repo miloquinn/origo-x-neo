@@ -14,7 +14,7 @@ import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:path/path.dart' as path;
 
-const int epubNativeCacheVersion = 4;
+const int epubNativeCacheVersion = 6;
 
 Map<String, dynamic> extractEpubNativeMetadata(Map<String, dynamic> arguments) {
   final epubPath = arguments['epubPath'] as String;
@@ -443,7 +443,11 @@ Map<String, dynamic> loadEpubNativeChapterWindow(
           .join('|');
       final parsedStyles = parsedStylesByKey.putIfAbsent(
         styleKey,
-        () => _parseStyleSources(stylesheets, familyPrefix: familyPrefix),
+        () => _parseStyleSources(
+          stylesheets,
+          familyPrefix: familyPrefix,
+          availablePaths: files.keys.toSet(),
+        ),
       );
       final parsedChapter = _parseChapterDocument(
         chapter,
@@ -827,6 +831,7 @@ List<_StyleSource> _stylesheetsForDocument({
 _ParsedStyles _parseStyleSources(
   List<_StyleSource> sources, {
   required String familyPrefix,
+  required Set<String> availablePaths,
 }) {
   final rules = <_CssRule>[];
   final fontFaces = <String, _FontFace>{};
@@ -841,18 +846,32 @@ _ParsedStyles _parseStyleSources(
     for (final match in fontFacePattern.allMatches(css)) {
       final declarations = _declarations(match.group(1) ?? '');
       final alias = _firstFontFamily(declarations['font-family']);
-      final sourceValue = declarations['src'];
-      final url = sourceValue == null
-          ? null
-          : RegExp(r'url\(\s*([^)]+?)\s*\)', caseSensitive: false)
-                .firstMatch(sourceValue)
-                ?.group(1)
-                ?.replaceAll(RegExp(r'''^['"]|['"]$'''), '');
-      if (alias == null || url == null || _isExternalResource(url)) continue;
-      final registered = 'epub_${familyPrefix}_${_identifier(alias)}';
+      if (alias == null) continue;
+      String? archivePath;
+      for (final sourceMatch in RegExp(
+        r'url\(\s*([^)]+?)\s*\)',
+        caseSensitive: false,
+      ).allMatches(declarations['src'] ?? '')) {
+        final url = sourceMatch
+            .group(1)!
+            .trim()
+            .replaceAll(RegExp(r'''^['"]|['"]$'''), '');
+        if (_isExternalResource(url)) continue;
+        final candidate = _resolveArchivePath(source.archivePath, url);
+        if (availablePaths.contains(candidate)) {
+          archivePath = candidate;
+          break;
+        }
+      }
+      if (archivePath == null) continue;
+      final fontId = sha1
+          .convert(utf8.encode(archivePath))
+          .toString()
+          .substring(0, 16);
+      final registered = 'epub_${familyPrefix}_$fontId';
       fontFaces[alias.toLowerCase()] = _FontFace(
         registeredFamily: registered,
-        archivePath: _resolveArchivePath(source.archivePath, url),
+        archivePath: archivePath,
       );
     }
     css = css.replaceAll(fontFacePattern, '');
@@ -1421,9 +1440,31 @@ class _EpubTextStyle {
       nextItalic = true;
     }
     var nextFamily = fontFamily;
-    final family = _firstFontFamily(declarations['font-family']);
-    if (family != null) {
-      nextFamily = fontFaces[family.toLowerCase()]?.registeredFamily ?? family;
+    final familyDeclaration = declarations['font-family'];
+    if (familyDeclaration != null) {
+      nextFamily = null;
+      for (final rawFamily in familyDeclaration.split(',')) {
+        final family = rawFamily
+            .trim()
+            .replaceAll(RegExp(r'''^['"]|['"]$'''), '')
+            .trim();
+        if (family.isEmpty) continue;
+        final embedded = fontFaces[family.toLowerCase()];
+        if (embedded != null) {
+          nextFamily = embedded.registeredFamily;
+          break;
+        }
+        if (const <String>{
+          'serif',
+          'sans-serif',
+          'monospace',
+          'cursive',
+          'fantasy',
+        }.contains(family.toLowerCase())) {
+          nextFamily = family.toLowerCase();
+          break;
+        }
+      }
     }
     return _EpubTextStyle(
       fontScale: nextScale,

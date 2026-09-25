@@ -6,7 +6,7 @@ import 'package:path/path.dart' as path;
 
 import '../core/cache_disk_budget.dart';
 
-/// Owns derived TXT/EPUB resources. A lazy reader must retain its resource group
+/// Owns derived TXT/EPUB/Kindle resources. A lazy reader retains its resource group
 /// until it closes; clearing an open book defers only that group's deletion.
 class NativeReaderCacheStore {
   NativeReaderCacheStore({this.maxDiskBytes = 512 * 1024 * 1024});

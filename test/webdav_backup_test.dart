@@ -535,6 +535,8 @@ void main() {
       );
       expect((await controller.testConnection(draft)).success, isTrue);
       await controller.configure(draft);
+      await controller.prepareDefaultBookSelection();
+      expect(controller.selection.bookIds, contains(1));
       expect(
         server.puts,
         1,
@@ -559,9 +561,19 @@ void main() {
       await controller.backup();
       await controller.refresh();
       expect(controller.backups, hasLength(2));
+      controller.setSelection(const BackupSelection());
+      await controller.prepareDefaultBookSelection();
+      expect(controller.selection.bookIds, isEmpty);
+      await File('${documents.path}/books/book.txt').delete();
       controller.restoreSelection = const RestoreSelection(overwrite: true);
       await controller.restore(controller.backups.last);
       expect((await db.query('books')).single['currentPage'], 4);
+      final restoredBookPath =
+          (await db.query('books')).single['filePath'] as String;
+      expect(
+        await File('${documents.path}/$restoredBookPath').readAsString(),
+        '原始正文\n第二章',
+      );
       expect(await File(controller.recoveryPath!).exists(), isTrue);
       expect(
         server.requests.any(
@@ -573,7 +585,7 @@ void main() {
         isFalse,
       );
       final incomplete = File(
-        '${server.root.path}/OrigoReader/backups/origo-x-123-abcdef.zip',
+        '${server.root.path}/OrigoX/backups/origo-x-123-abcdef.zip',
       );
       await incomplete.writeAsString('partial');
       await controller.refresh();

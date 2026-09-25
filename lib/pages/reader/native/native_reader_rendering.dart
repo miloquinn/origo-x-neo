@@ -338,8 +338,8 @@ extension _NativeReaderRendering on _NativeReaderPageState {
         ),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: readerMaxTextContentWidth,
+            constraints: BoxConstraints(
+              maxWidth: readerTextContentMaxWidth(_horizontalMargin),
             ),
             child: SizedBox.expand(
               child: _buildPage(

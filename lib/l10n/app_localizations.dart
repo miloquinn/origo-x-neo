@@ -419,6 +419,174 @@ abstract class AppLocalizations {
   /// **'Changed source to {source}'**
   String bookSourceChangeSuccess(String source);
 
+  /// No description provided for @bookSourceChangeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm source change'**
+  String get bookSourceChangeConfirmTitle;
+
+  /// No description provided for @bookSourceChangeQuickProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick search: {completed}/{batch} · {total} sources available'**
+  String bookSourceChangeQuickProgress(int completed, int batch, int total);
+
+  /// No description provided for @bookSourceChangeStopSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop searching'**
+  String get bookSourceChangeStopSearch;
+
+  /// No description provided for @bookSourceChangeLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load sources'**
+  String get bookSourceChangeLoadFailed;
+
+  /// No description provided for @bookSourceChangeLoadFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get bookSourceChangeLoadFailedHint;
+
+  /// No description provided for @bookSourceChangeChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking this source'**
+  String get bookSourceChangeChecking;
+
+  /// No description provided for @bookSourceChangeCheckingPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your current position…'**
+  String get bookSourceChangeCheckingPosition;
+
+  /// No description provided for @bookSourceChangeCheckingDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading book details…'**
+  String get bookSourceChangeCheckingDetail;
+
+  /// No description provided for @bookSourceChangeCheckingCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the chapter list…'**
+  String get bookSourceChangeCheckingCatalog;
+
+  /// No description provided for @bookSourceChangeCheckingContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the current chapter…'**
+  String get bookSourceChangeCheckingContent;
+
+  /// No description provided for @bookSourceChangeSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'This source is responding slowly. You can cancel and try another.'**
+  String get bookSourceChangeSlow;
+
+  /// No description provided for @bookSourceChangeCheckTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'The check timed out. Try again or choose another source.'**
+  String get bookSourceChangeCheckTimedOut;
+
+  /// No description provided for @bookSourceChangeCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not verify this source. Try again or choose another.'**
+  String get bookSourceChangeCheckFailed;
+
+  /// No description provided for @bookSourceChangeCommitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not finish changing the source. Check your bookshelf before retrying.'**
+  String get bookSourceChangeCommitFailed;
+
+  /// No description provided for @bookSourceChangeReaderOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The source changed, but this chapter could not be opened. Try again or return to your bookshelf.'**
+  String get bookSourceChangeReaderOpenFailed;
+
+  /// No description provided for @bookSourceChangeReadingPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading position'**
+  String get bookSourceChangeReadingPosition;
+
+  /// No description provided for @bookSourceChangeOriginalChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Current: chapter {number} · {title}'**
+  String bookSourceChangeOriginalChapter(int number, String title);
+
+  /// No description provided for @bookSourceChangeNewChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'New: chapter {number} · {title}'**
+  String bookSourceChangeNewChapter(int number, String title);
+
+  /// No description provided for @bookSourceChangeMappingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched by chapter title'**
+  String get bookSourceChangeMappingTitle;
+
+  /// No description provided for @bookSourceChangeMappingNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched by chapter number; please check the position'**
+  String get bookSourceChangeMappingNumber;
+
+  /// No description provided for @bookSourceChangeMappingManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter chosen by you'**
+  String get bookSourceChangeMappingManual;
+
+  /// No description provided for @bookSourceChangeMappingEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated from chapter position'**
+  String get bookSourceChangeMappingEstimate;
+
+  /// No description provided for @bookSourceChangeMappingNeedsChoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the chapter before switching; the estimate may be wrong.'**
+  String get bookSourceChangeMappingNeedsChoice;
+
+  /// No description provided for @bookSourceChangePositionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your previous reading position is unavailable. Choose the chapter to open.'**
+  String get bookSourceChangePositionUnavailable;
+
+  /// No description provided for @bookSourceChangeChooseChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a chapter'**
+  String get bookSourceChangeChooseChapter;
+
+  /// No description provided for @bookSourceChangeLocalImpact.
+  ///
+  /// In en, this message translates to:
+  /// **'Your downloaded text and reading position stay unchanged. Only the source for future updates changes.'**
+  String get bookSourceChangeLocalImpact;
+
+  /// No description provided for @bookSourceChangeOnlineImpact.
+  ///
+  /// In en, this message translates to:
+  /// **'The bookshelf source and reading position will change. Your old source position remains saved.'**
+  String get bookSourceChangeOnlineImpact;
+
+  /// No description provided for @bookSourceChangeConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change to {source}'**
+  String bookSourceChangeConfirmAction(String source);
+
   /// No description provided for @bookSourceChannelCount.
   ///
   /// In en, this message translates to:
@@ -1965,13 +2133,13 @@ abstract class AppLocalizations {
   /// Explains the scope of the reading font
   ///
   /// In en, this message translates to:
-  /// **'Used only for book text and chapter headings. It does not change the app interface.'**
+  /// **'Used for TXT and online books. EPUB has a separate font setting.'**
   String get readerFontDescription;
 
   /// Explains reader font selection and EPUB embedded-font behavior
   ///
   /// In en, this message translates to:
-  /// **'Choose the typeface used for reading. Platform Default keeps fonts embedded by EPUB publishers when available.'**
+  /// **'Choose the font for reading. EPUB offers the book font, the system font, and your installed fonts.'**
   String get readerFontSelectionDescription;
 
   /// Hint shown when the system reader font is selected
@@ -1985,6 +2153,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overrides fonts embedded by the publisher.'**
   String get readerFontOverrideHint;
+
+  /// No description provided for @fontBookEmbedded.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Embedded'**
+  String get fontBookEmbedded;
 
   /// System default font
   ///
@@ -4727,10 +4901,10 @@ abstract class AppLocalizations {
   /// **'Allow private-network sources'**
   String get settingsPrivateBookSourceNetworkTitle;
 
-  /// Warning that private-network book sources are an explicit opt-in
+  /// Warning that private-network book sources are enabled by default with Premium
   ///
   /// In en, this message translates to:
-  /// **'Allow book sources on this device, the local network, and other private addresses. Leave this off unless you trust the source.'**
+  /// **'Allow sources to access this device, the local network, and other private addresses. On by default with Premium; use only sources you trust.'**
   String get settingsPrivateBookSourceNetworkSubtitle;
 
   /// No description provided for @additionalSourcesImport.
@@ -8729,7 +8903,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsCacheReadingCacheSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Rebuildable EPUB/TXT parsing cache · {size}'**
+  /// **'Rebuildable EPUB/TXT/Kindle parsing cache · {size}'**
   String settingsCacheReadingCacheSubtitle(String size);
 
   /// No description provided for @settingsCacheTemporaryFiles.
@@ -11087,7 +11261,7 @@ abstract class AppLocalizations {
   /// After unlocking, enable these options in Settings → Advanced features.
   ///
   /// In en, this message translates to:
-  /// **'After unlocking, enable these options in Settings → Advanced features.'**
+  /// **'Enabled by default after unlocking. You can turn them off in Settings → Advanced features.'**
   String get premiumSetupHint;
 
   /// Purchase details
@@ -12139,6 +12313,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download new chapters'**
   String get bookSourceContinueUpdate;
+
+  /// No description provided for @settingsCloseReaderToLibraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close reader to return to library'**
+  String get settingsCloseReaderToLibraryTitle;
+
+  /// No description provided for @settingsCloseReaderToLibrarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When a book is open, the window close button returns to the main window instead of quitting the app'**
+  String get settingsCloseReaderToLibrarySubtitle;
+
+  /// No description provided for @navMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get navMe;
+
+  /// No description provided for @settingsPreferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsPreferencesTitle;
+
+  /// No description provided for @settingsPreferencesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance, reading, language'**
+  String get settingsPreferencesSubtitle;
+
+  /// No description provided for @settingsManagementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings & management'**
+  String get settingsManagementTitle;
+
+  /// No description provided for @settingsDataSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV backup, cache'**
+  String get settingsDataSyncSubtitle;
+
+  /// No description provided for @settingsContentServicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content & services'**
+  String get settingsContentServicesTitle;
+
+  /// No description provided for @settingsContentServicesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources, AI, read aloud'**
+  String get settingsContentServicesSubtitle;
+
+  /// No description provided for @settingsAboutSupportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Version, updates, open source'**
+  String get settingsAboutSupportSubtitle;
+
+  /// No description provided for @settingsPremiumSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More source options and private network access'**
+  String get settingsPremiumSubtitle;
+
+  /// No description provided for @settingsGuestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get settingsGuestTitle;
+
+  /// No description provided for @settingsGuestSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local reading does not require an account'**
+  String get settingsGuestSubtitle;
+
+  /// No description provided for @settingsWebDavConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV backup configured'**
+  String get settingsWebDavConfigured;
+
+  /// No description provided for @settingsPremiumActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium active'**
+  String get settingsPremiumActive;
+
+  /// No description provided for @settingsPremiumSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not sync membership status'**
+  String get settingsPremiumSyncFailed;
+
+  /// No description provided for @settingsWebDavWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV is working'**
+  String get settingsWebDavWorking;
 }
 
 class _AppLocalizationsDelegate

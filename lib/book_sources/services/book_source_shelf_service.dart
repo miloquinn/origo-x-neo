@@ -25,6 +25,7 @@ import '../models/source_book_update_info.dart';
 import '../protocol/book_source_protocol.dart';
 import 'book_download_cancellation.dart';
 import 'book_source_client.dart';
+import 'book_source_reading_progress.dart';
 import 'source_chapter_state.dart';
 import '../caching/source_cover_cache.dart';
 
@@ -229,6 +230,7 @@ class BookSourceShelfService {
     required int chapterIndex,
     required int chapterCount,
     required double chapterProgress,
+    BookSourceReadingProgress? sourceProgress,
   }) async {
     if (shelfBook.id == null) {
       throw const BookSourceProtocolException(
@@ -239,12 +241,7 @@ class BookSourceShelfService {
         chapterIndex * unitsPerChapter +
         (chapterProgress.clamp(0, 1) * unitsPerChapter).round();
     final totalUnits = chapterCount * unitsPerChapter;
-    final coverPath =
-        book.coverUrl != null && !BookCoverEditService.hasCustomCover(shelfBook)
-        ? await _storedCoverPath(source, book)
-        : null;
     var updated = shelfBook.copyWith(
-      coverImagePath: coverPath,
       currentPage: shelfBook.isOnline ? currentUnits : shelfBook.currentPage,
       totalPages: shelfBook.isOnline ? totalUnits : shelfBook.totalPages,
       readingProgress: shelfBook.isOnline
@@ -266,35 +263,108 @@ class BookSourceShelfService {
     final oldState = shelfBook.isOnline
         ? null
         : await _sourceChapterStateStore.load(shelfBook);
+    updated = sourceProgress == null
+        ? await _bookDao.updateSourceBinding(shelfBook, updated)
+        : await _bookDao.updateSourceBindingWithProgress(
+            shelfBook,
+            updated,
+            progress: sourceProgress,
+          );
     if (oldState != null) {
-      await _sourceChapterStateStore.save(
-        updated,
-        oldState.copyWith(
-          sourceId: source.id,
-          sourceBookId: book.id,
-          baselineKnown: false,
-          chapters: const [],
-          catalogChapterIds: const [],
-          revisionOrigin: SourceRevisionOrigin.sourceRebind,
-        ),
-      );
+      try {
+        await _sourceChapterStateStore.save(
+          updated,
+          _reboundSourceState(
+            oldState,
+            sourceId: source.id,
+            sourceBookId: book.id,
+          ),
+        );
+      } catch (_) {
+        // The database binding is authoritative. A later sidecar read repairs
+        // the stale binding idempotently from the committed shelf record.
+      }
     }
     try {
-      updated = await _bookDao.updateSourceBinding(shelfBook, updated);
-    } catch (_) {
-      if (oldState != null) {
-        await _sourceChapterStateStore.save(shelfBook, oldState);
+      if (!shelfBook.isOnline) {
+        final hash = await SourceChapterStateStore.hashFile(
+          File(updated.filePath),
+        );
+        _notifySourceSidecarChanged(updated, hash);
       }
-      rethrow;
+      LibraryEventBus().notifyLibraryChanged();
+    } catch (_) {
+      // The binding is already committed. Hashing and notifications are
+      // non-critical follow-up work and must not report the change as failed.
     }
-    if (!shelfBook.isOnline) {
-      final hash = await SourceChapterStateStore.hashFile(
-        File(updated.filePath),
+    if (!BookCoverEditService.hasCustomCover(shelfBook)) {
+      unawaited(
+        _persistReboundCover(source, book, updated.id!, updated.coverImagePath),
       );
-      _notifySourceSidecarChanged(updated, hash);
     }
-    LibraryEventBus().notifyLibraryChanged();
     return updated;
+  }
+
+  /// Reconciles a downloaded book's sidecar with its committed database
+  /// binding. This is safe to call repeatedly and repairs a process exit or
+  /// I/O failure between the database commit and the best-effort sidecar save.
+  Future<SourceChapterState?> recoverDownloadedSourceBinding(
+    Book shelfBook,
+  ) async {
+    final state = await _sourceChapterStateStore.load(shelfBook);
+    if (state == null || shelfBook.isOnline) return state;
+    final sourceId = shelfBook.sourceId?.trim();
+    final sourceBookId = shelfBook.sourceBookId?.trim();
+    if (sourceId == null ||
+        sourceId.isEmpty ||
+        sourceBookId == null ||
+        sourceBookId.isEmpty ||
+        (state.sourceId == sourceId && state.sourceBookId == sourceBookId)) {
+      return state;
+    }
+    final repaired = _reboundSourceState(
+      state,
+      sourceId: sourceId,
+      sourceBookId: sourceBookId,
+    );
+    await _sourceChapterStateStore.save(shelfBook, repaired);
+    return repaired;
+  }
+
+  SourceChapterState _reboundSourceState(
+    SourceChapterState state, {
+    required String sourceId,
+    required String sourceBookId,
+  }) => state.copyWith(
+    sourceId: sourceId,
+    sourceBookId: sourceBookId,
+    baselineKnown: false,
+    chapters: const [],
+    catalogChapterIds: const [],
+    conflicts: const [],
+    revisionOrigin: SourceRevisionOrigin.sourceRebind,
+  );
+
+  Future<void> _persistReboundCover(
+    RegisteredBookSource source,
+    BookSourceBook book,
+    int shelfBookId,
+    String? expectedCoverImagePath,
+  ) async {
+    try {
+      final coverPath = await _storedCoverPath(source, book);
+      if (coverPath == null) return;
+      final applied = await _bookDao.updateBookCoverPathIfSource(
+        bookId: shelfBookId,
+        sourceId: source.id,
+        sourceBookId: book.id,
+        expectedCoverImagePath: expectedCoverImagePath,
+        coverImagePath: coverPath,
+      );
+      if (applied) LibraryEventBus().notifyLibraryChanged();
+    } catch (_) {
+      // A source change is complete even when its non-critical cover fails.
+    }
   }
 
   Future<Book> downloadToLocal({
@@ -598,7 +668,7 @@ class BookSourceShelfService {
         'Source updates require a downloaded TXT book.',
       );
     }
-    var state = await _sourceChapterStateStore.load(shelfBook);
+    var state = await recoverDownloadedSourceBinding(shelfBook);
     final actualHash = await SourceChapterStateStore.hashFile(file);
     if (state == null) {
       return SourceUpdateResult(
@@ -989,7 +1059,7 @@ class BookSourceShelfService {
     required String conflictId,
     required SourceConflictResolution resolution,
   }) async {
-    final state = await _sourceChapterStateStore.load(shelfBook);
+    final state = await recoverDownloadedSourceBinding(shelfBook);
     if (state == null) throw StateError('Source chapter state is missing');
     final conflictIndex = state.conflicts.indexWhere(
       (value) => value.id == conflictId,
@@ -1056,7 +1126,7 @@ class BookSourceShelfService {
   }) async {
     // Prefix boundaries describe the file on disk, not the next revision.
     final previousState =
-        await _sourceChapterStateStore.load(shelfBook) ?? state;
+        await recoverDownloadedSourceBinding(shelfBook) ?? state;
     final content = await _materializeWithPreservedPrefix(
       shelfBook,
       previousState,

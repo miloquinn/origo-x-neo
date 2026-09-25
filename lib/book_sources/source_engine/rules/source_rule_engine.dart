@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 
@@ -314,7 +316,7 @@ class SourceRuleEngine implements SourceRuleSelectorPort {
     );
     final usedState = expandedState != normalized;
     normalized = expandedState;
-    final root = context ?? document.value;
+    final root = _structuredRuleRoot(context ?? document.value);
     if (root is SourceRegexRuleContext) return [root.expand(normalized)];
     if (normalized.contains('{{')) {
       return [_interpolation(document).interpolate(normalized, root)];
@@ -359,7 +361,7 @@ class SourceRuleEngine implements SourceRuleSelectorPort {
     );
     final usedState = expandedState != normalized;
     normalized = expandedState;
-    final root = context ?? document.value;
+    final root = _structuredRuleRoot(context ?? document.value);
     if (root is SourceRegexRuleContext) return [root.expand(normalized)];
     if (normalized.contains('{{')) {
       return [
@@ -397,6 +399,18 @@ class SourceRuleEngine implements SourceRuleSelectorPort {
       normalized = normalized.substring(1).trimLeft();
     }
     return normalized;
+  }
+
+  Object? _structuredRuleRoot(Object? value) {
+    if (value is! String) return value;
+    final text = value.trimLeft();
+    if (!text.startsWith('{') && !text.startsWith('[')) return value;
+    try {
+      final decoded = jsonDecode(text);
+      return decoded is Map || decoded is List ? decoded : value;
+    } on FormatException {
+      return value;
+    }
   }
 
   List<Element>? _htmlRoots(Object? root) {

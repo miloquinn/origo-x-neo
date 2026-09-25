@@ -353,6 +353,23 @@ extension _SettingsAppearancePart on _SettingsPageState {
     );
   }
 
+  Widget _buildEpubReaderFontSelector(AppSettingsNotifier appSettings) {
+    final l10n = context.l10n;
+    final selected = appSettings.epubReaderFont;
+    return _buildActionSetting(
+      title: '${l10n.readerFont} · EPUB',
+      subtitle:
+          '${FontCatalog.labelFor(l10n, selected)} · ${l10n.readerFontSelectionDescription}',
+      icon: Icons.menu_book_outlined,
+      onTap: () => _showFontModal(
+        appSettings: appSettings,
+        domain: FontDomain.epubReader,
+        title: '${l10n.readerFont} · EPUB',
+        description: l10n.readerFontSelectionDescription,
+      ),
+    );
+  }
+
   Widget _buildCustomFontsManager(AppSettingsNotifier appSettings) {
     final l10n = context.l10n;
     return _buildActionSetting(
@@ -531,8 +548,7 @@ extension _SettingsAppearancePart on _SettingsPageState {
                         trailing: appSettings.localeCode == option.code
                             ? Icon(
                                 Icons.check_circle,
-                                color:
-                                    Theme.of(context).colorScheme.primary,
+                                color: Theme.of(context).colorScheme.primary,
                               )
                             : null,
                         onTap: () {

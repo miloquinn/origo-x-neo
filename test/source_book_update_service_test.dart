@@ -9,6 +9,7 @@ import 'package:xxread/book_sources/services/source_book_update_service.dart';
 import 'package:xxread/book_sources/services/source_chapter_state.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/book_dao.dart';
+import 'package:xxread/services/library/library_event_bus_service.dart';
 
 final _now = DateTime.utc(2026, 9, 16, 12);
 final _oldDate = DateTime.utc(2026, 9, 15, 12);
@@ -189,6 +190,38 @@ void main() {
       expect((jsonDecode(result.sourceBookJson!) as Map)['sourceVariables'], {
         'token': 'keep',
       });
+    },
+  );
+  test(
+    'catalog checks emit metadata changes without full-library events',
+    () async {
+      final original = _book();
+      final dao = _Dao(original);
+      var genericEvents = 0;
+      final metadataEvents = <LibrarySourceMetadataChange>[];
+      final bus = LibraryEventBus();
+      final genericSubscription = bus.stream.listen((_) => genericEvents++);
+      final metadataSubscription = bus.sourceMetadataStream.listen(
+        metadataEvents.add,
+      );
+      addTearDown(genericSubscription.cancel);
+      addTearDown(metadataSubscription.cancel);
+      final service = SourceBookUpdateService(
+        bookDao: dao,
+        shelfServiceFactory: () => _Shelf(() async => _catalog(2)),
+        now: () => _now,
+      );
+
+      await service.check(original);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(genericEvents, 0);
+      expect(metadataEvents, hasLength(1));
+      expect(
+        metadataEvents.single.previous.sourceBookJson,
+        original.sourceBookJson,
+      );
+      expect(metadataEvents.single.sourceBookJson, dao.book!.sourceBookJson);
     },
   );
   test(

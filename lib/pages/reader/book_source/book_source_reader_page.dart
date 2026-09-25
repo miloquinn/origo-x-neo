@@ -9,6 +9,7 @@ import 'package:xxread/services/books/pagination_cache_dao.dart';
 import 'package:xxread/core/reader/reader_pagination_cache_codec.dart';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +38,7 @@ import 'package:xxread/core/reader/reader_leaf_status.dart';
 import 'package:xxread/core/reader/reader_layout.dart';
 import 'package:xxread/core/reader/reader_keep_screen_on.dart';
 import 'package:xxread/core/reader/reader_margin_settings.dart';
+import 'package:xxread/core/reader/reader_desktop_resize_controller.dart';
 import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/core/reader/reader_safe_area.dart';
 import 'package:xxread/core/reader/reader_settings.dart';
@@ -275,6 +277,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   bool _chapterTitlePageEnabled = true;
   Size _pagedViewportSize = Size.zero;
   Size _verticalViewportSize = Size.zero;
+  final ReaderDesktopResizeController _desktopResizeController =
+      ReaderDesktopResizeController();
   bool _exitPromptVisible = false;
   bool _allowPop = false;
   int? _shelfBookId;
@@ -534,8 +538,10 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   }
 
   void _syncCloudReading() {
-    if (_appLifecycleActive && _readingSessionStartedAt != null &&
-        _openingContentReadyScheduled && !_readerAloudActive &&
+    if (_appLifecycleActive &&
+        _readingSessionStartedAt != null &&
+        _openingContentReadyScheduled &&
+        !_readerAloudActive &&
         (ModalRoute.isCurrentOf(context) ?? true)) {
       _cloudRecorder.start();
     } else {
@@ -568,6 +574,7 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _desktopResizeController.dispose();
     _openingLoaderTimer?.cancel();
     _progressSaveTimer?.cancel();
     _controlsTimer?.cancel();

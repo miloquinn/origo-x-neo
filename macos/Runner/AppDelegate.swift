@@ -6,7 +6,7 @@ class AppDelegate: FlutterAppDelegate {
   private static let incomingChannelName = "com.niki.xxread/incoming_books"
   private static let maximumIncomingBookBytes: UInt64 = 100 * 1024 * 1024
   private static let maximumIncomingRequestBytes: UInt64 = 500 * 1024 * 1024
-  private static let maximumIncomingItems = 10
+  static let maximumIncomingItems = 10
   private static let requestManifestName = "request.json"
 
   private let incomingQueue = DispatchQueue(label: "com.niki.xxread.incoming-books")
@@ -51,18 +51,29 @@ class AppDelegate: FlutterAppDelegate {
       sender.reply(toOpenOrPrint: .failure)
       return
     }
+    enqueueIncomingFiles(filenames) { succeeded in
+      sender.reply(toOpenOrPrint: succeeded ? .success : .failure)
+    }
+  }
+
+  /// Stages files received from Finder or another desktop drag source, then
+  /// sends them through the same incoming-book queue as Finder's Open action.
+  func enqueueIncomingFiles(
+    _ filenames: [String],
+    completion: ((Bool) -> Void)? = nil
+  ) {
     incomingQueue.async { [weak self] in
       guard let self else { return }
       do {
         let request = try self.materializeIncomingFiles(filenames)
         DispatchQueue.main.async {
           self.deliverIncomingRequest(request)
-          sender.reply(toOpenOrPrint: .success)
+          completion?(true)
         }
       } catch {
         NSLog("Incoming book open failed: %@", String(describing: error))
         DispatchQueue.main.async {
-          sender.reply(toOpenOrPrint: .failure)
+          completion?(false)
         }
       }
     }
@@ -79,7 +90,7 @@ class AppDelegate: FlutterAppDelegate {
   private func materializeIncomingFiles(_ filenames: [String]) throws -> [String: Any] {
     let sourceURLs = filenames
       .map { URL(fileURLWithPath: $0).standardizedFileURL }
-      .filter { supportedExtension($0.pathExtension) }
+      .filter { Self.supportsIncomingBook($0.pathExtension) }
     guard sourceURLs.count <= Self.maximumIncomingItems else {
       throw IncomingBookError.tooManyFiles
     }
@@ -322,9 +333,13 @@ class AppDelegate: FlutterAppDelegate {
     return (result.isEmpty ? "book" : result) + suffix
   }
 
-  private func supportedExtension(_ raw: String) -> Bool {
-    let ext = raw.lowercased()
-    return ["txt", "epub"].contains(ext)
+  static func supportsIncomingBook(_ rawExtension: String) -> Bool {
+    let ext = rawExtension.lowercased()
+    return [
+      "txt", "epub", "pdf", "mobi", "azw", "azw3", "fb2", "rtf",
+      "doc", "docx", "html", "htm", "xhtml", "md", "markdown",
+      "cbz", "cbt", "cbr", "cb7",
+    ].contains(ext)
   }
 
   private func mimeType(for rawExtension: String) -> String {

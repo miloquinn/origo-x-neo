@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/book_sources/networking/book_source_network_policy.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 import 'package:xxread/utils/page_transitions.dart';
 
 Future<AppSettingsNotifier> _loadNotifier({PremiumTestAccount? account}) async {
@@ -58,42 +59,85 @@ void main() {
     expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isFalse);
   });
 
-  test('additional source protocols stay opt-in and persist', () async {
+  test(
+    'premium protocols default on and an explicit opt-out persists',
+    () async {
+      final account = PremiumTestAccount();
+      addTearDown(account.dispose);
+      final notifier = await _loadNotifier(account: account);
+      addTearDown(notifier.dispose);
+
+      expect(notifier.additionalSourceProtocolsEnabled, isTrue);
+      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isTrue);
+      await notifier.setAdditionalSourceProtocolsEnabled(false);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(additionalSourceProtocolsPreferenceKey), isFalse);
+      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isFalse);
+
+      final restored = await _loadNotifier(account: account);
+      addTearDown(restored.dispose);
+      expect(restored.additionalSourceProtocolsEnabled, isFalse);
+      account.setPremium(false);
+      account.setPremium(true);
+      expect(restored.additionalSourceProtocolsEnabled, isFalse);
+      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isFalse);
+    },
+  );
+
+  test('premium private network defaults on and opt-out persists', () async {
     final account = PremiumTestAccount();
     addTearDown(account.dispose);
     final notifier = await _loadNotifier(account: account);
     addTearDown(notifier.dispose);
 
-    expect(notifier.additionalSourceProtocolsEnabled, isFalse);
-    await notifier.setAdditionalSourceProtocolsEnabled(true);
+    expect(notifier.privateBookSourceNetworkEnabled, isTrue);
+    expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isTrue);
+    await notifier.setPrivateBookSourceNetworkEnabled(false);
 
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool(additionalSourceProtocolsPreferenceKey), isTrue);
-
-    final restored = await _loadNotifier(account: account);
-    addTearDown(restored.dispose);
-    expect(restored.additionalSourceProtocolsEnabled, isTrue);
-  });
-
-  test('private book-source network stays opt-in and persists', () async {
-    final account = PremiumTestAccount();
-    addTearDown(account.dispose);
-    final notifier = await _loadNotifier(account: account);
-    addTearDown(notifier.dispose);
-
-    expect(notifier.privateBookSourceNetworkEnabled, isFalse);
     expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isFalse);
-    await notifier.setPrivateBookSourceNetworkEnabled(true);
-
-    expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isTrue);
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool(privateBookSourceNetworkPreferenceKey), isTrue);
+    expect(prefs.getBool(privateBookSourceNetworkPreferenceKey), isFalse);
 
     final restored = await _loadNotifier(account: account);
     addTearDown(restored.dispose);
-    expect(restored.privateBookSourceNetworkEnabled, isTrue);
-    expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isTrue);
+    expect(restored.privateBookSourceNetworkEnabled, isFalse);
+    expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isFalse);
+    account.setPremium(false);
+    account.setPremium(true);
+    expect(restored.privateBookSourceNetworkEnabled, isFalse);
+    expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isFalse);
   });
+
+  test(
+    'upgrading enables absent preferences and revoking gates them',
+    () async {
+      final account = PremiumTestAccount(premium: false);
+      addTearDown(account.dispose);
+      final notifier = await _loadNotifier(account: account);
+      addTearDown(notifier.dispose);
+
+      expect(notifier.additionalSourceProtocolsEnabled, isFalse);
+      expect(notifier.privateBookSourceNetworkEnabled, isFalse);
+      account.setPremium(true);
+      expect(notifier.additionalSourceProtocolsEnabled, isTrue);
+      expect(notifier.privateBookSourceNetworkEnabled, isTrue);
+      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isTrue);
+      expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isTrue);
+
+      account.setPremium(false);
+      expect(notifier.additionalSourceProtocolsEnabled, isFalse);
+      expect(notifier.privateBookSourceNetworkEnabled, isFalse);
+      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isFalse);
+      expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isFalse);
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.containsKey(additionalSourceProtocolsPreferenceKey),
+        isFalse,
+      );
+      expect(prefs.containsKey(privateBookSourceNetworkPreferenceKey), isFalse);
+    },
+  );
 
   test(
     'saved advanced preferences require live membership and revoke immediately',

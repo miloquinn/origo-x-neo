@@ -219,27 +219,40 @@ extension _NativeReaderNavigation on _NativeReaderPageState {
       start += epubBatchSize
     ) {
       final end = math.min(start + epubBatchSize, _loadedChapters.length);
-      // Keep search-only EPUB content out of the reader's retained window.
+      // Keep search-only lazy chapter content out of the retained window.
       // These copies are released with the batch, including on cancellation.
       final batch = _loadedChapters
           .sublist(start, end)
           .map((chapter) {
-            if (!chapter.isLazyEpub ||
+            if ((!chapter.isLazyEpub && !chapter.isLazyKindle) ||
                 chapter.hasLoadedText ||
                 chapter.hasPendingLoad) {
               return chapter;
             }
-            return _NativeChapter.lazyEpub(
-              descriptor: chapter.epubDescriptor,
-              loadArguments: chapter.epubLoadArguments,
-              replaceBookTitle: chapter.replaceBookTitle,
-            )..applyPreparedTitle(chapter.title);
+            return (chapter.isLazyEpub
+                  ? _NativeChapter.lazyEpub(
+                      descriptor: chapter.epubDescriptor,
+                      loadArguments: chapter.epubLoadArguments,
+                      replaceBookTitle: chapter.replaceBookTitle,
+                    )
+                  : _NativeChapter.lazyKindle(
+                      descriptor: chapter.kindleDescriptor,
+                      loadArguments: chapter.kindleLoadArguments,
+                      replaceBookTitle: chapter.replaceBookTitle,
+                    ))
+              ..applyPreparedTitle(chapter.title);
           })
           .toList(growable: false);
       final epubChapters = batch
           .where((chapter) => chapter.isLazyEpub && !chapter.hasLoadedText)
           .toList(growable: false);
       if (epubChapters.isNotEmpty) await _loadEpubChapterBatch(epubChapters);
+      final kindleChapters = batch
+          .where((chapter) => chapter.isLazyKindle && !chapter.hasLoadedText)
+          .toList(growable: false);
+      if (kindleChapters.isNotEmpty) {
+        await _loadKindleChapterBatch(kindleChapters);
+      }
       for (var index = start; index < end; index++) {
         final chapter = batch[index - start];
         await chapter.prepareReplacementAsync(_replaceRules);

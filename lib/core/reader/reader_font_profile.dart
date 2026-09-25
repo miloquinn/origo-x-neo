@@ -8,8 +8,7 @@ import '../../utils/font_catalog_helper.dart';
 /// painting, previews and pagination caches.
 ///
 /// Platform-default profiles resolve to an explicit preferred family. EPUB
-/// rendering may still preserve a book-provided family before applying this
-/// profile; TXT and book-source text consume it directly.
+/// requires the book-embedded choice; Kindle uses book fonts by default.
 @immutable
 class ReaderFontProfile {
   const ReaderFontProfile({
@@ -17,18 +16,22 @@ class ReaderFontProfile {
     required this.fontFamily,
     required this.fontFamilyFallback,
     required this.cacheSignature,
-    required this.isPlatformDefault,
   });
 
   final String selectionId;
   final String? fontFamily;
   final List<String> fontFamilyFallback;
   final String cacheSignature;
-  final bool isPlatformDefault;
+  bool get isPlatformDefault =>
+      selectionId == FontCatalog.systemId || preservesBookFont;
 
-  String? get preferredFamily =>
-      fontFamily ??
-      (fontFamilyFallback.isEmpty ? null : fontFamilyFallback.first);
+  bool get preservesBookFont => selectionId == FontCatalog.bookEmbeddedId;
+
+  bool preservesParsedFontFor(String format) => switch (format.toLowerCase()) {
+    'epub' => preservesBookFont,
+    'mobi' || 'azw' || 'azw3' => isPlatformDefault,
+    _ => false,
+  };
 }
 
 const List<String> _androidPlatformReaderFamilies = <String>['sans-serif'];
@@ -56,7 +59,8 @@ ReaderFontProfile resolveReaderFontProfile({
   TargetPlatform? platform,
   bool isWeb = kIsWeb,
 }) {
-  if (selection.id != FontCatalog.systemId) {
+  if (selection.id != FontCatalog.systemId &&
+      selection.id != FontCatalog.bookEmbeddedId) {
     final fallbacks = List<String>.unmodifiable(selection.fallbackFamilies);
     return ReaderFontProfile(
       selectionId: selection.id,
@@ -68,17 +72,15 @@ ReaderFontProfile resolveReaderFontProfile({
         fallbacks: fallbacks,
         platformKey: 'explicit',
       ),
-      isPlatformDefault: false,
     );
   }
 
   if (isWeb) {
-    return const ReaderFontProfile(
-      selectionId: FontCatalog.systemId,
+    return ReaderFontProfile(
+      selectionId: selection.id,
       fontFamily: null,
-      fontFamilyFallback: <String>[],
-      cacheSignature: 'reader-font-profile-v1:platform:web',
-      isPlatformDefault: true,
+      fontFamilyFallback: const <String>[],
+      cacheSignature: 'reader-font-profile-v2:platform:web:${selection.id}',
     );
   }
 
@@ -110,16 +112,15 @@ ReaderFontProfile resolveReaderFontProfile({
     families.isEmpty ? const <String>[] : families.skip(1),
   );
   return ReaderFontProfile(
-    selectionId: FontCatalog.systemId,
+    selectionId: selection.id,
     fontFamily: primaryFamily,
     fontFamilyFallback: fallbacks,
     cacheSignature: _fontProfileSignature(
-      selectionId: FontCatalog.systemId,
+      selectionId: selection.id,
       fontFamily: primaryFamily,
       fallbacks: fallbacks,
       platformKey: platformKey,
     ),
-    isPlatformDefault: true,
   );
 }
 
@@ -139,5 +140,5 @@ String _fontProfileSignature({
   required List<String> fallbacks,
   required String platformKey,
 }) =>
-    'reader-font-profile-v1:$platformKey:$selectionId:'
+    'reader-font-profile-v2:$platformKey:$selectionId:'
     '${fontFamily ?? '-'}:${fallbacks.join('>')}';

@@ -63,8 +63,11 @@ class SourceScriptBootstrap {
               ...(context.result as SourceScriptNetworkResult).toJson(),
             }
           : sourceScriptJsonSafe(context.result),
+      'defaultRuleContent': sourceScriptJsonSafe(context.defaultRuleContent),
       'baseUrl':
-          context.baseUrl?.toString() ?? context.source.baseUri.toString(),
+          context.scriptBaseUrl ??
+          context.baseUrl?.toString() ??
+          context.source.baseUri.toString(),
       'variables': context.variables,
       'hasBook': context.book.isNotEmpty,
       'hasChapter': context.chapter.isNotEmpty,
@@ -462,7 +465,7 @@ class SourceScriptBootstrap {
       const decodeOverload = typeof content === 'boolean' && isUrl === undefined;
       return __host('getString', [
         String(rule == null ? '' : rule),
-        content == null || decodeOverload ? globalThis.result : content,
+        content == null || decodeOverload ? (__payload.defaultRuleContent ?? globalThis.result) : content,
         globalThis.baseUrl,
         Boolean(isUrl),
         decodeOverload ? content : true
@@ -471,7 +474,7 @@ class SourceScriptBootstrap {
     getStringList: (rule, content, isUrl) => {
       const values = __host('getStringList', [
         String(rule == null ? '' : rule),
-        content == null ? globalThis.result : content,
+        content == null ? (__payload.defaultRuleContent ?? globalThis.result) : content,
         globalThis.baseUrl,
         Boolean(isUrl)
       ]);

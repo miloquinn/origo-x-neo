@@ -94,7 +94,14 @@ void main() {
           )
           .toList(),
     );
-    expect(readerTextContentWidth(1200, 18), readerMaxTextContentWidth);
+    expect(readerTextContentWidth(1200, 18), 724);
+  });
+
+  test('horizontal margin narrows text on wide and narrow readers', () {
+    expect(readerTextContentWidth(1200, 0), readerMaxTextContentWidth);
+    expect(readerTextContentWidth(1200, 72), 616);
+    expect(readerTextContentWidth(400, 18), 364);
+    expect(readerTextContentWidth(400, 72), 256);
   });
 
   testWidgets('zero paragraph spacing collapses source-owned blank rows', (
