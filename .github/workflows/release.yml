@@ -153,10 +153,10 @@ jobs:
           PY
 
           mkdir -p web-release
-          tar -C build/web -czf web-release/origo-web.tar.gz .
+          tar -C build/web -czf web-release/open-reading-web.tar.gz .
           (
             cd web-release
-            sha256sum origo-web.tar.gz > origo-web.tar.gz.sha256
+            sha256sum open-reading-web.tar.gz > open-reading-web.tar.gz.sha256
           )
 
       - name: Upload internal web deployment artifact
@@ -1254,8 +1254,8 @@ jobs:
             echo "::error::Official-site SSH port has an invalid format."
             exit 1
           fi
-          if [[ "$SSH_USER" != "origo-x-release" ]]; then
-            echo "::error::Web deployment requires the restricted origo-x-release account."
+          if [[ "$SSH_USER" != "open-reading-release" ]]; then
+            echo "::error::Web deployment requires the restricted open-reading-release account."
             exit 1
           fi
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\+[1-9][0-9]*)?$ ]] \
@@ -1270,7 +1270,7 @@ jobs:
           ssh_dir="${RUNNER_TEMP}/web-deployment-ssh"
           identity_file="${ssh_dir}/identity"
           known_hosts_file="${ssh_dir}/known_hosts"
-          remote_dir="/tmp/origo-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          remote_dir="/tmp/open-reading-web-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           target="${SSH_USER}@${SSH_HOST}"
           mkdir -p "$ssh_dir"
           printf '%s\n' "$SSH_PRIVATE_KEY" | sed 's/\r$//' > "$identity_file"
@@ -1325,7 +1325,7 @@ jobs:
           remote_created=true
           scp "${scp_options[@]}" web-deployment/* "${target}:${remote_dir}/"
           ssh "${ssh_options[@]}" "$target" \
-            "sudo -n -- /usr/local/sbin/origo-x-deploy-web \
+            "sudo -n -- /usr/local/sbin/open-reading-deploy-web \
               --source '${remote_dir}' \
               --tag '${RELEASE_TAG}' \
               --repository '${PUBLIC_RELEASE_REPOSITORY}' \
@@ -1661,8 +1661,8 @@ jobs:
             echo "::error::Official-site SSH port has an invalid format."
             exit 1
           fi
-          if [[ ! "$SSH_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
-            echo "::error::Official-site SSH user has an invalid format."
+          if [[ "$SSH_USER" != "open-reading-release" ]]; then
+            echo "::error::Official-site mirror requires the restricted open-reading-release account."
             exit 1
           fi
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\+[1-9][0-9]*)?$ ]] \
@@ -1680,7 +1680,7 @@ jobs:
           ssh_dir="${RUNNER_TEMP}/official-site-ssh"
           identity_file="${ssh_dir}/identity"
           known_hosts_file="${ssh_dir}/known_hosts"
-          remote_dir="/tmp/origo-x-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          remote_dir="/tmp/open-reading-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           bundle_dir="${GITHUB_WORKSPACE}/official-site-bundle"
           target="${SSH_USER}@${SSH_HOST}"
           mkdir -p "$ssh_dir"
@@ -1738,7 +1738,7 @@ jobs:
           scp "${scp_options[@]}" "${bundle_dir}/"* "${target}:${remote_dir}/"
 
           ssh "${ssh_options[@]}" "$target" \
-            "sudo -n -- /usr/local/sbin/origo-x-import-release \
+            "sudo -n -- /usr/local/sbin/open-reading-import-release \
               --source '${remote_dir}' \
               --tag '${RELEASE_TAG}' \
               --repository '${PUBLIC_RELEASE_REPOSITORY}' \
