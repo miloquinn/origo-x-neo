@@ -140,7 +140,8 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
                   filter: ui.ImageFilter.blur(
                     sigmaX: sigma * (1 - (i + 0.5) / bands),
                     sigmaY: sigma * (1 - (i + 0.5) / bands),
-                    tileMode: TileMode.clamp,
+                    // Repeating the first row flashes when content scrolls.
+                    tileMode: TileMode.mirror,
                   ),
                   child: const SizedBox.expand(),
                 ),

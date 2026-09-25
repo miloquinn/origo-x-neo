@@ -10,6 +10,35 @@ import 'package:xxread/widgets/gradient_top_backdrop.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  testWidgets('scrolling detail stays smooth at the screen top edge', (
+    tester,
+  ) async {
+    final first = await _renderBackdrop(
+      tester,
+      blurEnabled: true,
+      pattern: _BackdropPattern.fineHorizontalStripes,
+      backdropHeight: 84,
+      fallbackBands: 16,
+    );
+    final next = await _renderBackdrop(
+      tester,
+      blurEnabled: true,
+      pattern: _BackdropPattern.fineHorizontalStripes,
+      backdropHeight: 84,
+      fallbackBands: 16,
+      verticalOffset: 1,
+    );
+
+    for (var y = 0; y < 8; y++) {
+      expect(
+        (_luminance(first.pixel(120, y)) - _luminance(next.pixel(120, y)))
+            .abs(),
+        lessThan(30),
+        reason: 'One pixel of scrolling must not flash the top edge at y=$y.',
+      );
+    }
+  });
+
   testWidgets('short phone header fades its blur to a clear tail', (
     tester,
   ) async {
@@ -212,7 +241,7 @@ void main() {
     }
   });
 
-  testWidgets('clamps both texture axes on dense displays', (tester) async {
+  testWidgets('keeps edge sampling stable on dense displays', (tester) async {
     for (final dpr in [1.0, 2.0, 3.0]) {
       for (final pattern in [
         _BackdropPattern.verticalEdge,
@@ -309,6 +338,8 @@ Future<_PixelBuffer> _renderBackdrop(
   required _BackdropPattern pattern,
   double devicePixelRatio = 1,
   double backdropHeight = _backdropHeight,
+  int fallbackBands = 32,
+  int verticalOffset = 0,
 }) async {
   final boundaryKey = GlobalKey();
   await tester.pumpWidget(
@@ -318,6 +349,8 @@ Future<_PixelBuffer> _renderBackdrop(
       pattern: pattern,
       devicePixelRatio: devicePixelRatio,
       backdropHeight: backdropHeight,
+      fallbackBands: fallbackBands,
+      verticalOffset: verticalOffset,
     ),
   );
   await tester.pump();
@@ -459,6 +492,8 @@ class _TestScene extends StatelessWidget {
     required this.pattern,
     required this.devicePixelRatio,
     this.backdropHeight = _backdropHeight,
+    this.fallbackBands = 32,
+    this.verticalOffset = 0,
   });
 
   final GlobalKey boundaryKey;
@@ -466,6 +501,8 @@ class _TestScene extends StatelessWidget {
   final _BackdropPattern pattern;
   final double devicePixelRatio;
   final double backdropHeight;
+  final int fallbackBands;
+  final int verticalOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -490,12 +527,18 @@ class _TestScene extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    CustomPaint(painter: _BackdropPainter(pattern)),
+                    CustomPaint(
+                      painter: _BackdropPainter(
+                        pattern,
+                        verticalOffset: verticalOffset,
+                      ),
+                    ),
                     Align(
                       alignment: Alignment.topCenter,
                       child: GradientTopBackdrop(
                         height: backdropHeight,
                         blurEnabled: blurEnabled,
+                        fallbackBands: fallbackBands,
                       ),
                     ),
                   ],
@@ -510,9 +553,10 @@ class _TestScene extends StatelessWidget {
 }
 
 class _BackdropPainter extends CustomPainter {
-  const _BackdropPainter(this.pattern);
+  const _BackdropPainter(this.pattern, {this.verticalOffset = 0});
 
   final _BackdropPattern pattern;
+  final int verticalOffset;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -552,7 +596,7 @@ class _BackdropPainter extends CustomPainter {
 
     if (pattern == _BackdropPattern.fineHorizontalStripes) {
       for (var y = 0; y < size.height; y++) {
-        paint.color = y.isEven ? _dark : _light;
+        paint.color = (y + verticalOffset).isEven ? _dark : _light;
         canvas.drawRect(Rect.fromLTWH(0, y.toDouble(), size.width, 1), paint);
       }
       return;
@@ -576,7 +620,8 @@ class _BackdropPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BackdropPainter oldDelegate) {
-    return pattern != oldDelegate.pattern;
+    return pattern != oldDelegate.pattern ||
+        verticalOffset != oldDelegate.verticalOffset;
   }
 }
 

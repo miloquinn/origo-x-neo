@@ -34,7 +34,7 @@ schemaVersion: 1
 
 clearHeight = max(0, height - 16dp)。顶部sigma取min(appBarBlur × 2, clearHeight / 3)，在clearHeight范围内线性减至0；末尾16dp直接返回源图。Shader参数换算为物理像素，最大sigma限128px、采样半径限384px。
 
-使用可分离二维高斯：先纵向、后横向。横向采样保持同一y，因此同一输出位置的两个轴使用相同sigma；不要交换这两个pass。输入采样器使用线性过滤及双轴 clamp-to-edge；UV 与单位采样方向在循环外归一化。OpenGLES 同时反转 UV.y 和方向.y，不反转用于 sigma 曲线的坐标。该边界行为等价于原先每次读取前的半像素 UV 钳制。
+使用可分离二维高斯：先纵向、后横向。横向采样保持同一y，因此同一输出位置的两个轴使用相同sigma；不要交换这两个pass。输入采样器使用线性过滤及双轴 clamp-to-edge；顶端越界的纵向采样在进入采样器前镜像回有效背景，避免滚动时首行像素主导半个高斯核。UV 与单位采样方向在循环外归一化。OpenGLES 同时反转 UV.y 和方向.y，不反转用于 sigma 曲线的坐标。
 
 每个离散源像素都进入3sigma核。用线性采样把相邻两个高斯权重合并为一次读取，在保持核形状的同时减少纹理读取。循环上限必须是编译期常量，运行时在半径处break，兼容所有编译目标。
 
@@ -42,7 +42,7 @@ clearHeight = max(0, height - 16dp)。顶部sigma取min(appBarBlur × 2, clearHe
 
 只缓存已完成的FragmentProgram；避免缓存跨widget测试fake async zone的Future。各实例持有、释放两份FragmentShader和种子Image；异步返回检查mounted，Picture用finally释放。加载中透明，加载失败或不支持Shader过滤时降级；主Shader分支必须排除_loadFailed，防止半初始化资源绕过降级。
 
-旧Skia使用不同sigma的原生BackdropFilter近似：平板32段、较短的手机顶栏16段；并非连续Shader实现，不要宣称不同后端完全相同。
+旧Skia使用不同sigma、镜像边界的原生BackdropFilter近似：平板32段、较短的手机顶栏16段；并非连续Shader实现，不要宣称不同后端完全相同。
 
 ## 已踩过的坑
 

@@ -34,6 +34,7 @@ void main() {
   float ratio = exp(-0.5 / (sigma * sigma));
   float ratioStep = ratio * ratio;
   int radius = int(ceil(3.0 * sigma));
+  bool reflectTop = uDirection.y != 0.0 && position.y < float(radius);
   for (int i = 1; i <= 384; i += 2) {
     if (i > radius) break;
     coefficient *= ratio;
@@ -47,7 +48,21 @@ void main() {
     if (pairWeight < 0.000001) break;
     float offset = float(i) + secondWeight / pairWeight;
     vec2 delta = texelDirection * offset;
-    total += (texture(uInput, uv - delta) + texture(uInput, uv + delta))
+    vec2 before = uv - delta;
+    vec2 after = uv + delta;
+    // Clamp-to-edge repeats the first pixel for every offscreen tap. While
+    // scrolling, a one-pixel change at the top then controls half the kernel
+    // and flashes. Reflect vertical taps into the live backdrop instead.
+    if (reflectTop) {
+#ifdef IMPELLER_TARGET_OPENGLES
+      before.y = 1.0 - abs(1.0 - before.y);
+      after.y = 1.0 - abs(1.0 - after.y);
+#else
+      before.y = abs(before.y);
+      after.y = abs(after.y);
+#endif
+    }
+    total += (texture(uInput, before) + texture(uInput, after))
         * pairWeight;
     weightSum += 2.0 * pairWeight;
   }
