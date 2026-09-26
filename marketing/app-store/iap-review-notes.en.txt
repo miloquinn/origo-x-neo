@@ -1,5 +1,9 @@
-This is a one-time, non-consumable lifetime Premium purchase (com.niki.xxread.premium.lifetime), with no subscription or automatic renewal.
+Origo X uses separate non-consumable products: app lifetime unlock (com.niki.xxread.reader.lifetime, US $9.99), a zero-price 14-day reading trial (com.niki.xxread.reader.trial14d), and account Premium lifetime (com.niki.xxread.premium.lifetime.v2, US $8.99). StoreKit displays localized prices. No product auto-renews.
 
-On macOS, open Settings, enter the account center, sign in, and open Premium. The purchase screen explains the benefits and displays the localized App Store price. Premium unlocks additional compatible book-source protocols and trusted local/private-network sources. After purchase, these options are available under Settings > Advanced Features and must be enabled by the user. The app does not supply commercial books or a bundled third-party source catalog.
+Use App unlock in the account center for guest reading purchase, trial or restore. No Origo sign-in is required. Trial is limited to local reading and expires 14 days after the original transaction.
 
-Restore Purchases is available in the membership screen. Purchases are verified on the server and linked to the signed-in Origo X account.
+Premium becomes visible only after permanent app unlock, then requires Origo sign-in. It enables more user-imported source formats and trusted private-network sources. It supplies no commercial books or source catalog and does not include app reading rights. Store apps have no external card-code redemption entry.
+
+Reader restoration uses the original Apple Account. Premium restoration additionally requires its bound Origo account. Deleting an Origo account terminates account Premium without transferring it; independent reader ownership remains restorable. Legacy purchases retain their original promised bundle through the legacy restore path.
+
+Sandbox purchases are verified server-side and enable the test session only; restore after restarting. Test purchase, restore, cancellation and refund on a real test device before submission. Complete metadata does not mean review approval.

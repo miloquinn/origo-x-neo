@@ -3,50 +3,7 @@
 
 part of '../account_page.dart';
 
-class _AccountIntroCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => _SectionCard(
-    child: Row(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Icon(
-            Icons.account_circle_outlined,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.accountIntroTitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                context.l10n.accountPageSubtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _ExternalLoginMethods extends StatefulWidget {
+class _ExternalLoginMethods extends StatelessWidget {
   const _ExternalLoginMethods({
     required this.account,
     required this.polling,
@@ -54,125 +11,144 @@ class _ExternalLoginMethods extends StatefulWidget {
     required this.onLogin,
     required this.onLoginApple,
     required this.onCancel,
+    this.onEmailCode,
   });
-
   final MemberAccountController account;
   final bool polling;
   final DeviceAuthorization? authorization;
   final ValueChanged<MemberExternalAuthMethod> onLogin;
   final VoidCallback onLoginApple;
   final VoidCallback onCancel;
+  final VoidCallback? onEmailCode;
 
-  @override
-  State<_ExternalLoginMethods> createState() => _ExternalLoginMethodsState();
-}
+  List<_ProviderBrand> get _available => [
+    if (!kIsWeb &&
+        {
+          TargetPlatform.iOS,
+          TargetPlatform.macOS,
+        }.contains(defaultTargetPlatform) &&
+        account.providers.apple)
+      _ProviderBrand.apple,
+    if (account.providers.google) _ProviderBrand.google,
+    if (account.providers.github) _ProviderBrand.github,
+    if (account.providers.passkey) _ProviderBrand.passkey,
+  ];
 
-class _ExternalLoginMethodsState extends State<_ExternalLoginMethods> {
-  bool _showMore = false;
+  Widget _button(
+    BuildContext context,
+    _ProviderBrand brand, {
+    VoidCallback? beforeLogin,
+  }) {
+    final (name, label, method) = switch (brand) {
+      _ProviderBrand.apple => (
+        'apple',
+        context.l10n.accountUseApple,
+        MemberExternalAuthMethod.apple,
+      ),
+      _ProviderBrand.google => (
+        'google',
+        context.l10n.accountUseGoogle,
+        MemberExternalAuthMethod.google,
+      ),
+      _ProviderBrand.github => (
+        'github',
+        context.l10n.accountUseGithub,
+        MemberExternalAuthMethod.github,
+      ),
+      _ProviderBrand.passkey => (
+        'passkey',
+        context.l10n.accountUsePasskey,
+        MemberExternalAuthMethod.passkey,
+      ),
+    };
+    return _ProviderLoginButton(
+      key: ValueKey('account-provider-$name'),
+      label: label,
+      brand: brand,
+      enabled: !account.loading,
+      onTap: () {
+        beforeLogin?.call();
+        if (brand == _ProviderBrand.apple &&
+            defaultTargetPlatform == TargetPlatform.iOS) {
+          onLoginApple();
+        } else {
+          onLogin(method);
+        }
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final content = Column(
+    if (polling) {
+      return _AuthorizationProgress(
+        authorization: authorization,
+        onCancel: onCancel,
+      );
+    }
+    final available = _available;
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Icon(Icons.login_rounded, size: 20, color: colorScheme.primary),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                context.l10n.accountSignInMethodsTitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        if (polling)
-          _AuthorizationProgress(
-            authorization: widget.authorization,
-            onCancel: widget.onCancel,
-          )
-        else ...[
-          if (_isApplePlatform && widget.account.providers.apple) ...[
-            _ProviderLoginButton(
-              key: const ValueKey('account-provider-apple'),
-              label: context.l10n.accountUseApple,
-              brand: _ProviderBrand.apple,
-              enabled: !widget.account.loading,
-              onTap: defaultTargetPlatform == TargetPlatform.macOS
-                  ? () => widget.onLogin(MemberExternalAuthMethod.apple)
-                  : widget.onLoginApple,
-            ),
-            const SizedBox(height: 8),
-          ],
-          _ProviderLoginButton(
-            key: const ValueKey('account-provider-github'),
-            label: context.l10n.accountUseGithub,
-            brand: _ProviderBrand.github,
-            enabled: widget.account.providers.github && !widget.account.loading,
-            onTap: () => widget.onLogin(MemberExternalAuthMethod.github),
-          ),
-          const SizedBox(height: 8),
-          TextButton.icon(
+        if (available.isNotEmpty) _button(context, available.first),
+        if (available.length > 1 || onEmailCode != null)
+          TextButton(
             key: const ValueKey('account-more-providers'),
-            onPressed: widget.account.loading
+            onPressed: account.loading
                 ? null
-                : () => setState(() => _showMore = !_showMore),
-            icon: Icon(
-              _showMore
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.keyboard_arrow_down_rounded,
-              size: 20,
-            ),
-            label: Text(context.l10n.accountMoreSignInMethods),
+                : () => showModalBottomSheet<void>(
+                    context: context,
+                    showDragHandle: true,
+                    isScrollControlled: true,
+                    builder: (sheetContext) => SafeArea(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight:
+                              MediaQuery.sizeOf(sheetContext).height * .75,
+                        ),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                context.l10n.accountMoreSignInMethods,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 20),
+                              for (final brand in available.skip(1)) ...[
+                                _button(
+                                  context,
+                                  brand,
+                                  beforeLogin: () =>
+                                      Navigator.pop(sheetContext),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              if (onEmailCode != null)
+                                OutlinedButton.icon(
+                                  key: const ValueKey(
+                                    'account-other-email-code',
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(sheetContext);
+                                    onEmailCode!();
+                                  },
+                                  icon: const Icon(Icons.mail_outline_rounded),
+                                  label: Text(context.l10n.accountUseEmailCode),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+            child: Text(context.l10n.accountMoreSignInMethods),
           ),
-          if (_showMore) ...[
-            const SizedBox(height: 4),
-            _ProviderLoginButton(
-              key: const ValueKey('account-provider-passkey'),
-              label: context.l10n.accountUsePasskey,
-              brand: _ProviderBrand.passkey,
-              enabled:
-                  widget.account.providers.passkey && !widget.account.loading,
-              onTap: () => widget.onLogin(MemberExternalAuthMethod.passkey),
-            ),
-            const SizedBox(height: 8),
-            _ProviderLoginButton(
-              key: const ValueKey('account-provider-google'),
-              label: context.l10n.accountUseGoogle,
-              brand: _ProviderBrand.google,
-              enabled:
-                  widget.account.providers.google && !widget.account.loading,
-              onTap: () => widget.onLogin(MemberExternalAuthMethod.google),
-            ),
-          ],
-          const SizedBox(height: 6),
-          Text(
-            context.l10n.accountExternalHint,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              height: 1.35,
-            ),
-          ),
-        ],
       ],
     );
-    return content;
   }
-
-  bool get polling => widget.polling;
-
-  bool get _isApplePlatform =>
-      !kIsWeb &&
-      {
-        TargetPlatform.iOS,
-        TargetPlatform.macOS,
-      }.contains(defaultTargetPlatform);
 }
 
 class _AuthorizationProgress extends StatelessWidget {
@@ -285,8 +261,8 @@ class _ProviderLoginButton extends StatelessWidget {
           onTap: enabled ? onTap : null,
           borderRadius: BorderRadius.circular(14),
           child: Container(
-            height: isPasskey ? 46 : 54,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            constraints: const BoxConstraints(minHeight: 54),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
@@ -318,8 +294,6 @@ class _ProviderLoginButton extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: isPasskey
                           ? colorScheme.onSurfaceVariant
@@ -446,16 +420,20 @@ class _SignedInHeader extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF123456), Color(0xFF1768B4)],
-      ),
+      color: supporter
+          ? null
+          : Theme.of(context).colorScheme.surfaceContainerLow,
+      gradient: supporter
+          ? const LinearGradient(colors: [Color(0xFF252B38), Color(0xFF121925)])
+          : null,
+      border: supporter
+          ? Border.all(color: const Color(0xFFAA9871).withValues(alpha: .5))
+          : null,
       borderRadius: BorderRadius.circular(22),
     ),
     child: Row(
       children: [
-        _MemberAvatar(user: user, size: 62),
+        _MemberAvatar(user: user, size: 50),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -468,8 +446,10 @@ class _SignedInHeader extends StatelessWidget {
                       user.effectiveName,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
+                        color: supporter
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -481,11 +461,13 @@ class _SignedInHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '@${user.username} · ${user.email}',
+                user.email,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.72),
+                  color: supporter
+                      ? Colors.white.withValues(alpha: 0.72)
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

@@ -12415,6 +12415,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'WebDAV is working'**
   String get settingsWebDavWorking;
+
+  /// No description provided for @storeReaderLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Origo X'**
+  String get storeReaderLockedTitle;
+
+  /// No description provided for @storeReaderLockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading in this store edition requires an active trial or a license. Your books and notes are kept. Return to your library to export your data.'**
+  String get storeReaderLockedBody;
+
+  /// No description provided for @storeReaderUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial, purchase or restore'**
+  String get storeReaderUnlock;
+
+  /// No description provided for @storeReaderBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to library'**
+  String get storeReaderBack;
+
+  /// No description provided for @storeReaderChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking reading access…'**
+  String get storeReaderChecking;
+
+  /// No description provided for @storeReaderBenefitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Full reading access'**
+  String get storeReaderBenefitTitle;
+
+  /// No description provided for @storeReaderBenefitBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently unlock local reading. No Origo account is required.'**
+  String get storeReaderBenefitBody;
+
+  /// No description provided for @storeTrialStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Try free for {days} days'**
+  String storeTrialStart(int days);
+
+  /// No description provided for @storeTrialDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Try local reading for {days} days. No automatic charge. After the trial, a one-time app unlock is required to keep reading. Your books and notes are kept.'**
+  String storeTrialDetails(int days);
+
+  /// No description provided for @storeTrialStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your store trial has started.'**
+  String get storeTrialStarted;
+
+  /// No description provided for @storeTrialExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your store trial has ended. Purchase once to continue, or restore an existing purchase.'**
+  String get storeTrialExpired;
+
+  /// No description provided for @storePurchaseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock forever with {store}'**
+  String storePurchaseButton(String store);
+
+  /// No description provided for @storePurchaseBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time app unlock. No automatic renewal. {store} displays the actual price and processes payment.'**
+  String storePurchaseBilling(String store);
+
+  /// No description provided for @storePurchaseRestoreHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore with the {store} account used to purchase. No Origo login or additional charge is required.'**
+  String storePurchaseRestoreHelp(String store);
+
+  /// No description provided for @storePurchaseAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have access through {store}. No repeat purchase is needed.'**
+  String storePurchaseAccess(String store);
+
+  /// No description provided for @storeRestoreEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No restorable purchase was found. Check your store account and the linked Origo X account.'**
+  String get storeRestoreEmpty;
+
+  /// No description provided for @storeGoogleRefundTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a refund through Google Play. A verified refund removes only the access associated with that purchase; independent entitlements remain valid.'**
+  String get storeGoogleRefundTerms;
+
+  /// No description provided for @storeReaderLegacyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your existing basic reading access is preserved. Advanced source compatibility still requires Premium.'**
+  String get storeReaderLegacyNotice;
+
+  /// No description provided for @storePrivacyPurchaseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Store verification data and an account identifier are sent to our server to verify and restore access. Google Play verification includes a purchase token and a hashed account identifier. We do not receive payment card details.'**
+  String get storePrivacyPurchaseBody;
+
+  /// No description provided for @storeTrialLegacyDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Your existing reading access remains valid. You do not need the {days}-day reading trial.'**
+  String storeTrialLegacyDetails(int days);
+
+  /// No description provided for @storeReaderSupportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try the full reading experience, or unlock it forever with one purchase'**
+  String get storeReaderSupportSubtitle;
+
+  /// No description provided for @storeBillingUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Store purchases are not available yet. Try again later. Your existing access is unchanged.'**
+  String get storeBillingUnavailable;
+
+  /// No description provided for @accountSignInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Origo X'**
+  String get accountSignInTitle;
+
+  /// No description provided for @accountSignInSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your account and purchases'**
+  String get accountSignInSubtitle;
+
+  /// No description provided for @accountRegistrationStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account · {step} / 3'**
+  String accountRegistrationStep(int step);
+
+  /// No description provided for @accountSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your account'**
+  String get accountSetupTitle;
+
+  /// No description provided for @accountSetupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add your name and photo later.'**
+  String get accountSetupHint;
+
+  /// No description provided for @accountInvalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address'**
+  String get accountInvalidEmail;
+
+  /// No description provided for @accountCodeFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit email code'**
+  String get accountCodeFormat;
+
+  /// No description provided for @accountPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get accountPasswordRequired;
+
+  /// No description provided for @accountShowPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get accountShowPassword;
+
+  /// No description provided for @accountHidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get accountHidePassword;
+
+  /// No description provided for @accountResendIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Send again in {seconds}s'**
+  String accountResendIn(int seconds);
+
+  /// No description provided for @accountBackToCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to email code'**
+  String get accountBackToCode;
+
+  /// No description provided for @accountAuthorizationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue in your browser'**
+  String get accountAuthorizationTitle;
+
+  /// No description provided for @accountReopenAuthorization.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen sign-in page'**
+  String get accountReopenAuthorization;
+
+  /// No description provided for @accountSignOutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your local books will stay. Sign in again to verify account access.'**
+  String get accountSignOutHint;
+
+  /// No description provided for @accountDiscardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get accountDiscardChanges;
+
+  /// No description provided for @accountUnsavedChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile changes have not been saved.'**
+  String get accountUnsavedChanges;
+
+  /// No description provided for @accountAuthorizationExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This sign-in request has expired. Please try again.'**
+  String get accountAuthorizationExpired;
+
+  /// Separate app reader unlock and account Premium billing.
+  ///
+  /// In en, this message translates to:
+  /// **'App unlock'**
+  String get storeReaderLicenseTitle;
+
+  /// Separate app reader unlock and account Premium billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Try local reading for 14 days, then unlock it with a one-time purchase.'**
+  String get storeReaderLicenseSubtitle;
+
+  /// Separate app reader unlock and account Premium billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifetime app unlock'**
+  String get storeReaderLifetimeTitle;
+
+  /// Separate app reader unlock and account Premium billing.
+  ///
+  /// In en, this message translates to:
+  /// **'This app is permanently unlocked with {store}.'**
+  String storeReaderOwned(String store);
+
+  /// Separate app reader unlock and account Premium billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock the app first'**
+  String get storePremiumPrerequisiteTitle;
+
+  /// Separate app reader unlock and account Premium billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is sold separately after a permanent app unlock. A trial does not qualify.'**
+  String get storePremiumPrerequisiteBody;
+
+  /// Separate app reader unlock and account Premium billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifetime Premium · linked to your Origo account'**
+  String get storePremiumPriceCaption;
+
+  /// Separate app reader unlock and account Premium billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy Premium with {store}'**
+  String storePremiumPurchaseButton(String store);
+
+  /// Separate account-bound Premium purchase or restore.
+  ///
+  /// In en, this message translates to:
+  /// **'A separate one-time Premium purchase with no auto-renewal. {store} shows the actual price and processes payment. Premium is linked to your signed-in Origo account.'**
+  String storePremiumBilling(String store);
+
+  /// Separate account-bound Premium purchase or restore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore with the {store} account used to buy Premium while signed in to the linked Origo account. Restoring does not charge again.'**
+  String storePremiumRestoreHelp(String store);
+
+  /// App reader purchase status, separate from Premium.
+  ///
+  /// In en, this message translates to:
+  /// **'App trial ends on {date}.'**
+  String storeReaderTrialExpiresAt(String date);
+
+  /// App reader purchase status, separate from Premium.
+  ///
+  /// In en, this message translates to:
+  /// **'App permanently unlocked'**
+  String get storeReaderPurchaseSuccess;
+
+  /// App reader purchase status, separate from Premium.
+  ///
+  /// In en, this message translates to:
+  /// **'App purchase restored'**
+  String get storeReaderRestoreSuccess;
+
+  /// App reader purchase status, separate from Premium.
+  ///
+  /// In en, this message translates to:
+  /// **'Test app purchase verified; no formal license was granted.'**
+  String get storeReaderTestPurchaseVerified;
+
+  /// App reader purchase status, separate from Premium.
+  ///
+  /// In en, this message translates to:
+  /// **'This app unlock was revoked.'**
+  String get storeReaderPurchaseRevoked;
+
+  /// App reader purchase status, separate from Premium.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for {store} approval. Reading unlocks after verification.'**
+  String storeReaderPendingApproval(String store);
+
+  /// App reader purchase status, separate from Premium.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying app purchase…'**
+  String get storeReaderVerifying;
+
+  /// App reader purchase status, separate from Premium.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring app purchase…'**
+  String get storeReaderRestoring;
 }
 
 class _AppLocalizationsDelegate

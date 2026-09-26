@@ -14,6 +14,7 @@ import '../../widgets/app_brand_icon.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
 import 'account_page.dart';
 import 'premium_policy_page.dart';
+import 'store_reader_unlock_page.dart';
 
 class PremiumMembershipPage extends StatefulWidget {
   const PremiumMembershipPage({
@@ -35,27 +36,40 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
   final _billingKey = GlobalKey();
   late final _changes = Listenable.merge([
     widget.account,
-    widget.account.applePurchase,
+    widget.account.storePurchase,
   ]);
   String? _message;
   bool _messageIsError = false;
 
   bool get _usesAppleBilling => AppDistribution.usesAppleBilling;
+  bool get _usesStoreBilling => AppDistribution.usesStoreBilling;
+  String get _storeName => _usesAppleBilling ? 'App Store' : 'Google Play';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    if (_usesAppleBilling && widget.account.isAuthenticated) {
-      unawaited(widget.account.applePurchase.initialize());
-    }
-    if (widget.focusBilling) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_usesStoreBilling &&
+          widget.account.isAuthenticated &&
+          widget.account.hasPermanentReaderAccess) {
+        unawaited(_initializeStore());
+      }
+      if (widget.focusBilling) {
         final billingContext = _billingKey.currentContext;
-        if (mounted && billingContext != null) {
+        if (billingContext != null) {
           Scrollable.ensureVisible(billingContext, alignment: 0.05);
         }
-      });
+      }
+    });
+  }
+
+  Future<void> _initializeStore() async {
+    try {
+      await widget.account.initializeStorePurchases();
+    } catch (error) {
+      debugPrint('Premium products unavailable: $error');
     }
   }
 
@@ -98,7 +112,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
       // StoreKit may deliver a verified transaction after a restore timeout.
       // Keep that flow driven by its live status instead of pinning an error.
       if (usePurchaseStatus &&
-          widget.account.applePurchase.phase == ApplePurchasePhase.failed) {
+          widget.account.premiumPurchasePhase == StorePurchasePhase.failed) {
         return;
       }
       _showFailure(error);
@@ -117,8 +131,8 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
     await Navigator.of(
       context,
     ).push<void>(MaterialPageRoute(builder: (_) => const AccountPage()));
-    if (mounted && _usesAppleBilling && widget.account.isAuthenticated) {
-      unawaited(widget.account.applePurchase.initialize());
+    if (mounted && _usesStoreBilling && widget.account.isAuthenticated) {
+      unawaited(_initializeStore());
     }
   }
 
@@ -149,15 +163,17 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
     builder: (context, _) {
       final l10n = context.l10n;
       final account = widget.account;
-      final purchase = account.applePurchase;
+      if (_usesStoreBilling && !account.hasPermanentReaderAccess) {
+        return StoreReaderUnlockPage(account: account);
+      }
       final premium = account.hasPremiumAccess;
-      final busy = purchase.loading || account.loading;
+      final busy = account.premiumPurchaseLoading || account.loading;
       final colors = Theme.of(context).colorScheme;
       final status = account.isAuthenticated
-          ? _message ?? _purchaseStatus(context, purchase)
+          ? _message ?? _purchaseStatus(context, account)
           : null;
       return FloatingSubpageScaffold(
-        title: l10n.accountSupportTitle,
+        title: l10n.premiumLifetimeTitle,
         body: ListView(
           padding: floatingSubpagePadding(context, bottom: 40),
           children: [
@@ -186,43 +202,9 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                         key: const ValueKey('premium-sync-failed'),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    _section(l10n.premiumBenefitsTitle, [
-                      _benefit(
-                        Icons.layers_outlined,
-                        l10n.settingsAdditionalSourceProtocolsTitle,
-                        l10n.premiumProtocolsBenefit,
-                      ),
-                      const Divider(height: 28),
-                      _benefit(
-                        Icons.wifi_rounded,
-                        l10n.settingsPrivateBookSourceNetworkTitle,
-                        l10n.premiumPrivateNetworkBenefit,
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        l10n.premiumSourceNotice,
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.5,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      if (premium) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          l10n.premiumSetupHint,
-                          style: TextStyle(
-                            fontSize: 13,
-                            height: 1.5,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ],
-                    ]),
                     const SizedBox(height: 20),
                     if (!premium ||
-                        _usesAppleBilling ||
+                        _usesStoreBilling ||
                         status != null ||
                         account.membership?.premiumExpiresAt != null)
                       _section(
@@ -238,11 +220,16 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                               onPressed: _openSignIn,
                               child: Text(l10n.accountSignIn),
                             ),
-                          ] else if (_usesAppleBilling) ...[
+                          ] else if (_usesStoreBilling) ...[
                             if (!premium ||
                                 account.membership?.premiumExpiresAt !=
                                     null) ...[
-                              if (purchase.product case final product?) ...[
+                              if (!account.storeBillingReady) ...[
+                                Text(l10n.storeBillingUnavailable),
+                                const SizedBox(height: 12),
+                              ],
+                              if (account.premiumLifetimeProduct
+                                  case final product?) ...[
                                 Text(
                                   product.price,
                                   key: const ValueKey('premium-store-price'),
@@ -254,7 +241,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  l10n.premiumLifetimeCaption,
+                                  l10n.storePremiumPriceCaption,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 12,
@@ -264,7 +251,11 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                                 const SizedBox(height: 16),
                               ],
                               FilledButton(
-                                key: const ValueKey('account-apple-purchase'),
+                                key: ValueKey(
+                                  _usesAppleBilling
+                                      ? 'account-apple-purchase'
+                                      : 'account-google-purchase',
+                                ),
                                 style: FilledButton.styleFrom(
                                   minimumSize: const Size.fromHeight(52),
                                   padding: const EdgeInsets.symmetric(
@@ -278,29 +269,39 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                                 onPressed: busy
                                     ? null
                                     : () => _perform(
-                                        purchase.product == null
-                                            ? purchase.initialize
-                                            : account.purchaseApplePremium,
+                                        account.premiumLifetimeProduct ==
+                                                    null ||
+                                                !account.storeBillingReady
+                                            ? account.loadStoreProducts
+                                            : account.purchaseStorePremium,
                                         usePurchaseStatus: true,
                                       ),
                                 child: busy
                                     ? const CupertinoActivityIndicator()
                                     : Text(
-                                        purchase.product == null
+                                        account.premiumLifetimeProduct ==
+                                                    null ||
+                                                !account.storeBillingReady
                                             ? l10n.accountAppleProductRetry
-                                            : l10n.accountApplePurchase,
+                                            : l10n.storePremiumPurchaseButton(
+                                                _storeName,
+                                              ),
                                         textAlign: TextAlign.center,
                                       ),
                               ),
                             ],
                             const SizedBox(height: 10),
                             TextButton.icon(
-                              key: const ValueKey('account-apple-restore'),
+                              key: ValueKey(
+                                _usesAppleBilling
+                                    ? 'account-apple-restore'
+                                    : 'account-google-restore',
+                              ),
                               icon: const Icon(Icons.restore_rounded, size: 20),
                               onPressed: busy
                                   ? null
                                   : () => _perform(
-                                      account.restoreApplePremium,
+                                      account.restoreStorePremiumPurchases,
                                       usePurchaseStatus: true,
                                     ),
                               label: Text(
@@ -309,7 +310,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                               ),
                             ),
                             Text(
-                              l10n.premiumRestoreHelp,
+                              l10n.storePremiumRestoreHelp(_storeName),
                               style: TextStyle(
                                 fontSize: 13,
                                 height: 1.5,
@@ -321,7 +322,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                                     null) ...[
                               const SizedBox(height: 16),
                               Text(
-                                l10n.premiumBillingBody,
+                                l10n.storePremiumBilling(_storeName),
                                 style: TextStyle(
                                   fontSize: 12,
                                   height: 1.6,
@@ -368,8 +369,8 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                                   height: 1.5,
                                   color:
                                       _messageIsError ||
-                                          purchase.phase ==
-                                              ApplePurchasePhase.failed
+                                          account.premiumPurchasePhase ==
+                                              StorePurchasePhase.failed
                                       ? colors.error
                                       : colors.onSurfaceVariant,
                                 ),
@@ -379,6 +380,44 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
                         ],
                         key: _billingKey,
                       ),
+                    const SizedBox(height: 20),
+                    _section(
+                      l10n.premiumBenefitsTitle,
+                      [
+                        _benefit(
+                          Icons.layers_outlined,
+                          l10n.settingsAdditionalSourceProtocolsTitle,
+                          l10n.premiumProtocolsBenefit,
+                        ),
+                        const Divider(height: 24),
+                        _benefit(
+                          Icons.wifi_rounded,
+                          l10n.settingsPrivateBookSourceNetworkTitle,
+                          l10n.premiumPrivateNetworkBenefit,
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          l10n.premiumSourceNotice,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.5,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        if (premium) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            l10n.premiumSetupHint,
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1.5,
+                              color: colors.primary,
+                            ),
+                          ),
+                        ],
+                      ],
+                      key: const ValueKey('premium-benefits'),
+                    ),
                     const SizedBox(height: 22),
                     if (!premium)
                       Text(
@@ -431,6 +470,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
       builder: (_) => PremiumPolicyPage(
         policy: policy,
         usesAppleBilling: _usesAppleBilling,
+        usesGoogleBilling: AppDistribution.usesGoogleBilling,
       ),
     ),
   );
@@ -456,6 +496,7 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
     }
     if (sources.contains('card')) return l10n.premiumOtherChannelAccess;
     if (sources.contains('apple')) return l10n.premiumAppleAccess;
+    if (sources.contains('google_play')) return l10n.premiumExistingAccess;
     return l10n.premiumExistingAccess;
   }
 
@@ -656,25 +697,26 @@ class _PremiumMembershipPageState extends State<PremiumMembershipPage>
 
   String? _purchaseStatus(
     BuildContext context,
-    ApplePremiumPurchaseService purchase,
+    MemberAccountController account,
   ) {
     final l10n = context.l10n;
-    return switch (purchase.phase) {
-      ApplePurchasePhase.idle ||
-      ApplePurchasePhase.loadingProduct ||
-      ApplePurchasePhase.purchasing => null,
-      ApplePurchasePhase.pending => l10n.premiumPendingApproval,
-      ApplePurchasePhase.verifying => l10n.premiumVerifying,
-      ApplePurchasePhase.restoring => l10n.premiumRestoring,
-      ApplePurchasePhase.purchased =>
-        widget.account.hasPremiumAccess ? l10n.premiumPurchaseSuccess : null,
-      ApplePurchasePhase.restored =>
-        widget.account.hasPremiumAccess ? l10n.premiumRestoreSuccess : null,
-      ApplePurchasePhase.testVerified => l10n.premiumTestPurchaseVerified,
-      ApplePurchasePhase.revoked => l10n.premiumPurchaseRevoked,
-      ApplePurchasePhase.nothingToRestore => l10n.premiumRestoreEmpty,
-      ApplePurchasePhase.canceled => l10n.premiumPurchaseCanceled,
-      ApplePurchasePhase.failed => purchase.error,
+    return switch (account.premiumPurchasePhase) {
+      StorePurchasePhase.idle ||
+      StorePurchasePhase.loadingProduct ||
+      StorePurchasePhase.purchasing => null,
+      StorePurchasePhase.pending => l10n.premiumPendingApproval,
+      StorePurchasePhase.verifying => l10n.premiumVerifying,
+      StorePurchasePhase.restoring => l10n.premiumRestoring,
+      StorePurchasePhase.purchased =>
+        account.hasPremiumAccess ? l10n.premiumPurchaseSuccess : null,
+      StorePurchasePhase.restored =>
+        account.hasPremiumAccess ? l10n.premiumRestoreSuccess : null,
+      StorePurchasePhase.testVerified => l10n.premiumTestPurchaseVerified,
+      StorePurchasePhase.revoked => l10n.premiumPurchaseRevoked,
+      StorePurchasePhase.nothingToRestore =>
+        _usesAppleBilling ? l10n.premiumRestoreEmpty : l10n.storeRestoreEmpty,
+      StorePurchasePhase.canceled => l10n.premiumPurchaseCanceled,
+      StorePurchasePhase.failed => account.premiumPurchaseError,
     };
   }
 }

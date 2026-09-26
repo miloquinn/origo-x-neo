@@ -177,6 +177,9 @@ class BuildIpaTests(unittest.TestCase):
             with patch.object(build, 'run_step', side_effect=fake_step), contextlib.redirect_stdout(io.StringIO()):
                 args = self.args('--build-number', number, *(['--upload'] if upload else []))
                 self.assertEqual(build.execute(args), 0)
+            flutter = next(call[1] for call in calls if call[1][:3] == ['flutter', 'build', 'ios'])
+            self.assertIn('--dart-define=ORIGO_DISTRIBUTION_CHANNEL=appleStore', flutter)
+            self.assertIn('--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=true', flutter)
             pod = next(call for call in calls if call[1][0] == 'pod')
             self.assertEqual(pod[2], self.root / 'ios')
             xcode = [call[1] for call in calls if call[1][0] == 'xcodebuild']

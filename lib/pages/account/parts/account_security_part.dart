@@ -15,89 +15,168 @@ class _AccountSecurityPage extends StatelessWidget {
         title: context.l10n.accountSecurityTitle,
         body: user == null
             ? const SizedBox.shrink()
-            : ListView(
-                padding: floatingSubpagePadding(context, bottom: 40),
-                children: [
-                  if (user.emailIsRelay) ...[
-                    _RelayEmailBannerCard(
-                      onTap: () => Navigator.of(context).push<void>(
-                        MaterialPageRoute(
-                          builder: (_) => const _ChangeEmailPage(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  _LoginMethodsCard(user: user),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    child: Column(
-                      children: [
-                        _AccountActionTile(
-                          key: const ValueKey('account-change-email'),
-                          icon: Icons.mark_email_unread_outlined,
-                          title: context.l10n.accountChangeEmailTitle,
-                          subtitle: user.email,
+            : Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: ListView(
+                    padding: floatingSubpagePadding(context, bottom: 40),
+                    children: [
+                      if (user.emailIsRelay) ...[
+                        _RelayEmailBannerCard(
                           onTap: () => Navigator.of(context).push<void>(
                             MaterialPageRoute(
                               builder: (_) => const _ChangeEmailPage(),
                             ),
                           ),
                         ),
-                        const Divider(height: 1),
-                        _AccountActionTile(
-                          key: const ValueKey('account-change-password'),
-                          icon: Icons.password_rounded,
-                          title: context.l10n.accountChangePasswordTitle,
-                          subtitle: context.l10n.accountPasswordLengthHint,
-                          onTap: () => Navigator.of(context).push<void>(
-                            MaterialPageRoute(
-                              builder: (_) => const _ChangePasswordPage(),
+                        const SizedBox(height: 16),
+                      ],
+                      _SecurityActionGroup(
+                        children: [
+                          _AccountActionTile(
+                            key: const ValueKey('account-change-email'),
+                            icon: Icons.alternate_email_rounded,
+                            title: context.l10n.accountChangeEmailTitle,
+                            subtitle: user.email,
+                            onTap: () => Navigator.of(context).push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => const _ChangeEmailPage(),
+                              ),
                             ),
                           ),
-                        ),
-                        const Divider(height: 1),
-                        _AccountActionTile(
-                          key: const ValueKey('account-mfa-setup'),
-                          icon: Icons.phonelink_lock_rounded,
-                          title: context.l10n.accountMfaTitle,
-                          subtitle: status == null
-                              ? context.l10n.accountSecurityLoading
-                              : status.enabled
-                              ? context.l10n.accountMfaEnabled
-                              : context.l10n.accountMfaDisabledByDefault,
-                          onTap: status == null
-                              ? null
-                              : () => Navigator.of(context).push<void>(
-                                  MaterialPageRoute(
-                                    builder: (_) => const _MfaOverviewPage(),
+                          _AccountActionTile(
+                            key: const ValueKey('account-change-password'),
+                            icon: Icons.password_rounded,
+                            title: context.l10n.accountChangePasswordTitle,
+                            subtitle: context.l10n.accountPasswordLengthHint,
+                            onTap: () => Navigator.of(context).push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => const _ChangePasswordPage(),
+                              ),
+                            ),
+                          ),
+                          _AccountActionTile(
+                            key: const ValueKey('account-mfa-setup'),
+                            icon: Icons.phonelink_lock_rounded,
+                            title: context.l10n.accountMfaTitle,
+                            subtitle: status == null
+                                ? context.l10n.accountSecurityLoading
+                                : status.enabled
+                                ? context.l10n.accountMfaEnabled
+                                : context.l10n.accountMfaDisabledByDefault,
+                            onTap: status == null
+                                ? null
+                                : () => Navigator.of(context).push<void>(
+                                    MaterialPageRoute(
+                                      builder: (_) => const _MfaOverviewPage(),
+                                    ),
                                   ),
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    child: _AccountActionTile(
-                      key: const ValueKey('account-delete-entry'),
-                      icon: Icons.person_remove_outlined,
-                      title: context.l10n.accountDeleteTitle,
-                      subtitle: context.l10n.accountDeleteEntrySubtitle,
-                      destructive: true,
-                      onTap: () => Navigator.of(context).push<void>(
-                        MaterialPageRoute(
-                          builder: (_) => const _DeleteAccountPage(),
-                        ),
+                          ),
+                          _AccountActionTile(
+                            key: const ValueKey('account-login-methods'),
+                            icon: Icons.key_rounded,
+                            title: context.l10n.accountSignInMethodsTitle,
+                            subtitle: user.authMethods
+                                .map(
+                                  (method) =>
+                                      _loginMethodLabel(context, method),
+                                )
+                                .join(' · '),
+                            onTap: () => Navigator.of(context).push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => _LoginMethodsPage(user: user),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      _SecurityActionGroup(
+                        children: [
+                          _AccountActionTile(
+                            key: const ValueKey('account-delete-entry'),
+                            icon: Icons.person_remove_outlined,
+                            title: context.l10n.accountDeleteTitle,
+                            subtitle: context.l10n.accountDeleteEntrySubtitle,
+                            destructive: true,
+                            onTap: () => Navigator.of(context).push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => const _DeleteAccountPage(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
       );
     },
   );
 }
+
+class _SecurityActionGroup extends StatelessWidget {
+  const _SecurityActionGroup({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        child: Column(
+          children: [
+            for (var index = 0; index < children.length; index++) ...[
+              children[index],
+              if (index != children.length - 1)
+                Divider(height: 1, color: scheme.outlineVariant),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginMethodsPage extends StatelessWidget {
+  const _LoginMethodsPage({required this.user});
+
+  final MemberUser user;
+
+  @override
+  Widget build(BuildContext context) => FloatingSubpageScaffold(
+    title: context.l10n.accountSignInMethodsTitle,
+    body: Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: ListView(
+          padding: floatingSubpagePadding(context, bottom: 40),
+          children: [_LoginMethodsCard(user: user)],
+        ),
+      ),
+    ),
+  );
+}
+
+String _loginMethodLabel(BuildContext context, String method) =>
+    switch (method) {
+      'github' => 'GitHub',
+      'google' => 'Google',
+      'apple' => 'Apple',
+      'passkey' => 'Passkey',
+      'password' => context.l10n.accountPassword,
+      'email_code' => context.l10n.accountEmail,
+      _ => method,
+    };
 
 class _ChangeEmailPage extends StatefulWidget {
   const _ChangeEmailPage();
@@ -168,6 +247,8 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
   final _currentPassword = TextEditingController();
   final _newEmailCode = TextEditingController();
   MemberEmailChangeChallenge? _challenge;
+  _CurrentEmailVerification _currentVerification =
+      _CurrentEmailVerification.emailCode;
 
   @override
   void dispose() {
@@ -190,10 +271,16 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
       await account.changeEmail(
         newEmail: _newEmail.text,
         currentChallengeId: challenge.currentChallengeId,
-        currentCode: _currentEmailCode.text.isNotEmpty
+        currentCode:
+            challenge.currentCodeRequired &&
+                _currentVerification == _CurrentEmailVerification.emailCode &&
+                _currentEmailCode.text.isNotEmpty
             ? _currentEmailCode.text
             : null,
-        currentPassword: _currentPassword.text.isNotEmpty
+        currentPassword:
+            challenge.currentCodeRequired &&
+                _currentVerification == _CurrentEmailVerification.password &&
+                _currentPassword.text.isNotEmpty
             ? _currentPassword.text
             : null,
         newChallengeId: challenge.newChallengeId,
@@ -214,101 +301,153 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
     final account = context.watch<MemberAccountController>();
     final user = account.user;
     // Apple 隐藏邮箱收不到当前侧验证码：请求前由用户标记判断，请求后以服务端回执为准。
-    final relaySkip =
-        _challenge != null ? !_challenge!.currentCodeRequired : false;
+    final relaySkip = _challenge != null
+        ? !_challenge!.currentCodeRequired
+        : false;
     final relayEmail = user?.emailIsRelay ?? false;
     return FloatingSubpageScaffold(
       title: '',
       showHeader: false,
       body: user == null
           ? const SizedBox.shrink()
-          : ListView(
-              padding: floatingSubpagePadding(
-                context,
-                left: 20,
-                top: 0,
-                right: 20,
-                bottom: 40,
-              ),
-              children: [
-                _FlowIntro(
-                  icon: _challenge == null
-                      ? Icons.alternate_email_rounded
-                      : Icons.mark_email_read_outlined,
-                  title: _challenge == null
-                      ? context.l10n.accountChangeEmailEnterTitle
-                      : context.l10n.accountChangeEmailVerifyTitle,
-                  body: _challenge == null
-                      ? (relayEmail
-                            ? context.l10n.accountChangeEmailEnterRelayHint
-                            : context.l10n.accountChangeEmailEnterHint)
-                      : (relaySkip
-                            ? context.l10n.accountChangeEmailVerifyRelayHint
-                            : context.l10n.accountChangeEmailVerifyHint),
-                ),
-                const SizedBox(height: 16),
-                _SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        '${context.l10n.accountCurrentEmail}: ${user.email}',
-                      ),
-                      const SizedBox(height: 14),
-                      if (_challenge == null)
-                        _accountTextField(
-                          _newEmail,
-                          context.l10n.accountNewEmail,
-                          Icons.mark_email_unread_outlined,
-                          keyboardType: TextInputType.emailAddress,
-                        )
-                      else if (relaySkip)
-                        _RelayEmailNotice(
-                          message: context
-                              .l10n
-                              .accountChangeEmailVerifyRelayHint,
-                        )
-                      else ...[
-                        _accountTextField(
-                          _currentEmailCode,
-                          context.l10n.accountCurrentEmailCode,
-                          Icons.password_rounded,
-                          keyboardType: TextInputType.number,
-                        ),
-                        const SizedBox(height: 12),
-                        _accountTextField(
-                          _currentPassword,
-                          context.l10n.accountCurrentPasswordInstead,
-                          Icons.key_rounded,
-                          obscure: true,
-                        ),
-                      ],
-                      if (_challenge != null) ...[
-                        const SizedBox(height: 12),
-                        _accountTextField(
-                          _newEmailCode,
-                          context.l10n.accountNewEmailCode,
-                          Icons.password_rounded,
-                          keyboardType: TextInputType.number,
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        key: const ValueKey('account-change-email-submit'),
-                        onPressed: account.loading ? null : _submit,
-                        child: Text(
-                          _challenge == null
-                              ? context.l10n.accountSendBothCodes
-                              : context.l10n.accountChangeEmailAction,
-                        ),
-                      ),
-                    ],
+          : Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: ListView(
+                  padding: floatingSubpagePadding(
+                    context,
+                    left: 20,
+                    top: 0,
+                    right: 20,
+                    bottom: 40,
                   ),
+                  children: [
+                    _FlowIntro(
+                      icon: _challenge == null
+                          ? Icons.alternate_email_rounded
+                          : Icons.mark_email_read_outlined,
+                      title: _challenge == null
+                          ? context.l10n.accountChangeEmailEnterTitle
+                          : context.l10n.accountChangeEmailVerifyTitle,
+                      body: _challenge == null
+                          ? (relayEmail
+                                ? context.l10n.accountChangeEmailEnterRelayHint
+                                : context.l10n.accountChangeEmailEnterHint)
+                          : (relaySkip
+                                ? context.l10n.accountChangeEmailVerifyRelayHint
+                                : context.l10n.accountChangeEmailVerifyHint),
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '${context.l10n.accountCurrentEmail}: ${user.email}',
+                          ),
+                          const SizedBox(height: 14),
+                          if (_challenge == null)
+                            _accountTextField(
+                              _newEmail,
+                              context.l10n.accountNewEmail,
+                              Icons.mark_email_unread_outlined,
+                              keyboardType: TextInputType.emailAddress,
+                            )
+                          else if (relaySkip)
+                            _RelayEmailNotice(
+                              message: context
+                                  .l10n
+                                  .accountChangeEmailVerifyRelayHint,
+                            )
+                          else ...[
+                            if (user.authMethods.contains('password')) ...[
+                              _CurrentEmailVerificationPicker(
+                                value: _currentVerification,
+                                onChanged: (value) => setState(
+                                  () => _currentVerification = value,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            if (_currentVerification ==
+                                    _CurrentEmailVerification.password &&
+                                user.authMethods.contains('password'))
+                              _accountTextField(
+                                _currentPassword,
+                                context.l10n.accountCurrentPasswordInstead,
+                                Icons.key_rounded,
+                                obscure: true,
+                              )
+                            else
+                              _accountTextField(
+                                _currentEmailCode,
+                                context.l10n.accountCurrentEmailCode,
+                                Icons.password_rounded,
+                                keyboardType: TextInputType.number,
+                              ),
+                          ],
+                          if (_challenge != null) ...[
+                            const SizedBox(height: 12),
+                            _accountTextField(
+                              _newEmailCode,
+                              context.l10n.accountNewEmailCode,
+                              Icons.password_rounded,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          FilledButton(
+                            key: const ValueKey('account-change-email-submit'),
+                            onPressed: account.loading ? null : _submit,
+                            child: Text(
+                              _challenge == null
+                                  ? context.l10n.accountSendBothCodes
+                                  : context.l10n.accountChangeEmailAction,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
     );
   }
+}
+
+enum _CurrentEmailVerification { emailCode, password }
+
+class _CurrentEmailVerificationPicker extends StatelessWidget {
+  const _CurrentEmailVerificationPicker({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final _CurrentEmailVerification value;
+  final ValueChanged<_CurrentEmailVerification> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    key: const ValueKey('account-current-verification-picker'),
+    spacing: 8,
+    runSpacing: 8,
+    children: [
+      ChoiceChip(
+        key: const ValueKey('account-verify-current-email'),
+        label: Text(context.l10n.accountVerificationCode),
+        selected: value == _CurrentEmailVerification.emailCode,
+        onSelected: (_) => onChanged(_CurrentEmailVerification.emailCode),
+      ),
+      ChoiceChip(
+        key: const ValueKey('account-verify-current-password'),
+        label: Text(context.l10n.accountPassword),
+        selected: value == _CurrentEmailVerification.password,
+        onSelected: (_) => onChanged(_CurrentEmailVerification.password),
+      ),
+    ],
+  );
 }
 
 /// Apple 隐藏邮箱的当前侧豁免提示，替代收不到的“当前邮箱验证码”输入框。

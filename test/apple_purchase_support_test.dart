@@ -31,6 +31,34 @@ void main() {
     expect(transactionIds, {'101', '202'});
   });
 
+  test(
+    'iOS restore passes the requested new product domain to StoreKit',
+    () async {
+      MethodCall? received;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        received = call;
+        return ['reader-transaction'];
+      });
+      final support = ApplePurchaseSupport(
+        channel: channel,
+        platform: TargetPlatform.iOS,
+      );
+      final ids = await support.syncPurchases(
+        productIds: {
+          'com.niki.xxread.reader.lifetime',
+          'com.niki.xxread.reader.trial14d',
+        },
+      );
+      expect(received?.arguments, {
+        'productIds': [
+          'com.niki.xxread.reader.lifetime',
+          'com.niki.xxread.reader.trial14d',
+        ],
+      });
+      expect(ids, {'reader-transaction'});
+    },
+  );
+
   test('iOS restore surfaces native cancellation unchanged', () async {
     messenger.setMockMethodCallHandler(channel, (_) async {
       throw PlatformException(code: 'purchase_cancelled');

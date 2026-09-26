@@ -137,6 +137,8 @@ def run_step(label, command, log, cwd=ROOT):
 def flutter_config_command(args):
     return ['flutter', 'build', 'macos', '--config-only', '--release', '--no-pub',
             dist.MACOS_APP_STORE_DART_DEFINE,
+            dist.APPLE_DISTRIBUTION_DART_DEFINE,
+            dist.READER_LICENSE_ENABLED_DART_DEFINE,
             '--build-name', args.build_name, '--build-number', args.build_number]
 
 

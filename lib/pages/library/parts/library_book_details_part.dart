@@ -5,6 +5,7 @@ part of '../library_page.dart';
 
 extension _LibraryPageBookDetails on _LibraryPageState {
   void _showBookOptions(Book book) {
+    final libraryContext = context;
     final scheme = Theme.of(context).colorScheme;
     final isMaterial3Style = _isMaterial3Style;
     final useBlur = !isMaterial3Style && !GlassEffectConfig.shouldDisableBlur;
@@ -296,7 +297,10 @@ extension _LibraryPageBookDetails on _LibraryPageState {
                         onTap: () {
                           Navigator.pop(context);
                           unawaited(
-                            showReadingDataExportDialog(context, book: book),
+                            showReadingDataExportDialog(
+                              libraryContext,
+                              book: book,
+                            ),
                           );
                         },
                       ),

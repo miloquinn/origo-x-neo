@@ -185,7 +185,7 @@ void main() {
       );
       navigatorKey.currentState!.push<void>(
         BookOpenTransition.createRoute<void>(
-          NativeReaderPage(
+          (_) => NativeReaderPage(
             replaceRuleService: replaceRuleService,
             initialTheme: ReaderThemes.day,
             book: Book(

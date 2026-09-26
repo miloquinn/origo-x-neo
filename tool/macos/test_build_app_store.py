@@ -59,9 +59,13 @@ class BuildMacAppStoreTests(unittest.TestCase):
     def write_store_defines(self):
         xcconfig = dist.GENERATED_XCCONFIG
         xcconfig.parent.mkdir(parents=True, exist_ok=True)
-        xcconfig.write_text(
-            'DART_DEFINES=' + dist.encode_dart_define(dist.MACOS_APP_STORE_ASSIGNMENT) + '\n'
+        assignments = (
+            dist.MACOS_APP_STORE_ASSIGNMENT,
+            dist.APPLE_DISTRIBUTION_ASSIGNMENT,
+            dist.READER_LICENSE_ENABLED_ASSIGNMENT,
         )
+        encoded = ','.join(dist.encode_dart_define(item) for item in assignments)
+        xcconfig.write_text(f'DART_DEFINES={encoded}\n')
 
     def archive(self, archive, *, version='2.6.7', number='1', bundle=build.BUNDLE_ID):
         app = archive / 'Products/Applications/开元阅读.app'
@@ -78,6 +82,8 @@ class BuildMacAppStoreTests(unittest.TestCase):
     def test_flutter_config_includes_store_define(self):
         command = build.flutter_config_command(self.args())
         self.assertIn(dist.MACOS_APP_STORE_DART_DEFINE, command)
+        self.assertIn(dist.APPLE_DISTRIBUTION_DART_DEFINE, command)
+        self.assertIn(dist.READER_LICENSE_ENABLED_DART_DEFINE, command)
         self.assertIn('--config-only', command)
 
     def test_macos_team_id_overrides_ios_team(self):

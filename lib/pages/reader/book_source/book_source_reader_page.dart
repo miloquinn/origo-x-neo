@@ -77,6 +77,7 @@ import 'package:xxread/widgets/reader_annotated_text_page.dart';
 import 'package:xxread/widgets/reader_aloud_panel.dart';
 import 'package:xxread/widgets/reader_auto_page_turn_controls.dart';
 import 'package:xxread/widgets/reader_auto_scroll_surface.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 import 'package:xxread/widgets/reader_sweep_page_turn.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 import 'package:xxread/widgets/reader_cover_page_turn.dart';

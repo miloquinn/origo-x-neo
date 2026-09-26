@@ -195,14 +195,14 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
       if (!mounted) return;
       if (fullBook.isOnline) {
         try {
-          final reader = buildOnlineReader(
-            shelfBook: fullBook,
-            shelfService: _sourceShelfService,
-            replaceRuleService: context.read<ReplaceRuleService>(),
-            initialTheme: initialTheme,
-          );
+          final replaceRuleService = context.read<ReplaceRuleService>();
           final route = BookOpenTransition.createRoute<void>(
-            reader,
+            (_) => buildOnlineReader(
+              shelfBook: fullBook,
+              shelfService: _sourceShelfService,
+              replaceRuleService: replaceRuleService,
+              initialTheme: initialTheme,
+            ),
             animation: animation,
             libraryAnimation: animation == null ? libraryAnimation : null,
             animationPace: animationPace,

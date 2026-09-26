@@ -21,6 +21,65 @@ void main() {
   final screenshotDirectory = Platform.environment['PREMIUM_SCREENSHOT_DIR'];
 
   setUp(AppDistribution.debugReset);
+
+  for (final ready in [true, false]) {
+    testWidgets('Google Play shows only native payment actions, ready=$ready', (
+      tester,
+    ) async {
+      AppDistribution.debugOverride(channel: AppDistributionChannel.googlePlay);
+      final store = _FakeAppleStore();
+      final account = _TestAccount(
+        store: store,
+        billingReady: ready,
+        offerTrial: true,
+      );
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+      await _pumpPage(tester, account: account);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('account-google-purchase')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('account-google-restore')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('store-start-trial')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('account-redemption-code')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('account-apple-purchase')),
+        findsNothing,
+      );
+      expect(
+        find.text('商店购买暂未开放，请稍后重试。已有权益不受影响。'),
+        ready ? findsNothing : findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('store Premium stays hidden until the app is permanently owned', (
+    tester,
+  ) async {
+    AppDistribution.debugOverride(channel: AppDistributionChannel.googlePlay);
+    final store = _FakeAppleStore();
+    final account = _TestAccount(store: store, permanentReader: false);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('store-reader-license-page')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('premium-membership-card')), findsNothing);
+    expect(find.byKey(const ValueKey('account-google-purchase')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
   tearDown(() {
     AppDistribution.debugReset();
     _resetPlatform();
@@ -113,7 +172,7 @@ void main() {
 
       expect(find.text('¥28.00'), findsOneWidget);
       expect(find.text('更多书源协议'), findsOneWidget);
-      expect(find.text('允许内网书源'), findsOneWidget);
+      expect(find.textContaining('局域网'), findsOneWidget);
       expect(find.text('会员不提供书籍内容或书源地址，第三方服务可能另行收费。'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('account-apple-restore')),
@@ -122,6 +181,14 @@ void main() {
       expect(
         find.byKey(const ValueKey('account-redemption-code')),
         findsNothing,
+      );
+      expect(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('account-apple-purchase')))
+            .dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(const ValueKey('premium-benefits'))).dy,
+        ),
       );
       _resetPlatform();
     },
@@ -251,7 +318,7 @@ void main() {
       await _pumpPage(tester, account: account);
       await tester.pumpAndSettle();
 
-      expect(find.text('App Store 商品尚未配置或不可用'), findsOneWidget);
+      expect(find.text('商店商品尚未配置或不可用'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('account-apple-restore')),
         findsOneWidget,
@@ -605,15 +672,37 @@ Future<void> _capture(WidgetTester tester, GlobalKey key, String path) async {
 
 class _TestAccount extends MemberAccountController {
   _TestAccount({
-    required ApplePurchaseStore store,
+    required PurchaseStore store,
     this.premium = false,
     this.source,
     this.expiresAt,
-  }) : super(appleStore: store);
+    this.billingReady = true,
+    this.offerTrial = false,
+    this.permanentReader = true,
+  }) : super(purchaseStore: store);
 
   final bool premium;
   final String? source;
   final DateTime? expiresAt;
+  final bool billingReady;
+  final bool offerTrial;
+  final bool permanentReader;
+
+  @override
+  bool get hasPermanentReaderAccess => permanentReader;
+
+  @override
+  MemberMembershipConfig get membershipConfig => MemberMembershipConfig(
+    product: 'premium_lifetime',
+    features: const [],
+    googleProductId: MemberAccountController.appleProductId,
+    premiumGoogleProductId: MemberAccountController.appleProductId,
+    premiumAppleProductId: MemberAccountController.appleProductId,
+    appleTrialProductId: 'trial.14days',
+    googleBillingEnabled: billingReady,
+    appleBillingEnabled: billingReady,
+    storeTrialEnabled: offerTrial,
+  );
 
   @override
   MemberMembership get membership => MemberMembership(
@@ -651,7 +740,7 @@ class _TestAccount extends MemberAccountController {
   static final _createdAt = DateTime.utc(2026, 1, 1);
 }
 
-class _FakeAppleStore implements ApplePurchaseStore {
+class _FakeAppleStore implements PurchaseStore {
   _FakeAppleStore({this.productAvailable = true});
 
   final bool productAvailable;
@@ -711,6 +800,8 @@ class _FakeAppleStore implements ApplePurchaseStore {
   Future<void> completePurchase(PurchaseDetails purchase) async {}
 
   @override
-  Future<Set<String>?> restorePurchases({String? applicationUserName}) async =>
-      const {};
+  Future<Set<String>?> restorePurchases({
+    String? applicationUserName,
+    Set<String>? productIds,
+  }) async => const {};
 }

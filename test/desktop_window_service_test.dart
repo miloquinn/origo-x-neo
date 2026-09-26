@@ -19,7 +19,7 @@ void main() {
       ),
     );
     final route = BookOpenTransition.createRoute<void>(
-      const Scaffold(body: Text('reader')),
+      (_) => const Scaffold(body: Text('reader')),
     );
     navigatorKey.currentState!.push(route);
     await tester.pumpAndSettle();
@@ -46,7 +46,7 @@ void main() {
         ),
       );
       final route = BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
       );
       navigatorKey.currentState!.push(route);
       await tester.pumpAndSettle();

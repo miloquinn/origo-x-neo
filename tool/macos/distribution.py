@@ -13,6 +13,16 @@ MACOS_APP_STORE_ASSIGNMENT = f'{MACOS_APP_STORE_KEY}={MACOS_APP_STORE_VALUE}'
 MACOS_APP_STORE_DART_DEFINE = f'--dart-define={MACOS_APP_STORE_ASSIGNMENT}'
 MACOS_WEBSITE_ASSIGNMENT = f'{MACOS_APP_STORE_KEY}=false'
 MACOS_WEBSITE_DART_DEFINE = f'--dart-define={MACOS_WEBSITE_ASSIGNMENT}'
+DISTRIBUTION_KEY = 'ORIGO_DISTRIBUTION_CHANNEL'
+DIRECT_DISTRIBUTION_ASSIGNMENT = f'{DISTRIBUTION_KEY}=direct'
+DIRECT_DISTRIBUTION_DART_DEFINE = f'--dart-define={DIRECT_DISTRIBUTION_ASSIGNMENT}'
+APPLE_DISTRIBUTION_ASSIGNMENT = f'{DISTRIBUTION_KEY}=appleStore'
+APPLE_DISTRIBUTION_DART_DEFINE = f'--dart-define={APPLE_DISTRIBUTION_ASSIGNMENT}'
+READER_LICENSE_KEY = 'ORIGO_STORE_READER_LICENSE_REQUIRED'
+READER_LICENSE_ENABLED_ASSIGNMENT = f'{READER_LICENSE_KEY}=true'
+READER_LICENSE_ENABLED_DART_DEFINE = f'--dart-define={READER_LICENSE_ENABLED_ASSIGNMENT}'
+READER_LICENSE_DISABLED_ASSIGNMENT = f'{READER_LICENSE_KEY}=false'
+READER_LICENSE_DISABLED_DART_DEFINE = f'--dart-define={READER_LICENSE_DISABLED_ASSIGNMENT}'
 
 
 class DistributionError(Exception):
@@ -79,6 +89,14 @@ def assert_website_distribution(defines):
         raise DistributionError(
             f'Website / notarized macOS builds require {MACOS_WEBSITE_ASSIGNMENT}'
         )
+    if defines.get(DISTRIBUTION_KEY) != 'direct':
+        raise DistributionError(
+            f'Website / notarized macOS builds require {DIRECT_DISTRIBUTION_ASSIGNMENT}'
+        )
+    if defines.get(READER_LICENSE_KEY) != 'false':
+        raise DistributionError(
+            f'Website / notarized macOS builds require {READER_LICENSE_DISABLED_ASSIGNMENT}'
+        )
 
 
 def assert_app_store_distribution(defines):
@@ -86,6 +104,14 @@ def assert_app_store_distribution(defines):
         raise DistributionError(
             'Mac App Store builds must set '
             f'{MACOS_APP_STORE_ASSIGNMENT} so StoreKit billing is compiled in'
+        )
+    if defines.get(DISTRIBUTION_KEY) != 'appleStore':
+        raise DistributionError(
+            f'Mac App Store builds require {APPLE_DISTRIBUTION_ASSIGNMENT}'
+        )
+    if defines.get(READER_LICENSE_KEY) != 'true':
+        raise DistributionError(
+            'Mac App Store builds require reader licensing for independent app purchases'
         )
 
 

@@ -1,6 +1,12 @@
-# 开元阅读会员服务条款
+# Origo X 应用解锁与高级版条款
 
-更新日期：2026-09-10。适用于 App Store 内购商品 `com.niki.xxread.premium.lifetime`。
+更新日期：2026-09-26。适用于独立应用解锁 `com.niki.xxread.reader.lifetime`、14 天试用 `com.niki.xxread.reader.trial14d` 和高级版 `com.niki.xxread.premium.lifetime.v2`。旧商品的既有承诺保持有效。
+
+## 应用阅读与试用
+
+应用永久解锁美国基准价 US$9.99，无需 Origo 登录，跟随购买时的 Apple 账号恢复。可先领取一次零价 14 天阅读试用，不自动扣款；期限从原始交易时间计算，结束后需永久解锁才能继续阅读。书籍、笔记和备份保留。
+
+高级版单独出售，美国基准价 US$8.99；仅在永久拥有应用后显示与开放购买，试用不满足条件。高级版不包含应用阅读许可。实际地区价格以商店付款页面为准。
 
 ## 会员权益
 
@@ -18,11 +24,11 @@
 
 ## 账号与权益
 
-购买验证后，会员权益绑定当前开元阅读账号，并在支持的平台间同步。设置入口会随会员状态显示；退出登录或权益被撤销后，高级功能将停用。请在购买前确认当前账号。
+购买验证后，会员权益绑定当前 Origo 账号，并在支持的平台间同步。设置入口会随会员状态显示；退出登录或权益被撤销后，高级功能将停用。请在购买前确认当前账号。
 
 ## 恢复购买
 
-重新安装或更换设备后，请使用购买时的 Apple 账号及绑定的开元阅读账号恢复购买。恢复购买不会再次收费。
+重新安装或更换设备后，请使用购买时的 Apple 账号及绑定的 Origo 账号恢复购买。恢复购买不会再次收费。注销 Origo 账号会终止该账号高级权益，原高级交易不会转绑到新账号；独立应用阅读权仍可使用原 Apple 账号恢复。
 
 ## 申请退款
 
@@ -32,4 +38,4 @@ App Store 购买的退款由 Apple 按适用规则审核处理。提交申请不
 
 App Store 版本同时适用 [Apple 标准最终用户许可协议](https://www.apple.com/legal/internet-services/itunes/dev/stdeula/)。
 
-Apple 购买与退款问题可通过 [Apple 购买支持](https://reportaproblem.apple.com/)处理。应用问题可通过[开元阅读支持](https://github.com/miloquinn/origo-x/issues)反馈；请勿在公开反馈中提交交易凭据、账号密码或个人资料。
+Apple 购买与退款问题可通过 [Apple 购买支持](https://reportaproblem.apple.com/)处理。应用问题可通过[Origo X 支持](https://github.com/miloquinn/origo-x/issues)反馈；请勿在公开反馈中提交交易凭据、账号密码或个人资料。

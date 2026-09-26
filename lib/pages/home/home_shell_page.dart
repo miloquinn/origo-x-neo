@@ -157,9 +157,8 @@ class _HomeShellPageState extends State<HomeShellPage> {
 
   Future<void> _maybeShowFirstHomeSupport() async {
     if (_supportIntroCheckStarted || !widget.showFirstHomeSupport) return;
-    // The donation entry point this overlay leads to is hidden on Apple's
-    // billed storefronts (App Store Guideline 3.1.1), so skip the prompt.
-    if (AppDistribution.usesAppleBilling) return;
+    // Store builds hide the external donation entry point this prompt opens.
+    if (!AppDistribution.allowsExternalSupport) return;
     _supportIntroCheckStarted = true;
     final shouldShow = await const FirstHomeSupportIntroService()
         .claimIfUnseen();

@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import 'package:xxread/core/reader/reader_transition_work_scope.dart';
 import 'package:xxread/utils/page_transitions.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 
 /// 一次"打开书籍"动画所需的上下文：封面在屏幕上的位置与外观。
 ///
@@ -198,7 +199,7 @@ class BookOpenTransition {
   }
 
   static PageRoute<T> createRoute<T extends Object?>(
-    Widget page, {
+    WidgetBuilder pageBuilder, {
     BookOpenAnimation? animation,
     LibraryBookOpenAnimation? libraryAnimation,
     LibraryBookOpenAnimationPace animationPace =
@@ -212,9 +213,13 @@ class BookOpenTransition {
       hasCoverFlight: animation != null,
       animationPace: animationPace,
     );
+    final gatedPage = StoreReaderAccessGate(
+      pageBuilder: pageBuilder,
+      onBlockedContentReady: activity.markContentReady,
+    );
     if (animation == null) {
       return CustomPageTransitions.createSmoothReaderPageRoute<T>(
-        page,
+        gatedPage,
         origin: origin,
         libraryAnimation: libraryAnimation,
         animationPace: animationPace,
@@ -241,7 +246,7 @@ class BookOpenTransition {
           activity: activity,
           transitionAnimation: pageAnimation,
           predictiveBackInProgress: () => route.popGestureInProgress,
-          child: page,
+          child: gatedPage,
         ),
       ),
       transitionDuration: animationPace == LibraryBookOpenAnimationPace.elegant

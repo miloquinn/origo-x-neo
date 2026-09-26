@@ -448,15 +448,17 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
     unawaited(_flushReadingSession());
     final readerKey = GlobalKey<_BookSourceReaderPageState>();
     final route = MaterialPageRoute<void>(
-      builder: (_) => BookSourceReaderPage(
-        key: readerKey,
-        source: result.source,
-        book: result.book,
-        replaceRuleService: _replaceRules,
-        client: _client,
-        progressStore: widget.progressStore,
-        shelfService: _shelfService,
-        initialTheme: _readerTheme,
+      builder: (_) => StoreReaderAccessGate(
+        pageBuilder: (_) => BookSourceReaderPage(
+          key: readerKey,
+          source: result.source,
+          book: result.book,
+          replaceRuleService: _replaceRules,
+          client: _client,
+          progressStore: widget.progressStore,
+          shelfService: _shelfService,
+          initialTheme: _readerTheme,
+        ),
       ),
     );
     final handoff = BookSourceChangeReaderHandoff(

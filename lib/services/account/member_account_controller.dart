@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:crypto/crypto.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:passkeys/authenticator.dart';
 import 'package:passkeys/types.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../core/app_distribution.dart';
+import '../core/legacy_reader_access.dart';
 import '../reading/reading_account_scope.dart';
 import 'account_auth_callback_bridge.dart';
 import 'account_api_client.dart';
@@ -14,9 +17,10 @@ import 'account_avatar_cache.dart';
 import 'account_models.dart';
 import 'account_summary_cache.dart';
 import 'account_token_store.dart';
-import 'apple_purchase_service.dart';
+import 'store_purchase_service.dart';
 import 'avatar_image_processor.dart';
 import 'membership_cache.dart';
+import 'offline_reader_license.dart';
 
 class MemberAccountController extends ChangeNotifier {
   MemberAccountController({
@@ -24,64 +28,176 @@ class MemberAccountController extends ChangeNotifier {
     AccountAvatarCache? avatarCache,
     MemberAccountSummaryCache? summaryCache,
     MemberMembershipCache? membershipCache,
+    OfflineReaderLicenseStore? offlineReaderLicenseStore,
+    ReaderInstallationCredentialStore? readerCredentialStore,
+    ReaderAccessCache? readerAccessCache,
     PendingDeviceAuthorizationStore? pendingAuthorizationStore,
     AccountAuthCallbackBridge? authCallbackBridge,
-    ApplePurchaseStore? appleStore,
+    PurchaseStore? purchaseStore,
     ReadingAccountScope? readingScope,
     this.membershipRetryDelay = const Duration(seconds: 30),
-  }) : _api = api ?? MemberAccountApiClient(),
+  }) : _api =
+           api ??
+           MemberAccountApiClient(
+             offlineReaderLicenseStore: offlineReaderLicenseStore,
+             readerCredentialStore: readerCredentialStore,
+           ),
        _readingScope = readingScope ?? ReadingAccountScope.instance,
        _avatarCache = avatarCache ?? AccountAvatarCache.instance,
        _summaryCache = summaryCache ?? const MemberAccountSummaryCache(),
        _membershipCache = membershipCache ?? const MemberMembershipCache(),
+       _readerCredentialStore =
+           readerCredentialStore ?? const ReaderInstallationCredentialStore(),
+       _readerAccessCache = readerAccessCache ?? const ReaderAccessCache(),
        _pendingAuthorizationStore =
            pendingAuthorizationStore ?? SecurePendingDeviceAuthorizationStore(),
        _authCallbackBridge = authCallbackBridge ?? AccountAuthCallbackBridge() {
-    _applePurchase = ApplePremiumPurchaseService(
-      productId: appleProductId,
-      store: appleStore,
+    _apiSessionSubscription = _api.sessionInvalidations.listen((_) {
+      if (_disposed) return;
+      _user = null;
+      _pendingSession = null;
+      _sandboxStoreAccountId = null;
+      _sandboxStoreExpiresAt = null;
+      _resetMembershipSync();
+      _membership = null;
+      _summary = null;
+      _cachedMembership = null;
+      _referral = null;
+      _mfaStatus = null;
+      unawaited(_readingScope.setOwner(null));
+      unawaited(_clearSummary());
+      unawaited(_clearMembershipCache());
+      notifyListeners();
+    });
+    _storePurchase = StorePurchaseService(
+      usesAppleBilling: !AppDistribution.usesGoogleBilling,
+      store: purchaseStore,
       accountIdProvider: () => _user?.id,
-      verify: (purchase) async {
-        final accountId = _user?.id;
-        if (accountId == null) {
+      applicationUserNameProvider: (kind) {
+        if (!AppDistribution.usesGoogleBilling) {
+          return kind.domain == StorePurchaseDomain.premium ? _user?.id : null;
+        }
+        final source = kind.domain == StorePurchaseDomain.premium
+            ? _user?.id
+            : _readerCredential?.value;
+        return source == null
+            ? null
+            : sha256.convert(utf8.encode(source)).toString();
+      },
+      verify: (kind, purchase, accountId) async {
+        final verification = purchase.verificationData.serverVerificationData;
+        if (kind.domain == StorePurchaseDomain.reader) {
+          final result = AppDistribution.usesGoogleBilling
+              ? await _api.submitReaderGooglePurchase(
+                  verification,
+                  restore: purchase.status == PurchaseStatus.restored,
+                )
+              : await _api.submitReaderApplePurchase(
+                  verification,
+                  restore: purchase.status == PurchaseStatus.restored,
+                );
+          await _acceptReaderResult(result);
+          var legacyPremiumAuthorized = true;
+          if (kind == StoreProductKind.legacyBundle && accountId != null) {
+            final owner = _user!.id;
+            final legacyMembership = AppDistribution.usesGoogleBilling
+                ? await _api.submitGooglePurchase(verification)
+                : await _api.submitApplePurchase(
+                    productId: purchase.productID,
+                    verificationData: verification,
+                    purchaseId: purchase.purchaseID,
+                    transactionDate: purchase.transactionDate,
+                  );
+            if (_user?.id != owner) {
+              throw const MemberAccountException('账号已切换，请重新验证购买');
+            }
+            _checkMembershipOwner(legacyMembership, owner);
+            _membership = legacyMembership;
+            await _persistMembership();
+            legacyPremiumAuthorized = legacyMembership.hasActivePremium;
+          }
+          return StorePurchaseVerification(
+            authorized:
+                (hasPermanentReaderAccess || hasActiveReaderTrial) &&
+                legacyPremiumAuthorized,
+            pending: result.purchaseStatus == 'pending',
+            revoked: result.purchaseStatus == 'revoked',
+            testPurchase: result.testPurchase,
+          );
+        }
+        if (accountId == null || _user?.id != accountId) {
           throw const MemberAccountException('请先登录账号');
         }
-        final membership = await _api.submitApplePurchase(
-          productId: purchase.productID,
-          verificationData: purchase.verificationData.serverVerificationData,
-        );
+        final membership = AppDistribution.usesGoogleBilling
+            ? await _api.submitPremiumGooglePurchase(verification)
+            : await _api.submitPremiumApplePurchase(
+                verification,
+                restore: purchase.status == PurchaseStatus.restored,
+              );
         if (_user?.id != accountId) {
           throw const MemberAccountException('账号已切换，请重新验证购买');
         }
         _checkMembershipOwner(membership, accountId);
+        if (membership.testPurchase) {
+          final grant = membership.purchaseStatus == 'active'
+              ? membership.testAccess
+              : null;
+          _sandboxStoreAccountId = grant?.isPremium == true ? accountId : null;
+          _sandboxStoreExpiresAt = grant?.expiresAt;
+        }
         _resetMembershipSync();
         _membership = membership;
         await _persistMembership();
         _updateSummaryFromAccount();
         unawaited(_persistSummary());
         notifyListeners();
-        return membership;
+        return StorePurchaseVerification(
+          authorized: membership.hasActivePremium || hasSandboxStoreAccess,
+          pending: membership.purchaseStatus == 'pending',
+          revoked: membership.purchaseStatus == 'revoked',
+          testPurchase: membership.testPurchase,
+        );
       },
     );
+    _configureStoreProducts();
+    _storePurchase.addListener(_notifyStorePurchase);
   }
 
-  static const appleProductId = 'com.niki.xxread.premium.lifetime';
+  static const appleProductId = 'com.niki.xxread.premium.lifetime.v2';
+  static const legacyAppleBundleProductId = 'com.niki.xxread.premium.lifetime';
+  static const appleReaderProductId = 'com.niki.xxread.reader.lifetime';
+  static const appleReaderTrialProductId = 'com.niki.xxread.reader.trial14d';
+  static const googleReaderProductId = 'origo_x_reader_lifetime';
+  static const googlePremiumProductId = 'origo_x_premium_lifetime';
 
   final MemberAccountApiClient _api;
+  late final StreamSubscription<void> _apiSessionSubscription;
   final ReadingAccountScope _readingScope;
   MemberAccountApiClient get readingApi => _api;
   final AccountAvatarCache _avatarCache;
   final MemberAccountSummaryCache _summaryCache;
   final MemberMembershipCache _membershipCache;
+  final ReaderInstallationCredentialStore _readerCredentialStore;
+  final ReaderAccessCache _readerAccessCache;
+  ReaderInstallationCredential? _readerCredential;
+  ReaderAccessSnapshot? _readerAccess;
+  StoreTestAccess? _readerTestAccess;
+  ReaderOfflineAttestation? _readerAttestation;
+  String? _sandboxStoreAccountId;
+  DateTime? _sandboxStoreExpiresAt;
   final PendingDeviceAuthorizationStore _pendingAuthorizationStore;
   final AccountAuthCallbackBridge _authCallbackBridge;
-  late final ApplePremiumPurchaseService _applePurchase;
+  late final StorePurchaseService _storePurchase;
 
   final Duration membershipRetryDelay;
   Timer? _membershipRetry;
   bool _membershipSyncFailed = false;
   int _membershipRequest = 0;
   bool _disposed = false;
+  void _notifyStorePurchase() {
+    if (!_disposed) notifyListeners();
+  }
+
   Future<void>? _synchronizing;
   bool get membershipSyncFailed => _membershipSyncFailed;
 
@@ -119,7 +235,7 @@ class MemberAccountController extends ChangeNotifier {
     final active = _synchronizing;
     if (active != null) return active;
     if (_disposed) return Future<void>.value();
-    if (_loading || _applePurchase.busy) {
+    if (_loading || _storePurchase.busy) {
       _scheduleMembershipRetry(_user?.id);
       return Future<void>.value();
     }
@@ -161,12 +277,32 @@ class MemberAccountController extends ChangeNotifier {
   Timer? _membershipExpiryTimer;
   MemberMembership? get _membership => _membershipValue;
   set _membership(MemberMembership? value) {
-    _membershipExpiryTimer?.cancel();
     _membershipValue = value;
-    final expiresAt = value?.premiumExpiresAt;
+    _scheduleMembershipExpiry();
+  }
+
+  void _scheduleMembershipExpiry() {
+    _membershipExpiryTimer?.cancel();
+    final value = _membershipValue;
+    final expirations = <DateTime>[
+      ?value?.premiumExpiresAt,
+      ?value?.storeTrial?.expiresAt,
+      ?_sandboxStoreExpiresAt,
+      ?_readerTestAccess?.expiresAt,
+      ?_readerAccess?.trialExpiresAt,
+      ?_readerAttestation?.validUntil,
+      ?_readerAttestation?.trialExpiresAt,
+      for (final grant in value?.entitlements ?? <MemberEntitlement>[])
+        if (grant.featureKey == 'store_reader' && grant.expiresAt != null)
+          grant.expiresAt!,
+    ].where((expiry) => expiry.isAfter(DateTime.now())).toList()..sort();
+    final expiresAt = expirations.firstOrNull;
     if (expiresAt != null && expiresAt.isAfter(DateTime.now())) {
       _membershipExpiryTimer = Timer(expiresAt.difference(DateTime.now()), () {
-        if (!_disposed) notifyListeners();
+        if (!_disposed) {
+          _scheduleMembershipExpiry();
+          notifyListeners();
+        }
       });
     }
   }
@@ -179,11 +315,14 @@ class MemberAccountController extends ChangeNotifier {
   StreamSubscription<Uri>? _authCallbackSubscription;
   Completer<void>? _authCallbackSignal;
   Future<void>? _callbackCompletion;
+  Future<DeviceAuthorization>? _deviceAuthorizationBegin;
   Future<bool>? _deviceAuthorizationPoll;
   String? _deviceAuthorizationPollCode;
+  Future<void>? _deviceAuthorizationCancellation;
+  int _deviceAuthorizationGeneration = 0;
 
   bool get initialized => _initialized;
-  bool get loading => _loading;
+  bool get loading => _loading || _deviceAuthorizationCancellation != null;
   bool get isAuthenticated => _user != null;
   bool get mfaRequired => _pendingSession?.mfaRequired == true;
   MemberUser? get user => _user;
@@ -200,11 +339,106 @@ class MemberAccountController extends ChangeNotifier {
   /// grants access.
   bool get hasPremiumAccess =>
       _user != null && _membership?.hasActivePremium == true;
+  bool get hasActiveStoreTrial => hasActiveReaderTrial;
+
+  /// Only a live, server-verified test transaction can grant this session access.
+  /// Cached test flags never grant access, and production Premium is unchanged.
+  bool get hasSandboxStoreAccess =>
+      AppDistribution.isStore &&
+      _user != null &&
+      _sandboxStoreAccountId == _user!.id &&
+      (_sandboxStoreExpiresAt == null ||
+          _sandboxStoreExpiresAt!.isAfter(DateTime.now()));
+  bool get hasAdvancedSourceAccess =>
+      (hasPremiumAccess || hasSandboxStoreAccess) &&
+      (!AppDistribution.isStore || hasPermanentReaderAccess);
+  bool get storeBillingReady => AppDistribution.usesGoogleBilling
+      ? membershipConfig?.googleBillingEnabled == true
+      : !AppDistribution.usesAppleBilling ||
+            membershipConfig?.appleBillingEnabled == true;
+  bool get hasStoreReaderEntitlement =>
+      _user != null && _membership?.hasStoreReaderEntitlement == true;
+  bool get hasReaderAccess =>
+      !AppDistribution.readerLicenseRequired || _hasLicensedReaderAccess;
+  ReaderAccessSnapshot? get readerAccess => _readerAccess;
+  bool get hasPermanentReaderAccess =>
+      !AppDistribution.isStore ||
+      _readerTestAccess?.isReaderLifetime == true ||
+      (_readerAttestationIsCurrent &&
+          (_readerAccess?.hasPermanentAccess == true ||
+              (_readerAttestation?.readerUnlocked == true &&
+                  _readerAttestation?.trialExpiresAt == null)));
+  bool get hasActiveReaderTrial =>
+      AppDistribution.isStore &&
+      (_readerTestAccess?.isReaderTrial == true ||
+          _readerAccess?.isTrialActiveAt(DateTime.now()) == true ||
+          (_readerAttestation?.trialExpiresAt?.isAfter(DateTime.now()) ==
+              true));
+  DateTime? get readerTrialExpiresAt =>
+      (_readerTestAccess?.isReaderTrial == true
+          ? _readerTestAccess?.expiresAt
+          : null) ??
+      _readerAccess?.trialExpiresAt ??
+      _readerAttestation?.trialExpiresAt;
+  bool get canStartStoreTrial => canStartReaderTrial;
+  bool get canStartReaderTrial =>
+      AppDistribution.isStore &&
+      !_hasLicensedReaderAccess &&
+      _readerAccess?.trialStartedAt == null &&
+      _readerAccess?.trialExpiresAt == null &&
+      _readerTestAccess?.kind != 'reader_trial' &&
+      membershipConfig?.storeTrialEnabled == true &&
+      (AppDistribution.usesGoogleBilling
+          ? true
+          : membershipConfig?.readerAppleTrialProductId?.isNotEmpty == true);
+  bool get canPurchaseStorePremium =>
+      AppDistribution.isStore &&
+      isAuthenticated &&
+      hasPermanentReaderAccess &&
+      !hasPremiumAccess;
   MemberAccountSummary? get summary => _summary;
   MemberReferral? get referral => _referral;
   MemberMfaStatus? get mfaStatus => _mfaStatus;
   String? get error => _error;
-  ApplePremiumPurchaseService get applePurchase => _applePurchase;
+  StorePurchaseService get storePurchase => _storePurchase;
+  ProductDetails? get readerLifetimeProduct =>
+      _storePurchase.productFor(StoreProductKind.readerLifetime);
+  ProductDetails? get readerTrialProduct =>
+      _storePurchase.productFor(StoreProductKind.readerTrial);
+  ProductDetails? get premiumLifetimeProduct =>
+      _storePurchase.productFor(StoreProductKind.premiumLifetime);
+  StorePurchasePhase get readerPurchasePhase =>
+      _storePurchase.phaseFor(StorePurchaseDomain.reader);
+  bool get readerPurchaseLoading =>
+      _storePurchase.busyFor(StorePurchaseDomain.reader);
+  String? get readerPurchaseError =>
+      _storePurchase.errorFor(StorePurchaseDomain.reader);
+  StorePurchasePhase get premiumPurchasePhase =>
+      _storePurchase.phaseFor(StorePurchaseDomain.premium);
+  bool get premiumPurchaseLoading =>
+      _storePurchase.busyFor(StorePurchaseDomain.premium);
+  String? get premiumPurchaseError =>
+      _storePurchase.errorFor(StorePurchaseDomain.premium);
+
+  bool get _readerAttestationGrantsAccess {
+    final value = _readerAttestation;
+    if (value == null || !value.validUntil.isAfter(DateTime.now())) {
+      return false;
+    }
+    return value.readerUnlocked ||
+        value.trialExpiresAt?.isAfter(DateTime.now()) == true;
+  }
+
+  bool get _readerAttestationIsCurrent =>
+      _readerAttestation?.validUntil.isAfter(DateTime.now()) == true;
+
+  bool get _hasLicensedReaderAccess =>
+      LegacyReaderAccess.allowed ||
+      _readerTestAccess?.isReaderLifetime == true ||
+      _readerTestAccess?.isReaderTrial == true ||
+      hasStoreReaderEntitlement ||
+      (_readerAttestationIsCurrent &&
+          (_readerAccess?.unlocked == true || _readerAttestationGrantsAccess));
 
   void clearError() {
     if (_error == null) return;
@@ -226,7 +460,24 @@ class MemberAccountController extends ChangeNotifier {
         _summary = cachedValues[0] as MemberAccountSummary?;
         _cachedMembership = cachedValues[1] as CachedMemberMembership?;
         _membershipCacheLoaded = true;
-        if (_summary != null) notifyListeners();
+        if (AppDistribution.isStore) {
+          try {
+            _readerCredential = await _readerCredentialStore.getOrCreate();
+            _readerAttestation = await _readerAccessCache.load(
+              credential: _readerCredential!,
+              channel: _readerChannel,
+            );
+            final result = await _api.readerStatus(_readerChannel);
+            await _acceptReaderResult(result);
+          } catch (_) {
+            // A current server status is preferred; a still-valid opaque
+            // attestation keeps the reader available during a network outage.
+          }
+        }
+        _scheduleMembershipExpiry();
+        if (_summary != null || _readerAttestation != null) {
+          notifyListeners();
+        }
         MemberAccountException? deferred;
         try {
           final configs = await Future.wait<Object?>([
@@ -235,6 +486,15 @@ class MemberAccountController extends ChangeNotifier {
           ]);
           _authConfig = configs[0] as MemberAuthConfig;
           _membershipConfig = configs[1] as MemberMembershipConfig;
+          _configureStoreProducts();
+          if (AppDistribution.usesStoreBilling && storeBillingReady) {
+            try {
+              await _storePurchase.initialize();
+            } catch (_) {
+              // Product metadata can be retried independently from account and
+              // anonymous reader state initialization.
+            }
+          }
         } on MemberAccountException catch (error) {
           if (!_isRetryableMembershipError(error)) rethrow;
           deferred = error;
@@ -278,6 +538,7 @@ class MemberAccountController extends ChangeNotifier {
         _resetMembershipSync();
         _membership = null;
         _mfaStatus = null;
+        await _clearMembershipCache();
       }
       rethrow;
     } finally {
@@ -467,16 +728,42 @@ class MemberAccountController extends ChangeNotifier {
 
   Future<DeviceAuthorization> beginExternalLogin(
     MemberExternalAuthMethod method,
-  ) => _runValue(() async {
-    await _initializeAuthCallbackBridge();
-    final authorization = await _api.beginExternalLogin(method);
-    _pendingDeviceAuthorization = authorization;
-    _authCallbackSignal = Completer<void>();
-    await _pendingAuthorizationStore.save(
-      jsonEncode(_deviceAuthorizationJson(authorization)),
-    );
-    return authorization;
-  });
+  ) async {
+    final cancellation = _deviceAuthorizationCancellation;
+    if (cancellation != null) await cancellation;
+    final generation = ++_deviceAuthorizationGeneration;
+    late final Future<DeviceAuthorization> operation;
+    operation = _runValue(() async {
+      await _initializeAuthCallbackBridge();
+      final authorization = await _api.beginExternalLogin(method);
+      if (generation != _deviceAuthorizationGeneration) {
+        throw const MemberAccountException(
+          '授权已取消',
+          code: 'authorization_cancelled',
+        );
+      }
+      _pendingDeviceAuthorization = authorization;
+      _authCallbackSignal = Completer<void>();
+      await _pendingAuthorizationStore.save(
+        jsonEncode(_deviceAuthorizationJson(authorization)),
+      );
+      if (generation != _deviceAuthorizationGeneration) {
+        throw const MemberAccountException(
+          '授权已取消',
+          code: 'authorization_cancelled',
+        );
+      }
+      return authorization;
+    });
+    _deviceAuthorizationBegin = operation;
+    try {
+      return await operation;
+    } finally {
+      if (identical(_deviceAuthorizationBegin, operation)) {
+        _deviceAuthorizationBegin = null;
+      }
+    }
+  }
 
   Future<void> _initializeAuthCallbackBridge() async {
     if (_authCallbackSubscription != null) return;
@@ -494,6 +781,63 @@ class MemberAccountController extends ChangeNotifier {
 
   DeviceAuthorization? get pendingDeviceAuthorization =>
       _pendingDeviceAuthorization;
+
+  /// Cancels the active device authorization and invalidates every async result
+  /// that belongs to it. The returned future completes only after an already
+  /// issued begin/poll/callback has stopped and any session it wrote is cleared,
+  /// so callers may safely start a different authorization afterward.
+  Future<void> cancelPendingDeviceAuthorization() {
+    final active = _deviceAuthorizationCancellation;
+    if (active != null) return active;
+    final begin = _deviceAuthorizationBegin;
+    final poll = _deviceAuthorizationPoll;
+    final callback = _callbackCompletion;
+    final hadActiveAuthorization =
+        _pendingDeviceAuthorization != null ||
+        begin != null ||
+        poll != null ||
+        callback != null;
+    final generation = ++_deviceAuthorizationGeneration;
+    final signal = _authCallbackSignal;
+    _pendingDeviceAuthorization = null;
+    _authCallbackSignal = null;
+    _deviceAuthorizationPoll = null;
+    _deviceAuthorizationPollCode = null;
+    if (signal != null && !signal.isCompleted) signal.complete();
+
+    late final Future<void> operation;
+    operation = (() async {
+      await Future.wait<void>([
+        if (begin != null) begin.then<void>((_) {}, onError: (_) {}),
+        if (poll != null) poll.then<void>((_) {}, onError: (_) {}),
+        if (callback != null) callback.then<void>((_) {}, onError: (_) {}),
+      ]);
+      if (generation != _deviceAuthorizationGeneration) return;
+      await _pendingAuthorizationStore.clear();
+      if (!hadActiveAuthorization) return;
+      await _api.clearLocalSession();
+      await _readingScope.setOwner(null);
+      _user = null;
+      _pendingSession = null;
+      _resetMembershipSync();
+      _membership = null;
+      _summary = null;
+      _referral = null;
+      _mfaStatus = null;
+      _error = null;
+      await _clearSummary();
+      await _clearMembershipCache();
+      if (!_disposed) notifyListeners();
+    })();
+    _deviceAuthorizationCancellation = operation;
+    if (!_disposed) notifyListeners();
+    return operation.whenComplete(() {
+      if (identical(_deviceAuthorizationCancellation, operation)) {
+        _deviceAuthorizationCancellation = null;
+        if (!_disposed) notifyListeners();
+      }
+    });
+  }
 
   Future<void> waitForAuthCallback(Duration timeout) async {
     final signal = _authCallbackSignal ??= Completer<void>();
@@ -518,8 +862,13 @@ class MemberAccountController extends ChangeNotifier {
         _pendingDeviceAuthorization == null) {
       return true;
     }
+    final pending = _pendingDeviceAuthorization;
+    if (pending == null || pending.deviceCode != authorization.deviceCode) {
+      return false;
+    }
 
-    final poll = _pollDeviceAuthorizationRecovering(authorization);
+    final generation = _deviceAuthorizationGeneration;
+    final poll = _pollDeviceAuthorizationRecovering(authorization, generation);
     _deviceAuthorizationPoll = poll;
     _deviceAuthorizationPollCode = authorization.deviceCode;
     try {
@@ -534,9 +883,10 @@ class MemberAccountController extends ChangeNotifier {
 
   Future<bool> _pollDeviceAuthorizationRecovering(
     DeviceAuthorization authorization,
+    int generation,
   ) async {
     try {
-      return await _pollDeviceAuthorization(authorization);
+      return await _pollDeviceAuthorization(authorization, generation);
     } on MemberAccountException catch (error) {
       if (error.code != 'network_timeout' &&
           error.code != 'network_unavailable') {
@@ -548,12 +898,18 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<bool> _pollDeviceAuthorization(
-    DeviceAuthorization authorization,
-  ) async {
+    DeviceAuthorization authorization, [
+    int? expectedGeneration,
+  ]) async {
+    final generation = expectedGeneration ?? _deviceAuthorizationGeneration;
     var completed = false;
     await _run(() async {
       final session = await _api.pollDeviceAuthorization(authorization);
       if (session == null) return;
+      if (generation != _deviceAuthorizationGeneration ||
+          _pendingDeviceAuthorization?.deviceCode != authorization.deviceCode) {
+        return;
+      }
       _acceptSession(session);
       if (session.mfaRequired) {
         await _clearSummary();
@@ -562,6 +918,7 @@ class MemberAccountController extends ChangeNotifier {
         await _loadAccountValues();
         await _persistSummary();
       }
+      if (generation != _deviceAuthorizationGeneration) return;
       completed = true;
       _pendingDeviceAuthorization = null;
       _authCallbackSignal = null;
@@ -579,38 +936,58 @@ class MemberAccountController extends ChangeNotifier {
     if (pending == null || (code != null && code != pending.userCode)) return;
     final signal = _authCallbackSignal ??= Completer<void>();
     if (!signal.isCompleted) signal.complete();
-    _callbackCompletion ??= _completePendingAuthorizationFromCallback();
+    if (_callbackCompletion != null) return;
+    final generation = _deviceAuthorizationGeneration;
+    late final Future<void> operation;
+    operation = _completePendingAuthorizationFromCallback(generation);
+    _callbackCompletion = operation;
+    unawaited(
+      operation.whenComplete(() {
+        if (identical(_callbackCompletion, operation)) {
+          _callbackCompletion = null;
+        }
+      }),
+    );
   }
 
-  Future<void> _completePendingAuthorizationFromCallback() async {
+  Future<void> _completePendingAuthorizationFromCallback(int generation) async {
     try {
-      while (_loading) {
+      while (_loading && generation == _deviceAuthorizationGeneration) {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       }
+      if (generation != _deviceAuthorizationGeneration) return;
       final authorization = _pendingDeviceAuthorization;
       if (authorization == null || isAuthenticated || mfaRequired) return;
       await Future<void>.delayed(const Duration(milliseconds: 100));
+      if (generation != _deviceAuthorizationGeneration) return;
       await pollDeviceAuthorization(authorization);
     } catch (_) {
       // The account page polling loop remains the final fallback.
-    } finally {
-      _callbackCompletion = null;
     }
   }
 
   Future<void> _restorePendingDeviceAuthorization() async {
+    final generation = _deviceAuthorizationGeneration;
     final payload = await _pendingAuthorizationStore.read();
-    if (payload == null || payload.isEmpty) return;
+    if (generation != _deviceAuthorizationGeneration ||
+        payload == null ||
+        payload.isEmpty) {
+      return;
+    }
     try {
       final decoded = jsonDecode(payload) as Map<String, dynamic>;
-      _pendingDeviceAuthorization = DeviceAuthorization.fromJson(
+      final authorization = DeviceAuthorization.fromJson(
         MemberExternalAuthMethod.values.byName(decoded['method'] as String),
         decoded,
         baseUri: _api.baseUri,
       );
+      if (generation != _deviceAuthorizationGeneration) return;
+      _pendingDeviceAuthorization = authorization;
       _authCallbackSignal = Completer<void>();
     } catch (_) {
-      await _pendingAuthorizationStore.clear();
+      if (generation == _deviceAuthorizationGeneration) {
+        await _pendingAuthorizationStore.clear();
+      }
     }
   }
 
@@ -662,8 +1039,20 @@ class MemberAccountController extends ChangeNotifier {
     await _persistSummary();
   });
 
-  Future<void> purchaseApplePremium() async {
+  Future<void> purchaseStorePremium() async {
     if (_user == null) throw const MemberAccountException('请先登录账号');
+    await refreshReaderAccess();
+    if (!hasPermanentReaderAccess) {
+      throw const MemberAccountException('请先永久解锁应用，再购买高级版');
+    }
+    if (AppDistribution.usesGoogleBilling) {
+      _membershipConfig = await _api.membershipConfig();
+      _configureStoreProducts();
+      if (!storeBillingReady) {
+        notifyListeners();
+        throw const MemberAccountException('Google Play 购买暂未开放，请稍后重试');
+      }
+    }
     // Check authoritative access immediately before opening the payment sheet.
     final accountId = _user!.id;
     await loadMembership();
@@ -674,10 +1063,125 @@ class MemberAccountController extends ChangeNotifier {
         _membership!.purchaseAllowed == false) {
       return;
     }
-    await _applePurchase.purchase();
+    _configureStoreProducts();
+    await _storePurchase.purchaseKind(StoreProductKind.premiumLifetime);
   }
 
-  Future<void> restoreApplePremium() => _applePurchase.restore();
+  Future<void> restoreStorePurchases() async {
+    await restoreStorePremiumPurchases();
+  }
+
+  Future<void> purchaseReaderLifetime() async {
+    if (!AppDistribution.isStore) return;
+    _membershipConfig = await _api.membershipConfig();
+    _configureStoreProducts();
+    await _storePurchase.purchaseKind(StoreProductKind.readerLifetime);
+  }
+
+  Future<void> restoreReaderPurchases() async {
+    if (!AppDistribution.isStore) return;
+    _membershipConfig = await _api.membershipConfig();
+    _configureStoreProducts();
+    await _storePurchase.restoreDomain(StorePurchaseDomain.reader);
+  }
+
+  Future<void> restoreStorePremiumPurchases() async {
+    if (_user == null) throw const MemberAccountException('请先登录账号');
+    await refreshReaderAccess();
+    if (!hasPermanentReaderAccess) {
+      throw const MemberAccountException('请先恢复或购买应用永久解锁');
+    }
+    _configureStoreProducts();
+    await _storePurchase.restoreDomain(StorePurchaseDomain.premium);
+  }
+
+  Future<void> loadStoreProducts() async {
+    if (!AppDistribution.usesStoreBilling) return;
+    _membershipConfig = await _api.membershipConfig();
+    _configureStoreProducts();
+    notifyListeners();
+    if (!storeBillingReady) return;
+    await _storePurchase.initialize();
+  }
+
+  Future<void> initializeStorePurchases() async {
+    _configureStoreProducts();
+    if (!storeBillingReady) return;
+    await _storePurchase.initialize();
+  }
+
+  void _configureStoreProducts() {
+    _storePurchase.configureProductIds(
+      readerLifetime: AppDistribution.usesGoogleBilling
+          ? membershipConfig?.readerGoogleProductId ?? googleReaderProductId
+          : membershipConfig?.readerAppleProductId ?? appleReaderProductId,
+      readerTrial: AppDistribution.usesAppleBilling
+          ? membershipConfig?.readerAppleTrialProductId ??
+                appleReaderTrialProductId
+          : null,
+      premiumLifetime: AppDistribution.usesGoogleBilling
+          ? membershipConfig?.premiumGoogleProductId ?? googlePremiumProductId
+          : membershipConfig?.premiumAppleProductId ?? appleProductId,
+      legacyBundle: AppDistribution.usesAppleBilling
+          ? membershipConfig?.legacyAppleProductIds.firstOrNull ??
+                legacyAppleBundleProductId
+          : membershipConfig?.legacyGoogleProductId ?? 'origo_x_lifetime',
+    );
+  }
+
+  String get _readerChannel =>
+      AppDistribution.usesGoogleBilling ? 'google_play' : 'apple';
+
+  Future<void> refreshReaderAccess() async {
+    if (!AppDistribution.isStore) return;
+    final result = await _api.readerStatus(_readerChannel);
+    await _acceptReaderResult(result);
+  }
+
+  Future<void> _acceptReaderResult(ReaderAccessResult result) async {
+    final credential = _readerCredential ??= await _readerCredentialStore
+        .getOrCreate();
+    final attestation = result.offlineLicense;
+    if (attestation.installationKeyHash != credential.hash ||
+        attestation.channel != _readerChannel ||
+        attestation.version != 1) {
+      throw const MemberAccountException('应用解锁凭据与当前安装不匹配');
+    }
+    // A status refresh contains only Production access. Keep a verified test
+    // receipt in memory until explicit revocation or process exit.
+    if (result.testPurchase) {
+      _readerTestAccess = result.purchaseStatus == 'active'
+          ? result.testAccess
+          : null;
+    }
+    _readerAccess = result.readerAccess;
+    _readerAttestation = attestation;
+    await _readerAccessCache.save(attestation);
+    _scheduleMembershipExpiry();
+    notifyListeners();
+  }
+
+  Future<void> startStoreTrial() => startReaderTrial();
+
+  Future<void> startReaderTrial() async {
+    if (!AppDistribution.isStore) {
+      throw const MemberAccountException('试用仅适用于商店版');
+    }
+    if (_hasLicensedReaderAccess) return;
+    if (!canStartStoreTrial) {
+      throw const MemberAccountException('当前设备无法开始新的应用试用');
+    }
+    if (AppDistribution.usesAppleBilling) {
+      _membershipConfig = await _api.membershipConfig();
+      _configureStoreProducts();
+      await _storePurchase.purchaseKind(StoreProductKind.readerTrial);
+      return;
+    }
+    await _run(() async {
+      final result = await _api.startReaderTrial(_readerChannel);
+      await _acceptReaderResult(result);
+    });
+  }
 
   Future<void> loadReferral() => _run(_loadReferralValue);
 
@@ -757,9 +1261,10 @@ class MemberAccountController extends ChangeNotifier {
   @override
   void dispose() {
     _membershipExpiryTimer?.cancel();
+    unawaited(_apiSessionSubscription.cancel());
     _disposed = true;
     _resetMembershipSync();
-    _applePurchase.dispose();
+    _storePurchase.dispose();
     super.dispose();
   }
 
@@ -778,6 +1283,8 @@ class MemberAccountController extends ChangeNotifier {
 
   void _acceptSession(MemberSession session) {
     if (session.mfaRequired) {
+      _sandboxStoreAccountId = null;
+      _sandboxStoreExpiresAt = null;
       _pendingSession = session;
       _user = null;
       _resetMembershipSync();
@@ -795,6 +1302,8 @@ class MemberAccountController extends ChangeNotifier {
     unawaited(_readingScope.setOwner(session.user.id));
     final accountChanged = _user?.id != session.user.id;
     if (accountChanged) {
+      _sandboxStoreAccountId = null;
+      _sandboxStoreExpiresAt = null;
       _resetMembershipSync();
       _membership = null;
       _summary = null;
@@ -875,6 +1384,9 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> _clearMembershipCache() async {
+    _sandboxStoreAccountId = null;
+    _sandboxStoreExpiresAt = null;
+    _scheduleMembershipExpiry();
     _cachedMembership = null;
     _membershipCacheLoaded = true;
     try {
@@ -949,9 +1461,9 @@ class MemberAccountController extends ChangeNotifier {
       // The session and user returned by authentication are authoritative.
       // Membership is supplementary and can recover on a later account load.
     }
-    if (AppDistribution.usesAppleBilling) {
+    if (AppDistribution.usesStoreBilling) {
       try {
-        await _applePurchase.initialize();
+        await initializeStorePurchases();
       } catch (_) {
         // StoreKit availability is independent from account authentication;
         // the account page can still offer a retry or restore action.
@@ -967,6 +1479,8 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> _run(Future<void> Function() action) async {
+    final cancellation = _deviceAuthorizationCancellation;
+    if (cancellation != null) await cancellation;
     if (_loading) {
       throw const MemberAccountException('账号操作正在进行，请稍候');
     }

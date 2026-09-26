@@ -6675,5 +6675,210 @@
   "settingsWebDavConfigured": "WebDAV backup configured",
   "settingsPremiumActive": "Premium active",
   "settingsPremiumSyncFailed": "Could not sync membership status",
-  "settingsWebDavWorking": "WebDAV is working"
+  "settingsWebDavWorking": "WebDAV is working",
+  "storeReaderLockedTitle": "Unlock Origo X",
+  "storeReaderLockedBody": "Reading in this store edition requires an active trial or a license. Your books and notes are kept. Return to your library to export your data.",
+  "storeReaderUnlock": "Trial, purchase or restore",
+  "storeReaderBack": "Back to library",
+  "storeReaderChecking": "Checking reading access…",
+  "storeReaderBenefitTitle": "Full reading access",
+  "storeReaderBenefitBody": "Permanently unlock local reading. No Origo account is required.",
+  "storeTrialStart": "Try free for {days} days",
+  "storeTrialDetails": "Try local reading for {days} days. No automatic charge. After the trial, a one-time app unlock is required to keep reading. Your books and notes are kept.",
+  "storeTrialStarted": "Your store trial has started.",
+  "storeTrialExpired": "Your store trial has ended. Purchase once to continue, or restore an existing purchase.",
+  "storePurchaseButton": "Unlock forever with {store}",
+  "storePurchaseBilling": "One-time app unlock. No automatic renewal. {store} displays the actual price and processes payment.",
+  "storePurchaseRestoreHelp": "Restore with the {store} account used to purchase. No Origo login or additional charge is required.",
+  "storePurchaseAccess": "You already have access through {store}. No repeat purchase is needed.",
+  "storeRestoreEmpty": "No restorable purchase was found. Check your store account and the linked Origo X account.",
+  "storeGoogleRefundTerms": "Request a refund through Google Play. A verified refund removes only the access associated with that purchase; independent entitlements remain valid.",
+  "storeReaderLegacyNotice": "Your existing basic reading access is preserved. Advanced source compatibility still requires Premium.",
+  "storePrivacyPurchaseBody": "Store verification data and an account identifier are sent to our server to verify and restore access. Google Play verification includes a purchase token and a hashed account identifier. We do not receive payment card details.",
+  "@storeTrialStart": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@storeTrialDetails": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@storePurchaseButton": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "@storePurchaseBilling": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "@storePurchaseRestoreHelp": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "@storePurchaseAccess": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "storeTrialLegacyDetails": "Your existing reading access remains valid. You do not need the {days}-day reading trial.",
+  "storeReaderSupportSubtitle": "Try the full reading experience, or unlock it forever with one purchase",
+  "@storeTrialLegacyDetails": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "storeBillingUnavailable": "Store purchases are not available yet. Try again later. Your existing access is unchanged.",
+  "accountSignInTitle": "Sign in to Origo X",
+  "accountSignInSubtitle": "Manage your account and purchases",
+  "accountRegistrationStep": "Create account · {step} / 3",
+  "accountSetupTitle": "Set up your account",
+  "accountSetupHint": "You can add your name and photo later.",
+  "accountInvalidEmail": "Enter a valid email address",
+  "accountCodeFormat": "Enter the 6-digit email code",
+  "accountPasswordRequired": "Enter your password",
+  "accountShowPassword": "Show password",
+  "accountHidePassword": "Hide password",
+  "accountResendIn": "Send again in {seconds}s",
+  "accountBackToCode": "Back to email code",
+  "accountAuthorizationTitle": "Continue in your browser",
+  "accountReopenAuthorization": "Reopen sign-in page",
+  "accountSignOutHint": "Your local books will stay. Sign in again to verify account access.",
+  "accountDiscardChanges": "Discard changes",
+  "accountUnsavedChanges": "Your profile changes have not been saved.",
+  "@accountRegistrationStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountResendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "accountAuthorizationExpired": "This sign-in request has expired. Please try again.",
+  "storeReaderLicenseTitle": "App unlock",
+  "storeReaderLicenseSubtitle": "Try local reading for 14 days, then unlock it with a one-time purchase.",
+  "storeReaderLifetimeTitle": "Lifetime app unlock",
+  "storeReaderOwned": "This app is permanently unlocked with {store}.",
+  "storePremiumPrerequisiteTitle": "Unlock the app first",
+  "storePremiumPrerequisiteBody": "Premium is sold separately after a permanent app unlock. A trial does not qualify.",
+  "storePremiumPriceCaption": "Lifetime Premium · linked to your Origo account",
+  "storePremiumPurchaseButton": "Buy Premium with {store}",
+  "@storeReaderLicenseTitle": {
+    "description": "Separate app reader unlock and account Premium billing."
+  },
+  "@storeReaderLicenseSubtitle": {
+    "description": "Separate app reader unlock and account Premium billing."
+  },
+  "@storeReaderLifetimeTitle": {
+    "description": "Separate app reader unlock and account Premium billing."
+  },
+  "@storeReaderOwned": {
+    "description": "Separate app reader unlock and account Premium billing.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "@storePremiumPrerequisiteTitle": {
+    "description": "Separate app reader unlock and account Premium billing."
+  },
+  "@storePremiumPrerequisiteBody": {
+    "description": "Separate app reader unlock and account Premium billing."
+  },
+  "@storePremiumPriceCaption": {
+    "description": "Separate app reader unlock and account Premium billing."
+  },
+  "@storePremiumPurchaseButton": {
+    "description": "Separate app reader unlock and account Premium billing.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "storePremiumBilling": "A separate one-time Premium purchase with no auto-renewal. {store} shows the actual price and processes payment. Premium is linked to your signed-in Origo account.",
+  "@storePremiumBilling": {
+    "description": "Separate account-bound Premium purchase or restore.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "storePremiumRestoreHelp": "Restore with the {store} account used to buy Premium while signed in to the linked Origo account. Restoring does not charge again.",
+  "@storePremiumRestoreHelp": {
+    "description": "Separate account-bound Premium purchase or restore.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "storeReaderTrialExpiresAt": "App trial ends on {date}.",
+  "@storeReaderTrialExpiresAt": {
+    "description": "App reader purchase status, separate from Premium.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "storeReaderPurchaseSuccess": "App permanently unlocked",
+  "@storeReaderPurchaseSuccess": {
+    "description": "App reader purchase status, separate from Premium."
+  },
+  "storeReaderRestoreSuccess": "App purchase restored",
+  "@storeReaderRestoreSuccess": {
+    "description": "App reader purchase status, separate from Premium."
+  },
+  "storeReaderTestPurchaseVerified": "Test app purchase verified; no formal license was granted.",
+  "@storeReaderTestPurchaseVerified": {
+    "description": "App reader purchase status, separate from Premium."
+  },
+  "storeReaderPurchaseRevoked": "This app unlock was revoked.",
+  "@storeReaderPurchaseRevoked": {
+    "description": "App reader purchase status, separate from Premium."
+  },
+  "storeReaderPendingApproval": "Waiting for {store} approval. Reading unlocks after verification.",
+  "@storeReaderPendingApproval": {
+    "description": "App reader purchase status, separate from Premium.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "storeReaderVerifying": "Verifying app purchase…",
+  "@storeReaderVerifying": {
+    "description": "App reader purchase status, separate from Premium."
+  },
+  "storeReaderRestoring": "Restoring app purchase…",
+  "@storeReaderRestoring": {
+    "description": "App reader purchase status, separate from Premium."
+  }
 }

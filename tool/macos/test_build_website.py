@@ -39,6 +39,8 @@ class BuildWebsiteTests(unittest.TestCase):
         command = build.flutter_build_command()
         self.assertEqual(command[:4], ['flutter', 'build', 'macos', '--release'])
         self.assertIn(dist.MACOS_WEBSITE_DART_DEFINE, command)
+        self.assertIn(dist.DIRECT_DISTRIBUTION_DART_DEFINE, command)
+        self.assertIn(dist.READER_LICENSE_DISABLED_DART_DEFINE, command)
         self.assertFalse(dist.command_has_macos_app_store_define(command))
 
     def test_check_does_not_build(self):
@@ -62,7 +64,12 @@ class BuildWebsiteTests(unittest.TestCase):
                 products = self.root / 'build/macos/Build/Products/Release'
                 products.mkdir(parents=True)
                 (products / '开元阅读.app').mkdir()
-                self.write_defines('FLUTTER_VERSION=3.44.7', dist.MACOS_WEBSITE_ASSIGNMENT)
+                self.write_defines(
+                    'FLUTTER_VERSION=3.44.7',
+                    dist.MACOS_WEBSITE_ASSIGNMENT,
+                    dist.DIRECT_DISTRIBUTION_ASSIGNMENT,
+                    dist.READER_LICENSE_DISABLED_ASSIGNMENT,
+                )
 
         with patch.object(build, 'run_step', side_effect=fake_step), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(build.execute(build.parser().parse_args(['--no-pub'])), 0)

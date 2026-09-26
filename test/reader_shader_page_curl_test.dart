@@ -157,7 +157,7 @@ void main() {
 
     navigatorKey.currentState!.push<void>(
       BookOpenTransition.createRoute<void>(
-        Scaffold(
+        (_) => Scaffold(
           body: Builder(
             builder: (context) => BookOpenTransition.buildReaderContentReveal(
               context,

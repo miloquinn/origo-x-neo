@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
 import 'account_models.dart';
 import 'account_token_store.dart';
 import 'avatar_image_processor.dart';
+import 'offline_reader_license.dart';
 
 class MemberAccountException implements Exception {
   const MemberAccountException(
@@ -32,26 +35,43 @@ class MemberAccountException implements Exception {
 }
 
 class MemberAccountApiClient {
-  MemberAccountApiClient({Dio? dio, MemberTokenStore? tokenStore, Uri? baseUri})
-    : baseUri = baseUri ?? Uri.parse('https://open.xxread.top'),
-      _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              connectTimeout: const Duration(seconds: 15),
-              sendTimeout: const Duration(seconds: 30),
-              receiveTimeout: const Duration(seconds: 30),
-            ),
-          ),
-      _tokenStore = tokenStore ?? SecureMemberTokenStore();
+  MemberAccountApiClient({
+    Dio? dio,
+    MemberTokenStore? tokenStore,
+    OfflineReaderLicenseStore? offlineReaderLicenseStore,
+    ReaderInstallationCredentialStore? readerCredentialStore,
+    Uri? baseUri,
+  }) : baseUri = baseUri ?? Uri.parse('https://open.xxread.top'),
+       _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: const Duration(seconds: 15),
+               sendTimeout: const Duration(seconds: 30),
+               receiveTimeout: const Duration(seconds: 30),
+             ),
+           ),
+       _tokenStore = tokenStore ?? SecureMemberTokenStore(),
+       _offlineReaderLicenseStore =
+           offlineReaderLicenseStore ?? const OfflineReaderLicenseStore(),
+       _readerCredentialStore =
+           readerCredentialStore ?? const ReaderInstallationCredentialStore();
 
   static const authRoot = '/api/v1/auth';
   static const membershipRoot = '/api/v1/membership';
 
   final Dio _dio;
   final MemberTokenStore _tokenStore;
+  final OfflineReaderLicenseStore _offlineReaderLicenseStore;
+  final ReaderInstallationCredentialStore _readerCredentialStore;
   final Uri baseUri;
   Future<MemberSession>? _refreshing;
+  final StreamController<void> _sessionInvalidations =
+      StreamController<void>.broadcast();
+
+  /// Emits after the server explicitly rejects the refresh session and local
+  /// credentials have been revoked. Transient network failures never emit.
+  Stream<void> get sessionInvalidations => _sessionInvalidations.stream;
 
   Future<MemberAuthConfig> authConfig() async => MemberAuthConfig.fromJson(
     await _jsonRequest('GET', '$authRoot/config', authenticated: false),
@@ -268,7 +288,7 @@ class MemberAccountApiClient {
     return result['apple_manual_revocation_required'] == true;
   }
 
-  Future<void> clearLocalSession() => _tokenStore.clear();
+  Future<void> clearLocalSession() => _clearLocalSession(notify: false);
 
   Future<MemberMfaStatus> mfaStatus() async => MemberMfaStatus.fromJson(
     await _jsonRequest('GET', '$authRoot/security/mfa/status'),
@@ -404,6 +424,101 @@ class MemberAccountApiClient {
   Future<MemberMembership> membership() async =>
       MemberMembership.fromJson(await _jsonRequest('GET', membershipRoot));
 
+  Future<String?> offlineReaderSessionBinding() async {
+    if (await _tokenStore.readMfaPending()) return null;
+    final token = await _tokenStore.readRefreshToken();
+    if (token == null || token.isEmpty) return null;
+    return _sessionBinding(token);
+  }
+
+  Future<MemberMembership> startStoreTrial() async => MemberMembership.fromJson(
+    await _jsonRequest(
+      'POST',
+      '$membershipRoot/store-trial',
+      data: {'channel': 'google_play'},
+    ),
+  );
+
+  Future<MemberMembership> submitGooglePurchase(String purchaseToken) async =>
+      MemberMembership.fromJson(
+        await _jsonRequest(
+          'POST',
+          '$membershipRoot/google/purchase',
+          data: {'purchase_token': purchaseToken},
+        ),
+      );
+
+  Future<ReaderInstallationCredential> readerCredential() =>
+      _readerCredentialStore.getOrCreate();
+
+  Future<ReaderAccessResult> readerStatus(String channel) =>
+      _readerRequest('GET', '$membershipRoot/reader/status?channel=$channel');
+
+  Future<ReaderAccessResult> startReaderTrial(String channel) => _readerRequest(
+    'POST',
+    '$membershipRoot/reader/trial',
+    data: {'channel': channel},
+  );
+
+  Future<ReaderAccessResult> submitReaderGooglePurchase(
+    String purchaseToken, {
+    bool restore = false,
+  }) => _readerRequest(
+    'POST',
+    '$membershipRoot/reader/google/${restore ? 'restore' : 'purchase'}',
+    data: {'purchase_token': purchaseToken},
+  );
+
+  Future<ReaderAccessResult> submitReaderApplePurchase(
+    String signedTransactionInfo, {
+    bool restore = false,
+  }) => _readerRequest(
+    'POST',
+    '$membershipRoot/reader/apple/${restore ? 'restore' : 'purchase'}',
+    data: {'signed_transaction_info': signedTransactionInfo},
+  );
+
+  Future<MemberMembership> submitPremiumGooglePurchase(
+    String purchaseToken,
+  ) async => MemberMembership.fromJson(
+    await _jsonRequest(
+      'POST',
+      '$membershipRoot/premium/google/purchase',
+      data: {'purchase_token': purchaseToken},
+      headers: await _readerHeaders(),
+    ),
+  );
+
+  Future<MemberMembership> submitPremiumApplePurchase(
+    String signedTransactionInfo, {
+    bool restore = false,
+  }) async => MemberMembership.fromJson(
+    await _jsonRequest(
+      'POST',
+      '$membershipRoot/premium/apple/${restore ? 'restore' : 'purchase'}',
+      data: {'signed_transaction_info': signedTransactionInfo},
+      headers: await _readerHeaders(),
+    ),
+  );
+
+  Future<ReaderAccessResult> _readerRequest(
+    String method,
+    String path, {
+    Object? data,
+  }) async => ReaderAccessResult.fromJson(
+    await _jsonRequest(
+      method,
+      path,
+      authenticated: false,
+      data: data,
+      headers: await _readerHeaders(),
+    ),
+  );
+
+  Future<Map<String, String>> _readerHeaders() async => {
+    'X-Origo-Reader-Key': (await readerCredential()).value,
+  };
+
   Future<MemberMembership> redeemMembership(String code) async =>
       MemberMembership.fromJson(
         await _jsonRequest(
@@ -451,7 +566,7 @@ class MemberAccountApiClient {
         );
       }
     } finally {
-      await _tokenStore.clear();
+      await _clearLocalSession(notify: false);
     }
   }
 
@@ -479,17 +594,38 @@ class MemberAccountApiClient {
     if (refreshToken == null || refreshToken.isEmpty) {
       throw const MemberAccountException('请先登录', statusCode: 401);
     }
+    final oldBinding = _sessionBinding(refreshToken);
     try {
-      return await _sessionRequest('$authRoot/refresh', {
+      final session = await _sessionRequest('$authRoot/refresh', {
         'refresh_token': refreshToken,
       });
+      await _offlineReaderLicenseStore.rebind(
+        oldBinding: oldBinding,
+        newBinding: _sessionBinding(session.refreshToken),
+        expectedUserId: session.user.id,
+      );
+      return session;
     } on MemberAccountException catch (error) {
       // Only discard the stored session when the server actually rejects it.
       // Timeouts, proxy drops, and DNS failures must not log the user out.
       if (error.shouldDiscardSession) {
-        await _tokenStore.clear();
+        await _clearLocalSession(notify: true);
       }
       rethrow;
+    }
+  }
+
+  Future<void> _clearLocalSession({required bool notify}) async {
+    try {
+      await _tokenStore.clear();
+    } finally {
+      try {
+        await _offlineReaderLicenseStore.clear();
+      } catch (_) {
+        // Token revocation and the in-memory invalidation signal must still
+        // complete when secure storage is temporarily unavailable.
+      }
+      if (notify) _sessionInvalidations.add(null);
     }
   }
 
@@ -528,6 +664,7 @@ class MemberAccountApiClient {
     bool authenticated = true,
     String? accessToken,
     bool retryAuthentication = true,
+    Map<String, String>? headers,
   }) async {
     final response = await _request(
       method,
@@ -536,6 +673,7 @@ class MemberAccountApiClient {
       authenticated: authenticated,
       accessToken: accessToken,
       retryAuthentication: retryAuthentication,
+      headers: headers,
     );
     if (response.data is! Map) {
       throw const MemberAccountException('服务器返回了无法识别的数据');
@@ -554,6 +692,7 @@ class MemberAccountApiClient {
     bool authenticated = true,
     String? accessToken,
     bool retryAuthentication = true,
+    Map<String, String>? headers,
   }) async {
     var token = accessToken;
     if (authenticated && token == null) {
@@ -568,7 +707,10 @@ class MemberAccountApiClient {
         data: data,
         options: Options(
           method: method,
-          headers: token == null ? null : {'Authorization': 'Bearer $token'},
+          headers: {
+            ...?headers,
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
         ),
       );
     } on DioException catch (error) {
@@ -582,12 +724,16 @@ class MemberAccountApiClient {
           data: data,
           accessToken: refreshed.accessToken,
           retryAuthentication: false,
+          headers: headers,
         );
       }
       throw _friendlyError(error);
     }
   }
 }
+
+String _sessionBinding(String refreshToken) =>
+    sha256.convert(utf8.encode(refreshToken)).toString();
 
 MemberAccountException _friendlyError(DioException error) {
   final statusCode = error.response?.statusCode;

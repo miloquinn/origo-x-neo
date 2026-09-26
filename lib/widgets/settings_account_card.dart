@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../pages/account/account_page.dart';
 import '../pages/account/premium_membership_page.dart';
 import '../services/account/account.dart';
+import '../services/core/app_distribution.dart';
 import '../utils/localization_extension.dart';
 import '../utils/page_style_helper.dart';
 import 'account_avatar_image.dart';
 import 'premium_card_style.dart';
+import 'store_reader_account_entry.dart';
 
 class SettingsAccountCard extends StatelessWidget {
   const SettingsAccountCard({
@@ -23,7 +25,9 @@ class SettingsAccountCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final account = context.watch<MemberAccountController>();
     final summary = account.summary;
-    final premium = account.hasPremiumAccess && !quiet;
+    final canShowPremium =
+        !AppDistribution.isStore || account.hasPermanentReaderAccess;
+    final premium = account.hasPremiumAccess && canShowPremium && !quiet;
     final scheme = Theme.of(context).colorScheme;
     final palette = PageStyleHelper.palette(context);
     final title =
@@ -39,7 +43,7 @@ class SettingsAccountCard extends StatelessWidget {
 
     if (showMembershipSection) {
       final l10n = context.l10n;
-      final premiumActive = account.hasPremiumAccess;
+      final premiumActive = account.hasPremiumAccess && canShowPremium;
       final membershipTitle = account.membershipSyncFailed
           ? l10n.settingsPremiumSyncFailed
           : account.isAuthenticated && account.membership == null
@@ -175,7 +179,15 @@ class SettingsAccountCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (!premiumActive) ...[
+                  if (AppDistribution.isStore)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+                      child: StoreReaderAccountEntry(
+                        key: const ValueKey('settings-reader-license'),
+                        account: account,
+                      ),
+                    ),
+                  if (canShowPremium && !premiumActive) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
                       child: Material(

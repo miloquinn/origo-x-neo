@@ -57,6 +57,8 @@ def flutter_build_command():
         '--release',
         '--no-pub',
         dist.MACOS_WEBSITE_DART_DEFINE,
+        dist.DIRECT_DISTRIBUTION_DART_DEFINE,
+        dist.READER_LICENSE_DISABLED_DART_DEFINE,
     ]
 
 
@@ -72,7 +74,7 @@ def execute(args):
     if args.check:
         print(
             'Website macOS prerequisites passed. This path sets '
-            f'{dist.MACOS_WEBSITE_DART_DEFINE} and rejects the App Store define.'
+            f'{dist.DIRECT_DISTRIBUTION_DART_DEFINE} and rejects store billing.'
         )
         return 0
     if not args.no_pub:

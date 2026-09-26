@@ -42,7 +42,42 @@ flow, while iOS keeps the native system authorization sheet.
 | `IOS_TESTFLIGHT_URL` | Optional public TestFlight URL added to release notes |
 
 The GitHub macOS job always uses `tool/macos/build_website.sh`. That binary is
-the notarized website build and must set `OPEN_READING_MACOS_APP_STORE=false`.
+the notarized website build and must set `OPEN_READING_MACOS_APP_STORE=false`
+and `ORIGO_DISTRIBUTION_CHANNEL=direct`.
+
+## Distribution channel build contract
+
+Every release build declares its commerce channel at compile time with
+`ORIGO_DISTRIBUTION_CHANNEL`:
+
+| Artifact | Value | Purchase route |
+| --- | --- | --- |
+| Website/GitHub APK, desktop and web | `direct` | Website redemption |
+| Google Play AAB | `googlePlay` | Google Play Billing |
+| iOS and Mac App Store | `appleStore` | StoreKit |
+
+An unknown value or a channel that does not match the target platform is a
+configuration error. Legacy builds with no value keep the previous behavior:
+iOS uses StoreKit, Android and non-store desktop builds use direct distribution,
+and macOS can still detect a Mac App Store receipt.
+
+`ORIGO_STORE_READER_LICENSE_REQUIRED` is enabled (`true`) by store release
+scripts and remains `false` for direct distribution. Store products, backend
+verification and legacy migration are implemented; actual purchase, restore and
+refund flows still require final-device acceptance before publishing. Setting
+the switch for a direct build has no effect.
+
+The Android release job deliberately builds the APK and AAB separately. The
+downloadable APK is compiled as `direct`; the Play bundle is compiled as
+`googlePlay`. Do not reuse one build command or artifact for both channels.
+The direct APK keeps `REQUEST_INSTALL_PACKAGES` for its signed APK updater.
+Before Android manifest merging, Gradle generates a channel-specific manifest
+from the checked-in main manifest: direct builds add the concrete permission,
+while Play builds add a concrete `tools:node="remove"` rule so dependencies
+cannot reintroduce it. The Play client also suppresses website/APK update checks
+and hides external WeChat/Alipay support payments. The release build fails if
+the merged manifest does not match the selected channel, and CI checks the Play
+merged manifest again before packaging the AAB.
 
 ## iOS and Mac App Store Connect
 

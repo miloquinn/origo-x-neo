@@ -47,7 +47,7 @@ class PdfReaderPage extends StatefulWidget {
         initialTheme ?? await ReaderThemes.loadSavedPalette();
     if (!context.mounted) return;
     final route = BookOpenTransition.createRoute<void>(
-      PdfReaderPage(book: book, initialTheme: resolvedInitialTheme),
+      (_) => PdfReaderPage(book: book, initialTheme: resolvedInitialTheme),
       animation: animation,
       libraryAnimation: libraryAnimation,
       animationPace: animationPace,

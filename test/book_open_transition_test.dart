@@ -45,7 +45,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         animation: animation,
       ),
     );
@@ -100,7 +100,7 @@ void main() {
     );
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         animation: animation,
         readerBackgroundColor: Colors.black,
       ),
@@ -130,7 +130,7 @@ void main() {
     );
     navKey.currentState!.push<void>(
       BookOpenTransition.createRoute<void>(
-        Scaffold(
+        (_) => Scaffold(
           body: Builder(
             builder: (context) {
               readerContext = context;
@@ -189,7 +189,7 @@ void main() {
     );
     navKey.currentState!.push<void>(
       BookOpenTransition.createRoute<void>(
-        Scaffold(
+        (_) => Scaffold(
           body: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => loadingTapCount += 1,
@@ -235,7 +235,7 @@ void main() {
     );
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         animation: animation,
       ),
     );
@@ -264,7 +264,7 @@ void main() {
     );
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         animation: animation,
       ),
     );
@@ -341,7 +341,7 @@ void main() {
       );
       navKey.currentState!.push(
         BookOpenTransition.createRoute<void>(
-          const Scaffold(body: Text('reader')),
+          (_) => const Scaffold(body: Text('reader')),
           animation: animation,
         ),
       );
@@ -495,7 +495,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
       ),
     );
     await tester.pumpAndSettle();
@@ -517,7 +517,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         origin: ReaderPageTransitionOrigin.home,
       ),
     );
@@ -563,7 +563,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         origin: ReaderPageTransitionOrigin.discoverSheet,
       ),
     );
@@ -593,7 +593,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         origin: ReaderPageTransitionOrigin.discoverSheet,
       ),
     );
@@ -618,7 +618,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         libraryAnimation: LibraryBookOpenAnimation.minimalFade,
         animationPace: LibraryBookOpenAnimationPace.fast,
       ),
@@ -648,7 +648,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         libraryAnimation: LibraryBookOpenAnimation.minimalFade,
         animationPace: LibraryBookOpenAnimationPace.fast,
         readerBackgroundColor: readerBackground,
@@ -679,7 +679,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         libraryAnimation: LibraryBookOpenAnimation.paperRise,
         animationPace: LibraryBookOpenAnimationPace.fast,
       ),
@@ -706,7 +706,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         libraryAnimation: LibraryBookOpenAnimation.pageSlide,
         animationPace: LibraryBookOpenAnimationPace.fast,
       ),
@@ -738,7 +738,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        Builder(
+        (_) => Builder(
           builder: (context) {
             readerContext = context;
             return Scaffold(
@@ -803,7 +803,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        Builder(
+        (_) => Builder(
           builder: (context) {
             readerContext = context;
             return Scaffold(
@@ -843,7 +843,7 @@ void main() {
 
     navKey.currentState!.push(
       BookOpenTransition.createRoute<void>(
-        Builder(
+        (_) => Builder(
           builder: (context) => Scaffold(
             body: Stack(
               children: [
@@ -900,7 +900,7 @@ void main() {
     );
 
     final route = BookOpenTransition.createRoute<void>(
-      const Scaffold(body: Text('reader')),
+      (_) => const Scaffold(body: Text('reader')),
     );
     var returned = false;
     final navigation = BookOpenTransition.push<void>(shelfContext, route).then((
@@ -932,7 +932,7 @@ void main() {
 
     navKey.currentState!.push<void>(
       BookOpenTransition.createRoute<void>(
-        const Scaffold(body: Text('reader')),
+        (_) => const Scaffold(body: Text('reader')),
         animation: BookOpenAnimation(
           sourceRect: const Rect.fromLTWH(120, 180, 100, 150),
           sourceRadius: BorderRadius.circular(12),

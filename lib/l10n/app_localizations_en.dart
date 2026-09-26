@@ -7137,4 +7137,224 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsWebDavWorking => 'WebDAV is working';
+
+  @override
+  String get storeReaderLockedTitle => 'Unlock Origo X';
+
+  @override
+  String get storeReaderLockedBody =>
+      'Reading in this store edition requires an active trial or a license. Your books and notes are kept. Return to your library to export your data.';
+
+  @override
+  String get storeReaderUnlock => 'Trial, purchase or restore';
+
+  @override
+  String get storeReaderBack => 'Back to library';
+
+  @override
+  String get storeReaderChecking => 'Checking reading access…';
+
+  @override
+  String get storeReaderBenefitTitle => 'Full reading access';
+
+  @override
+  String get storeReaderBenefitBody =>
+      'Permanently unlock local reading. No Origo account is required.';
+
+  @override
+  String storeTrialStart(int days) {
+    return 'Try free for $days days';
+  }
+
+  @override
+  String storeTrialDetails(int days) {
+    return 'Try local reading for $days days. No automatic charge. After the trial, a one-time app unlock is required to keep reading. Your books and notes are kept.';
+  }
+
+  @override
+  String get storeTrialStarted => 'Your store trial has started.';
+
+  @override
+  String get storeTrialExpired =>
+      'Your store trial has ended. Purchase once to continue, or restore an existing purchase.';
+
+  @override
+  String storePurchaseButton(String store) {
+    return 'Unlock forever with $store';
+  }
+
+  @override
+  String storePurchaseBilling(String store) {
+    return 'One-time app unlock. No automatic renewal. $store displays the actual price and processes payment.';
+  }
+
+  @override
+  String storePurchaseRestoreHelp(String store) {
+    return 'Restore with the $store account used to purchase. No Origo login or additional charge is required.';
+  }
+
+  @override
+  String storePurchaseAccess(String store) {
+    return 'You already have access through $store. No repeat purchase is needed.';
+  }
+
+  @override
+  String get storeRestoreEmpty =>
+      'No restorable purchase was found. Check your store account and the linked Origo X account.';
+
+  @override
+  String get storeGoogleRefundTerms =>
+      'Request a refund through Google Play. A verified refund removes only the access associated with that purchase; independent entitlements remain valid.';
+
+  @override
+  String get storeReaderLegacyNotice =>
+      'Your existing basic reading access is preserved. Advanced source compatibility still requires Premium.';
+
+  @override
+  String get storePrivacyPurchaseBody =>
+      'Store verification data and an account identifier are sent to our server to verify and restore access. Google Play verification includes a purchase token and a hashed account identifier. We do not receive payment card details.';
+
+  @override
+  String storeTrialLegacyDetails(int days) {
+    return 'Your existing reading access remains valid. You do not need the $days-day reading trial.';
+  }
+
+  @override
+  String get storeReaderSupportSubtitle =>
+      'Try the full reading experience, or unlock it forever with one purchase';
+
+  @override
+  String get storeBillingUnavailable =>
+      'Store purchases are not available yet. Try again later. Your existing access is unchanged.';
+
+  @override
+  String get accountSignInTitle => 'Sign in to Origo X';
+
+  @override
+  String get accountSignInSubtitle => 'Manage your account and purchases';
+
+  @override
+  String accountRegistrationStep(int step) {
+    return 'Create account · $step / 3';
+  }
+
+  @override
+  String get accountSetupTitle => 'Set up your account';
+
+  @override
+  String get accountSetupHint => 'You can add your name and photo later.';
+
+  @override
+  String get accountInvalidEmail => 'Enter a valid email address';
+
+  @override
+  String get accountCodeFormat => 'Enter the 6-digit email code';
+
+  @override
+  String get accountPasswordRequired => 'Enter your password';
+
+  @override
+  String get accountShowPassword => 'Show password';
+
+  @override
+  String get accountHidePassword => 'Hide password';
+
+  @override
+  String accountResendIn(int seconds) {
+    return 'Send again in ${seconds}s';
+  }
+
+  @override
+  String get accountBackToCode => 'Back to email code';
+
+  @override
+  String get accountAuthorizationTitle => 'Continue in your browser';
+
+  @override
+  String get accountReopenAuthorization => 'Reopen sign-in page';
+
+  @override
+  String get accountSignOutHint =>
+      'Your local books will stay. Sign in again to verify account access.';
+
+  @override
+  String get accountDiscardChanges => 'Discard changes';
+
+  @override
+  String get accountUnsavedChanges =>
+      'Your profile changes have not been saved.';
+
+  @override
+  String get accountAuthorizationExpired =>
+      'This sign-in request has expired. Please try again.';
+
+  @override
+  String get storeReaderLicenseTitle => 'App unlock';
+
+  @override
+  String get storeReaderLicenseSubtitle =>
+      'Try local reading for 14 days, then unlock it with a one-time purchase.';
+
+  @override
+  String get storeReaderLifetimeTitle => 'Lifetime app unlock';
+
+  @override
+  String storeReaderOwned(String store) {
+    return 'This app is permanently unlocked with $store.';
+  }
+
+  @override
+  String get storePremiumPrerequisiteTitle => 'Unlock the app first';
+
+  @override
+  String get storePremiumPrerequisiteBody =>
+      'Premium is sold separately after a permanent app unlock. A trial does not qualify.';
+
+  @override
+  String get storePremiumPriceCaption =>
+      'Lifetime Premium · linked to your Origo account';
+
+  @override
+  String storePremiumPurchaseButton(String store) {
+    return 'Buy Premium with $store';
+  }
+
+  @override
+  String storePremiumBilling(String store) {
+    return 'A separate one-time Premium purchase with no auto-renewal. $store shows the actual price and processes payment. Premium is linked to your signed-in Origo account.';
+  }
+
+  @override
+  String storePremiumRestoreHelp(String store) {
+    return 'Restore with the $store account used to buy Premium while signed in to the linked Origo account. Restoring does not charge again.';
+  }
+
+  @override
+  String storeReaderTrialExpiresAt(String date) {
+    return 'App trial ends on $date.';
+  }
+
+  @override
+  String get storeReaderPurchaseSuccess => 'App permanently unlocked';
+
+  @override
+  String get storeReaderRestoreSuccess => 'App purchase restored';
+
+  @override
+  String get storeReaderTestPurchaseVerified =>
+      'Test app purchase verified; no formal license was granted.';
+
+  @override
+  String get storeReaderPurchaseRevoked => 'This app unlock was revoked.';
+
+  @override
+  String storeReaderPendingApproval(String store) {
+    return 'Waiting for $store approval. Reading unlocks after verification.';
+  }
+
+  @override
+  String get storeReaderVerifying => 'Verifying app purchase…';
+
+  @override
+  String get storeReaderRestoring => 'Restoring app purchase…';
 }

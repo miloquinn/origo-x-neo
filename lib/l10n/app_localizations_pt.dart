@@ -7223,4 +7223,228 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsWebDavWorking => 'WebDAV em andamento';
+
+  @override
+  String get storeReaderLockedTitle => 'Desbloquear o Origo X';
+
+  @override
+  String get storeReaderLockedBody =>
+      'Para ler nesta versão da loja, é necessário um período de teste ativo ou uma licença. Seus livros e notas são mantidos. Volte à estante para exportar seus dados.';
+
+  @override
+  String get storeReaderUnlock => 'Testar, comprar ou restaurar';
+
+  @override
+  String get storeReaderBack => 'Voltar à estante';
+
+  @override
+  String get storeReaderChecking => 'Verificando o acesso à leitura…';
+
+  @override
+  String get storeReaderBenefitTitle => 'Acesso completo à leitura';
+
+  @override
+  String get storeReaderBenefitBody =>
+      'Desbloqueie a leitura local para sempre. Não é necessária uma conta Origo.';
+
+  @override
+  String storeTrialStart(int days) {
+    return 'Teste grátis por $days dias';
+  }
+
+  @override
+  String storeTrialDetails(int days) {
+    return 'Experimente a leitura local por $days dias, sem cobrança automática. Depois, é necessário desbloquear o aplicativo com uma compra única. Seus livros e notas serão mantidos.';
+  }
+
+  @override
+  String get storeTrialStarted =>
+      'Seu período de teste da versão da loja começou.';
+
+  @override
+  String get storeTrialExpired =>
+      'Seu período de teste da versão da loja terminou. Faça uma compra única para continuar ou restaure uma compra existente.';
+
+  @override
+  String storePurchaseButton(String store) {
+    return 'Desbloquear para sempre com $store';
+  }
+
+  @override
+  String storePurchaseBilling(String store) {
+    return 'Desbloqueio com compra única, sem renovação automática. A $store mostra o preço e processa o pagamento.';
+  }
+
+  @override
+  String storePurchaseRestoreHelp(String store) {
+    return 'Restaure com a conta da $store usada na compra. Não é necessário entrar no Origo nem pagar novamente.';
+  }
+
+  @override
+  String storePurchaseAccess(String store) {
+    return 'Você já tem acesso por meio de $store. Não é necessário comprar novamente.';
+  }
+
+  @override
+  String get storeRestoreEmpty =>
+      'Nenhuma compra disponível para restauração foi encontrada. Verifique sua conta da loja e a conta do Origo X vinculada.';
+
+  @override
+  String get storeGoogleRefundTerms =>
+      'Solicite um reembolso pelo Google Play. Um reembolso verificado remove apenas o acesso associado àquela compra; os direitos de acesso independentes continuam válidos.';
+
+  @override
+  String get storeReaderLegacyNotice =>
+      'Seu acesso básico à leitura é mantido. A compatibilidade avançada com fontes continua exigindo o Premium.';
+
+  @override
+  String get storePrivacyPurchaseBody =>
+      'Os dados de verificação da loja e um identificador de conta são enviados ao nosso servidor para verificar e restaurar o acesso. A verificação do Google Play inclui um token de compra e um identificador de conta transformado por uma função hash. Não recebemos dados de cartões de pagamento.';
+
+  @override
+  String storeTrialLegacyDetails(int days) {
+    return 'Seu acesso existente à leitura continua válido. Você não precisa do teste de $days dias.';
+  }
+
+  @override
+  String get storeReaderSupportSubtitle =>
+      'Teste a experiência completa de leitura ou desbloqueie para sempre com uma única compra';
+
+  @override
+  String get storeBillingUnavailable =>
+      'As compras na loja ainda não estão disponíveis. Tente novamente mais tarde. Seu acesso atual permanece inalterado.';
+
+  @override
+  String get accountSignInTitle => 'Entrar no Origo X';
+
+  @override
+  String get accountSignInSubtitle => 'Gerencie sua conta e suas compras';
+
+  @override
+  String accountRegistrationStep(int step) {
+    return 'Criar conta · $step / 3';
+  }
+
+  @override
+  String get accountSetupTitle => 'Configure sua conta';
+
+  @override
+  String get accountSetupHint => 'Você pode adicionar nome e foto depois.';
+
+  @override
+  String get accountInvalidEmail => 'Digite um endereço de e-mail válido';
+
+  @override
+  String get accountCodeFormat => 'Digite o código de 6 dígitos do e-mail';
+
+  @override
+  String get accountPasswordRequired => 'Digite sua senha';
+
+  @override
+  String get accountShowPassword => 'Mostrar senha';
+
+  @override
+  String get accountHidePassword => 'Ocultar senha';
+
+  @override
+  String accountResendIn(int seconds) {
+    return 'Reenviar em $seconds s';
+  }
+
+  @override
+  String get accountBackToCode => 'Voltar ao código de e-mail';
+
+  @override
+  String get accountAuthorizationTitle => 'Continue no navegador';
+
+  @override
+  String get accountReopenAuthorization => 'Reabrir a página de login';
+
+  @override
+  String get accountSignOutHint =>
+      'Seus livros locais serão mantidos. Entre novamente para verificar os direitos da conta.';
+
+  @override
+  String get accountDiscardChanges => 'Descartar alterações';
+
+  @override
+  String get accountUnsavedChanges =>
+      'As alterações no perfil não foram salvas.';
+
+  @override
+  String get accountAuthorizationExpired =>
+      'A solicitação expirou. Tente entrar novamente.';
+
+  @override
+  String get storeReaderLicenseTitle => 'Desbloquear aplicativo';
+
+  @override
+  String get storeReaderLicenseSubtitle =>
+      'Experimente a leitura local por 14 dias e desbloqueie com uma compra única.';
+
+  @override
+  String get storeReaderLifetimeTitle => 'Desbloqueio permanente do aplicativo';
+
+  @override
+  String storeReaderOwned(String store) {
+    return 'O aplicativo está desbloqueado permanentemente pela $store.';
+  }
+
+  @override
+  String get storePremiumPrerequisiteTitle =>
+      'Desbloqueie o aplicativo primeiro';
+
+  @override
+  String get storePremiumPrerequisiteBody =>
+      'O Premium é vendido separadamente após o desbloqueio permanente do aplicativo. O período de teste não é suficiente.';
+
+  @override
+  String get storePremiumPriceCaption =>
+      'Premium permanente · vinculado à sua conta Origo';
+
+  @override
+  String storePremiumPurchaseButton(String store) {
+    return 'Comprar Premium pela $store';
+  }
+
+  @override
+  String storePremiumBilling(String store) {
+    return 'O Premium é uma compra separada e única, sem renovação automática. A $store mostra o preço e processa o pagamento. O Premium fica vinculado à sua conta Origo atual.';
+  }
+
+  @override
+  String storePremiumRestoreHelp(String store) {
+    return 'Entre na conta Origo vinculada e restaure o Premium com a conta da $store usada na compra. Não haverá nova cobrança.';
+  }
+
+  @override
+  String storeReaderTrialExpiresAt(String date) {
+    return 'O teste do aplicativo termina em $date.';
+  }
+
+  @override
+  String get storeReaderPurchaseSuccess =>
+      'Aplicativo desbloqueado para sempre';
+
+  @override
+  String get storeReaderRestoreSuccess => 'Compra do aplicativo restaurada';
+
+  @override
+  String get storeReaderTestPurchaseVerified =>
+      'Compra de teste verificada; nenhuma licença definitiva foi concedida.';
+
+  @override
+  String get storeReaderPurchaseRevoked =>
+      'O desbloqueio do aplicativo foi revogado.';
+
+  @override
+  String storeReaderPendingApproval(String store) {
+    return 'Aguardando aprovação da $store. A leitura será liberada após a verificação.';
+  }
+
+  @override
+  String get storeReaderVerifying => 'Verificando a compra do aplicativo…';
+
+  @override
+  String get storeReaderRestoring => 'Restaurando a compra do aplicativo…';
 }

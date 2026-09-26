@@ -335,15 +335,15 @@ class _HomeMobileDashboardPageState extends State<HomeMobileDashboardPage>
 
       if (fullBook.isOnline) {
         try {
-          final reader = buildOnlineReader(
-            shelfBook: fullBook,
-            client: _sourceClient,
-            shelfService: _sourceShelfService,
-            replaceRuleService: context.read<ReplaceRuleService>(),
-            initialTheme: initialTheme,
-          );
+          final replaceRuleService = context.read<ReplaceRuleService>();
           final route = BookOpenTransition.createRoute<void>(
-            reader,
+            (_) => buildOnlineReader(
+              shelfBook: fullBook,
+              client: _sourceClient,
+              shelfService: _sourceShelfService,
+              replaceRuleService: replaceRuleService,
+              initialTheme: initialTheme,
+            ),
             origin: ReaderPageTransitionOrigin.home,
             animationPace: LibraryBookOpenAnimationPace.fast,
             readerBackgroundColor: initialTheme.background,

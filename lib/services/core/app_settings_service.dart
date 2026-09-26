@@ -140,7 +140,7 @@ class AppSettingsNotifier extends ChangeNotifier {
       _libraryBookOpenAnimation;
   LibraryBookOpenAnimationPace get libraryBookOpenAnimationPace =>
       _libraryBookOpenAnimationPace;
-  bool get advancedFeaturesUnlocked => _account?.hasPremiumAccess ?? false;
+  bool get advancedFeaturesUnlocked => _account?.hasAdvancedSourceAccess ?? false;
   bool get additionalSourceProtocolsEnabled =>
       advancedFeaturesUnlocked && _additionalSourceProtocolsEnabled;
   bool get privateBookSourceNetworkEnabled =>

@@ -188,8 +188,9 @@ class MemberEmailChangeChallenge {
   factory MemberEmailChangeChallenge.fromJson(Map<String, dynamic> json) {
     final current = json['current'];
     return MemberEmailChangeChallenge(
-      currentChallengeId:
-          current == null ? null : _map(current)['challenge_id'] as String,
+      currentChallengeId: current == null
+          ? null
+          : _map(current)['challenge_id'] as String,
       currentCodeRequired: json['current_code_required'] as bool? ?? true,
       newChallengeId: _map(json['new'])['challenge_id'] as String,
       expiresIn: _map(json['new'])['expires_in'] as int,
@@ -358,6 +359,19 @@ class MemberMembershipConfig {
     required this.features,
     this.purchaseUrl,
     this.appleProductId,
+    this.googleProductId,
+    this.appleTrialProductId,
+    this.storeTrialDays = 14,
+    this.storeTrialEnabled = false,
+    this.googleBillingEnabled = false,
+    this.appleBillingEnabled = false,
+    this.readerGoogleProductId,
+    this.readerAppleProductId,
+    this.readerAppleTrialProductId,
+    this.premiumGoogleProductId,
+    this.premiumAppleProductId,
+    this.legacyGoogleProductId,
+    this.legacyAppleProductIds = const [],
   });
 
   factory MemberMembershipConfig.fromJson(
@@ -367,6 +381,39 @@ class MemberMembershipConfig {
     product: json['product'] as String,
     purchaseUrl: _absoluteUrl(json['purchase_url'] as String?, baseUri),
     appleProductId: json['apple_product_id'] as String?,
+    googleProductId: json['google_product_id'] as String?,
+    appleTrialProductId: json['apple_trial_product_id'] as String?,
+    storeTrialDays:
+        json['reader_trial_days'] as int? ??
+        json['store_trial_days'] as int? ??
+        14,
+    storeTrialEnabled:
+        json['reader_trial_enabled'] as bool? ??
+        json['store_trial_enabled'] as bool? ??
+        false,
+    googleBillingEnabled: json['google_billing_enabled'] as bool? ?? false,
+    appleBillingEnabled: json['apple_billing_enabled'] as bool? ?? false,
+    readerGoogleProductId:
+        json['reader_google_product_id'] as String? ??
+        json['google_reader_product_id'] as String?,
+    readerAppleProductId:
+        json['reader_apple_product_id'] as String? ??
+        json['apple_reader_product_id'] as String?,
+    readerAppleTrialProductId:
+        json['reader_apple_trial_product_id'] as String? ??
+        json['apple_reader_trial_product_id'] as String? ??
+        json['apple_trial_product_id'] as String?,
+    premiumGoogleProductId:
+        json['premium_google_product_id'] as String? ??
+        json['google_product_id'] as String?,
+    premiumAppleProductId:
+        json['premium_apple_product_id'] as String? ??
+        json['apple_product_id'] as String?,
+    legacyGoogleProductId: json['legacy_google_product_id'] as String?,
+    legacyAppleProductIds: List<String>.unmodifiable(
+      (json['legacy_apple_product_ids'] as List? ?? const [])
+          .whereType<String>(),
+    ),
     features: List<String>.unmodifiable(
       (json['features'] as List? ?? const []).whereType<String>(),
     ),
@@ -375,7 +422,202 @@ class MemberMembershipConfig {
   final String product;
   final String? purchaseUrl;
   final String? appleProductId;
+  final String? googleProductId;
+  final String? appleTrialProductId;
+  final int storeTrialDays;
+  final bool storeTrialEnabled;
+  final bool googleBillingEnabled;
+  final bool appleBillingEnabled;
+  final String? readerGoogleProductId;
+  final String? readerAppleProductId;
+  final String? readerAppleTrialProductId;
+  final String? premiumGoogleProductId;
+  final String? premiumAppleProductId;
+  final String? legacyGoogleProductId;
+  final List<String> legacyAppleProductIds;
   final List<String> features;
+}
+
+enum ReaderAccessKind { locked, trial, lifetime }
+
+class ReaderAccessSnapshot {
+  const ReaderAccessSnapshot({
+    required this.unlocked,
+    required this.trialActive,
+    required this.access,
+    required this.channel,
+    this.trialStartedAt,
+    this.trialExpiresAt,
+  });
+
+  factory ReaderAccessSnapshot.fromJson(Map<String, dynamic> json) =>
+      ReaderAccessSnapshot(
+        unlocked: json['unlocked'] as bool? ?? false,
+        trialActive: json['trial_active'] as bool? ?? false,
+        access: switch (json['access']) {
+          'trial' => ReaderAccessKind.trial,
+          'lifetime' => ReaderAccessKind.lifetime,
+          _ => ReaderAccessKind.locked,
+        },
+        channel: json['channel'] as String?,
+        trialStartedAt: _optionalDate(json['trial_started_at']),
+        trialExpiresAt: _optionalDate(json['trial_expires_at']),
+      );
+
+  final bool unlocked;
+  final bool trialActive;
+  final ReaderAccessKind access;
+  final String? channel;
+  final DateTime? trialStartedAt;
+  final DateTime? trialExpiresAt;
+
+  bool get hasPermanentAccess =>
+      unlocked && access == ReaderAccessKind.lifetime;
+
+  bool isTrialActiveAt(DateTime now) =>
+      trialActive &&
+      access == ReaderAccessKind.trial &&
+      trialExpiresAt?.isAfter(now) == true;
+}
+
+class ReaderOfflineAttestation {
+  const ReaderOfflineAttestation({
+    required this.version,
+    required this.issuedAt,
+    required this.validUntil,
+    required this.readerUnlocked,
+    required this.installationKeyHash,
+    required this.channel,
+    required this.signature,
+    this.trialExpiresAt,
+  });
+
+  factory ReaderOfflineAttestation.fromJson(Map<String, dynamic> json) =>
+      ReaderOfflineAttestation(
+        version: json['version'] as int,
+        issuedAt: DateTime.parse(json['issued_at'] as String),
+        validUntil: DateTime.parse(json['valid_until'] as String),
+        readerUnlocked: json['reader_unlocked'] as bool? ?? false,
+        trialExpiresAt: _optionalDate(json['trial_expires_at']),
+        installationKeyHash: json['installation_key_hash'] as String,
+        channel: json['channel'] as String,
+        signature: json['signature'] as String,
+      );
+
+  final int version;
+  final DateTime issuedAt;
+  final DateTime validUntil;
+  final bool readerUnlocked;
+  final DateTime? trialExpiresAt;
+  final String installationKeyHash;
+  final String channel;
+  final String signature;
+
+  Map<String, Object?> toJson() => {
+    'version': version,
+    'issued_at': issuedAt.toIso8601String(),
+    'valid_until': validUntil.toIso8601String(),
+    'reader_unlocked': readerUnlocked,
+    'trial_expires_at': trialExpiresAt?.toIso8601String(),
+    'installation_key_hash': installationKeyHash,
+    'channel': channel,
+    'signature': signature,
+  };
+}
+
+/// Ephemeral access returned only after a live sandbox receipt verification.
+/// Never serialize this grant into the production entitlement cache.
+class StoreTestAccess {
+  const StoreTestAccess({
+    required this.kind,
+    required this.reader,
+    required this.premium,
+    this.expiresAt,
+  });
+
+  factory StoreTestAccess.fromJson(Map<String, dynamic> json) =>
+      StoreTestAccess(
+        kind: json['kind'] as String? ?? '',
+        reader: json['reader'] as bool? ?? false,
+        premium: json['premium'] as bool? ?? false,
+        expiresAt: _optionalDate(json['expires_at']),
+      );
+
+  final String kind;
+  final bool reader;
+  final bool premium;
+  final DateTime? expiresAt;
+  bool get isActive => expiresAt == null || expiresAt!.isAfter(DateTime.now());
+  bool get isReaderLifetime => reader && isActive && kind == 'reader_lifetime';
+  bool get isReaderTrial =>
+      reader && kind == 'reader_trial' && expiresAt != null && isActive;
+  bool get isPremium => premium && isActive && kind == 'premium_lifetime';
+}
+
+class ReaderAccessResult {
+  const ReaderAccessResult({
+    required this.readerAccess,
+    required this.offlineLicense,
+    this.applied,
+    this.testPurchase = false,
+    this.testAccess,
+    this.purchaseStatus = 'active',
+  });
+
+  factory ReaderAccessResult.fromJson(Map<String, dynamic> json) =>
+      ReaderAccessResult(
+        readerAccess: ReaderAccessSnapshot.fromJson(
+          _map(json['reader_access']),
+        ),
+        offlineLicense: ReaderOfflineAttestation.fromJson(
+          _map(json['offline_license']),
+        ),
+        applied: json['applied'] as bool?,
+        testPurchase: json['test_purchase'] as bool? ?? false,
+        testAccess: json['test_access'] is Map
+            ? StoreTestAccess.fromJson(_map(json['test_access']))
+            : null,
+        purchaseStatus: _storePurchaseStatus(json['purchase_status']),
+      );
+
+  final ReaderAccessSnapshot readerAccess;
+  final ReaderOfflineAttestation offlineLicense;
+  final bool? applied;
+  final bool testPurchase;
+  final StoreTestAccess? testAccess;
+  final String purchaseStatus;
+}
+
+/// An account-bound store evaluation, separate from purchased Premium.
+class MemberStoreTrial {
+  const MemberStoreTrial({
+    required this.startedAt,
+    required this.expiresAt,
+    required this.channel,
+  });
+
+  factory MemberStoreTrial.fromJson(Map<String, dynamic> json) =>
+      MemberStoreTrial(
+        startedAt: DateTime.parse(json['started_at'] as String),
+        expiresAt: DateTime.parse(json['expires_at'] as String),
+        channel: json['channel'] as String,
+      );
+
+  final DateTime startedAt;
+  final DateTime expiresAt;
+  final String channel;
+
+  bool isActiveAt(DateTime now) =>
+      {'google_play', 'apple'}.contains(channel) &&
+      !startedAt.isAfter(now) &&
+      expiresAt.isAfter(startedAt) &&
+      expiresAt.isAfter(now);
+
+  Map<String, Object> toJson() => {
+    'started_at': startedAt.toIso8601String(),
+    'expires_at': expiresAt.toIso8601String(),
+    'channel': channel,
+  };
 }
 
 class MemberEntitlement {
@@ -413,9 +655,12 @@ class MemberMembership {
     required this.entitlements,
     this.redeemed,
     this.testPurchase = false,
+    this.testAccess,
     this.purchaseStatus = 'active',
     this.userId,
     this.purchaseAllowed,
+    this.storeTrial,
+    this.testAccessExpiresAt,
     // Preserve the public premium argument while checking expiry in the getter.
   }) : _premium = premium; // ignore: prefer_initializing_formals
 
@@ -425,7 +670,20 @@ class MemberMembership {
         userId: json['user_id'] as String?,
         purchaseAllowed: json['purchase_allowed'] as bool?,
         testPurchase: json['test_purchase'] as bool? ?? false,
-        purchaseStatus: _applePurchaseStatus(json['purchase_status']),
+        testAccess: json['test_access'] is Map
+            ? StoreTestAccess.fromJson(_map(json['test_access']))
+            : null,
+        testAccessExpiresAt: switch (json['test_access_expires_at']) {
+          final String value => DateTime.parse(value),
+          _ => null,
+        },
+        purchaseStatus: _storePurchaseStatus(json['purchase_status']),
+        storeTrial: switch (json['store_trial']) {
+          final Map value => MemberStoreTrial.fromJson(
+            value.cast<String, dynamic>(),
+          ),
+          _ => null,
+        },
         features: Map<String, bool>.unmodifiable(
           _map(
             json['features'],
@@ -465,21 +723,32 @@ class MemberMembership {
       .map((entry) => entry.source)
       .toSet();
 
+  bool get hasStoreReaderEntitlement => entitlements.any(
+    (entry) =>
+        entry.featureKey == 'store_reader' &&
+        entry.status == 'active' &&
+        (entry.expiresAt == null || entry.expiresAt!.isAfter(DateTime.now())),
+  );
+
   final String? userId;
   final bool? purchaseAllowed;
   final bool _premium;
   bool get premium => hasActivePremium;
   final bool testPurchase;
+  final StoreTestAccess? testAccess;
   final String purchaseStatus;
   final Map<String, bool> features;
   final List<MemberEntitlement> entitlements;
   final bool? redeemed;
+  final MemberStoreTrial? storeTrial;
+  final DateTime? testAccessExpiresAt;
 }
 
-String _applePurchaseStatus(Object? value) => switch (value) {
+String _storePurchaseStatus(Object? value) => switch (value) {
   null || 'active' => 'active',
   'revoked' => 'revoked',
-  _ => throw const FormatException('invalid Apple purchase status'),
+  'pending' => 'pending',
+  _ => throw const FormatException('invalid store purchase status'),
 };
 
 class MemberReferralInviter {
@@ -562,6 +831,9 @@ class MemberReferralInvite {
 
 Map<String, dynamic> _map(Object? value) =>
     value is Map ? value.cast<String, dynamic>() : const {};
+
+DateTime? _optionalDate(Object? value) =>
+    value is String && value.isNotEmpty ? DateTime.parse(value) : null;
 
 String? _absoluteUrl(String? value, Uri? baseUri) {
   if (value == null || value.isEmpty) return null;

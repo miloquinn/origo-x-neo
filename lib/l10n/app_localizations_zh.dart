@@ -6732,6 +6732,212 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsWebDavWorking => 'WebDAV 正在处理';
+
+  @override
+  String get storeReaderLockedTitle => '解锁 Origo X';
+
+  @override
+  String get storeReaderLockedBody => '商店版阅读需要有效试用或购买授权。你的书籍和笔记会保留，可返回书架导出数据。';
+
+  @override
+  String get storeReaderUnlock => '试用、购买或恢复';
+
+  @override
+  String get storeReaderBack => '返回书架';
+
+  @override
+  String get storeReaderChecking => '正在检查阅读授权…';
+
+  @override
+  String get storeReaderBenefitTitle => '完整阅读使用权';
+
+  @override
+  String get storeReaderBenefitBody => '永久解锁本地阅读，无需注册或登录 Origo 账号。';
+
+  @override
+  String storeTrialStart(int days) {
+    return '免费体验 $days 天';
+  }
+
+  @override
+  String storeTrialDetails(int days) {
+    return '免费试用本地阅读 $days 天，不会自动扣款。试用结束后需一次性解锁应用才能继续阅读，已有书籍与笔记会保留。';
+  }
+
+  @override
+  String get storeTrialStarted => '商店版试用已开始。';
+
+  @override
+  String get storeTrialExpired => '商店版试用已结束。可一次性购买继续使用，或恢复已有购买。';
+
+  @override
+  String storePurchaseButton(String store) {
+    return '通过 $store 永久解锁';
+  }
+
+  @override
+  String storePurchaseBilling(String store) {
+    return '一次性解锁应用，不自动续费。实际价格由 $store 显示并处理支付。';
+  }
+
+  @override
+  String storePurchaseRestoreHelp(String store) {
+    return '使用原购买时的 $store 账号恢复，无需登录 Origo，也不会再次收费。';
+  }
+
+  @override
+  String storePurchaseAccess(String store) {
+    return '你已通过 $store 获得使用权，无需重复购买。';
+  }
+
+  @override
+  String get storeRestoreEmpty => '未找到可恢复的购买，请检查商店账号及绑定的 Origo X 账号。';
+
+  @override
+  String get storeGoogleRefundTerms =>
+      '可通过 Google Play 申请退款。退款或撤销经验证后，仅移除该笔购买对应的授权，其他独立权益继续有效。';
+
+  @override
+  String get storeReaderLegacyNotice => '已为你保留原有基础阅读资格。高级书源兼容仍需要高级版。';
+
+  @override
+  String get storePrivacyPurchaseBody =>
+      '我们将商店购买验证数据及账号标识发送至服务器，用于校验和恢复授权。Google Play 验证包括购买凭据和经过散列处理的账号标识。我们不会接收你的银行卡资料。';
+
+  @override
+  String storeTrialLegacyDetails(int days) {
+    return '原有阅读权限继续有效，无需再开始 $days 天阅读试用。';
+  }
+
+  @override
+  String get storeReaderSupportSubtitle => '试用完整阅读体验，或一次购买永久解锁';
+
+  @override
+  String get storeBillingUnavailable => '商店购买暂未开放，请稍后重试。已有权益不受影响。';
+
+  @override
+  String get accountSignInTitle => '登录 Origo X';
+
+  @override
+  String get accountSignInSubtitle => '管理你的账户与已购权益';
+
+  @override
+  String accountRegistrationStep(int step) {
+    return '创建账户 · $step / 3';
+  }
+
+  @override
+  String get accountSetupTitle => '设置账户';
+
+  @override
+  String get accountSetupHint => '昵称和头像可以稍后在个人资料中修改。';
+
+  @override
+  String get accountInvalidEmail => '请输入有效的邮箱地址';
+
+  @override
+  String get accountCodeFormat => '请输入邮件中的 6 位验证码';
+
+  @override
+  String get accountPasswordRequired => '请输入密码';
+
+  @override
+  String get accountShowPassword => '显示密码';
+
+  @override
+  String get accountHidePassword => '隐藏密码';
+
+  @override
+  String accountResendIn(int seconds) {
+    return '$seconds 秒后可重新发送';
+  }
+
+  @override
+  String get accountBackToCode => '返回验证码';
+
+  @override
+  String get accountAuthorizationTitle => '在浏览器中继续';
+
+  @override
+  String get accountReopenAuthorization => '重新打开授权页';
+
+  @override
+  String get accountSignOutHint => '本地书籍会保留。账户权益需登录后重新校验。';
+
+  @override
+  String get accountDiscardChanges => '放弃修改';
+
+  @override
+  String get accountUnsavedChanges => '个人资料的修改尚未保存。';
+
+  @override
+  String get accountAuthorizationExpired => '授权请求已过期，请重新登录。';
+
+  @override
+  String get storeReaderLicenseTitle => '应用解锁';
+
+  @override
+  String get storeReaderLicenseSubtitle => '先试用本地阅读 14 天，再通过一次购买永久解锁。';
+
+  @override
+  String get storeReaderLifetimeTitle => '应用永久解锁';
+
+  @override
+  String storeReaderOwned(String store) {
+    return '已通过 $store 永久解锁应用。';
+  }
+
+  @override
+  String get storePremiumPrerequisiteTitle => '请先解锁应用';
+
+  @override
+  String get storePremiumPrerequisiteBody => '高级版单独出售，仅在应用永久解锁后开放购买；试用期间不可购买。';
+
+  @override
+  String get storePremiumPriceCaption => '永久高级版 · 绑定 Origo 账号';
+
+  @override
+  String storePremiumPurchaseButton(String store) {
+    return '通过 $store 购买高级版';
+  }
+
+  @override
+  String storePremiumBilling(String store) {
+    return '高级版为单独的一次性购买，不自动续费。实际价格由 $store 显示并处理付款，验证后绑定当前登录的 Origo 账号。';
+  }
+
+  @override
+  String storePremiumRestoreHelp(String store) {
+    return '请登录绑定的 Origo 账号，并使用购买高级版时的 $store 账号恢复；恢复不会再次收费。';
+  }
+
+  @override
+  String storeReaderTrialExpiresAt(String date) {
+    return '应用阅读试用有效至 $date。';
+  }
+
+  @override
+  String get storeReaderPurchaseSuccess => '应用已永久解锁';
+
+  @override
+  String get storeReaderRestoreSuccess => '应用购买已恢复';
+
+  @override
+  String get storeReaderTestPurchaseVerified => '应用测试购买已验证，未授予正式许可。';
+
+  @override
+  String get storeReaderPurchaseRevoked => '此应用解锁已撤销。';
+
+  @override
+  String storeReaderPendingApproval(String store) {
+    return '正在等待 $store 批准，验证后将解锁阅读。';
+  }
+
+  @override
+  String get storeReaderVerifying => '正在验证应用购买…';
+
+  @override
+  String get storeReaderRestoring => '正在恢复应用购买…';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -13463,4 +13669,211 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsWebDavWorking => 'WebDAV 正在處理';
+
+  @override
+  String get storeReaderLockedTitle => '解鎖 Origo X';
+
+  @override
+  String get storeReaderLockedBody => '商店版閱讀需要有效試用或購買授權。你的書籍和筆記會保留，可返回書架匯出資料。';
+
+  @override
+  String get storeReaderUnlock => '試用、購買或恢復';
+
+  @override
+  String get storeReaderBack => '返回書架';
+
+  @override
+  String get storeReaderChecking => '正在檢查閱讀授權…';
+
+  @override
+  String get storeReaderBenefitTitle => '完整閱讀使用權';
+
+  @override
+  String get storeReaderBenefitBody => '永久解鎖本機閱讀，無須註冊或登入 Origo 帳號。';
+
+  @override
+  String storeTrialStart(int days) {
+    return '免費體驗 $days 天';
+  }
+
+  @override
+  String storeTrialDetails(int days) {
+    return '免費試用本機閱讀 $days 天，不會自動扣款。試用結束後需一次性解鎖應用程式才能繼續閱讀，書籍與筆記會保留。';
+  }
+
+  @override
+  String get storeTrialStarted => '商店版試用已開始。';
+
+  @override
+  String get storeTrialExpired => '商店版試用已結束。可一次性購買繼續使用，或恢復既有購買。';
+
+  @override
+  String storePurchaseButton(String store) {
+    return '透過 $store 永久解鎖';
+  }
+
+  @override
+  String storePurchaseBilling(String store) {
+    return '一次性解鎖應用程式，不自動續費。實際價格由 $store 顯示並處理付款。';
+  }
+
+  @override
+  String storePurchaseRestoreHelp(String store) {
+    return '使用原購買時的 $store 帳號恢復，無須登入 Origo，也不會再次收費。';
+  }
+
+  @override
+  String storePurchaseAccess(String store) {
+    return '你已透過 $store 獲得使用權，無需重複購買。';
+  }
+
+  @override
+  String get storeRestoreEmpty => '找不到可恢復的購買，請檢查商店帳號及綁定的 Origo X 帳號。';
+
+  @override
+  String get storeGoogleRefundTerms =>
+      '可透過 Google Play 申請退款。退款經驗證後，僅移除該筆購買對應的授權，其他獨立權益繼續有效。';
+
+  @override
+  String get storeReaderLegacyNotice => '已為你保留原有基礎閱讀資格。進階書源相容仍需要進階版。';
+
+  @override
+  String get storePrivacyPurchaseBody =>
+      '我們將商店購買驗證資料及帳號標識傳送至伺服器，用於驗證和恢復授權。Google Play 驗證包括購買憑證和經過雜湊處理的帳號標識。我們不會接收你的銀行卡資料。';
+
+  @override
+  String storeTrialLegacyDetails(int days) {
+    return '原有閱讀權限繼續有效，無須再開始 $days 天閱讀試用。';
+  }
+
+  @override
+  String get storeReaderSupportSubtitle => '試用完整閱讀體驗，或一次購買永久解鎖';
+
+  @override
+  String get storeBillingUnavailable => '商店購買暫未開放，請稍後重試。既有權益不受影響。';
+
+  @override
+  String get accountSignInTitle => '登入 Origo X';
+
+  @override
+  String get accountSignInSubtitle => '管理你的帳戶與已購權益';
+
+  @override
+  String accountRegistrationStep(int step) {
+    return '建立帳戶 · $step / 3';
+  }
+
+  @override
+  String get accountSetupTitle => '設定帳戶';
+
+  @override
+  String get accountSetupHint => '暱稱和頭像可以稍後在個人資料中修改。';
+
+  @override
+  String get accountInvalidEmail => '請輸入有效的電子郵件地址';
+
+  @override
+  String get accountCodeFormat => '請輸入郵件中的 6 位驗證碼';
+
+  @override
+  String get accountPasswordRequired => '請輸入密碼';
+
+  @override
+  String get accountShowPassword => '顯示密碼';
+
+  @override
+  String get accountHidePassword => '隱藏密碼';
+
+  @override
+  String accountResendIn(int seconds) {
+    return '$seconds 秒後可重新傳送';
+  }
+
+  @override
+  String get accountBackToCode => '返回驗證碼';
+
+  @override
+  String get accountAuthorizationTitle => '在瀏覽器中繼續';
+
+  @override
+  String get accountReopenAuthorization => '重新開啟授權頁';
+
+  @override
+  String get accountSignOutHint => '本機書籍會保留。帳戶權益需登入後重新驗證。';
+
+  @override
+  String get accountDiscardChanges => '放棄修改';
+
+  @override
+  String get accountUnsavedChanges => '個人資料的修改尚未儲存。';
+
+  @override
+  String get accountAuthorizationExpired => '授權請求已過期，請重新登入。';
+
+  @override
+  String get storeReaderLicenseTitle => '應用程式解鎖';
+
+  @override
+  String get storeReaderLicenseSubtitle => '先試用本機閱讀 14 天，再透過一次購買永久解鎖。';
+
+  @override
+  String get storeReaderLifetimeTitle => '應用程式永久解鎖';
+
+  @override
+  String storeReaderOwned(String store) {
+    return '已透過 $store 永久解鎖應用程式。';
+  }
+
+  @override
+  String get storePremiumPrerequisiteTitle => '請先解鎖應用程式';
+
+  @override
+  String get storePremiumPrerequisiteBody =>
+      '進階版獨立販售，僅在應用程式永久解鎖後開放購買；試用期間無法購買。';
+
+  @override
+  String get storePremiumPriceCaption => '永久進階版 · 綁定 Origo 帳號';
+
+  @override
+  String storePremiumPurchaseButton(String store) {
+    return '透過 $store 購買進階版';
+  }
+
+  @override
+  String storePremiumBilling(String store) {
+    return '進階版為獨立的一次性購買，不自動續費。實際價格由 $store 顯示並處理付款，驗證後綁定目前登入的 Origo 帳號。';
+  }
+
+  @override
+  String storePremiumRestoreHelp(String store) {
+    return '請登入綁定的 Origo 帳號，並使用購買進階版時的 $store 帳號恢復；恢復不會再次收費。';
+  }
+
+  @override
+  String storeReaderTrialExpiresAt(String date) {
+    return '應用程式閱讀試用有效至 $date。';
+  }
+
+  @override
+  String get storeReaderPurchaseSuccess => '應用程式已永久解鎖';
+
+  @override
+  String get storeReaderRestoreSuccess => '應用程式購買已恢復';
+
+  @override
+  String get storeReaderTestPurchaseVerified => '應用程式測試購買已驗證，未授予正式授權。';
+
+  @override
+  String get storeReaderPurchaseRevoked => '此應用程式解鎖已撤銷。';
+
+  @override
+  String storeReaderPendingApproval(String store) {
+    return '正在等待 $store 核准，驗證後將解鎖閱讀。';
+  }
+
+  @override
+  String get storeReaderVerifying => '正在驗證應用程式購買…';
+
+  @override
+  String get storeReaderRestoring => '正在恢復應用程式購買…';
 }

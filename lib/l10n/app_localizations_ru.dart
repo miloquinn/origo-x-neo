@@ -7201,4 +7201,224 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsWebDavWorking => 'WebDAV выполняет операцию';
+
+  @override
+  String get storeReaderLockedTitle => 'Разблокировать Origo X';
+
+  @override
+  String get storeReaderLockedBody =>
+      'Для чтения в этой версии из магазина нужен действующий пробный период или лицензия. Ваши книги и заметки сохранятся. Вернитесь на книжную полку, чтобы экспортировать данные.';
+
+  @override
+  String get storeReaderUnlock => 'Попробовать, купить или восстановить';
+
+  @override
+  String get storeReaderBack => 'Вернуться на книжную полку';
+
+  @override
+  String get storeReaderChecking => 'Проверка доступа к чтению…';
+
+  @override
+  String get storeReaderBenefitTitle => 'Полный доступ к чтению';
+
+  @override
+  String get storeReaderBenefitBody =>
+      'Разблокируйте локальное чтение навсегда. Аккаунт Origo не требуется.';
+
+  @override
+  String storeTrialStart(int days) {
+    return 'Бесплатный пробный период: $days дн.';
+  }
+
+  @override
+  String storeTrialDetails(int days) {
+    return 'Попробуйте локальное чтение $days дней без автоматического списания. Затем потребуется разовая покупка. Книги и заметки сохранятся.';
+  }
+
+  @override
+  String get storeTrialStarted => 'Пробный период версии из магазина начался.';
+
+  @override
+  String get storeTrialExpired =>
+      'Пробный период версии из магазина закончился. Совершите разовую покупку, чтобы продолжить, или восстановите существующую покупку.';
+
+  @override
+  String storePurchaseButton(String store) {
+    return 'Разблокировать навсегда через $store';
+  }
+
+  @override
+  String storePurchaseBilling(String store) {
+    return 'Разовая покупка приложения без автопродления. $store показывает цену и обрабатывает оплату.';
+  }
+
+  @override
+  String storePurchaseRestoreHelp(String store) {
+    return 'Восстановите покупку через использованный аккаунт $store. Вход в Origo и повторная оплата не нужны.';
+  }
+
+  @override
+  String storePurchaseAccess(String store) {
+    return 'У вас уже есть доступ через $store. Повторная покупка не требуется.';
+  }
+
+  @override
+  String get storeRestoreEmpty =>
+      'Покупка для восстановления не найдена. Проверьте аккаунт магазина и связанный аккаунт Origo X.';
+
+  @override
+  String get storeGoogleRefundTerms =>
+      'Запросите возврат средств через Google Play. После подтверждения возврата будет удалён только доступ, связанный с этой покупкой; независимые права доступа останутся действительными.';
+
+  @override
+  String get storeReaderLegacyNotice =>
+      'Ваш прежний базовый доступ к чтению сохраняется. Для расширенной совместимости с источниками по-прежнему нужен Premium.';
+
+  @override
+  String get storePrivacyPurchaseBody =>
+      'Данные проверки магазина и идентификатор аккаунта отправляются на наш сервер для проверки и восстановления доступа. Проверка Google Play включает токен покупки и хешированный идентификатор аккаунта. Мы не получаем данные платёжных карт.';
+
+  @override
+  String storeTrialLegacyDetails(int days) {
+    return 'Ваш прежний доступ к чтению сохраняется. Пробный период на $days дней не нужен.';
+  }
+
+  @override
+  String get storeReaderSupportSubtitle =>
+      'Попробуйте все возможности чтения или разблокируйте их навсегда одной покупкой';
+
+  @override
+  String get storeBillingUnavailable =>
+      'Покупки в магазине пока недоступны. Повторите попытку позже. Ваш текущий доступ не изменится.';
+
+  @override
+  String get accountSignInTitle => 'Войти в Origo X';
+
+  @override
+  String get accountSignInSubtitle => 'Управляйте аккаунтом и покупками';
+
+  @override
+  String accountRegistrationStep(int step) {
+    return 'Создание аккаунта · $step / 3';
+  }
+
+  @override
+  String get accountSetupTitle => 'Настройте аккаунт';
+
+  @override
+  String get accountSetupHint => 'Имя и фото можно добавить позже.';
+
+  @override
+  String get accountInvalidEmail => 'Введите действительный адрес почты';
+
+  @override
+  String get accountCodeFormat => 'Введите 6-значный код из письма';
+
+  @override
+  String get accountPasswordRequired => 'Введите пароль';
+
+  @override
+  String get accountShowPassword => 'Показать пароль';
+
+  @override
+  String get accountHidePassword => 'Скрыть пароль';
+
+  @override
+  String accountResendIn(int seconds) {
+    return 'Отправить снова через $seconds с';
+  }
+
+  @override
+  String get accountBackToCode => 'Назад к коду из письма';
+
+  @override
+  String get accountAuthorizationTitle => 'Продолжите в браузере';
+
+  @override
+  String get accountReopenAuthorization => 'Открыть страницу входа снова';
+
+  @override
+  String get accountSignOutHint =>
+      'Локальные книги сохранятся. Войдите снова, чтобы проверить права аккаунта.';
+
+  @override
+  String get accountDiscardChanges => 'Отменить изменения';
+
+  @override
+  String get accountUnsavedChanges => 'Изменения профиля не сохранены.';
+
+  @override
+  String get accountAuthorizationExpired =>
+      'Запрос на вход истёк. Повторите попытку.';
+
+  @override
+  String get storeReaderLicenseTitle => 'Разблокировать приложение';
+
+  @override
+  String get storeReaderLicenseSubtitle =>
+      'Попробуйте локальное чтение 14 дней, затем разблокируйте его разовой покупкой.';
+
+  @override
+  String get storeReaderLifetimeTitle => 'Приложение навсегда';
+
+  @override
+  String storeReaderOwned(String store) {
+    return 'Приложение навсегда разблокировано через $store.';
+  }
+
+  @override
+  String get storePremiumPrerequisiteTitle =>
+      'Сначала разблокируйте приложение';
+
+  @override
+  String get storePremiumPrerequisiteBody =>
+      'Premium продаётся отдельно после постоянной разблокировки приложения. Пробного доступа недостаточно.';
+
+  @override
+  String get storePremiumPriceCaption =>
+      'Premium навсегда · привязан к аккаунту Origo';
+
+  @override
+  String storePremiumPurchaseButton(String store) {
+    return 'Купить Premium через $store';
+  }
+
+  @override
+  String storePremiumBilling(String store) {
+    return 'Premium приобретается отдельно разовым платежом без автопродления. $store показывает цену и обрабатывает оплату. Premium привязывается к текущему аккаунту Origo.';
+  }
+
+  @override
+  String storePremiumRestoreHelp(String store) {
+    return 'Войдите в привязанный аккаунт Origo и восстановите Premium через аккаунт $store, использованный при покупке. Повторного списания не будет.';
+  }
+
+  @override
+  String storeReaderTrialExpiresAt(String date) {
+    return 'Пробный период приложения заканчивается $date.';
+  }
+
+  @override
+  String get storeReaderPurchaseSuccess => 'Приложение разблокировано навсегда';
+
+  @override
+  String get storeReaderRestoreSuccess => 'Покупка приложения восстановлена';
+
+  @override
+  String get storeReaderTestPurchaseVerified =>
+      'Тестовая покупка подтверждена; постоянная лицензия не выдана.';
+
+  @override
+  String get storeReaderPurchaseRevoked => 'Разблокировка приложения отозвана.';
+
+  @override
+  String storeReaderPendingApproval(String store) {
+    return 'Ожидание одобрения $store. Чтение откроется после проверки.';
+  }
+
+  @override
+  String get storeReaderVerifying => 'Проверка покупки приложения…';
+
+  @override
+  String get storeReaderRestoring => 'Восстановление покупки приложения…';
 }

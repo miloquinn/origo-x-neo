@@ -195,3 +195,23 @@
 - 服务配置为独立子页，首屏只显示模型、音色、API Key、试听；音色选择进入可搜索列表。
 - 高级自定义收纳名称、地址、模型与音色 ID、格式及回退行为。旧配置原值保留。
 - 复用 FloatingSubpageScaffold、应用主题、16px 边距及 720px 内容宽度；保存按钮固定在键盘上方。
+
+## Independent store purchases — 2026-09-26
+
+- 商店应用解锁 US$9.99，账号高级版 US$8.99；14 天试用仅开放基础阅读。应用购买与恢复无需 Origo 登录，高级版必须登录并永久拥有应用。
+- 未永久购买应用时隐藏所有高级版入口、身份徽章和商品；试用及旧免费安装保留阅读不视为永久购买。应用解锁入口始终可见。
+- 官网发行自带永久阅读，继续账号卡密兑换高级版。商店只用原生内购，不展示自有卡密入口。
+- 退出 Origo 不影响应用阅读许可；高级版不能反向授予阅读权。细则与迁移见 `docs/plans/2026-09-26-independent-store-products.md`。
+
+## 登录与账户界面（2026-09-26，已实施）
+
+- Surface / evidence: `account_page.dart`、账户 auth/security/membership parts、`premium_membership_page.dart`、`settings_account_card.dart` 与现有“我的”真实截图。完整流程、边界、验收与预览见 `docs/account-ui-redesign.md`。
+- Product / jobs: 快速登录、恢复账户、查看自己的真实权益与管理安全。解决认证字段/第三方入口在同一长页叠加的问题；保留已存在的账户二级导航。
+- Information architecture: 登录入口→邮箱密码/验证码；注册分邮箱、验证码、账户设置三步；资料、安全、权益为独立页。登录成功返回原发起任务。账户首页只展示身份、权益摘要与入口。
+- Brand / visual: 克制可信；24px 表单外边距、16px 字段圆角、52px 主按钮，继承 App 主题、品牌图标和共享顶栏；高级身份卡保留深色/金色细节和昵称徽章。
+- Components / ownership: 复用 `FloatingSubpageScaffold`、AppBrandIcon、AccountAvatarImage、已有 provider 品牌按钮、controller、头像裁剪与购买组件。原型只作布局与状态参考，不建立第二套生产主题。
+- Responsive / accessibility: 正常 390×844 手机每步主内容一屏内；短屏、130% 字号和键盘时可自然滚动。桌面表单最大440px，触点至少48px，保留自动填充、密码显隐语义和正确焦点顺序。
+- Interaction / voice: 字段错误就地展示、忙碌防重复、草稿保留、OAuth/MFA独立状态、退出确认。验证码注册第二步仅采集，最终提交才验证，不提前宣称成功。协议仍沿用现有同意流程。
+- Entitlements: 权益遵循独立应用解锁与高级版规则；旧购买保留原承诺，价格取商店返回值；官网邀请和购卡入口不进入商店版。同步失败不能显示成未购买。
+- Implementation status: 已接入正式认证、账户、资料、安全、权益与邀请页面；正式组件截图为 `docs/previews/account-redesign/implemented-*.png`。MFA/注销复用现有功能，注册拆步仍一次提交现有 API；授权取消清除 controller pending 状态并拒绝旧响应。未上传新商店构建。
+- Verification boundary: 用户已批准设计；已进行正式 Flutter 渲染、小屏键盘/放大字号及账户回归，Android 调试构建通过。真机键盘、平台授权回跳和真实商店支付需设备验收，测试模拟不代表线上交易成功。

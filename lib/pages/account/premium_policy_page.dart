@@ -11,6 +11,7 @@ class PremiumPolicyPage extends StatelessWidget {
     super.key,
     required this.policy,
     this.usesAppleBilling = true,
+    this.usesGoogleBilling = false,
   });
 
   static final appleEulaUri = Uri.parse(
@@ -18,6 +19,7 @@ class PremiumPolicyPage extends StatelessWidget {
   );
   final PremiumPolicy policy;
   final bool usesAppleBilling;
+  final bool usesGoogleBilling;
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +34,21 @@ class PremiumPolicyPage extends StatelessWidget {
               l10n.premiumBillingTitle,
               usesAppleBilling
                   ? l10n.premiumBillingBody
+                  : usesGoogleBilling
+                  ? l10n.storePremiumBilling('Google Play')
                   : l10n.premiumBillingBodyOther,
             ),
             (l10n.premiumAccountBindingTitle, l10n.premiumAccountBindingBody),
             if (usesAppleBilling) ...[
               (l10n.accountAppleRestore, l10n.premiumRestoreHelp),
               (l10n.premiumRefundTitle, l10n.premiumRefundTerms),
+            ],
+            if (usesGoogleBilling) ...[
+              (
+                l10n.accountAppleRestore,
+                l10n.storePremiumRestoreHelp('Google Play'),
+              ),
+              (l10n.premiumRefundTitle, l10n.storeGoogleRefundTerms),
             ],
           ]
         : [
@@ -52,7 +63,12 @@ class PremiumPolicyPage extends StatelessWidget {
                     'Account reading statistics and leaderboards',
                     'While signed in, record IDs, account ownership, reading timestamps and durations sync to our server for cross-device statistics and deduplication. Book text, titles and book lists are not uploaded by this feature. Guest records stay on your device until you choose an account to import them into; imported records cannot be reassigned. Public rankings are off by default. Opting in shares your name, avatar and ranked reading time. Opting out hides your ranking while preserving private cloud statistics. Deleting your account deletes its cloud reading records.',
                   ),
-            (l10n.premiumPrivacyPurchaseTitle, l10n.premiumPrivacyPurchaseBody),
+            (
+              l10n.premiumPrivacyPurchaseTitle,
+              usesGoogleBilling
+                  ? l10n.storePrivacyPurchaseBody
+                  : l10n.premiumPrivacyPurchaseBody,
+            ),
           ];
     return FloatingSubpageScaffold(
       title: policy == PremiumPolicy.terms

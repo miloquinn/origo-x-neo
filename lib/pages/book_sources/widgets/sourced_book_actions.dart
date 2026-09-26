@@ -51,15 +51,15 @@ class SourcedBookActions {
 
   Future<void> _openReader(BuildContext context, SourcedBook result) async {
     if (!context.mounted) return;
-    final reader = buildOnlineReader(
-      source: result.source,
-      sourceBook: result.book,
-      replaceRuleService: context.read<ReplaceRuleService>(),
-      client: client,
-      shelfService: shelfService,
-    );
+    final replaceRuleService = context.read<ReplaceRuleService>();
     final route = BookOpenTransition.createRoute<void>(
-      reader,
+      (_) => buildOnlineReader(
+        source: result.source,
+        sourceBook: result.book,
+        replaceRuleService: replaceRuleService,
+        client: client,
+        shelfService: shelfService,
+      ),
       origin: ReaderPageTransitionOrigin.discoverSheet,
       waitForReaderReady: true,
     );

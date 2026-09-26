@@ -137,10 +137,11 @@ class BookReaderLauncher {
     if (!context.mounted) {
       return;
     }
+    final replaceRuleService = context.read<ReplaceRuleService>();
     final route = BookOpenTransition.createRoute<void>(
-      NativeReaderPage(
+      (_) => NativeReaderPage(
         book: repaired,
-        replaceRuleService: context.read<ReplaceRuleService>(),
+        replaceRuleService: replaceRuleService,
         initialTheme: resolvedInitialTheme,
       ),
       animation: animation,

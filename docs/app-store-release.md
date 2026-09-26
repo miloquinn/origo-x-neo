@@ -18,9 +18,9 @@ GitHub / 官网的 Developer ID 公证包默认走卡密，不能直接拿去提
 
 ## Mac App Store 构建
 
-商店 macOS 包必须用商店脚本。它会强制带上 `--dart-define=OPEN_READING_MACOS_APP_STORE=true`，构建后读取 `macos/Flutter/ephemeral/Flutter-Generated.xcconfig` 确认该 define 已写入，然后才归档。不要手写 `flutter build macos`，也不要把官网公证包拿去上传。
+商店 macOS 包必须用商店脚本。它会强制带上 `--dart-define=OPEN_READING_MACOS_APP_STORE=true`、`--dart-define=ORIGO_DISTRIBUTION_CHANNEL=appleStore` 和`--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=true`，构建后读取 `macos/Flutter/ephemeral/Flutter-Generated.xcconfig` 确认这些 define 已写入，然后才归档。不要手写 `flutter build macos`，也不要把官网公证包拿去上传。
 
-该开关会强制 StoreKit 永久高级版内购、隐藏卡密和外部购买入口，并关闭官网自更新。未加该 define 时，若运行时检测到 `_MASReceipt` 仍会按商店包处理；审核和沙盒构建不能依赖收据兜底，必须显式加 define。
+渠道开关会强制 StoreKit 永久高级版内购、隐藏卡密和外部购买入口，并关闭官网自更新。未加新渠道 define 的旧包仍兼容 iOS StoreKit 和 macOS `_MASReceipt` 检测；新的审核和沙盒构建不能依赖兜底，必须显式声明 `appleStore`。商店构建现已开启阅读授权检查，官网构建保持关闭。真实购买、恢复和退款仍须用最终候选包在商店测试环境验收；详见独立商品实施记录。
 
 ```bash
 # 加载已配置的私有环境（不输出其内容）。
@@ -184,13 +184,17 @@ plutil -lint ios/Runner/Info.plist ios/Runner/Runner.entitlements ios/Runner/Pri
 bash -n tool/macos/build_website.sh
 bash -n tool/macos/build_app_store.sh
 flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
-flutter test --no-pub test/apple_purchase_service_test.dart
+flutter test --no-pub test/store_purchase_service_test.dart
+flutter test --no-pub test/store_reader_account_test.dart
+flutter test --no-pub test/offline_reader_license_refresh_test.dart
 flutter test --no-pub test/account_service_test.dart
 flutter test --no-pub test/app_distribution_test.dart
 git diff --check
 ```
 
-本轮实测：Python 15 项、Node 18 项、Flutter 内购 3 项、账号服务 24 项通过；
+商店渠道、试用和老客户兼容的当前实现及验收状态，见[统一授权维护说明](plans/2026-09-26-channel-licensing.md)。后端配置与对账另见 platform 仓库 `docs/store-billing-and-trials.md`。
+
+以下为原打包工具落地时的历史记录，不代表本次候选包验收：Python 15 项、Node 18 项、Flutter 内购 3 项、账号服务 24 项通过；
 plist、脚本语法、workflow YAML 解析、文案本地预检通过。分析无 error，有 3 条来自
 并行开发书源文件的 warning/info；未为此改动另一条开发线。
 真实 API 已认证成功；历史有 15 个有效构建，但不能据此声称本轮候选包已验证。

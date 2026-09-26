@@ -7242,4 +7242,226 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsWebDavWorking => 'WebDAV wird verarbeitet';
+
+  @override
+  String get storeReaderLockedTitle => 'Origo X freischalten';
+
+  @override
+  String get storeReaderLockedBody =>
+      'Zum Lesen in dieser Store-Version benötigst du eine aktive Testphase oder eine Lizenz. Deine Bücher und Notizen bleiben erhalten. Kehre zum Bücherregal zurück, um deine Daten zu exportieren.';
+
+  @override
+  String get storeReaderUnlock => 'Testen, kaufen oder wiederherstellen';
+
+  @override
+  String get storeReaderBack => 'Zurück zum Bücherregal';
+
+  @override
+  String get storeReaderChecking => 'Lesezugriff wird geprüft…';
+
+  @override
+  String get storeReaderBenefitTitle => 'Voller Lesezugriff';
+
+  @override
+  String get storeReaderBenefitBody =>
+      'Lokales Lesen dauerhaft freischalten. Kein Origo-Konto erforderlich.';
+
+  @override
+  String storeTrialStart(int days) {
+    return '$days Tage kostenlos testen';
+  }
+
+  @override
+  String storeTrialDetails(int days) {
+    return 'Lokales Lesen $days Tage kostenlos testen. Keine automatische Abbuchung. Danach ist eine einmalige App-Freischaltung nötig. Bücher und Notizen bleiben erhalten.';
+  }
+
+  @override
+  String get storeTrialStarted =>
+      'Deine Testphase für die Store-Version hat begonnen.';
+
+  @override
+  String get storeTrialExpired =>
+      'Deine Testphase für die Store-Version ist beendet. Kaufe einmalig, um fortzufahren, oder stelle einen bestehenden Kauf wieder her.';
+
+  @override
+  String storePurchaseButton(String store) {
+    return 'Mit $store dauerhaft freischalten';
+  }
+
+  @override
+  String storePurchaseBilling(String store) {
+    return 'Einmalige App-Freischaltung ohne automatische Verlängerung. $store zeigt den Preis an und verarbeitet die Zahlung.';
+  }
+
+  @override
+  String storePurchaseRestoreHelp(String store) {
+    return 'Mit dem beim Kauf verwendeten $store-Konto wiederherstellen. Keine Origo-Anmeldung und keine erneute Zahlung erforderlich.';
+  }
+
+  @override
+  String storePurchaseAccess(String store) {
+    return 'Du hast bereits Zugriff über $store. Ein erneuter Kauf ist nicht erforderlich.';
+  }
+
+  @override
+  String get storeRestoreEmpty =>
+      'Es wurde kein wiederherstellbarer Kauf gefunden. Prüfe dein Store-Konto und das verknüpfte Origo X-Konto.';
+
+  @override
+  String get storeGoogleRefundTerms =>
+      'Beantrage eine Rückerstattung über Google Play. Eine bestätigte Rückerstattung entzieht nur den Zugriff aus diesem Kauf; unabhängige Zugriffsrechte bleiben gültig.';
+
+  @override
+  String get storeReaderLegacyNotice =>
+      'Dein bestehender grundlegender Lesezugriff bleibt erhalten. Für erweiterte Quellenkompatibilität ist weiterhin Premium erforderlich.';
+
+  @override
+  String get storePrivacyPurchaseBody =>
+      'Verifizierungsdaten des Stores und eine Kontokennung werden an unseren Server gesendet, um den Zugriff zu prüfen und wiederherzustellen. Die Verifizierung bei Google Play umfasst ein Kauftoken und eine gehashte Kontokennung. Wir erhalten keine Zahlungskartendaten.';
+
+  @override
+  String storeTrialLegacyDetails(int days) {
+    return 'Dein bisheriger Lesezugriff bleibt gültig. Die $days-tägige Testphase ist nicht erforderlich.';
+  }
+
+  @override
+  String get storeReaderSupportSubtitle =>
+      'Teste das vollständige Leseerlebnis oder schalte es mit einem einmaligen Kauf dauerhaft frei';
+
+  @override
+  String get storeBillingUnavailable =>
+      'Käufe im Store sind noch nicht verfügbar. Versuche es später erneut. Dein bestehender Zugriff bleibt unverändert.';
+
+  @override
+  String get accountSignInTitle => 'Bei Origo X anmelden';
+
+  @override
+  String get accountSignInSubtitle => 'Konto und Käufe verwalten';
+
+  @override
+  String accountRegistrationStep(int step) {
+    return 'Konto erstellen · $step / 3';
+  }
+
+  @override
+  String get accountSetupTitle => 'Konto einrichten';
+
+  @override
+  String get accountSetupHint => 'Name und Foto können später ergänzt werden.';
+
+  @override
+  String get accountInvalidEmail => 'Gültige E-Mail-Adresse eingeben';
+
+  @override
+  String get accountCodeFormat => 'Den 6-stelligen E-Mail-Code eingeben';
+
+  @override
+  String get accountPasswordRequired => 'Passwort eingeben';
+
+  @override
+  String get accountShowPassword => 'Passwort anzeigen';
+
+  @override
+  String get accountHidePassword => 'Passwort verbergen';
+
+  @override
+  String accountResendIn(int seconds) {
+    return 'In $seconds s erneut senden';
+  }
+
+  @override
+  String get accountBackToCode => 'Zurück zum E-Mail-Code';
+
+  @override
+  String get accountAuthorizationTitle => 'Im Browser fortfahren';
+
+  @override
+  String get accountReopenAuthorization => 'Anmeldeseite erneut öffnen';
+
+  @override
+  String get accountSignOutHint =>
+      'Lokale Bücher bleiben erhalten. Melde dich erneut an, um deine Kontorechte zu prüfen.';
+
+  @override
+  String get accountDiscardChanges => 'Änderungen verwerfen';
+
+  @override
+  String get accountUnsavedChanges =>
+      'Deine Profiländerungen wurden noch nicht gespeichert.';
+
+  @override
+  String get accountAuthorizationExpired =>
+      'Die Anmeldung ist abgelaufen. Bitte versuche es erneut.';
+
+  @override
+  String get storeReaderLicenseTitle => 'App freischalten';
+
+  @override
+  String get storeReaderLicenseSubtitle =>
+      'Lokales Lesen 14 Tage testen und danach einmalig freischalten.';
+
+  @override
+  String get storeReaderLifetimeTitle => 'App dauerhaft freischalten';
+
+  @override
+  String storeReaderOwned(String store) {
+    return 'Diese App ist über $store dauerhaft freigeschaltet.';
+  }
+
+  @override
+  String get storePremiumPrerequisiteTitle => 'Zuerst die App freischalten';
+
+  @override
+  String get storePremiumPrerequisiteBody =>
+      'Premium wird nach der dauerhaften App-Freischaltung separat angeboten. Eine Testphase reicht nicht aus.';
+
+  @override
+  String get storePremiumPriceCaption =>
+      'Dauerhaftes Premium · mit deinem Origo-Konto verknüpft';
+
+  @override
+  String storePremiumPurchaseButton(String store) {
+    return 'Premium über $store kaufen';
+  }
+
+  @override
+  String storePremiumBilling(String store) {
+    return 'Premium ist ein separater Einmalkauf ohne automatische Verlängerung. $store zeigt den Preis an und verarbeitet die Zahlung. Premium wird mit deinem angemeldeten Origo-Konto verknüpft.';
+  }
+
+  @override
+  String storePremiumRestoreHelp(String store) {
+    return 'Melde dich beim verknüpften Origo-Konto an und stelle Premium mit dem beim Kauf verwendeten $store-Konto wieder her. Es entstehen keine erneuten Kosten.';
+  }
+
+  @override
+  String storeReaderTrialExpiresAt(String date) {
+    return 'Die App-Testphase endet am $date.';
+  }
+
+  @override
+  String get storeReaderPurchaseSuccess => 'App dauerhaft freigeschaltet';
+
+  @override
+  String get storeReaderRestoreSuccess => 'App-Kauf wiederhergestellt';
+
+  @override
+  String get storeReaderTestPurchaseVerified =>
+      'Testkauf der App bestätigt; keine reguläre Lizenz erteilt.';
+
+  @override
+  String get storeReaderPurchaseRevoked =>
+      'Diese App-Freischaltung wurde widerrufen.';
+
+  @override
+  String storeReaderPendingApproval(String store) {
+    return 'Warten auf die Genehmigung von $store. Nach der Prüfung wird Lesen freigeschaltet.';
+  }
+
+  @override
+  String get storeReaderVerifying => 'App-Kauf wird geprüft…';
+
+  @override
+  String get storeReaderRestoring => 'App-Kauf wird wiederhergestellt…';
 }

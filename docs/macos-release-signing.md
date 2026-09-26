@@ -11,6 +11,8 @@ Mac App Store 包必须走另一条脚本，见 [App Store 对接与发布](app-
 | 脚本 | `tool/macos/build_website.sh` | `tool/macos/build_app_store.sh` |
 | 签名 | Developer ID + Notary | Apple Distribution |
 | `OPEN_READING_MACOS_APP_STORE` | `false` | `true` |
+| `ORIGO_DISTRIBUTION_CHANNEL` | `direct` | `appleStore` |
+| `ORIGO_STORE_READER_LICENSE_REQUIRED` | `false` | `true` |
 | 高级版购买 | 卡密 / 小店 | App Store 内购 |
 | 应用内更新 | 官网 / GitHub 检查更新 | 仅 App Store 更新 |
 | CI | `.github/workflows/release.yml` 的 `macos` job | 不进 GitHub Release；本地脚本归档/上传 |
@@ -28,7 +30,7 @@ ZIP 内是已经签名并 stapled 的 `.app`。ZIP 本身只作为保留扩展�
 
 ## 本地构建
 
-从仓库根目录执行。官网脚本会带上 `--dart-define=OPEN_READING_MACOS_APP_STORE=false`，覆盖本机残留的商店开关，并拒绝 `true`。构建后读取 `macos/Flutter/ephemeral/Flutter-Generated.xcconfig` 再确认一次。
+从仓库根目录执行。官网脚本会同时声明 `OPEN_READING_MACOS_APP_STORE=false`、`ORIGO_DISTRIBUTION_CHANNEL=direct` 和 `ORIGO_STORE_READER_LICENSE_REQUIRED=false`，覆盖本机残留的商店开关，并拒绝商店渠道。构建后读取 `macos/Flutter/ephemeral/Flutter-Generated.xcconfig` 再确认一次。
 
 ```bash
 # 只检查工具，不构建。

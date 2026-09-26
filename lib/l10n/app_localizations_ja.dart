@@ -6850,4 +6850,218 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsWebDavWorking => 'WebDAVを処理中';
+
+  @override
+  String get storeReaderLockedTitle => 'Origo X の制限を解除';
+
+  @override
+  String get storeReaderLockedBody =>
+      'ストア版で読書するには、有効な無料体験または購入済みのライセンスが必要です。書籍やノートは保持されます。本棚に戻るとデータを書き出せます。';
+
+  @override
+  String get storeReaderUnlock => '無料体験・購入・復元';
+
+  @override
+  String get storeReaderBack => '本棚に戻る';
+
+  @override
+  String get storeReaderChecking => '読書の利用権を確認中…';
+
+  @override
+  String get storeReaderBenefitTitle => 'すべての読書機能';
+
+  @override
+  String get storeReaderBenefitBody =>
+      'ローカル読書を永久に利用できます。Origoアカウントへの登録やログインは不要です。';
+
+  @override
+  String storeTrialStart(int days) {
+    return '$days 日間無料で体験';
+  }
+
+  @override
+  String storeTrialDetails(int days) {
+    return 'ローカル読書を$days日間無料で試せます。自動課金はありません。試用終了後は買い切りのアプリ解除が必要です。書籍とメモは保持されます。';
+  }
+
+  @override
+  String get storeTrialStarted => 'ストア版の無料体験を開始しました。';
+
+  @override
+  String get storeTrialExpired =>
+      'ストア版の無料体験が終了しました。引き続き利用するには買い切り購入するか、購入済みの利用権を復元してください。';
+
+  @override
+  String storePurchaseButton(String store) {
+    return '$store で永久利用権を購入';
+  }
+
+  @override
+  String storePurchaseBilling(String store) {
+    return '買い切りのアプリ解除です。自動更新はありません。価格表示と支払い処理は$storeが行います。';
+  }
+
+  @override
+  String storePurchaseRestoreHelp(String store) {
+    return '購入時の$storeアカウントで復元できます。Origoへのログインや再課金はありません。';
+  }
+
+  @override
+  String storePurchaseAccess(String store) {
+    return '$store で利用権を取得済みです。再購入は不要です。';
+  }
+
+  @override
+  String get storeRestoreEmpty =>
+      '復元できる購入が見つかりません。ストアのアカウントと、連携した Origo X アカウントを確認してください。';
+
+  @override
+  String get storeGoogleRefundTerms =>
+      '返金は Google Play から申請してください。返金が確認されると、その購入に対応する利用権のみが取り消されます。別途取得した利用権は引き続き有効です。';
+
+  @override
+  String get storeReaderLegacyNotice =>
+      'これまでの基本的な読書機能の利用権は保持されます。高度なソース互換機能には引き続きプレミアムが必要です。';
+
+  @override
+  String get storePrivacyPurchaseBody =>
+      '利用権の検証と復元のため、ストアの購入検証データとアカウント識別子を当社サーバーに送信します。Google Play の検証には購入トークンとハッシュ化したアカウント識別子が含まれます。当社が決済カード情報を受け取ることはありません。';
+
+  @override
+  String storeTrialLegacyDetails(int days) {
+    return '既存の読書権限は引き続き有効です。$days日間の試用を開始する必要はありません。';
+  }
+
+  @override
+  String get storeReaderSupportSubtitle => 'すべての読書機能を体験するか、一度の購入で永久に利用できます';
+
+  @override
+  String get storeBillingUnavailable =>
+      'ストアでの購入はまだ利用できません。しばらくしてからもう一度お試しください。既存の利用権に影響はありません。';
+
+  @override
+  String get accountSignInTitle => 'Origo X にログイン';
+
+  @override
+  String get accountSignInSubtitle => 'アカウントと購入済みの権利を管理';
+
+  @override
+  String accountRegistrationStep(int step) {
+    return 'アカウント作成 · $step / 3';
+  }
+
+  @override
+  String get accountSetupTitle => 'アカウントを設定';
+
+  @override
+  String get accountSetupHint => '名前と写真は後からプロフィールで変更できます。';
+
+  @override
+  String get accountInvalidEmail => '有効なメールアドレスを入力してください';
+
+  @override
+  String get accountCodeFormat => 'メールの6桁のコードを入力してください';
+
+  @override
+  String get accountPasswordRequired => 'パスワードを入力してください';
+
+  @override
+  String get accountShowPassword => 'パスワードを表示';
+
+  @override
+  String get accountHidePassword => 'パスワードを非表示';
+
+  @override
+  String accountResendIn(int seconds) {
+    return '$seconds秒後に再送信できます';
+  }
+
+  @override
+  String get accountBackToCode => '確認コードに戻る';
+
+  @override
+  String get accountAuthorizationTitle => 'ブラウザで続ける';
+
+  @override
+  String get accountReopenAuthorization => 'ログインページを再度開く';
+
+  @override
+  String get accountSignOutHint => '端末内の本は保持されます。権利の確認には再ログインが必要です。';
+
+  @override
+  String get accountDiscardChanges => '変更を破棄';
+
+  @override
+  String get accountUnsavedChanges => 'プロフィールの変更は保存されていません。';
+
+  @override
+  String get accountAuthorizationExpired => 'ログイン要求の有効期限が切れました。再度お試しください。';
+
+  @override
+  String get storeReaderLicenseTitle => 'アプリのロック解除';
+
+  @override
+  String get storeReaderLicenseSubtitle => 'ローカル読書を14日間試用した後、買い切りで永久に利用できます。';
+
+  @override
+  String get storeReaderLifetimeTitle => 'アプリの永久ロック解除';
+
+  @override
+  String storeReaderOwned(String store) {
+    return '$store でアプリを永久にロック解除済みです。';
+  }
+
+  @override
+  String get storePremiumPrerequisiteTitle => '先にアプリをロック解除';
+
+  @override
+  String get storePremiumPrerequisiteBody =>
+      'プレミアムはアプリの永久ロック解除後に別途購入できます。試用中は購入できません。';
+
+  @override
+  String get storePremiumPriceCaption => '永久プレミアム · Origoアカウントに紐付け';
+
+  @override
+  String storePremiumPurchaseButton(String store) {
+    return '$store でプレミアムを購入';
+  }
+
+  @override
+  String storePremiumBilling(String store) {
+    return 'プレミアムは別途買い切りで、自動更新はありません。価格表示と支払いは$storeが行います。プレミアムはログイン中のOrigoアカウントに紐付けられます。';
+  }
+
+  @override
+  String storePremiumRestoreHelp(String store) {
+    return '紐付けられたOrigoアカウントにログインし、購入時の$storeアカウントでプレミアムを復元してください。再課金はありません。';
+  }
+
+  @override
+  String storeReaderTrialExpiresAt(String date) {
+    return 'アプリの試用は$dateに終了します。';
+  }
+
+  @override
+  String get storeReaderPurchaseSuccess => 'アプリを永久に解除しました';
+
+  @override
+  String get storeReaderRestoreSuccess => 'アプリの購入を復元しました';
+
+  @override
+  String get storeReaderTestPurchaseVerified =>
+      'テスト購入を確認しました。正式なライセンスは付与されていません。';
+
+  @override
+  String get storeReaderPurchaseRevoked => 'このアプリの解除は取り消されました。';
+
+  @override
+  String storeReaderPendingApproval(String store) {
+    return '$storeの承認を待っています。確認後に読書が利用可能になります。';
+  }
+
+  @override
+  String get storeReaderVerifying => 'アプリの購入を確認中…';
+
+  @override
+  String get storeReaderRestoring => 'アプリの購入を復元中…';
 }

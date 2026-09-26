@@ -37,6 +37,7 @@ import 'services/reading/reading_account_scope.dart';
 import 'services/reading/reading_cloud_controller.dart';
 import 'services/reader/replace_rule_service.dart';
 import 'services/core/app_distribution.dart';
+import 'services/core/legacy_reader_access.dart';
 import 'services/core/app_update_download_service.dart';
 import 'services/core/background_download_notifier.dart';
 import 'services/core/app_settings_service.dart';
@@ -61,11 +62,13 @@ import 'widgets/app_text_scale.dart';
 import 'widgets/restartable_app.dart';
 import 'widgets/side_toast.dart';
 import 'widgets/update_check_gate.dart';
+import 'widgets/store_reader_access_gate.dart';
 
 void main(List<String> arguments) async {
   // 确保可以在 runApp 前安全调用 SystemChrome
   WidgetsFlutterBinding.ensureInitialized();
   await AppDistribution.initialize();
+  await LegacyReaderAccess.initialize();
   // Large imported source libraries used to live in one SharedPreferences
   // value. Move that blob before any global preference cache is warmed so a
   // multi-thousand-source library cannot make startup consume ~1 GB or ANR.
@@ -160,8 +163,10 @@ void main(List<String> arguments) async {
             create: (_) => WebDavBackupController(),
           ),
         ],
-        child: XxReadApp(
-          initialFilePaths: _supportedDesktopFileArguments(arguments),
+        child: StoreReaderEntitlementListener(
+          child: XxReadApp(
+            initialFilePaths: _supportedDesktopFileArguments(arguments),
+          ),
         ),
       ),
     ),
@@ -566,17 +571,17 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
         final client = BookSourceClient();
         final shelfService = BookSourceShelfService(client: client);
         try {
-          final reader = buildOnlineReader(
-            shelfBook: book,
-            replaceRuleService: provider.Provider.of<ReplaceRuleService>(
-              context,
-              listen: false,
-            ),
-            client: client,
-            shelfService: shelfService,
+          final replaceRules = provider.Provider.of<ReplaceRuleService>(
+            context,
+            listen: false,
           );
           final route = BookOpenTransition.createRoute<void>(
-            reader,
+            (_) => buildOnlineReader(
+              shelfBook: book,
+              replaceRuleService: replaceRules,
+              client: client,
+              shelfService: shelfService,
+            ),
             waitForReaderReady: true,
           );
           await BookOpenTransition.push<void>(context, route);

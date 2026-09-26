@@ -4,27 +4,38 @@
 
 ## 审核操作说明（英文草稿）
 
-Origo X is a local-first ebook reader. Basic local reading does not require
-an account. Import a legally distributable TXT or EPUB document from Files into
-the library, open it, adjust fonts/themes and page-turning preferences, and add
-bookmarks or notes. Reading statistics are available in the app.
+Origo X is a local-first ebook reader. Local reading does not require an Origo
+account, but App Store builds require either the optional 14-day trial or a
+permanent app unlock. Import an authorized TXT or EPUB from Files to test reading.
 
-Optional account features support Sign in with Apple and other sign-in methods.
-The lifetime non-consumable in-app purchase (com.niki.xxread.premium.lifetime)
-uses StoreKit 2 and server-side transaction verification. It unlocks additional
-compatible source protocols and trusted local/private-network sources. These
-features become available under Settings > Advanced Features and require the
-member to enable them. Non-members do not see the advanced settings section.
-The membership screen describes both benefits before purchase, displays the
-App Store price, and provides readable membership terms, privacy information,
-and the Apple standard EULA. The purchase is one-time and does not auto-renew.
-Restore Purchases remains available to signed-in users, including active members,
-and explicitly synchronizes with the App Store before server verification.
-Use the same Apple Account for restoration. If the former Origo X account was deleted, sign in to a new Origo X account and use Restore Purchases to link the retained Apple purchase again.
-Active members on iOS can open the system refund request sheet; Apple decides
-whether to approve the request. A submitted request is not treated as a refund.
-Provide a dedicated review account to test account functionality; do not use
-the developer's personal credentials.
+The three non-consumable products are separate:
+- `com.niki.xxread.reader.trial14d`: zero-price, one 14-day reading trial from the
+  original transaction date; no automatic charge or renewal.
+- `com.niki.xxread.reader.lifetime`: US base price $9.99, permanent local reading;
+  purchase and restore require the Apple Account only, without Origo sign-in.
+- `com.niki.xxread.premium.lifetime.v2`: US base price $8.99, permanent account
+  Premium. This entry appears only after permanent app ownership, and requires
+  Origo sign-in. A reading trial does not qualify. Premium enables more formats
+  of user-imported sources and trusted private-network sources; it does not
+  include books or source addresses and does not grant the app reading license.
+
+Open Settings > Account > App unlock to trial, buy or restore reading access.
+After permanent unlock, sign in and open Premium to purchase the separate account
+upgrade. Prices shown by StoreKit are localized. Both purchases are one-time.
+Reader restore uses the original Apple Account; Premium restore also requires
+its original Origo account. Signing out of Origo keeps the app reading license.
+Deleting an Origo account removes its Premium entitlement and leaves an anonymized,
+terminal transaction record to prevent transferring the purchase to a new account.
+Independent app ownership can still be restored. Existing purchases of the old
+`com.niki.xxread.premium.lifetime` product retain their promised bundle access;
+the new client offers the separate products for new purchases.
+
+Sandbox receipts provide temporary verification access without writing production
+entitlements. After relaunch, restore purchases to verify sandbox access again.
+Provide a dedicated review account in the private review fields. Do not publish
+personal credentials. Three new products currently have complete metadata and
+READY_TO_SUBMIT status; this document does not establish approval or a completed
+real-device purchase test. Submit them with the matching new app version.
 
 Third-party content sources are added by the user. The official app does not
 bundle a third-party source directory or commercial books. Provide a stable,
@@ -44,7 +55,7 @@ reading aloud.
 | 审核账号 | 后台私密字段填写；测试登录、多因素验证及权限，避免审核时被一次性验证码挡住 |
 | 本地示例书 | 使用自有或已获授权的 TXT/EPUB，保证能离线导入；不拿未知版权书籍作为附件 |
 | 书源/漫画源示例 | 等另一条开发线完成，用稳定且有授权的服务验证；注明联网与配置步骤 |
-| 账号删除 | 客户端与线上 20260912-apple-account-review 后端均已实现；入口：设置 → 账号 → 账号安全 → 注销账号。2026-09-12 已通过真实 PostgreSQL 的删除/购买恢复回归，仍需最终候选包真机全流程及录屏；后台所有者须先移交权限 |
+| 账号删除 | 客户端与线上 20260912-apple-account-review 后端均已实现；入口：设置 → 账号 → 账号安全 → 注销账号。本轮已覆盖独立阅读/账号高级版及终止交易的回归；仍需最终候选包真机全流程及录屏；后台所有者须先移交权限 |
 | 内购 | 核实商品、价格、权益描述、税务协议，使用沙盒和 TestFlight 验证购买/恢复/退款 |
 | 截图 | 重新采集 iPhone 与 13 英寸 iPad；现有宣传图包含 Android 状态栏 |
 | 年龄分级 | 后台现有 4+，尚未按新增书源/漫画功能复核；按最终可访问内容回答问卷 |

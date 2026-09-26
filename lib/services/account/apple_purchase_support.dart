@@ -15,10 +15,13 @@ class ApplePurchaseSupport {
 
   bool get supportsNativeRefund => !kIsWeb && _platform == TargetPlatform.iOS;
 
-  Future<Set<String>?> syncPurchases() async {
+  Future<Set<String>?> syncPurchases({Set<String>? productIds}) async {
     if (!supportsNativeRefund) return null;
 
-    final value = await _channel.invokeMethod<Object?>('syncPurchases');
+    final value = await _channel.invokeMethod<Object?>(
+      'syncPurchases',
+      productIds == null ? null : {'productIds': productIds.toList()},
+    );
     if (value is! List || value.any((item) => item is! String)) {
       throw PlatformException(
         code: 'invalid_response',

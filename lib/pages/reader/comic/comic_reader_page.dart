@@ -75,7 +75,7 @@ class ComicReaderPage extends StatefulWidget {
     final theme = initialTheme ?? await ReaderThemes.loadSavedPalette();
     if (!context.mounted) return;
     final route = BookOpenTransition.createRoute<void>(
-      ComicReaderPage.local(book: book, theme: theme),
+      (_) => ComicReaderPage.local(book: book, theme: theme),
       animation: animation,
       libraryAnimation: libraryAnimation,
       animationPace: animationPace,

@@ -53,43 +53,61 @@ class _AccountActionsCard extends StatelessWidget {
   final VoidCallback onOpenSupport;
 
   @override
-  Widget build(BuildContext context) => _SectionCard(
-    child: Column(
-      children: [
-        _AccountActionTile(
-          key: const ValueKey('account-edit-profile'),
-          icon: Icons.person_outline_rounded,
-          title: context.l10n.accountEditProfile,
-          subtitle: '@${user.username}',
-          onTap: onEditProfile,
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final account = context.watch<MemberAccountController>();
+    final canShowPremium =
+        !AppDistribution.isStore || account.hasPermanentReaderAccess;
+    return Semantics(
+      container: true,
+      label: user.effectiveName,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(20),
         ),
-        const Divider(height: 1),
-        _AccountActionTile(
-          key: const ValueKey('account-security'),
-          icon: Icons.shield_outlined,
-          title: context.l10n.accountSecurityTitle,
-          subtitle: user.email,
-          onTap: onOpenSecurity,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _AccountActionTile(
+                key: const ValueKey('account-edit-profile'),
+                icon: Icons.person_outline_rounded,
+                title: context.l10n.accountEditProfile,
+                onTap: onEditProfile,
+              ),
+              const Divider(height: 1),
+              _AccountActionTile(
+                key: const ValueKey('account-security'),
+                icon: Icons.shield_outlined,
+                title: context.l10n.accountSecurityTitle,
+                onTap: onOpenSecurity,
+              ),
+              if (!AppDistribution.usesStoreBilling) ...[
+                const Divider(height: 1),
+                _AccountActionTile(
+                  key: const ValueKey('account-referral'),
+                  icon: Icons.group_add_rounded,
+                  title: context.l10n.accountInviteTitle,
+                  onTap: onOpenReferral,
+                ),
+              ],
+              if (canShowPremium) ...[
+                const Divider(height: 1),
+                _AccountActionTile(
+                  key: const ValueKey('account-support'),
+                  icon: Icons.receipt_long_outlined,
+                  title: context.l10n.premiumAccountBindingTitle,
+                  onTap: onOpenSupport,
+                ),
+              ],
+            ],
+          ),
         ),
-        const Divider(height: 1),
-        _AccountActionTile(
-          key: const ValueKey('account-referral'),
-          icon: Icons.group_add_rounded,
-          title: context.l10n.accountInviteTitle,
-          subtitle: context.l10n.accountInviteSubtitle,
-          onTap: onOpenReferral,
-        ),
-        const Divider(height: 1),
-        _AccountActionTile(
-          key: const ValueKey('account-support'),
-          icon: Icons.volunteer_activism_rounded,
-          title: context.l10n.accountSupportTitle,
-          subtitle: context.l10n.accountSupportFreeSubtitle,
-          onTap: onOpenSupport,
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class _AccountReferralPage extends StatelessWidget {
@@ -117,14 +135,14 @@ class _AccountActionTile extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.onTap,
     this.destructive = false,
   });
 
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final VoidCallback? onTap;
 
   /// 破坏性入口用错误色标出来，避免和普通设置项看起来一样。
@@ -142,13 +160,19 @@ class _AccountActionTile extends StatelessWidget {
     return Material(
       type: MaterialType.transparency,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
+        minTileHeight: 58,
+        minLeadingWidth: 38,
+        horizontalTitleGap: 12,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
         leading: Container(
-          width: 42,
-          height: 42,
+          width: 38,
+          height: 38,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: background, shape: BoxShape.circle),
-          child: Icon(icon, size: 21, color: foreground),
+          decoration: BoxDecoration(
+            color: background.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 20, color: foreground),
         ),
         title: Text(
           title,
@@ -157,7 +181,9 @@ class _AccountActionTile extends StatelessWidget {
             color: destructive ? scheme.error : null,
           ),
         ),
-        subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+        subtitle: subtitle == null
+            ? null
+            : Text(subtitle!, maxLines: 2, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: onTap,
       ),
@@ -293,148 +319,263 @@ class _ReferralCardState extends State<_ReferralCard> {
               ),
             ],
           ),
-          if (referral.recentInvites.isNotEmpty) ...[
-            const SizedBox(height: 18),
-            Text(
-              '最近邀请',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          const SizedBox(height: 18),
+          const Divider(height: 1),
+          _AccountActionTile(
+            key: const ValueKey('account-invite-records'),
+            icon: Icons.receipt_long_outlined,
+            title: context.l10n.accountInviteStatsInvited,
+            subtitle: context.l10n.accountInviteStats(
+              referral.invitedCount,
+              referral.rewardedCount,
             ),
-            const SizedBox(height: 6),
-            ...referral.recentInvites
-                .take(5)
-                .map(
-                  (item) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    leading: CircleAvatar(
-                      radius: 16,
-                      child: Text(item.name.characters.first.toUpperCase()),
-                    ),
-                    title: Text(item.name),
-                    subtitle: Text(
-                      '绑定于 ${MaterialLocalizations.of(context).formatCompactDate(item.boundAt)}',
-                    ),
-                    trailing: Text(
-                      item.status == 'rewarded' ? '已解锁奖励' : '等待兑换',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: item.status == 'rewarded'
-                            ? Colors.green.shade700
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => _AccountInviteRecordsPage(referral: referral),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          _AccountActionTile(
+            key: const ValueKey('account-invite-rules'),
+            icon: Icons.rule_rounded,
+            title: context.l10n.accountInviteHowItWorks,
+            subtitle: context.l10n.accountInviteStepShareBody,
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => const _AccountInviteRulesPage(),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          _AccountActionTile(
+            key: const ValueKey('account-invite-binding'),
+            icon: Icons.person_add_alt_1_rounded,
+            title: context.l10n.accountInviteMyBinding,
+            subtitle: inviter == null
+                ? context.l10n.accountInviteBindIntro
+                : context.l10n.accountInviterBound(inviter.name),
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => _AccountInviteBindingPage(
+                  account: widget.account,
+                  controller: _inviteCode,
+                  onBind: _bind,
                 ),
-          ],
-          const SizedBox(height: 20),
-          Text(
-            context.l10n.accountInviteHowItWorks,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 12),
-          _InviteStep(
-            number: 1,
-            title: context.l10n.accountInviteStepShareTitle,
-            body: context.l10n.accountInviteStepShareBody,
-          ),
-          _InviteStep(
-            number: 2,
-            title: context.l10n.accountInviteStepBindTitle,
-            body: context.l10n.accountInviteStepBindBody,
-          ),
-          _InviteStep(
-            number: 3,
-            title: context.l10n.accountInviteStepRedeemTitle,
-            body: context.l10n.accountInviteStepRedeemBody,
-            last: true,
-          ),
-          const Divider(height: 30),
-          Text(
-            context.l10n.accountInviteMyBinding,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          if (inviter != null)
-            Container(
-              key: const ValueKey('account-inviter-bound'),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: colors.surfaceContainerHighest.withValues(alpha: 0.58),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    inviter.status == 'rewarded'
-                        ? Icons.verified_rounded
-                        : Icons.hourglass_top_rounded,
-                    color: inviter.status == 'rewarded'
-                        ? colors.primary
-                        : colors.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.l10n.accountInviterBound(inviter.name),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${inviter.code} · ${inviter.status == 'rewarded' ? context.l10n.accountInviteRewarded : context.l10n.accountInviteWaiting}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colors.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else if (widget.account.membership?.premium != true) ...[
-            Text(
-              context.l10n.accountInviteBindIntro,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-                height: 1.4,
               ),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              key: const ValueKey('account-invite-code'),
-              controller: _inviteCode,
-              textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                labelText: context.l10n.accountInviteBindLabel,
-                helperText: context.l10n.accountInviteBindHint,
-                prefixIcon: const Icon(Icons.person_add_alt_1_rounded),
-              ),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              key: const ValueKey('account-bind-invite'),
-              onPressed: widget.account.loading ? null : _bind,
-              child: Text(context.l10n.accountInviteBindAction),
-            ),
-          ] else
-            Text(
-              context.l10n.accountInviteBindingNotNeeded,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
-            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _AccountInviteRecordsPage extends StatelessWidget {
+  const _AccountInviteRecordsPage({required this.referral});
+
+  final MemberReferral referral;
+
+  @override
+  Widget build(BuildContext context) => FloatingSubpageScaffold(
+    title: context.l10n.accountInviteStatsInvited,
+    body: ListView(
+      padding: floatingSubpagePadding(context, bottom: 40),
+      children: [
+        _SectionCard(
+          child: referral.recentInvites.isEmpty
+              ? Text(
+                  context.l10n.accountInviteStats(
+                    referral.invitedCount,
+                    referral.rewardedCount,
+                  ),
+                )
+              : Column(
+                  children: referral.recentInvites
+                      .map(
+                        (item) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            radius: 17,
+                            child: Text(
+                              item.name.characters.first.toUpperCase(),
+                            ),
+                          ),
+                          title: Text(item.name),
+                          subtitle: Text(
+                            MaterialLocalizations.of(
+                              context,
+                            ).formatCompactDate(item.boundAt),
+                          ),
+                          trailing: Text(
+                            item.status == 'rewarded'
+                                ? context.l10n.accountInviteRewarded
+                                : context.l10n.accountInviteWaiting,
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: item.status == 'rewarded'
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _AccountInviteRulesPage extends StatelessWidget {
+  const _AccountInviteRulesPage();
+
+  @override
+  Widget build(BuildContext context) => FloatingSubpageScaffold(
+    title: context.l10n.accountInviteHowItWorks,
+    body: ListView(
+      padding: floatingSubpagePadding(context, bottom: 40),
+      children: [
+        _SectionCard(
+          child: Column(
+            children: [
+              _InviteStep(
+                number: 1,
+                title: context.l10n.accountInviteStepShareTitle,
+                body: context.l10n.accountInviteStepShareBody,
+              ),
+              _InviteStep(
+                number: 2,
+                title: context.l10n.accountInviteStepBindTitle,
+                body: context.l10n.accountInviteStepBindBody,
+              ),
+              _InviteStep(
+                number: 3,
+                title: context.l10n.accountInviteStepRedeemTitle,
+                body: context.l10n.accountInviteStepRedeemBody,
+                last: true,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _AccountInviteBindingPage extends StatelessWidget {
+  const _AccountInviteBindingPage({
+    required this.account,
+    required this.controller,
+    required this.onBind,
+  });
+
+  final MemberAccountController account;
+  final TextEditingController controller;
+  final Future<void> Function() onBind;
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: account,
+    builder: (context, _) {
+      final inviter = account.referral?.inviter;
+      final colors = Theme.of(context).colorScheme;
+      return FloatingSubpageScaffold(
+        title: context.l10n.accountInviteMyBinding,
+        body: ListView(
+          padding: floatingSubpagePadding(context, bottom: 40),
+          children: [
+            _SectionCard(
+              child: inviter != null
+                  ? Container(
+                      key: const ValueKey('account-inviter-bound'),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest.withValues(
+                          alpha: 0.58,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            inviter.status == 'rewarded'
+                                ? Icons.verified_rounded
+                                : Icons.hourglass_top_rounded,
+                            color: inviter.status == 'rewarded'
+                                ? colors.primary
+                                : colors.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.l10n.accountInviterBound(
+                                    inviter.name,
+                                  ),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${inviter.code} · ${inviter.status == 'rewarded' ? context.l10n.accountInviteRewarded : context.l10n.accountInviteWaiting}',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : account.membership?.premium == true
+                  ? Text(context.l10n.accountInviteBindingNotNeeded)
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          context.l10n.accountInviteBindIntro,
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          key: const ValueKey('account-invite-code'),
+                          controller: controller,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.accountInviteBindLabel,
+                            helperText: context.l10n.accountInviteBindHint,
+                            prefixIcon: const Icon(
+                              Icons.person_add_alt_1_rounded,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        FilledButton(
+                          key: const ValueKey('account-bind-invite'),
+                          onPressed: account.loading ? null : onBind,
+                          child: Text(context.l10n.accountInviteBindAction),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 class _InviteStat extends StatelessWidget {

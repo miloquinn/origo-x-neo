@@ -4,7 +4,6 @@ import UIKit
 
 final class ApplePurchaseSupportBridge {
   private static let channelName = "com.niki.xxread/apple_purchase_support"
-  private static let premiumProductID = "com.niki.xxread.premium.lifetime"
 
   private let channel: FlutterMethodChannel
 
@@ -31,10 +30,12 @@ final class ApplePurchaseSupportBridge {
   private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "syncPurchases":
+      let arguments = call.arguments as? [String: Any]
+      let productIDs = (arguments?["productIds"] as? [String]).map { Set($0) }
       Task { @MainActor in
         do {
           try await AppStore.sync()
-          result(try await self.currentPremiumTransactionIDs())
+          result(try await self.currentTransactionIDs(productIDs: productIDs))
         } catch StoreKitError.userCancelled {
           result(
             FlutterError(
@@ -74,14 +75,14 @@ final class ApplePurchaseSupportBridge {
     }
   }
 
-  private func currentPremiumTransactionIDs() async throws -> [String] {
+  private func currentTransactionIDs(productIDs: Set<String>?) async throws -> [String] {
     var transactionIDs: [String] = []
     for await entitlement in Transaction.currentEntitlements {
       switch entitlement {
-      case .verified(let transaction) where transaction.productID == Self.premiumProductID:
+      case .verified(let transaction) where productIDs?.contains(transaction.productID) ?? true:
         transactionIDs.append(String(transaction.id))
       case .unverified(let transaction, let verificationError)
-        where transaction.productID == Self.premiumProductID:
+        where productIDs?.contains(transaction.productID) ?? true:
         throw ApplePurchaseSupportError.unverifiedTransaction(verificationError)
       default:
         continue
@@ -92,10 +93,6 @@ final class ApplePurchaseSupportBridge {
 
   @MainActor
   private func requestRefund(productID: String, result: @escaping FlutterResult) async {
-    guard productID == Self.premiumProductID else {
-      result("notFound")
-      return
-    }
     guard let scene = Self.activeWindowScene() else {
       result("unavailable")
       return
@@ -104,7 +101,7 @@ final class ApplePurchaseSupportBridge {
     do {
       for await entitlement in Transaction.currentEntitlements {
         switch entitlement {
-        case .verified(let transaction) where transaction.productID == Self.premiumProductID:
+        case .verified(let transaction) where transaction.productID == productID:
           let status = try await transaction.beginRefundRequest(in: scene)
           switch status {
           case .success:
@@ -116,7 +113,7 @@ final class ApplePurchaseSupportBridge {
           }
           return
         case .unverified(let transaction, let verificationError)
-          where transaction.productID == Self.premiumProductID:
+          where transaction.productID == productID:
           throw ApplePurchaseSupportError.unverifiedTransaction(verificationError)
         default:
           continue

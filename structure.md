@@ -430,8 +430,8 @@ rights-report Issue 表单，第三方书源内容投诉优先指向其运营者
 
 - Flutter 客户端的账号模型、Bearer 登录、一次性卡密兑换、永久高级版权益和邀请状态位于 `lib/services/account/`，账号中心入口位于 `lib/pages/account/account_page.dart`。
 - 永久高级版是服务端账号级权益，客户端不在本地持久化或自行判定解锁；登录后从官网会员 API 查询，支持平台间同步。
-- Android、Windows、Linux、Web 以及官网/GitHub 公证分发的 macOS 使用一次性卡密兑换。iOS 和 Mac App Store 版不展示外部购买与卡密入口，改用 Apple 官方永久内购。分发通道由 `services/core/app_distribution.dart` 判定：iOS 固定走 StoreKit；macOS 仅在 `--dart-define=OPEN_READING_MACOS_APP_STORE=true` 或存在 `_MASReceipt` 时走 StoreKit。官网包用 `tool/macos/build_website.sh`，商店包用 `tool/macos/build_app_store.sh`；GitHub Release 只走官网脚本。
-- iOS 和 Mac App Store 使用 App Store 非消耗型商品 `com.niki.xxread.premium.lifetime`。客户端通过 `services/account/apple_purchase_service.dart` 查询商品、购买和恢复，把 StoreKit 2 已签名交易提交给官网后端；只有服务端验签并返回最新会员状态后才完成交易。Apple 购买与卡密最终都映射为同一账号级 `premium` 永久权益，交易失败或服务端不可达时保持未完成以便重试。Mac App Store 包不提供官网/GitHub 自更新。
+- 官网/GitHub 发行自带永久基础阅读，高级版使用账号卡密兑换；Google Play 与 Apple 商店独立售卖 US$9.99 应用解锁和 US$8.99 账号高级版。商店 14 天试用仅含阅读，永久拥有应用后才显示高级版，商店不展示卡密入口。通道由 `services/core/app_distribution.dart` 判定，商店发布脚本开启阅读许可检查。
+- `services/account/store_purchase_service.dart` 用一个交易监听器按应用、试用、高级版和旧 bundle 分流。Apple 新 SKU 为 `.reader.lifetime`、`.reader.trial14d`、`.premium.lifetime.v2`（前缀 `com.niki.xxread`），Google 为 `origo_x_reader_lifetime` 和 `origo_x_premium_lifetime`。访客阅读凭据独立于 Origo 账号；账号高级权益需登录。服务端验单成功才完成交易，历史已售商品保留恢复路径。完整契约见 `docs/plans/2026-09-26-independent-store-products.md`。
 - 管理员后台的“会员运营”页通过统一审计查询展示邀请关系、绑定/奖励时间、卡密批次与兑换账号/时间，以及 App Store 交易号、原始交易号、购买账号、商品、正式/沙盒环境、Apple 购买时间和后台入账时间；卡密只保存 HMAC，不展示明文，Apple 签名交易凭据也不返回管理端。链动小铺订单通过 Merchant-Token 只读查询，订单卡密仅在内存中计算 HMAC 后与本地兑换记录匹配，无法可靠匹配时明确显示未关联。
 - 邀请码和唯一邀请关系由官网 PostgreSQL 保存。被邀请人首次兑换有效永久高级版卡密时，服务端在同一事务中解锁本人和邀请人；客户端只负责查询、展示和提交绑定请求。账号页将“资料 / 永久高级版 / 邀请奖励”作为一级内容，登录方式、密码、邮箱换绑、Passkey 与两步验证收纳到独立的账号安全二级页。邀请区展示固定邀请码、邀请链接、三步规则和最近邀请的“等待兑换 / 已解锁奖励”状态。
 

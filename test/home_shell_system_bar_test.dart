@@ -120,7 +120,7 @@ void main() {
 
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));
     final readerRoute = BookOpenTransition.createRoute<void>(
-      const Scaffold(body: Text('reader')),
+      (_) => const Scaffold(body: Text('reader')),
     );
     expect(BookOpenTransition.hasActiveReaderActivity, isTrue);
     expect(BookOpenTransition.navigationHiddenListenable.value, isTrue);
@@ -208,7 +208,7 @@ void main() {
 
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));
     final readerRoute = BookOpenTransition.createRoute<void>(
-      const Scaffold(body: Text('reader')),
+      (_) => const Scaffold(body: Text('reader')),
     );
     navigator.push<void>(readerRoute);
     await tester.pumpAndSettle();

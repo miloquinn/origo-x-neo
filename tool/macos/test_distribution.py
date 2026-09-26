@@ -28,12 +28,20 @@ class DistributionTests(unittest.TestCase):
             dist.assert_website_distribution({})
         with self.assertRaisesRegex(dist.DistributionError, 'require'):
             dist.assert_website_distribution({dist.MACOS_APP_STORE_KEY: '1'})
-        dist.assert_website_distribution({dist.MACOS_APP_STORE_KEY: 'false'})
+        dist.assert_website_distribution({
+            dist.MACOS_APP_STORE_KEY: 'false',
+            dist.DISTRIBUTION_KEY: 'direct',
+            dist.READER_LICENSE_KEY: 'false',
+        })
 
     def test_store_defines_require_exact_flag(self):
         with self.assertRaisesRegex(dist.DistributionError, 'must set'):
             dist.assert_app_store_distribution({})
-        dist.assert_app_store_distribution({dist.MACOS_APP_STORE_KEY: 'true'})
+        dist.assert_app_store_distribution({
+            dist.MACOS_APP_STORE_KEY: 'true',
+            dist.DISTRIBUTION_KEY: 'appleStore',
+            dist.READER_LICENSE_KEY: 'true',
+        })
 
     def test_command_detects_store_define(self):
         self.assertTrue(

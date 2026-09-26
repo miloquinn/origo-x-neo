@@ -83,6 +83,7 @@ Map<String, Object?> _membershipJson(MemberMembership membership) => {
   'premium': membership.premium,
   'test_purchase': membership.testPurchase,
   'purchase_status': membership.purchaseStatus,
+  'store_trial': membership.storeTrial?.toJson(),
   'features': membership.features,
   'entitlements': membership.entitlements
       .map(

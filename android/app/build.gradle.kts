@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.ApplicationExtension
+import java.util.Base64
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -25,6 +26,59 @@ val hasReleaseSigning = listOf(
     releaseKeyAlias,
     releaseKeyPassword,
 ).all { !it.isNullOrBlank() }
+
+fun decodedDartDefines(): Map<String, String> =
+    providers.gradleProperty("dart-defines").orNull
+        ?.split(',')
+        ?.mapNotNull { encoded ->
+            runCatching {
+                String(Base64.getDecoder().decode(encoded), Charsets.UTF_8)
+            }.getOrNull()
+        }
+        ?.mapNotNull { definition ->
+            val separator = definition.indexOf('=')
+            if (separator <= 0) null else definition.substring(0, separator) to
+                definition.substring(separator + 1)
+        }
+        ?.toMap()
+        .orEmpty()
+
+val distributionChannel =
+    decodedDartDefines()["ORIGO_DISTRIBUTION_CHANNEL"] ?: "direct"
+if (distributionChannel !in setOf("direct", "googlePlay")) {
+    throw GradleException(
+        "Android ORIGO_DISTRIBUTION_CHANNEL must be direct or googlePlay, got $distributionChannel.",
+    )
+}
+
+val sourceManifest = file("src/main/AndroidManifest.xml")
+val generatedDistributionManifest = layout.buildDirectory.file(
+    "generated/origoDistributionManifest/AndroidManifest.xml",
+)
+val generateDistributionManifest by tasks.registering {
+    group = "build setup"
+    description = "Generates the Android manifest for the selected distribution channel."
+    inputs.file(sourceManifest)
+    inputs.property("distributionChannel", distributionChannel)
+    outputs.file(generatedDistributionManifest)
+    doLast {
+        val marker = "    <!-- ORIGO_DISTRIBUTION_PERMISSION -->"
+        val source = sourceManifest.readText()
+        if (!source.contains(marker)) {
+            throw GradleException("Distribution permission marker is missing from $sourceManifest")
+        }
+        val permission = if (distributionChannel == "googlePlay") {
+            """    <uses-permission
+        android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+        tools:node="remove" />"""
+        } else {
+            """    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />"""
+        }
+        val output = generatedDistributionManifest.get().asFile
+        output.parentFile.mkdirs()
+        output.writeText(source.replace(marker, "$marker\n$permission"))
+    }
+}
 
 gradle.taskGraph.whenReady {
     val buildsRelease = allTasks.any {
@@ -69,6 +123,10 @@ extensions.configure<ApplicationExtension> {
         resValue("string", "app_release_build_number", flutter.versionCode.toString())
     }
 
+    sourceSets.getByName("main").manifest.srcFile(
+        generatedDistributionManifest.get().asFile,
+    )
+
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {
@@ -100,6 +158,45 @@ extensions.configure<ApplicationExtension> {
             }
         }
     }
+}
+
+tasks.matching {
+    it.name.startsWith("process") && it.name.endsWith("MainManifest")
+}.configureEach {
+    dependsOn(generateDistributionManifest)
+}
+
+val verifyReleaseDistributionManifest by tasks.registering {
+    group = "verification"
+    description = "Checks channel-specific Android package-install permission."
+    dependsOn("processReleaseMainManifest")
+    doLast {
+        val mergedManifest = layout.buildDirectory.file(
+            "intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml",
+        ).get().asFile
+        if (!mergedManifest.isFile) {
+            throw GradleException("Merged release manifest is missing: $mergedManifest")
+        }
+        val hasInstallPermission = mergedManifest.readText().contains(
+            "android.permission.REQUEST_INSTALL_PACKAGES",
+        )
+        if (distributionChannel == "googlePlay" && hasInstallPermission) {
+            throw GradleException(
+                "Google Play builds must not request REQUEST_INSTALL_PACKAGES.",
+            )
+        }
+        if (distributionChannel == "direct" && !hasInstallPermission) {
+            throw GradleException(
+                "Direct-download builds must retain REQUEST_INSTALL_PACKAGES.",
+            )
+        }
+    }
+}
+
+tasks.matching {
+    it.name == "bundleRelease" || it.name == "assembleRelease"
+}.configureEach {
+    dependsOn(verifyReleaseDistributionManifest)
 }
 
 kotlin {
