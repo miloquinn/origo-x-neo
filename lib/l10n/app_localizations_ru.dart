@@ -7371,6 +7371,50 @@ class AppLocalizationsRu extends AppLocalizations {
   String get basicBenefitsTitle => 'Полноценное чтение';
 
   @override
+  String get basicEditorialTitle => 'Хорошая книга. По-вашему.';
+
+  @override
+  String get basicEditorialSubtitle =>
+      'От первой строки до собственных мыслей.';
+
+  @override
+  String get basicReadingTab => 'Чтение и оформление';
+
+  @override
+  String get basicListeningTab => 'Прослушивание и ИИ';
+
+  @override
+  String get basicNotesTab => 'Заметки и копии';
+
+  @override
+  String get basicReadingHeadline =>
+      'Каждая страница — именно как вам нравится.';
+
+  @override
+  String get basicListeningHeadline => 'Ещё один способ войти в хорошую книгу.';
+
+  @override
+  String get basicNotesHeadline => 'Сохраните то, что остаётся с вами.';
+
+  @override
+  String get basicReadingSummary => 'Форматы · Темы · Шрифты и вёрстка';
+
+  @override
+  String get basicListeningSummary =>
+      'Голоса устройства · Облачный TTS · ИИ для чтения';
+
+  @override
+  String get basicNotesSummary =>
+      'Заметки и закладки · Статистика · Копия WebDAV';
+
+  @override
+  String get premiumEditorialTitle => 'Расширьте возможности чтения.';
+
+  @override
+  String get premiumEditorialSubtitle =>
+      'Больше источников для любознательных читателей.';
+
+  @override
   String get basicReadingTitle => 'Чтение разных форматов';
 
   @override

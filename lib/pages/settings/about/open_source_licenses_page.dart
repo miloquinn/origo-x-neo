@@ -13,6 +13,11 @@ class OpenSourceLicensesPage extends StatelessWidget {
 
   static const _fontLicenses = [
     _BundledLicense(
+      name: 'Phosphor Icons',
+      assetPath: 'assets/fonts/licenses/Phosphor-MIT.txt',
+      subtitle: 'MIT License',
+    ),
+    _BundledLicense(
       name: 'Noto Serif SC / Source Han Serif',
       assetPath: 'assets/fonts/licenses/NotoSerifSC-OFL.txt',
       subtitle: 'SIL Open Font License 1.1',
@@ -45,6 +50,11 @@ class OpenSourceLicensesPage extends StatelessWidget {
   ];
 
   static const _bundledCodeLicenses = [
+    _BundledLicense(
+      name: 'The Met Open Access',
+      assetPath: 'assets/purchase/ARTWORK-NOTICE.txt',
+      subtitle: 'Public domain · CC0',
+    ),
     _BundledLicense(
       name: 'Dart QR encoder adaptation',
       assetPath: 'assets/fonts/licenses/DartQr-BSD-3-Clause.txt',

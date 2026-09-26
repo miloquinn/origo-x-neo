@@ -1,0 +1,17 @@
+Purchase illustrations: original book/page/audio/network compositions by Origo X.
+
+Public-domain artwork images provided by The Metropolitan Museum of Art under its Open Access initiative (CC0):
+
+Katsushika Hokusai, Under the Wave off Kanagawa, ca. 1830-32.
+https://www.metmuseum.org/art/collection/search/45434
+Image: https://images.metmuseum.org/CRDImages/as/web-large/DP130155.jpg
+
+Vincent van Gogh, Irises, 1890.
+https://www.metmuseum.org/art/collection/search/436528
+Image: https://images.metmuseum.org/CRDImages/ep/web-large/DP346474.jpg
+
+Both object records were verified as public domain (isPublicDomain: true).
+Open Access policy: https://www.metmuseum.org/pt/hubs/open-access
+CC0: https://creativecommons.org/publicdomain/zero/1.0/
+
+The images serve as decorative examples, not books/content supplied by Origo. These artworks are not relicensed under the application's AGPL license.

@@ -7015,6 +7015,45 @@ class AppLocalizationsJa extends AppLocalizations {
   String get basicBenefitsTitle => '充実した読書体験';
 
   @override
+  String get basicEditorialTitle => '良い本を、自分らしく。';
+
+  @override
+  String get basicEditorialSubtitle => '最初の一行から、自分だけの考えまで。';
+
+  @override
+  String get basicReadingTab => '読書とレイアウト';
+
+  @override
+  String get basicListeningTab => '聴く読書とAI';
+
+  @override
+  String get basicNotesTab => '記録とバックアップ';
+
+  @override
+  String get basicReadingHeadline => 'すべてのページを、あなた好みに。';
+
+  @override
+  String get basicListeningHeadline => '良い本に入る、もう一つの方法。';
+
+  @override
+  String get basicNotesHeadline => '心に残ったものを、そばに。';
+
+  @override
+  String get basicReadingSummary => '書籍形式 · テーマ · フォントとレイアウト';
+
+  @override
+  String get basicListeningSummary => '端末音声 · クラウドTTS · 読書AI';
+
+  @override
+  String get basicNotesSummary => 'ノートとしおり · 統計 · WebDAVバックアップ';
+
+  @override
+  String get premiumEditorialTitle => '読書を、もう少し先へ。';
+
+  @override
+  String get premiumEditorialSubtitle => '探究心のある読者に、より多くの書籍ソースを。';
+
+  @override
   String get basicReadingTitle => 'マルチフォーマット読書';
 
   @override

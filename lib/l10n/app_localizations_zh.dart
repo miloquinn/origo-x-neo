@@ -6893,6 +6893,45 @@ class AppLocalizationsZh extends AppLocalizations {
   String get basicBenefitsTitle => '完整阅读体验';
 
   @override
+  String get basicEditorialTitle => '好好读一本书。';
+
+  @override
+  String get basicEditorialSubtitle => '从第一行文字，到每一个自己的想法。';
+
+  @override
+  String get basicReadingTab => '阅读与排版';
+
+  @override
+  String get basicListeningTab => '听书与 AI';
+
+  @override
+  String get basicNotesTab => '记录与备份';
+
+  @override
+  String get basicReadingHeadline => '每一页，都按你的喜好。';
+
+  @override
+  String get basicListeningHeadline => '换一种方式，走进一本书。';
+
+  @override
+  String get basicNotesHeadline => '把读过的，留在身边。';
+
+  @override
+  String get basicReadingSummary => '多格式阅读 · 主题与背景 · 字体与排版';
+
+  @override
+  String get basicListeningSummary => '设备朗读 · 云端 TTS · AI 阅读助手';
+
+  @override
+  String get basicNotesSummary => '书签与笔记 · 阅读统计 · WebDAV 备份';
+
+  @override
+  String get premiumEditorialTitle => '给阅读，更多可能。';
+
+  @override
+  String get premiumEditorialSubtitle => '为喜欢探索的你，拓展书源的边界。';
+
+  @override
   String get basicReadingTitle => '多格式阅读';
 
   @override
@@ -13914,6 +13953,45 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get basicBenefitsTitle => '完整閱讀體驗';
+
+  @override
+  String get basicEditorialTitle => '好好讀一本書。';
+
+  @override
+  String get basicEditorialSubtitle => '從第一行文字，到每一個自己的想法。';
+
+  @override
+  String get basicReadingTab => '閱讀與排版';
+
+  @override
+  String get basicListeningTab => '聽書與 AI';
+
+  @override
+  String get basicNotesTab => '記錄與備份';
+
+  @override
+  String get basicReadingHeadline => '每一頁，都按你的喜好。';
+
+  @override
+  String get basicListeningHeadline => '換一種方式，走進一本書。';
+
+  @override
+  String get basicNotesHeadline => '把讀過的，留在身邊。';
+
+  @override
+  String get basicReadingSummary => '多格式閱讀 · 主題與背景 · 字體與排版';
+
+  @override
+  String get basicListeningSummary => '裝置朗讀 · 雲端 TTS · AI 閱讀助手';
+
+  @override
+  String get basicNotesSummary => '書籤與筆記 · 閱讀統計 · WebDAV 備份';
+
+  @override
+  String get premiumEditorialTitle => '給閱讀，更多可能。';
+
+  @override
+  String get premiumEditorialSubtitle => '為喜歡探索的你，拓展書源的邊界。';
 
   @override
   String get basicReadingTitle => '多格式閱讀';

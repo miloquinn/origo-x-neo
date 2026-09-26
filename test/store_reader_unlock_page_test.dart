@@ -12,6 +12,7 @@ import 'package:xxread/pages/account/store_reader_unlock_page.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/core/app_distribution.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
+import 'package:xxread/widgets/purchase_artwork.dart';
 
 final _previewFontPath = Platform.environment['SPLIT_BILLING_PREVIEW_FONT'];
 
@@ -30,6 +31,9 @@ void main() {
     final icons = FontLoader('MaterialIcons');
     icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();
+    final purchaseIcons = FontLoader('PhosphorPurchase');
+    purchaseIcons.addFont(rootBundle.load('assets/purchase/Phosphor.ttf'));
+    await purchaseIcons.load();
   });
 
   setUp(() {
@@ -97,16 +101,18 @@ void main() {
           .state<ScrollableState>(find.byType(Scrollable).first)
           .position;
       expect(position.maxScrollExtent, 0);
-      for (final label in [
-        '多格式阅读',
-        '主题与字体',
-        '朗读与听书',
-        '云端 TTS',
-        'AI 阅读助手',
-        '书库与备份',
-      ]) {
+      for (final label in ['阅读与排版', '听书与 AI', '记录与备份']) {
         expect(find.text(label), findsOneWidget);
       }
+      await tester.tap(find.byKey(const ValueKey('basic-feature-tab-1')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('basic-artwork-1')), findsOneWidget);
+      expect(find.text('换一种方式，走进一本书。'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('basic-feature-tab-2')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('basic-artwork-2')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('basic-feature-tab-0')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('store-reader-benefits')));
       await tester.pumpAndSettle();
       expect(
@@ -114,6 +120,18 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('第三方服务费用'), findsOneWidget);
+      for (final label in [
+        '多格式阅读',
+        '主题与字体',
+        '朗读与听书',
+        '云端 TTS',
+        'AI 阅读助手',
+        '书库与备份',
+        '笔记与阅读记录',
+        '开放书源',
+      ]) {
+        expect(find.text(label), findsOneWidget);
+      }
       expect(account.purchaseCalls, 0);
       await tester.tap(
         find.byKey(const ValueKey('floating-subpage-back')).last,
@@ -260,73 +278,100 @@ void main() {
   testWidgets(
     'exports App Store reader and Premium purchase frames when requested',
     (tester) async {
-      AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
-      tester.view.physicalSize = const Size(1290, 2796);
-      tester.view.devicePixelRatio = 3;
-      addTearDown(tester.view.reset);
-      final readerAccount = _UnlockAccount();
-      addTearDown(readerAccount.dispose);
-      final readerBoundary = GlobalKey();
-      await _pumpPage(tester, readerAccount, boundaryKey: readerBoundary);
-      await _precacheBrandIcon(tester, find.byType(StoreReaderUnlockPage));
-      expect(tester.takeException(), isNull);
-      await _capture(
-        tester,
-        readerBoundary,
-        '$screenshotDirectory/apple-reader-unlock-1290x2796.png',
-        pixelRatio: 3,
-      );
-
-      final premiumAccount = _UnlockAccount(
-        permanent: true,
-        authenticated: true,
-      );
-      addTearDown(premiumAccount.dispose);
-      final premiumBoundary = GlobalKey();
-      await _pumpWidgetPage(
-        tester,
-        boundaryKey: premiumBoundary,
-        child: PremiumMembershipPage(account: premiumAccount),
-      );
-      await _precacheBrandIcon(tester, find.byType(PremiumMembershipPage));
-      expect(tester.takeException(), isNull);
-      await _capture(
-        tester,
-        premiumBoundary,
-        '$screenshotDirectory/apple-premium-1290x2796.png',
-        pixelRatio: 3,
-      );
-      AppDistribution.debugOverride(channel: AppDistributionChannel.googlePlay);
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      for (final dark in [false, true]) {
-        final basicKey = GlobalKey();
-        await _pumpWidgetPage(
-          tester,
-          boundaryKey: basicKey,
-          dark: dark,
-          child: StoreReaderUnlockPage(account: readerAccount),
+      final previousShadows = debugDisableShadows;
+      debugDisableShadows = false;
+      try {
+        AppDistribution.debugOverride(
+          channel: AppDistributionChannel.appleStore,
         );
+        tester.view.physicalSize = const Size(1290, 2796);
+        tester.view.devicePixelRatio = 3;
+        addTearDown(tester.view.reset);
+        final readerAccount = _UnlockAccount();
+        addTearDown(readerAccount.dispose);
+        final readerBoundary = GlobalKey();
+        await _pumpPage(tester, readerAccount, boundaryKey: readerBoundary);
         await _precacheBrandIcon(tester, find.byType(StoreReaderUnlockPage));
+        expect(tester.takeException(), isNull);
         await _capture(
           tester,
-          basicKey,
-          '$screenshotDirectory/basic-phone-${dark ? "dark" : "light"}.png',
+          readerBoundary,
+          '$screenshotDirectory/apple-reader-unlock-1290x2796.png',
+          pixelRatio: 3,
         );
-        final premiumKey = GlobalKey();
+
+        final premiumAccount = _UnlockAccount(
+          permanent: true,
+          authenticated: true,
+        );
+        addTearDown(premiumAccount.dispose);
+        final premiumBoundary = GlobalKey();
         await _pumpWidgetPage(
           tester,
-          boundaryKey: premiumKey,
-          dark: dark,
+          boundaryKey: premiumBoundary,
           child: PremiumMembershipPage(account: premiumAccount),
         );
         await _precacheBrandIcon(tester, find.byType(PremiumMembershipPage));
+        expect(tester.takeException(), isNull);
         await _capture(
           tester,
-          premiumKey,
-          '$screenshotDirectory/premium-phone-${dark ? "dark" : "light"}.png',
+          premiumBoundary,
+          '$screenshotDirectory/apple-premium-1290x2796.png',
+          pixelRatio: 3,
         );
-        expect(tester.takeException(), isNull);
+        AppDistribution.debugOverride(
+          channel: AppDistributionChannel.googlePlay,
+        );
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        for (final dark in [false, true]) {
+          final basicKey = GlobalKey();
+          await _pumpWidgetPage(
+            tester,
+            boundaryKey: basicKey,
+            dark: dark,
+            child: StoreReaderUnlockPage(account: readerAccount),
+          );
+          await _precacheBrandIcon(tester, find.byType(StoreReaderUnlockPage));
+          await _capture(
+            tester,
+            basicKey,
+            '$screenshotDirectory/basic-phone-${dark ? "dark" : "light"}.png',
+          );
+          if (!dark) {
+            for (final scene in [1, 2]) {
+              await tester.tap(
+                find.byKey(ValueKey('basic-feature-tab-$scene')),
+              );
+              await tester.pumpAndSettle();
+              await _precacheBrandIcon(
+                tester,
+                find.byType(StoreReaderUnlockPage),
+              );
+              await _capture(
+                tester,
+                basicKey,
+                '$screenshotDirectory/basic-scene-$scene.png',
+              );
+            }
+          }
+          final premiumKey = GlobalKey();
+          await _pumpWidgetPage(
+            tester,
+            boundaryKey: premiumKey,
+            dark: dark,
+            child: PremiumMembershipPage(account: premiumAccount),
+          );
+          await _precacheBrandIcon(tester, find.byType(PremiumMembershipPage));
+          await _capture(
+            tester,
+            premiumKey,
+            '$screenshotDirectory/premium-phone-${dark ? "dark" : "light"}.png',
+          );
+          expect(tester.takeException(), isNull);
+        }
+      } finally {
+        debugDisableShadows = previousShadows;
       }
     },
     skip: screenshotDirectory == null,
@@ -374,12 +419,11 @@ Future<void> _pumpWidgetPage(
 }
 
 Future<void> _precacheBrandIcon(WidgetTester tester, Finder page) async {
-  await tester.runAsync(
-    () => precacheImage(
-      const AssetImage(kAppBrandIconAsset),
-      tester.element(page),
-    ),
-  );
+  await tester.runAsync(() async {
+    for (final asset in [kAppBrandIconAsset, ...PurchaseArtwork.imageAssets]) {
+      await precacheImage(AssetImage(asset), tester.element(page));
+    }
+  });
   await tester.pump();
 }
 

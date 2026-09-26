@@ -1,0 +1,17 @@
+[
+  {
+    "file": "wave.jpg",
+    "sha256": "b76ccf0710b8e4b32e778a45e5398a0cf4777994523116f994a0430f4ee6a841",
+    "bytes": 166452
+  },
+  {
+    "file": "irises.jpg",
+    "sha256": "2df23777df020586fddefd46891b24ae5eda2094b6b2e5d03a12c236eed4f248",
+    "bytes": 128794
+  },
+  {
+    "file": "Phosphor.ttf",
+    "sha256": "06b91e022b7ee899a63efced879392a74f0bacbda54e4467e9f663220d173a10",
+    "bytes": 488636
+  }
+]

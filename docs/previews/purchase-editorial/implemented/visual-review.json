@@ -1,0 +1,22 @@
+{
+  "iteration": 2,
+  "verdict": "pass",
+  "evidence": [
+    "docs/previews/purchase-editorial/implemented/basic-phone-light.png",
+    "docs/previews/purchase-editorial/implemented/basic-phone-dark.png",
+    "docs/previews/purchase-editorial/implemented/basic-scene-1.png",
+    "docs/previews/purchase-editorial/implemented/basic-scene-2.png",
+    "docs/previews/purchase-editorial/implemented/premium-phone-light.png"
+  ],
+  "observations": [
+    "Actual Flutter widgets preserve approved book/page/audio/notes and forest extension visual direction",
+    "Inherited font restored in decorative paper; text readable without Ahem artifacts",
+    "Native actions and details fit normal390x844 viewport",
+    "Large text/keyboard and German long labels covered in isolated tests",
+    "Asset notices bundled; only local asset loads"
+  ],
+  "limits": [
+    "Fixture accounts and USD product prices used for screenshots",
+    "No store payment or real-device install of the new UI"
+  ]
+}

@@ -16,3 +16,5 @@ Font binaries are downloaded on demand and stored in the app-private directory.
 HarmonyOS Sans is read unchanged from Huawei's official archive; the application
 does not use a third-party font mirror. Keep the corresponding license notice
 with every redistributed copy of a font.
+
+Purchase illustrations use the bundled Phosphor icon font in `assets/purchase/Phosphor.ttf` (MIT, notice in `licenses/Phosphor-MIT.txt`). It contains decorative/interface glyphs rather than reading text; constant IconData references allow release icon tree shaking. Text fonts above remain on demand.

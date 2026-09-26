@@ -15,6 +15,7 @@ import 'package:xxread/pages/account/premium_policy_page.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/core/app_distribution.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
+import 'package:xxread/widgets/purchase_artwork.dart';
 import 'package:xxread/widgets/purchase_page_scaffold.dart';
 
 void main() {
@@ -121,6 +122,9 @@ void main() {
     final icons = FontLoader('MaterialIcons');
     icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();
+    final purchaseIcons = FontLoader('PhosphorPurchase');
+    purchaseIcons.addFont(rootBundle.load('assets/purchase/Phosphor.ttf'));
+    await purchaseIcons.load();
   });
 
   testWidgets('active trial shows expiration and can redeem another code', (
@@ -196,10 +200,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('¥28.00'), findsOneWidget);
-      expect(find.text('更多书源协议'), findsOneWidget);
+      expect(find.text('给阅读，更多可能。'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is PurchaseArtwork &&
+              widget.scene == PurchaseArtworkScene.extensions,
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('更多书源协议'), findsWidgets);
       expect(find.textContaining('局域网'), findsOneWidget);
       await _tapVisible(tester, const ValueKey('premium-benefits-details'));
       expect(find.byType(PurchaseDetailsPage), findsOneWidget);
+      expect(
+        Theme.of(tester.element(find.byType(PurchaseDetailsPage))).brightness,
+        Brightness.dark,
+      );
       expect(find.text('会员不提供书籍内容或书源地址，第三方服务可能另行收费。'), findsOneWidget);
       Navigator.of(
         tester.element(find.byType(PurchaseDetailsPage)),
@@ -241,6 +258,10 @@ void main() {
           : const ValueKey('account-redemption-code');
       expect(
         find.byKey(const ValueKey('purchase-fixed-footer')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('purchase-summary-scroll')),
         findsOneWidget,
       );
       expect(find.byKey(action).hitTestable(), findsOneWidget);
@@ -803,12 +824,14 @@ ThemeData _theme(Brightness brightness, {required bool previewFont}) {
 }
 
 Future<void> _loadBrandIcon(WidgetTester tester) async {
-  await tester.runAsync(
-    () => precacheImage(
-      const AssetImage(kAppBrandIconAsset),
-      tester.element(find.byType(PremiumMembershipPage)),
-    ),
-  );
+  await tester.runAsync(() async {
+    for (final asset in [kAppBrandIconAsset, ...PurchaseArtwork.imageAssets]) {
+      await precacheImage(
+        AssetImage(asset),
+        tester.element(find.byType(PremiumMembershipPage)),
+      );
+    }
+  });
   await tester.pump();
 }
 

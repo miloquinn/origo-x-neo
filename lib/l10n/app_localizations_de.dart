@@ -7414,6 +7414,50 @@ class AppLocalizationsDe extends AppLocalizations {
   String get basicBenefitsTitle => 'Das komplette Leseerlebnis';
 
   @override
+  String get basicEditorialTitle => 'Ein gutes Buch. Auf deine Art.';
+
+  @override
+  String get basicEditorialSubtitle =>
+      'Von der ersten Zeile bis zu deinen eigenen Gedanken.';
+
+  @override
+  String get basicReadingTab => 'Lesen & Gestalten';
+
+  @override
+  String get basicListeningTab => 'Hören & KI';
+
+  @override
+  String get basicNotesTab => 'Notizen & Sicherung';
+
+  @override
+  String get basicReadingHeadline => 'Jede Seite, genau nach deinem Geschmack.';
+
+  @override
+  String get basicListeningHeadline =>
+      'Eine andere Art, in ein gutes Buch einzutauchen.';
+
+  @override
+  String get basicNotesHeadline => 'Bewahre, was bei dir bleibt.';
+
+  @override
+  String get basicReadingSummary =>
+      'Buchformate · Designs · Schriften & Layout';
+
+  @override
+  String get basicListeningSummary => 'Gerätestimmen · Cloud-TTS · Lese-KI';
+
+  @override
+  String get basicNotesSummary =>
+      'Notizen & Lesezeichen · Statistiken · WebDAV-Sicherung';
+
+  @override
+  String get premiumEditorialTitle => 'Gib dem Lesen mehr Möglichkeiten.';
+
+  @override
+  String get premiumEditorialSubtitle =>
+      'Mehr Quellenoptionen für neugierige Leser.';
+
+  @override
   String get basicReadingTitle => 'Lesen in vielen Formaten';
 
   @override

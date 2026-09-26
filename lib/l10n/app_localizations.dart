@@ -12692,6 +12692,84 @@ abstract class AppLocalizations {
   /// **'The complete reading experience'**
   String get basicBenefitsTitle;
 
+  /// No description provided for @basicEditorialTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A good book. Your way.'**
+  String get basicEditorialTitle;
+
+  /// No description provided for @basicEditorialSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'From the first line to your own ideas.'**
+  String get basicEditorialSubtitle;
+
+  /// No description provided for @basicReadingTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Read & style'**
+  String get basicReadingTab;
+
+  /// No description provided for @basicListeningTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen & AI'**
+  String get basicListeningTab;
+
+  /// No description provided for @basicNotesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes & backup'**
+  String get basicNotesTab;
+
+  /// No description provided for @basicReadingHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Every page, just how you like it.'**
+  String get basicReadingHeadline;
+
+  /// No description provided for @basicListeningHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Another way into a good book.'**
+  String get basicListeningHeadline;
+
+  /// No description provided for @basicNotesHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep what stays with you.'**
+  String get basicNotesHeadline;
+
+  /// No description provided for @basicReadingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Book formats · Themes · Fonts & layout'**
+  String get basicReadingSummary;
+
+  /// No description provided for @basicListeningSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Device voices · Cloud TTS · Reading AI'**
+  String get basicListeningSummary;
+
+  /// No description provided for @basicNotesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes & bookmarks · Statistics · WebDAV backup'**
+  String get basicNotesSummary;
+
+  /// No description provided for @premiumEditorialTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take reading a little further.'**
+  String get premiumEditorialTitle;
+
+  /// No description provided for @premiumEditorialSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More source options for curious readers.'**
+  String get premiumEditorialSubtitle;
+
   /// No description provided for @basicReadingTitle.
   ///
   /// In en, this message translates to:

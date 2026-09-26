@@ -107,6 +107,10 @@ flutter:
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
+  fonts:
+    - family: PhosphorPurchase
+      fonts:
+        - asset: assets/purchase/Phosphor.ttf
   uses-material-design: true
   generate: true  # 启用国际化生成
   shaders:
@@ -117,6 +121,9 @@ flutter:
   assets:
     - assets/changelog/changelog.json
     - assets/images/
+    - assets/purchase/wave.jpg
+    - assets/purchase/irises.jpg
+    - assets/purchase/ARTWORK-NOTICE.txt
     - assets/fonts/licenses/
     - assets/icons/
     - LICENSE
