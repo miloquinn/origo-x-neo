@@ -1,0 +1,68 @@
+[
+  {
+    "file": "wave.jpg",
+    "url": "https://images.metmuseum.org/CRDImages/as/web-large/DP130155.jpg",
+    "sha256": "b76ccf0710b8e4b32e778a45e5398a0cf4777994523116f994a0430f4ee6a841",
+    "bytes": 166452
+  },
+  {
+    "file": "irises.jpg",
+    "url": "https://images.metmuseum.org/CRDImages/ep/web-large/DP346474.jpg",
+    "sha256": "2df23777df020586fddefd46891b24ae5eda2094b6b2e5d03a12c236eed4f248",
+    "bytes": 128794
+  },
+  {
+    "file": "Phosphor-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/LICENSE",
+    "sha256": "b5b1f1da112d18ea2147decfd48ddc1bf2b5aeb6c265381579340e95b15a2bb2",
+    "bytes": 1071
+  },
+  {
+    "file": "book-open-text.svg",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/book-open-text.svg",
+    "sha256": "5eb0c8daceb5a6ffa004118720ea712a3eb8b7d2b6ab5bae750c3efca9d35450",
+    "bytes": 562
+  },
+  {
+    "file": "sparkle.svg",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/sparkle.svg",
+    "sha256": "9e2c17a26564098cb48dd95737a83c742156f755f13cedaa30f9d864d0e3eb76",
+    "bytes": 666
+  },
+  {
+    "file": "graph.svg",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/graph.svg",
+    "sha256": "0a863bd9d39960eb220400400332ee1b3ada0e6ce309b89b202bb0784e4e28aa",
+    "bytes": 754
+  },
+  {
+    "file": "arrow-left.svg",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/arrow-left.svg",
+    "sha256": "3c2001cf957d182fc54927e4b286cc8cf66dd97830f441ca2650d42a63a9006a",
+    "bytes": 248
+  },
+  {
+    "file": "arrow-right.svg",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/arrow-right.svg",
+    "sha256": "e45bc4a12592b8723110db42c6deffdf177e4fe7704cf50324963fa0a59b2d74",
+    "bytes": 245
+  },
+  {
+    "file": "play.svg",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/play.svg",
+    "sha256": "885b3ed2095889c4ff063dac35dc424cb9f6c00273ab44e2f90dc9dadbee661a",
+    "bytes": 293
+  },
+  {
+    "file": "stack.svg",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/stack.svg",
+    "sha256": "ee9eaaeb345e8a28c9662cf8a59147cb86080bd922e41f143444189e0116ea7e",
+    "bytes": 483
+  },
+  {
+    "file": "quotes.svg",
+    "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/quotes.svg",
+    "sha256": "e6afaa07d488b94413b5edbbe813d45fa8db5b6c9269a4de3b20bdae77d8a142",
+    "bytes": 400
+  }
+]
