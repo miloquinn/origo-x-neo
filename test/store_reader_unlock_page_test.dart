@@ -50,13 +50,168 @@ void main() {
     expect(find.byKey(const ValueKey('store-reader-restore')), findsOneWidget);
     expect(find.byKey(const ValueKey('premium-sign-in')), findsNothing);
 
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('store-reader-purchase')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('store-reader-purchase')));
     await tester.pump();
     expect(account.purchaseCalls, 1);
 
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('store-reader-restore')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('store-reader-restore')));
     await tester.pump();
     expect(account.restoreCalls, 1);
+  });
+
+  testWidgets(
+    'phone keeps Basic purchase trial and restore visible without scrolling',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final account = _UnlockAccount();
+      addTearDown(account.dispose);
+      await _pumpPage(tester, account);
+      expect(find.text('基础版购买'), findsOneWidget);
+      expect(find.text('应用解锁'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('purchase-fixed-footer')),
+        findsOneWidget,
+      );
+      for (final key in [
+        'store-reader-purchase',
+        'store-start-trial',
+        'store-reader-restore',
+        'store-reader-details',
+        'store-reader-benefits',
+      ]) {
+        final finder = find.byKey(ValueKey(key));
+        expect(finder.hitTestable(), findsOneWidget);
+        expect(tester.getRect(finder).bottom, lessThanOrEqualTo(844));
+      }
+      final position = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      expect(position.maxScrollExtent, 0);
+      for (final label in [
+        '多格式阅读',
+        '主题与字体',
+        '朗读与听书',
+        '云端 TTS',
+        'AI 阅读助手',
+        '书库与备份',
+      ]) {
+        expect(find.text(label), findsOneWidget);
+      }
+      await tester.tap(find.byKey(const ValueKey('store-reader-benefits')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('store-reader-benefits-page')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('第三方服务费用'), findsOneWidget);
+      expect(account.purchaseCalls, 0);
+      await tester.tap(
+        find.byKey(const ValueKey('floating-subpage-back')).last,
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('不会再次收费'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('store-reader-details')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('store-reader-details-page')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('不会再次收费'), findsOneWidget);
+      expect(account.purchaseCalls, 0);
+      await tester.tap(
+        find.byKey(const ValueKey('floating-subpage-back')).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('store-reader-purchase')));
+      await tester.pump();
+      expect(account.purchaseCalls, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('short screen and large text keep Basic actions reachable', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final account = _UnlockAccount();
+    addTearDown(account.dispose);
+    await _pumpWidgetPage(
+      tester,
+      child: MediaQuery(
+        data: const MediaQueryData(
+          size: Size(320, 568),
+          textScaler: TextScaler.linear(1.6),
+        ),
+        child: StoreReaderUnlockPage(account: account),
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('purchase-adaptive-scroll')),
+      findsOneWidget,
+    );
+    final purchase = find.byKey(const ValueKey('store-reader-purchase'));
+    await tester.ensureVisible(purchase);
+    await tester.pumpAndSettle();
+    await tester.tap(purchase);
+    await tester.pump();
+    expect(account.purchaseCalls, 1);
+    final restore = find.byKey(const ValueKey('store-reader-restore'));
+    await tester.ensureVisible(restore);
+    await tester.pumpAndSettle();
+    await tester.tap(restore);
+    await tester.pump();
+    expect(account.restoreCalls, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('verification keeps live status and blocks repeated purchases', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final account = _UnlockAccount(phase: StorePurchasePhase.verifying);
+    addTearDown(account.dispose);
+    await _pumpPage(tester, account);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const ValueKey('store-reader-purchase')),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<TextButton>(
+            find.byKey(const ValueKey('store-reader-restore')),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      find.byKey(const ValueKey('store-reader-purchase-status')),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .getSemantics(find.byKey(const ValueKey('store-reader-purchase')))
+          .label,
+      contains('Google Play'),
+    );
+    expect(account.purchaseCalls, 0);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets('reader trial does not expose Premium or count as ownership', (
@@ -141,6 +296,38 @@ void main() {
         '$screenshotDirectory/apple-premium-1290x2796.png',
         pixelRatio: 3,
       );
+      AppDistribution.debugOverride(channel: AppDistributionChannel.googlePlay);
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      for (final dark in [false, true]) {
+        final basicKey = GlobalKey();
+        await _pumpWidgetPage(
+          tester,
+          boundaryKey: basicKey,
+          dark: dark,
+          child: StoreReaderUnlockPage(account: readerAccount),
+        );
+        await _precacheBrandIcon(tester, find.byType(StoreReaderUnlockPage));
+        await _capture(
+          tester,
+          basicKey,
+          '$screenshotDirectory/basic-phone-${dark ? "dark" : "light"}.png',
+        );
+        final premiumKey = GlobalKey();
+        await _pumpWidgetPage(
+          tester,
+          boundaryKey: premiumKey,
+          dark: dark,
+          child: PremiumMembershipPage(account: premiumAccount),
+        );
+        await _precacheBrandIcon(tester, find.byType(PremiumMembershipPage));
+        await _capture(
+          tester,
+          premiumKey,
+          '$screenshotDirectory/premium-phone-${dark ? "dark" : "light"}.png',
+        );
+        expect(tester.takeException(), isNull);
+      }
     },
     skip: screenshotDirectory == null,
   );
@@ -154,6 +341,7 @@ Future<void> _pumpPage(
   await _pumpWidgetPage(
     tester,
     boundaryKey: boundaryKey,
+    settle: !account.readerPurchaseLoading,
     child: StoreReaderUnlockPage(account: account),
   );
 }
@@ -162,23 +350,27 @@ Future<void> _pumpWidgetPage(
   WidgetTester tester, {
   required Widget child,
   GlobalKey? boundaryKey,
+  bool dark = false,
+  bool settle = true,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       locale: const Locale('zh'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      theme: _previewFontPath == null
-          ? null
-          : ThemeData(
-              textTheme: ThemeData().textTheme.apply(
-                fontFamily: 'SplitBillingPreview',
-              ),
-            ),
+      theme: ThemeData(
+        brightness: dark ? Brightness.dark : Brightness.light,
+        fontFamily: _previewFontPath == null ? null : 'SplitBillingPreview',
+      ),
       home: RepaintBoundary(key: boundaryKey, child: child),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
 }
 
 Future<void> _precacheBrandIcon(WidgetTester tester, Finder page) async {
@@ -213,12 +405,14 @@ class _UnlockAccount extends MemberAccountController {
     this.trialExpiresAt,
     this.premium = false,
     this.authenticated = false,
+    this.phase = StorePurchasePhase.idle,
   });
 
   final bool permanent;
   final DateTime? trialExpiresAt;
   final bool premium;
   final bool authenticated;
+  final StorePurchasePhase phase;
   int purchaseCalls = 0;
   int restoreCalls = 0;
 
@@ -283,10 +477,10 @@ class _UnlockAccount extends MemberAccountController {
   );
 
   @override
-  StorePurchasePhase get readerPurchasePhase => StorePurchasePhase.idle;
+  StorePurchasePhase get readerPurchasePhase => phase;
 
   @override
-  bool get readerPurchaseLoading => false;
+  bool get readerPurchaseLoading => phase == StorePurchasePhase.verifying;
 
   @override
   String? get readerPurchaseError => null;

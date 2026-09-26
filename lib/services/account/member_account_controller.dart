@@ -1145,7 +1145,7 @@ class MemberAccountController extends ChangeNotifier {
     if (attestation.installationKeyHash != credential.hash ||
         attestation.channel != _readerChannel ||
         attestation.version != 1) {
-      throw const MemberAccountException('应用解锁凭据与当前安装不匹配');
+      throw const MemberAccountException('基础版购买凭据与当前安装不匹配');
     }
     // A status refresh contains only Production access. Keep a verified test
     // receipt in memory until explicit revocation or process exit.

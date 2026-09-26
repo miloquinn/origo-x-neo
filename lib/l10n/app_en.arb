@@ -6676,22 +6676,23 @@
   "settingsPremiumActive": "Premium active",
   "settingsPremiumSyncFailed": "Could not sync membership status",
   "settingsWebDavWorking": "WebDAV is working",
-  "storeReaderLockedTitle": "Unlock Origo X",
-  "storeReaderLockedBody": "Reading in this store edition requires an active trial or a license. Your books and notes are kept. Return to your library to export your data.",
+  "storeReaderLockedTitle": "Get Basic edition",
+  "storeReaderLockedBody": "Reading in this store edition requires an active trial or a Basic edition purchase. Your books and notes are kept. Return to your library to export your data.",
   "storeReaderUnlock": "Trial, purchase or restore",
   "storeReaderBack": "Back to library",
   "storeReaderChecking": "Checking reading access…",
-  "storeReaderBenefitTitle": "Full reading access",
-  "storeReaderBenefitBody": "Permanently unlock local reading. No Origo account is required.",
+  "storeReaderBenefitTitle": "Basic edition",
+  "storeReaderBenefitBody": "Local reading, yours to keep. No Origo account is required.",
   "storeTrialStart": "Try free for {days} days",
-  "storeTrialDetails": "Try local reading for {days} days. No automatic charge. After the trial, a one-time app unlock is required to keep reading. Your books and notes are kept.",
+  "storeTrialDetails": "Try local reading for {days} days. No automatic charge. After the trial, purchase Basic edition once to keep reading. Your books and notes are kept.",
   "storeTrialStarted": "Your store trial has started.",
   "storeTrialExpired": "Your store trial has ended. Purchase once to continue, or restore an existing purchase.",
-  "storePurchaseButton": "Unlock forever with {store}",
-  "storePurchaseBilling": "One-time app unlock. No automatic renewal. {store} displays the actual price and processes payment.",
+  "storePurchaseButton": "Buy Basic edition with {store}",
+  "storePurchaseBilling": "One-time Basic edition purchase. No automatic renewal. {store} displays the actual price and processes payment.",
   "storePurchaseRestoreHelp": "Restore with the {store} account used to purchase. No Origo login or additional charge is required.",
-  "storePurchaseAccess": "You already have access through {store}. No repeat purchase is needed.",
+  "storePurchaseAccess": "You already own Basic edition through {store}. No repeat purchase is needed.",
   "storeRestoreEmpty": "No restorable purchase was found. Check your store account and the linked Origo X account.",
+  "basicRestoreEmpty": "No Basic edition purchase found. Check your store account.",
   "storeGoogleRefundTerms": "Request a refund through Google Play. A verified refund removes only the access associated with that purchase; independent entitlements remain valid.",
   "storeReaderLegacyNotice": "Your existing basic reading access is preserved. Advanced source compatibility still requires Premium.",
   "storePrivacyPurchaseBody": "Store verification data and an account identifier are sent to our server to verify and restore access. Google Play verification includes a purchase token and a hashed account identifier. We do not receive payment card details.",
@@ -6738,7 +6739,7 @@
     }
   },
   "storeTrialLegacyDetails": "Your existing reading access remains valid. You do not need the {days}-day reading trial.",
-  "storeReaderSupportSubtitle": "Try the full reading experience, or unlock it forever with one purchase",
+  "storeReaderSupportSubtitle": "Try local reading, or buy Basic edition once to keep it",
   "@storeTrialLegacyDetails": {
     "placeholders": {
       "days": {
@@ -6779,12 +6780,39 @@
     }
   },
   "accountAuthorizationExpired": "This sign-in request has expired. Please try again.",
-  "storeReaderLicenseTitle": "App unlock",
-  "storeReaderLicenseSubtitle": "Try local reading for 14 days, then unlock it with a one-time purchase.",
-  "storeReaderLifetimeTitle": "Lifetime app unlock",
-  "storeReaderOwned": "This app is permanently unlocked with {store}.",
-  "storePremiumPrerequisiteTitle": "Unlock the app first",
-  "storePremiumPrerequisiteBody": "Premium is sold separately after a permanent app unlock. A trial does not qualify.",
+  "purchaseDetailsTitle": "Purchase details",
+  "purchaseBenefitsAction": "View all benefits",
+  "purchaseTermsAction": "Terms & privacy",
+  "purchaseAccountCaption": "Linked to your Origo account",
+  "basicBenefitsTitle": "The complete reading experience",
+  "basicReadingTitle": "Multi-format reading",
+  "basicReadingBody": "Read TXT, EPUB, PDF and more. Import books with contents and bookmarks, multiple page-turn modes, immersive reading and tablet spreads.",
+  "basicFormatNote": "Format support varies by platform; DRM-protected books are not supported.",
+  "basicAppearanceTitle": "Themes & fonts",
+  "basicAppearanceBody": "Customize themes and backgrounds, import fonts, and fine-tune text size, line spacing, margins and paragraphs.",
+  "basicTtsTitle": "Read aloud & listen",
+  "basicTtsBody": "Listen with device voices, adjust speed and set a sleep timer.",
+  "basicCloudTtsTitle": "Cloud TTS",
+  "basicCloudTtsBody": "Configure cloud speech services, choose models and voices, and save multiple profiles.",
+  "basicAiTitle": "AI reading assistant",
+  "basicAiBody": "Connect your AI service to ask questions and explore what you read.",
+  "basicNotesTitle": "Notes & reading history",
+  "basicNotesBody": "Search book text, save bookmarks, highlights and notes, view reading statistics, and export reading data.",
+  "basicSourcesTitle": "Open book sources",
+  "basicSourcesBody": "Import compatible ORSP sources to search and read online. The app supplies no source addresses or book content.",
+  "basicSyncTitle": "Library & backup",
+  "basicSyncBody": "Manage your local library and back up or restore books, reading data and settings with WebDAV.",
+  "basicServicesNote": "AI and cloud TTS require your own service configuration; third-party fees are not included.",
+  "basicEditionTitle": "Basic edition",
+  "basicEditionSummary": "One purchase. The complete reading experience.",
+  "basicEditionNoAccount": "No Origo sign-in needed",
+  "premiumEditionSummary": "Advanced extensions. More source formats.",
+  "storeReaderLicenseTitle": "Basic edition purchase",
+  "storeReaderLicenseSubtitle": "Try local reading for 14 days, then purchase Basic edition once.",
+  "storeReaderLifetimeTitle": "Basic edition",
+  "storeReaderOwned": "Basic edition purchased through {store}.",
+  "storePremiumPrerequisiteTitle": "Buy Basic edition first",
+  "storePremiumPrerequisiteBody": "Premium is sold separately after Basic edition is purchased. A trial does not qualify.",
   "storePremiumPriceCaption": "Lifetime Premium · linked to your Origo account",
   "storePremiumPurchaseButton": "Buy Premium with {store}",
   "@storeReaderLicenseTitle": {
@@ -6839,7 +6867,7 @@
       }
     }
   },
-  "storeReaderTrialExpiresAt": "App trial ends on {date}.",
+  "storeReaderTrialExpiresAt": "Basic edition trial ends on {date}.",
   "@storeReaderTrialExpiresAt": {
     "description": "App reader purchase status, separate from Premium.",
     "placeholders": {
@@ -6848,23 +6876,23 @@
       }
     }
   },
-  "storeReaderPurchaseSuccess": "App permanently unlocked",
+  "storeReaderPurchaseSuccess": "Basic edition purchased",
   "@storeReaderPurchaseSuccess": {
     "description": "App reader purchase status, separate from Premium."
   },
-  "storeReaderRestoreSuccess": "App purchase restored",
+  "storeReaderRestoreSuccess": "Basic edition purchase restored",
   "@storeReaderRestoreSuccess": {
     "description": "App reader purchase status, separate from Premium."
   },
-  "storeReaderTestPurchaseVerified": "Test app purchase verified; no formal license was granted.",
+  "storeReaderTestPurchaseVerified": "Test Basic edition purchase verified; no formal license was granted.",
   "@storeReaderTestPurchaseVerified": {
     "description": "App reader purchase status, separate from Premium."
   },
-  "storeReaderPurchaseRevoked": "This app unlock was revoked.",
+  "storeReaderPurchaseRevoked": "This Basic edition purchase was revoked.",
   "@storeReaderPurchaseRevoked": {
     "description": "App reader purchase status, separate from Premium."
   },
-  "storeReaderPendingApproval": "Waiting for {store} approval. Reading unlocks after verification.",
+  "storeReaderPendingApproval": "Waiting for {store} approval. Basic edition activates after verification.",
   "@storeReaderPendingApproval": {
     "description": "App reader purchase status, separate from Premium.",
     "placeholders": {
@@ -6873,11 +6901,11 @@
       }
     }
   },
-  "storeReaderVerifying": "Verifying app purchase…",
+  "storeReaderVerifying": "Verifying Basic edition purchase…",
   "@storeReaderVerifying": {
     "description": "App reader purchase status, separate from Premium."
   },
-  "storeReaderRestoring": "Restoring app purchase…",
+  "storeReaderRestoring": "Restoring Basic edition purchase…",
   "@storeReaderRestoring": {
     "description": "App reader purchase status, separate from Premium."
   }

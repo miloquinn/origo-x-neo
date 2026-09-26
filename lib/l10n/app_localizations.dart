@@ -12419,13 +12419,13 @@ abstract class AppLocalizations {
   /// No description provided for @storeReaderLockedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Unlock Origo X'**
+  /// **'Get Basic edition'**
   String get storeReaderLockedTitle;
 
   /// No description provided for @storeReaderLockedBody.
   ///
   /// In en, this message translates to:
-  /// **'Reading in this store edition requires an active trial or a license. Your books and notes are kept. Return to your library to export your data.'**
+  /// **'Reading in this store edition requires an active trial or a Basic edition purchase. Your books and notes are kept. Return to your library to export your data.'**
   String get storeReaderLockedBody;
 
   /// No description provided for @storeReaderUnlock.
@@ -12449,13 +12449,13 @@ abstract class AppLocalizations {
   /// No description provided for @storeReaderBenefitTitle.
   ///
   /// In en, this message translates to:
-  /// **'Full reading access'**
+  /// **'Basic edition'**
   String get storeReaderBenefitTitle;
 
   /// No description provided for @storeReaderBenefitBody.
   ///
   /// In en, this message translates to:
-  /// **'Permanently unlock local reading. No Origo account is required.'**
+  /// **'Local reading, yours to keep. No Origo account is required.'**
   String get storeReaderBenefitBody;
 
   /// No description provided for @storeTrialStart.
@@ -12467,7 +12467,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeTrialDetails.
   ///
   /// In en, this message translates to:
-  /// **'Try local reading for {days} days. No automatic charge. After the trial, a one-time app unlock is required to keep reading. Your books and notes are kept.'**
+  /// **'Try local reading for {days} days. No automatic charge. After the trial, purchase Basic edition once to keep reading. Your books and notes are kept.'**
   String storeTrialDetails(int days);
 
   /// No description provided for @storeTrialStarted.
@@ -12485,13 +12485,13 @@ abstract class AppLocalizations {
   /// No description provided for @storePurchaseButton.
   ///
   /// In en, this message translates to:
-  /// **'Unlock forever with {store}'**
+  /// **'Buy Basic edition with {store}'**
   String storePurchaseButton(String store);
 
   /// No description provided for @storePurchaseBilling.
   ///
   /// In en, this message translates to:
-  /// **'One-time app unlock. No automatic renewal. {store} displays the actual price and processes payment.'**
+  /// **'One-time Basic edition purchase. No automatic renewal. {store} displays the actual price and processes payment.'**
   String storePurchaseBilling(String store);
 
   /// No description provided for @storePurchaseRestoreHelp.
@@ -12503,7 +12503,7 @@ abstract class AppLocalizations {
   /// No description provided for @storePurchaseAccess.
   ///
   /// In en, this message translates to:
-  /// **'You already have access through {store}. No repeat purchase is needed.'**
+  /// **'You already own Basic edition through {store}. No repeat purchase is needed.'**
   String storePurchaseAccess(String store);
 
   /// No description provided for @storeRestoreEmpty.
@@ -12511,6 +12511,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No restorable purchase was found. Check your store account and the linked Origo X account.'**
   String get storeRestoreEmpty;
+
+  /// No description provided for @basicRestoreEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Basic edition purchase found. Check your store account.'**
+  String get basicRestoreEmpty;
 
   /// No description provided for @storeGoogleRefundTerms.
   ///
@@ -12539,7 +12545,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeReaderSupportSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Try the full reading experience, or unlock it forever with one purchase'**
+  /// **'Try local reading, or buy Basic edition once to keep it'**
   String get storeReaderSupportSubtitle;
 
   /// No description provided for @storeBillingUnavailable.
@@ -12656,40 +12662,202 @@ abstract class AppLocalizations {
   /// **'This sign-in request has expired. Please try again.'**
   String get accountAuthorizationExpired;
 
+  /// No description provided for @purchaseDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase details'**
+  String get purchaseDetailsTitle;
+
+  /// No description provided for @purchaseBenefitsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View all benefits'**
+  String get purchaseBenefitsAction;
+
+  /// No description provided for @purchaseTermsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & privacy'**
+  String get purchaseTermsAction;
+
+  /// No description provided for @purchaseAccountCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to your Origo account'**
+  String get purchaseAccountCaption;
+
+  /// No description provided for @basicBenefitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The complete reading experience'**
+  String get basicBenefitsTitle;
+
+  /// No description provided for @basicReadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-format reading'**
+  String get basicReadingTitle;
+
+  /// No description provided for @basicReadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Read TXT, EPUB, PDF and more. Import books with contents and bookmarks, multiple page-turn modes, immersive reading and tablet spreads.'**
+  String get basicReadingBody;
+
+  /// No description provided for @basicFormatNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Format support varies by platform; DRM-protected books are not supported.'**
+  String get basicFormatNote;
+
+  /// No description provided for @basicAppearanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Themes & fonts'**
+  String get basicAppearanceTitle;
+
+  /// No description provided for @basicAppearanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize themes and backgrounds, import fonts, and fine-tune text size, line spacing, margins and paragraphs.'**
+  String get basicAppearanceBody;
+
+  /// No description provided for @basicTtsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read aloud & listen'**
+  String get basicTtsTitle;
+
+  /// No description provided for @basicTtsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen with device voices, adjust speed and set a sleep timer.'**
+  String get basicTtsBody;
+
+  /// No description provided for @basicCloudTtsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud TTS'**
+  String get basicCloudTtsTitle;
+
+  /// No description provided for @basicCloudTtsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure cloud speech services, choose models and voices, and save multiple profiles.'**
+  String get basicCloudTtsBody;
+
+  /// No description provided for @basicAiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI reading assistant'**
+  String get basicAiTitle;
+
+  /// No description provided for @basicAiBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your AI service to ask questions and explore what you read.'**
+  String get basicAiBody;
+
+  /// No description provided for @basicNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes & reading history'**
+  String get basicNotesTitle;
+
+  /// No description provided for @basicNotesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Search book text, save bookmarks, highlights and notes, view reading statistics, and export reading data.'**
+  String get basicNotesBody;
+
+  /// No description provided for @basicSourcesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open book sources'**
+  String get basicSourcesTitle;
+
+  /// No description provided for @basicSourcesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Import compatible ORSP sources to search and read online. The app supplies no source addresses or book content.'**
+  String get basicSourcesBody;
+
+  /// No description provided for @basicSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Library & backup'**
+  String get basicSyncTitle;
+
+  /// No description provided for @basicSyncBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your local library and back up or restore books, reading data and settings with WebDAV.'**
+  String get basicSyncBody;
+
+  /// No description provided for @basicServicesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'AI and cloud TTS require your own service configuration; third-party fees are not included.'**
+  String get basicServicesNote;
+
+  /// No description provided for @basicEditionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic edition'**
+  String get basicEditionTitle;
+
+  /// No description provided for @basicEditionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'One purchase. The complete reading experience.'**
+  String get basicEditionSummary;
+
+  /// No description provided for @basicEditionNoAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'No Origo sign-in needed'**
+  String get basicEditionNoAccount;
+
+  /// No description provided for @premiumEditionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced extensions. More source formats.'**
+  String get premiumEditionSummary;
+
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'App unlock'**
+  /// **'Basic edition purchase'**
   String get storeReaderLicenseTitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Try local reading for 14 days, then unlock it with a one-time purchase.'**
+  /// **'Try local reading for 14 days, then purchase Basic edition once.'**
   String get storeReaderLicenseSubtitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Lifetime app unlock'**
+  /// **'Basic edition'**
   String get storeReaderLifetimeTitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'This app is permanently unlocked with {store}.'**
+  /// **'Basic edition purchased through {store}.'**
   String storeReaderOwned(String store);
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Unlock the app first'**
+  /// **'Buy Basic edition first'**
   String get storePremiumPrerequisiteTitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Premium is sold separately after a permanent app unlock. A trial does not qualify.'**
+  /// **'Premium is sold separately after Basic edition is purchased. A trial does not qualify.'**
   String get storePremiumPrerequisiteBody;
 
   /// Separate app reader unlock and account Premium billing.
@@ -12719,49 +12887,49 @@ abstract class AppLocalizations {
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'App trial ends on {date}.'**
+  /// **'Basic edition trial ends on {date}.'**
   String storeReaderTrialExpiresAt(String date);
 
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'App permanently unlocked'**
+  /// **'Basic edition purchased'**
   String get storeReaderPurchaseSuccess;
 
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'App purchase restored'**
+  /// **'Basic edition purchase restored'**
   String get storeReaderRestoreSuccess;
 
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'Test app purchase verified; no formal license was granted.'**
+  /// **'Test Basic edition purchase verified; no formal license was granted.'**
   String get storeReaderTestPurchaseVerified;
 
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'This app unlock was revoked.'**
+  /// **'This Basic edition purchase was revoked.'**
   String get storeReaderPurchaseRevoked;
 
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'Waiting for {store} approval. Reading unlocks after verification.'**
+  /// **'Waiting for {store} approval. Basic edition activates after verification.'**
   String storeReaderPendingApproval(String store);
 
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'Verifying app purchase…'**
+  /// **'Verifying Basic edition purchase…'**
   String get storeReaderVerifying;
 
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'Restoring app purchase…'**
+  /// **'Restoring Basic edition purchase…'**
   String get storeReaderRestoring;
 }
 

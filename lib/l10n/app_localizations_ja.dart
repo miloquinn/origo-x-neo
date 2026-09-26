@@ -6852,11 +6852,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsWebDavWorking => 'WebDAVを処理中';
 
   @override
-  String get storeReaderLockedTitle => 'Origo X の制限を解除';
+  String get storeReaderLockedTitle => 'ベーシック版を購入';
 
   @override
   String get storeReaderLockedBody =>
-      'ストア版で読書するには、有効な無料体験または購入済みのライセンスが必要です。書籍やノートは保持されます。本棚に戻るとデータを書き出せます。';
+      'ストア版で読書するには、有効な無料体験またはベーシック版の購入が必要です。書籍やノートは保持されます。本棚に戻るとデータを書き出せます。';
 
   @override
   String get storeReaderUnlock => '無料体験・購入・復元';
@@ -6868,11 +6868,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get storeReaderChecking => '読書の利用権を確認中…';
 
   @override
-  String get storeReaderBenefitTitle => 'すべての読書機能';
+  String get storeReaderBenefitTitle => 'ベーシック版';
 
   @override
-  String get storeReaderBenefitBody =>
-      'ローカル読書を永久に利用できます。Origoアカウントへの登録やログインは不要です。';
+  String get storeReaderBenefitBody => 'ローカル読書をずっと利用できます。Origoへのログインは不要です。';
 
   @override
   String storeTrialStart(int days) {
@@ -6881,7 +6880,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String storeTrialDetails(int days) {
-    return 'ローカル読書を$days日間無料で試せます。自動課金はありません。試用終了後は買い切りのアプリ解除が必要です。書籍とメモは保持されます。';
+    return 'ローカル読書を$days日間無料で試せます。自動課金はありません。試用終了後はベーシック版の買い切り購入が必要です。書籍とメモは保持されます。';
   }
 
   @override
@@ -6893,12 +6892,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String storePurchaseButton(String store) {
-    return '$store で永久利用権を購入';
+    return '$store でベーシック版を購入';
   }
 
   @override
   String storePurchaseBilling(String store) {
-    return '買い切りのアプリ解除です。自動更新はありません。価格表示と支払い処理は$storeが行います。';
+    return 'ベーシック版の買い切り購入です。自動更新はありません。価格表示と支払い処理は$storeが行います。';
   }
 
   @override
@@ -6908,12 +6907,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String storePurchaseAccess(String store) {
-    return '$store で利用権を取得済みです。再購入は不要です。';
+    return '$store でベーシック版を購入済みです。再購入は不要です。';
   }
 
   @override
   String get storeRestoreEmpty =>
       '復元できる購入が見つかりません。ストアのアカウントと、連携した Origo X アカウントを確認してください。';
+
+  @override
+  String get basicRestoreEmpty => 'ベーシック版の購入が見つかりません。ストアのアカウントを確認してください。';
 
   @override
   String get storeGoogleRefundTerms =>
@@ -6933,7 +6935,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get storeReaderSupportSubtitle => 'すべての読書機能を体験するか、一度の購入で永久に利用できます';
+  String get storeReaderSupportSubtitle => 'ローカル読書を試すか、ベーシック版を一度購入してずっと利用できます';
 
   @override
   String get storeBillingUnavailable =>
@@ -6998,25 +7000,112 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountAuthorizationExpired => 'ログイン要求の有効期限が切れました。再度お試しください。';
 
   @override
-  String get storeReaderLicenseTitle => 'アプリのロック解除';
+  String get purchaseDetailsTitle => '購入について';
 
   @override
-  String get storeReaderLicenseSubtitle => 'ローカル読書を14日間試用した後、買い切りで永久に利用できます。';
+  String get purchaseBenefitsAction => 'すべての特典を見る';
 
   @override
-  String get storeReaderLifetimeTitle => 'アプリの永久ロック解除';
+  String get purchaseTermsAction => '規約とプライバシー';
+
+  @override
+  String get purchaseAccountCaption => 'Origoアカウントに紐付け';
+
+  @override
+  String get basicBenefitsTitle => '充実した読書体験';
+
+  @override
+  String get basicReadingTitle => 'マルチフォーマット読書';
+
+  @override
+  String get basicReadingBody =>
+      'TXT、EPUB、PDFなどを読めます。ローカル書籍の取り込み、目次としおり、複数のページめくり、集中読書、タブレット見開き表示に対応します。';
+
+  @override
+  String get basicFormatNote => '対応形式はプラットフォームによって異なります。DRM保護された書籍には対応していません。';
+
+  @override
+  String get basicAppearanceTitle => 'テーマとフォント';
+
+  @override
+  String get basicAppearanceBody =>
+      'テーマと背景をカスタマイズし、フォントを取り込み、文字サイズ、行間、余白、段落を細かく調整できます。';
+
+  @override
+  String get basicTtsTitle => '読み上げと聴く読書';
+
+  @override
+  String get basicTtsBody => '端末の音声で聴き、速度を調整してスリープタイマーを設定できます。';
+
+  @override
+  String get basicCloudTtsTitle => 'クラウドTTS';
+
+  @override
+  String get basicCloudTtsBody => 'クラウド音声サービスを設定し、モデルと音声を選んで複数のプロファイルを保存できます。';
+
+  @override
+  String get basicAiTitle => 'AI読書アシスタント';
+
+  @override
+  String get basicAiBody => '自分のAIサービスを接続し、読みながら質問して内容の理解を深められます。';
+
+  @override
+  String get basicNotesTitle => 'ノートと読書履歴';
+
+  @override
+  String get basicNotesBody => '本文検索、しおり、ハイライト、ノート、読書統計の確認、読書データの書き出しができます。';
+
+  @override
+  String get basicSourcesTitle => 'オープン書籍ソース';
+
+  @override
+  String get basicSourcesBody =>
+      '互換性のあるORSPソースを取り込み、オンラインコンテンツを検索して読めます。アプリはソースのアドレスや書籍を提供しません。';
+
+  @override
+  String get basicSyncTitle => 'ライブラリとバックアップ';
+
+  @override
+  String get basicSyncBody =>
+      'ローカルライブラリを管理し、WebDAVで書籍、読書データ、設定をバックアップまたは復元できます。';
+
+  @override
+  String get basicServicesNote =>
+      'AIとクラウドTTSにはご自身のサービス設定が必要です。第三者サービスの料金は含まれません。';
+
+  @override
+  String get basicEditionTitle => 'ベーシック版';
+
+  @override
+  String get basicEditionSummary => '一度の購入で、充実した読書体験を。';
+
+  @override
+  String get basicEditionNoAccount => 'Origoへのログインは不要';
+
+  @override
+  String get premiumEditionSummary => '高度な拡張機能。より多くの書籍ソース形式に対応。';
+
+  @override
+  String get storeReaderLicenseTitle => 'ベーシック版を購入';
+
+  @override
+  String get storeReaderLicenseSubtitle =>
+      'ローカル読書を14日間試用した後、ベーシック版を買い切りで購入できます。';
+
+  @override
+  String get storeReaderLifetimeTitle => 'ベーシック版';
 
   @override
   String storeReaderOwned(String store) {
-    return '$store でアプリを永久にロック解除済みです。';
+    return '$store でベーシック版を購入済みです。';
   }
 
   @override
-  String get storePremiumPrerequisiteTitle => '先にアプリをロック解除';
+  String get storePremiumPrerequisiteTitle => '先にベーシック版を購入';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'プレミアムはアプリの永久ロック解除後に別途購入できます。試用中は購入できません。';
+      'プレミアムはベーシック版の購入後に別途購入できます。試用中は購入できません。';
 
   @override
   String get storePremiumPriceCaption => '永久プレミアム · Origoアカウントに紐付け';
@@ -7038,30 +7127,30 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String storeReaderTrialExpiresAt(String date) {
-    return 'アプリの試用は$dateに終了します。';
+    return 'ベーシック版の試用は$dateに終了します。';
   }
 
   @override
-  String get storeReaderPurchaseSuccess => 'アプリを永久に解除しました';
+  String get storeReaderPurchaseSuccess => 'ベーシック版を購入しました';
 
   @override
-  String get storeReaderRestoreSuccess => 'アプリの購入を復元しました';
+  String get storeReaderRestoreSuccess => 'ベーシック版の購入を復元しました';
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'テスト購入を確認しました。正式なライセンスは付与されていません。';
+      'ベーシック版のテスト購入を確認しました。正式なライセンスは付与されていません。';
 
   @override
-  String get storeReaderPurchaseRevoked => 'このアプリの解除は取り消されました。';
+  String get storeReaderPurchaseRevoked => 'このベーシック版の購入は取り消されました。';
 
   @override
   String storeReaderPendingApproval(String store) {
-    return '$storeの承認を待っています。確認後に読書が利用可能になります。';
+    return '$storeの承認を待っています。確認後にベーシック版が有効になります。';
   }
 
   @override
-  String get storeReaderVerifying => 'アプリの購入を確認中…';
+  String get storeReaderVerifying => 'ベーシック版の購入を確認中…';
 
   @override
-  String get storeReaderRestoring => 'アプリの購入を復元中…';
+  String get storeReaderRestoring => 'ベーシック版の購入を復元中…';
 }

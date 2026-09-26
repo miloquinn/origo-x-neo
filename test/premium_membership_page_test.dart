@@ -15,6 +15,7 @@ import 'package:xxread/pages/account/premium_policy_page.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/core/app_distribution.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
+import 'package:xxread/widgets/purchase_page_scaffold.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -77,6 +78,30 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('premium-membership-card')), findsNothing);
+    expect(find.byKey(const ValueKey('account-google-purchase')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('owned store app keeps Premium sign-in action in the footer', (
+    tester,
+  ) async {
+    AppDistribution.debugOverride(channel: AppDistributionChannel.googlePlay);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.reset);
+    final store = _FakeAppleStore();
+    final account = _TestAccount(store: store, authenticated: false);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('purchase-fixed-footer')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('premium-sign-in')).hitTestable(),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('account-google-purchase')), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -173,7 +198,13 @@ void main() {
       expect(find.text('¥28.00'), findsOneWidget);
       expect(find.text('更多书源协议'), findsOneWidget);
       expect(find.textContaining('局域网'), findsOneWidget);
+      await _tapVisible(tester, const ValueKey('premium-benefits-details'));
+      expect(find.byType(PurchaseDetailsPage), findsOneWidget);
       expect(find.text('会员不提供书籍内容或书源地址，第三方服务可能另行收费。'), findsOneWidget);
+      Navigator.of(
+        tester.element(find.byType(PurchaseDetailsPage)),
+      ).pop<void>();
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('account-apple-restore')),
         findsOneWidget,
@@ -183,12 +214,8 @@ void main() {
         findsNothing,
       );
       expect(
-        tester
-            .getTopLeft(find.byKey(const ValueKey('account-apple-purchase')))
-            .dy,
-        lessThan(
-          tester.getTopLeft(find.byKey(const ValueKey('premium-benefits'))).dy,
-        ),
+        find.byKey(const ValueKey('account-apple-purchase')),
+        findsOneWidget,
       );
       _resetPlatform();
     },
@@ -212,11 +239,43 @@ void main() {
       final action = platform == TargetPlatform.iOS
           ? const ValueKey('account-apple-purchase')
           : const ValueKey('account-redemption-code');
+      expect(
+        find.byKey(const ValueKey('purchase-fixed-footer')),
+        findsOneWidget,
+      );
       expect(find.byKey(action).hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
       _resetPlatform();
     });
   }
+
+  testWidgets('focusBilling reveals the footer in adaptive direct layout', (
+    tester,
+  ) async {
+    _usePlatform(TargetPlatform.android);
+    AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 600);
+    addTearDown(tester.view.reset);
+    final store = _FakeAppleStore();
+    final account = _TestAccount(store: store);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+
+    await _pumpPage(tester, account: account, focusBilling: true);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('purchase-adaptive-scroll')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('account-redemption-code')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    _resetPlatform();
+  });
 
   testWidgets(
     'keeps restore but removes refund actions for an active iOS member',
@@ -297,6 +356,8 @@ void main() {
       );
       expect(find.byKey(const ValueKey('premium-refund')), findsNothing);
       expect(find.byKey(const ValueKey('premium-apple-support')), findsNothing);
+      expect(find.byKey(const ValueKey('premium-eula-link')), findsNothing);
+      await _tapVisible(tester, const ValueKey('premium-purchase-details'));
       expect(find.byKey(const ValueKey('premium-eula-link')), findsOneWidget);
       expect(
         find.byKey(const ValueKey('account-redemption-code')),
@@ -318,7 +379,7 @@ void main() {
       await _pumpPage(tester, account: account);
       await tester.pumpAndSettle();
 
-      expect(find.text('商店商品尚未配置或不可用'), findsOneWidget);
+      expect(find.text('商品信息加载失败，点击重试'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('account-apple-restore')),
         findsOneWidget,
@@ -342,6 +403,8 @@ void main() {
     await _pumpPage(tester, account: account);
     await tester.pumpAndSettle();
 
+    await _tapVisible(tester, const ValueKey('premium-purchase-details'));
+    expect(find.byType(PurchaseDetailsPage), findsOneWidget);
     await _tapVisible(tester, const ValueKey('premium-terms-link'));
 
     expect(
@@ -367,6 +430,8 @@ void main() {
     await _pumpPage(tester, account: account);
     await tester.pumpAndSettle();
 
+    await _tapVisible(tester, const ValueKey('premium-purchase-details'));
+    expect(find.byType(PurchaseDetailsPage), findsOneWidget);
     await _tapVisible(tester, const ValueKey('premium-privacy-link'));
 
     expect(
@@ -417,7 +482,10 @@ void main() {
     expect(find.byKey(const ValueKey('premium-active')), findsOneWidget);
     expect(find.text('购买说明'), findsNothing);
     expect(find.byKey(const ValueKey('account-redemption-code')), findsNothing);
-    expect(find.byKey(const ValueKey('premium-privacy-link')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('premium-purchase-details')),
+      findsOneWidget,
+    );
     _resetPlatform();
   });
 
@@ -462,13 +530,100 @@ void main() {
       textScaler: const TextScaler.linear(1.5),
     );
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView), const Offset(0, -1800));
-    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('purchase-adaptive-scroll')),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('account-apple-purchase')),
+    );
+    await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.byKey(const ValueKey('premium-terms-link')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('account-apple-purchase')).hitTestable(),
+      findsOneWidget,
+    );
     _resetPlatform();
   });
+
+  testWidgets('direct redemption remains reachable above the keyboard', (
+    tester,
+  ) async {
+    _usePlatform(TargetPlatform.android);
+    AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = _FakeAppleStore();
+    final account = _TestAccount(store: store);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pump();
+
+    final code = find.byKey(const ValueKey('account-redemption-code'));
+    await tester.ensureVisible(code);
+    await tester.enterText(code, 'PREMIUM-TEST-CODE');
+    final redeem = find.byKey(const ValueKey('account-redeem-premium'));
+    await tester.ensureVisible(redeem);
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('purchase-adaptive-scroll')),
+      findsOneWidget,
+    );
+    expect(redeem.hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    _resetPlatform();
+  });
+
+  for (final premium in [false, true]) {
+    testWidgets(
+      'German large text fits the ${premium ? 'active' : 'busy'} footer',
+      (tester) async {
+        _usePlatform(TargetPlatform.iOS);
+        tester.view.physicalSize = const Size(320, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final store = _FakeAppleStore();
+        final account = _TestAccount(
+          store: store,
+          premium: premium,
+          purchaseLoadingOverride: !premium,
+          purchasePhaseOverride: premium
+              ? StorePurchasePhase.purchased
+              : StorePurchasePhase.purchasing,
+        );
+        addTearDown(account.dispose);
+        addTearDown(store.close);
+
+        await _pumpPage(
+          tester,
+          account: account,
+          locale: const Locale('de'),
+          textScaler: const TextScaler.linear(1.5),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final target = find.byKey(
+          ValueKey(
+            premium ? 'premium-active-footer' : 'account-apple-purchase',
+          ),
+        );
+        await tester.ensureVisible(target);
+        await tester.pump();
+
+        expect(target.hitTestable(), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        _resetPlatform();
+      },
+    );
+  }
 
   testWidgets(
     'exports the phone light membership review image when requested',
@@ -497,7 +652,7 @@ void main() {
         previewKey,
         '$screenshotDirectory/premium-membership-phone-light.png',
       );
-      await _scrollVisible(tester, const ValueKey('premium-terms-link'));
+      await _tapVisible(tester, const ValueKey('premium-purchase-details'));
       await _capture(
         tester,
         previewKey,
@@ -586,10 +741,11 @@ Future<void> _pumpPage(
   TextScaler textScaler = TextScaler.noScaling,
   GlobalKey? previewKey,
   bool previewFont = false,
+  Locale locale = const Locale('zh'),
 }) async {
   await tester.pumpWidget(
     MaterialApp(
-      locale: const Locale('zh'),
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: _theme(Brightness.light, previewFont: previewFont),
@@ -618,12 +774,9 @@ Future<void> _tapVisible(WidgetTester tester, ValueKey<String> key) async {
 
 Future<void> _scrollVisible(WidgetTester tester, ValueKey<String> key) async {
   final target = find.byKey(key);
-  final viewportHeight =
-      tester.view.physicalSize.height / tester.view.devicePixelRatio;
-  while (tester.getCenter(target).dy > viewportHeight - 60) {
-    await tester.drag(find.byType(ListView), const Offset(0, -350));
-    await tester.pump();
-  }
+  expect(target, findsOneWidget);
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
 }
 
 void _usePlatform(TargetPlatform platform) {
@@ -679,6 +832,9 @@ class _TestAccount extends MemberAccountController {
     this.billingReady = true,
     this.offerTrial = false,
     this.permanentReader = true,
+    this.authenticated = true,
+    this.purchaseLoadingOverride,
+    this.purchasePhaseOverride,
   }) : super(purchaseStore: store);
 
   final bool premium;
@@ -687,9 +843,20 @@ class _TestAccount extends MemberAccountController {
   final bool billingReady;
   final bool offerTrial;
   final bool permanentReader;
+  final bool authenticated;
+  final bool? purchaseLoadingOverride;
+  final StorePurchasePhase? purchasePhaseOverride;
 
   @override
   bool get hasPermanentReaderAccess => permanentReader;
+
+  @override
+  bool get premiumPurchaseLoading =>
+      purchaseLoadingOverride ?? super.premiumPurchaseLoading;
+
+  @override
+  StorePurchasePhase get premiumPurchasePhase =>
+      purchasePhaseOverride ?? super.premiumPurchasePhase;
 
   @override
   MemberMembershipConfig get membershipConfig => MemberMembershipConfig(
@@ -721,21 +888,23 @@ class _TestAccount extends MemberAccountController {
   );
 
   @override
-  bool get isAuthenticated => true;
+  bool get isAuthenticated => authenticated;
 
   @override
   bool get hasPremiumAccess => premium;
 
   @override
-  MemberUser get user => MemberUser(
-    id: 'reader-1',
-    email: 'reader@example.com',
-    emailVerified: true,
-    username: 'reader',
-    effectiveName: '阅读者',
-    authMethods: ['apple'],
-    createdAt: _createdAt,
-  );
+  MemberUser? get user => authenticated
+      ? MemberUser(
+          id: 'reader-1',
+          email: 'reader@example.com',
+          emailVerified: true,
+          username: 'reader',
+          effectiveName: '阅读者',
+          authMethods: ['apple'],
+          createdAt: _createdAt,
+        )
+      : null;
 
   static final _createdAt = DateTime.utc(2026, 1, 1);
 }

@@ -7244,11 +7244,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsWebDavWorking => 'WebDAV wird verarbeitet';
 
   @override
-  String get storeReaderLockedTitle => 'Origo X freischalten';
+  String get storeReaderLockedTitle => 'Basisversion kaufen';
 
   @override
   String get storeReaderLockedBody =>
-      'Zum Lesen in dieser Store-Version benötigst du eine aktive Testphase oder eine Lizenz. Deine Bücher und Notizen bleiben erhalten. Kehre zum Bücherregal zurück, um deine Daten zu exportieren.';
+      'Zum Lesen in dieser Store-Version benötigst du eine aktive Testphase oder die gekaufte Basisversion. Deine Bücher und Notizen bleiben erhalten. Kehre zum Bücherregal zurück, um deine Daten zu exportieren.';
 
   @override
   String get storeReaderUnlock => 'Testen, kaufen oder wiederherstellen';
@@ -7260,11 +7260,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get storeReaderChecking => 'Lesezugriff wird geprüft…';
 
   @override
-  String get storeReaderBenefitTitle => 'Voller Lesezugriff';
+  String get storeReaderBenefitTitle => 'Basisversion';
 
   @override
   String get storeReaderBenefitBody =>
-      'Lokales Lesen dauerhaft freischalten. Kein Origo-Konto erforderlich.';
+      'Lokales Lesen dauerhaft nutzen. Kein Origo-Konto erforderlich.';
 
   @override
   String storeTrialStart(int days) {
@@ -7273,7 +7273,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String storeTrialDetails(int days) {
-    return 'Lokales Lesen $days Tage kostenlos testen. Keine automatische Abbuchung. Danach ist eine einmalige App-Freischaltung nötig. Bücher und Notizen bleiben erhalten.';
+    return 'Lokales Lesen $days Tage kostenlos testen. Keine automatische Abbuchung. Danach ist ein einmaliger Kauf der Basisversion nötig. Bücher und Notizen bleiben erhalten.';
   }
 
   @override
@@ -7286,12 +7286,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String storePurchaseButton(String store) {
-    return 'Mit $store dauerhaft freischalten';
+    return 'Basisversion über $store kaufen';
   }
 
   @override
   String storePurchaseBilling(String store) {
-    return 'Einmalige App-Freischaltung ohne automatische Verlängerung. $store zeigt den Preis an und verarbeitet die Zahlung.';
+    return 'Einmaliger Kauf der Basisversion ohne automatische Verlängerung. $store zeigt den Preis an und verarbeitet die Zahlung.';
   }
 
   @override
@@ -7301,12 +7301,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String storePurchaseAccess(String store) {
-    return 'Du hast bereits Zugriff über $store. Ein erneuter Kauf ist nicht erforderlich.';
+    return 'Du hast die Basisversion bereits über $store gekauft. Ein erneuter Kauf ist nicht erforderlich.';
   }
 
   @override
   String get storeRestoreEmpty =>
       'Es wurde kein wiederherstellbarer Kauf gefunden. Prüfe dein Store-Konto und das verknüpfte Origo X-Konto.';
+
+  @override
+  String get basicRestoreEmpty =>
+      'Kein Kauf der Basisversion gefunden. Prüfe dein Store-Konto.';
 
   @override
   String get storeGoogleRefundTerms =>
@@ -7327,7 +7331,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get storeReaderSupportSubtitle =>
-      'Teste das vollständige Leseerlebnis oder schalte es mit einem einmaligen Kauf dauerhaft frei';
+      'Teste lokales Lesen oder kaufe die Basisversion einmalig zur dauerhaften Nutzung';
 
   @override
   String get storeBillingUnavailable =>
@@ -7395,26 +7399,118 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Anmeldung ist abgelaufen. Bitte versuche es erneut.';
 
   @override
-  String get storeReaderLicenseTitle => 'App freischalten';
+  String get purchaseDetailsTitle => 'Kaufdetails';
+
+  @override
+  String get purchaseBenefitsAction => 'Alle Vorteile ansehen';
+
+  @override
+  String get purchaseTermsAction => 'Bedingungen & Datenschutz';
+
+  @override
+  String get purchaseAccountCaption => 'Mit deinem Origo-Konto verknüpft';
+
+  @override
+  String get basicBenefitsTitle => 'Das komplette Leseerlebnis';
+
+  @override
+  String get basicReadingTitle => 'Lesen in vielen Formaten';
+
+  @override
+  String get basicReadingBody =>
+      'Lies TXT, EPUB, PDF und weitere Formate. Importiere Bücher mit Inhaltsverzeichnis und Lesezeichen und nutze mehrere Umblätterarten, ablenkungsfreies Lesen und Doppelseiten auf Tablets.';
+
+  @override
+  String get basicFormatNote =>
+      'Die Formatunterstützung variiert je nach Plattform; DRM-geschützte Bücher werden nicht unterstützt.';
+
+  @override
+  String get basicAppearanceTitle => 'Designs & Schriften';
+
+  @override
+  String get basicAppearanceBody =>
+      'Passe Designs und Hintergründe an, importiere Schriften und justiere Schriftgröße, Zeilenabstand, Ränder und Absätze.';
+
+  @override
+  String get basicTtsTitle => 'Vorlesen & Hören';
+
+  @override
+  String get basicTtsBody =>
+      'Höre mit Gerätestimmen, passe das Tempo an und stelle einen Einschlaftimer.';
+
+  @override
+  String get basicCloudTtsTitle => 'Cloud-TTS';
+
+  @override
+  String get basicCloudTtsBody =>
+      'Richte Cloud-Sprachdienste ein, wähle Modelle und Stimmen und speichere mehrere Profile.';
+
+  @override
+  String get basicAiTitle => 'KI-Leseassistent';
+
+  @override
+  String get basicAiBody =>
+      'Verbinde deinen KI-Dienst, stelle beim Lesen Fragen und vertiefe dein Verständnis.';
+
+  @override
+  String get basicNotesTitle => 'Notizen & Leseverlauf';
+
+  @override
+  String get basicNotesBody =>
+      'Durchsuche Buchtexte, speichere Lesezeichen, Markierungen und Notizen, sieh Lesestatistiken an und exportiere Lesedaten.';
+
+  @override
+  String get basicSourcesTitle => 'Offene Buchquellen';
+
+  @override
+  String get basicSourcesBody =>
+      'Importiere kompatible ORSP-Quellen, um Online-Inhalte zu suchen und zu lesen. Die App liefert keine Quellenadressen oder Buchinhalte.';
+
+  @override
+  String get basicSyncTitle => 'Bibliothek & Sicherung';
+
+  @override
+  String get basicSyncBody =>
+      'Verwalte deine lokale Bibliothek und sichere oder stelle Bücher, Lesedaten und Einstellungen mit WebDAV wieder her.';
+
+  @override
+  String get basicServicesNote =>
+      'KI und Cloud-TTS erfordern eigene Dienste; Gebühren von Drittanbietern sind nicht enthalten.';
+
+  @override
+  String get basicEditionTitle => 'Basisversion';
+
+  @override
+  String get basicEditionSummary => 'Ein Kauf. Das komplette Leseerlebnis.';
+
+  @override
+  String get basicEditionNoAccount => 'Keine Origo-Anmeldung nötig';
+
+  @override
+  String get premiumEditionSummary =>
+      'Erweiterte Funktionen. Mehr Quellenformate.';
+
+  @override
+  String get storeReaderLicenseTitle => 'Basisversion kaufen';
 
   @override
   String get storeReaderLicenseSubtitle =>
-      'Lokales Lesen 14 Tage testen und danach einmalig freischalten.';
+      'Lokales Lesen 14 Tage testen und danach die Basisversion einmalig kaufen.';
 
   @override
-  String get storeReaderLifetimeTitle => 'App dauerhaft freischalten';
+  String get storeReaderLifetimeTitle => 'Basisversion';
 
   @override
   String storeReaderOwned(String store) {
-    return 'Diese App ist über $store dauerhaft freigeschaltet.';
+    return 'Basisversion über $store gekauft.';
   }
 
   @override
-  String get storePremiumPrerequisiteTitle => 'Zuerst die App freischalten';
+  String get storePremiumPrerequisiteTitle => 'Zuerst die Basisversion kaufen';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'Premium wird nach der dauerhaften App-Freischaltung separat angeboten. Eine Testphase reicht nicht aus.';
+      'Premium wird nach dem Kauf der Basisversion separat angeboten. Eine Testphase reicht nicht aus.';
 
   @override
   String get storePremiumPriceCaption =>
@@ -7437,31 +7533,33 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String storeReaderTrialExpiresAt(String date) {
-    return 'Die App-Testphase endet am $date.';
+    return 'Die Testphase der Basisversion endet am $date.';
   }
 
   @override
-  String get storeReaderPurchaseSuccess => 'App dauerhaft freigeschaltet';
+  String get storeReaderPurchaseSuccess => 'Basisversion gekauft';
 
   @override
-  String get storeReaderRestoreSuccess => 'App-Kauf wiederhergestellt';
+  String get storeReaderRestoreSuccess =>
+      'Kauf der Basisversion wiederhergestellt';
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'Testkauf der App bestätigt; keine reguläre Lizenz erteilt.';
+      'Testkauf der Basisversion bestätigt; keine reguläre Lizenz erteilt.';
 
   @override
   String get storeReaderPurchaseRevoked =>
-      'Diese App-Freischaltung wurde widerrufen.';
+      'Dieser Kauf der Basisversion wurde widerrufen.';
 
   @override
   String storeReaderPendingApproval(String store) {
-    return 'Warten auf die Genehmigung von $store. Nach der Prüfung wird Lesen freigeschaltet.';
+    return 'Warten auf die Genehmigung von $store. Nach der Prüfung wird die Basisversion aktiviert.';
   }
 
   @override
-  String get storeReaderVerifying => 'App-Kauf wird geprüft…';
+  String get storeReaderVerifying => 'Kauf der Basisversion wird geprüft…';
 
   @override
-  String get storeReaderRestoring => 'App-Kauf wird wiederhergestellt…';
+  String get storeReaderRestoring =>
+      'Kauf der Basisversion wird wiederhergestellt…';
 }

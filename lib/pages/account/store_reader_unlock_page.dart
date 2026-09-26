@@ -7,9 +7,8 @@ import 'package:flutter/services.dart';
 import '../../services/account/account.dart';
 import '../../services/core/app_distribution.dart';
 import '../../utils/localization_extension.dart';
-import '../../utils/page_style_helper.dart';
 import '../../widgets/app_brand_icon.dart';
-import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/purchase_page_scaffold.dart';
 
 /// Store-owned local reading license.
 ///
@@ -104,245 +103,293 @@ class _StoreReaderUnlockPageState extends State<StoreReaderUnlockPage>
       final trial = account.hasActiveReaderTrial;
       final busy = account.readerPurchaseLoading || account.loading;
       final status = _message ?? _purchaseStatus(context, account);
-      return FloatingSubpageScaffold(
+      return PurchasePageScaffold(
+        key: const ValueKey('store-reader-license-page'),
         title: l10n.storeReaderLicenseTitle,
-        body: ListView(
-          key: const ValueKey('store-reader-license-page'),
-          padding: floatingSubpagePadding(context, bottom: 40),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 620),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+            const Center(child: AppBrandIcon(size: 64, borderRadius: 18)),
+            const SizedBox(height: 18),
+            Text(
+              l10n.basicEditionTitle,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.basicEditionSummary,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            LayoutBuilder(
+              builder: (context, constraints) => Wrap(
+                spacing: 12,
+                runSpacing: 16,
+                children: [
+                  for (final feature in _features().take(6))
+                    SizedBox(
+                      width: (constraints.maxWidth - 12) / 2,
+                      child: _summaryLine(feature.icon, feature.title),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _summaryLine(
+              Icons.person_outline_rounded,
+              l10n.basicEditionNoAccount,
+            ),
+            if (permanent) ...[
+              const SizedBox(height: 20),
+              _summaryLine(
+                Icons.verified_rounded,
+                l10n.storeReaderPurchaseSuccess,
+                key: const ValueKey('store-reader-active'),
+              ),
+            ] else if (trial && account.readerTrialExpiresAt != null) ...[
+              const SizedBox(height: 20),
+              Text(
+                l10n.storeReaderTrialExpiresAt(
+                  MaterialLocalizations.of(
+                    context,
+                  ).formatFullDate(account.readerTrialExpiresAt!.toLocal()),
+                ),
+                key: const ValueKey('store-trial-status'),
+                style: TextStyle(color: colors.primary),
+              ),
+            ] else if (account.readerTrialExpiresAt != null) ...[
+              const SizedBox(height: 20),
+              Text(
+                l10n.storeTrialExpired,
+                key: const ValueKey('store-trial-status'),
+                style: TextStyle(color: colors.onSurfaceVariant),
+              ),
+            ],
+            const SizedBox(height: 22),
+            const Divider(height: 1),
+            ListTile(
+              key: const ValueKey('store-reader-benefits'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.purchaseBenefitsAction),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: _openBenefits,
+            ),
+            const Divider(height: 1),
+            ListTile(
+              key: const ValueKey('store-reader-details'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.purchaseDetailsTitle),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: _openDetails,
+            ),
+          ],
+        ),
+        footer: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!permanent) ...[
+              if (account.readerLifetimeProduct case final product?) ...[
+                Text(
+                  product.price,
+                  key: const ValueKey('store-reader-lifetime-price'),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.premiumLifetimeCaption,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
+              if (!account.storeBillingReady) ...[
+                Text(
+                  l10n.storeBillingUnavailable,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 10),
+              ],
+              FilledButton(
+                key: const ValueKey('store-reader-purchase'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: busy
+                    ? null
+                    : () => _perform(
+                        account.readerLifetimeProduct == null ||
+                                !account.storeBillingReady
+                            ? account.loadStoreProducts
+                            : account.purchaseReaderLifetime,
+                      ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _licenseCard(context, permanent: permanent, trial: trial),
-                    const SizedBox(height: 20),
-                    if (!permanent)
-                      _section(context, l10n.storeReaderLifetimeTitle, [
-                        if (trial && account.readerTrialExpiresAt != null) ...[
-                          Text(
-                            l10n.storeReaderTrialExpiresAt(
-                              MaterialLocalizations.of(context).formatFullDate(
-                                account.readerTrialExpiresAt!.toLocal(),
-                              ),
-                            ),
-                            key: const ValueKey('store-trial-status'),
-                          ),
-                          const SizedBox(height: 16),
-                        ] else if (account.canStartReaderTrial) ...[
-                          Text(
-                            l10n.storeTrialDetails(
-                              account.membershipConfig?.storeTrialDays ?? 14,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton(
-                            key: const ValueKey('store-start-trial'),
-                            onPressed: busy
-                                ? null
-                                : () => _perform(account.startReaderTrial),
-                            child: Text(
-                              l10n.storeTrialStart(
-                                account.membershipConfig?.storeTrialDays ?? 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                        ] else if (account.readerTrialExpiresAt != null) ...[
-                          Text(
-                            l10n.storeTrialExpired,
-                            key: const ValueKey('store-trial-status'),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (!account.storeBillingReady) ...[
-                          Text(l10n.storeBillingUnavailable),
-                          const SizedBox(height: 12),
-                        ],
-                        if (account.readerLifetimeProduct
-                            case final product?) ...[
-                          Text(
-                            product.price,
-                            key: const ValueKey('store-reader-lifetime-price'),
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            l10n.premiumLifetimeCaption,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: colors.onSurfaceVariant,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        FilledButton(
-                          key: const ValueKey('store-reader-purchase'),
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(52),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          onPressed: busy
-                              ? null
-                              : () => _perform(
-                                  account.readerLifetimeProduct == null ||
-                                          !account.storeBillingReady
-                                      ? account.loadStoreProducts
-                                      : account.purchaseReaderLifetime,
-                                ),
-                          child: busy
-                              ? const CupertinoActivityIndicator()
-                              : Text(
-                                  account.readerLifetimeProduct == null ||
-                                          !account.storeBillingReady
-                                      ? l10n.accountAppleProductRetry
-                                      : l10n.storePurchaseButton(_storeName),
-                                  textAlign: TextAlign.center,
-                                ),
-                        ),
-                      ]),
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      key: const ValueKey('store-reader-restore'),
-                      onPressed: busy
-                          ? null
-                          : () => _perform(account.restoreReaderPurchases),
-                      icon: const Icon(Icons.restore_rounded, size: 20),
-                      label: Text(l10n.accountAppleRestore),
-                    ),
-                    Text(
-                      permanent
-                          ? l10n.storeReaderOwned(_storeName)
-                          : l10n.storePurchaseRestoreHelp(_storeName),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 13,
-                        height: 1.5,
-                      ),
-                    ),
-                    if (status != null) ...[
-                      const SizedBox(height: 14),
-                      Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          status,
-                          key: const ValueKey('store-reader-purchase-status'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color:
-                                _messageIsError ||
-                                    account.readerPurchasePhase ==
-                                        StorePurchasePhase.failed
-                                ? colors.error
-                                : colors.onSurfaceVariant,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
+                    if (busy) ...[
+                      CupertinoActivityIndicator(color: colors.primary),
+                      const SizedBox(width: 10),
                     ],
-                    if (!permanent) ...[
-                      const SizedBox(height: 18),
-                      Text(
-                        l10n.storePurchaseBilling(_storeName),
+                    Flexible(
+                      child: Text(
+                        account.readerLifetimeProduct == null ||
+                                !account.storeBillingReady
+                            ? l10n.accountAppleProductRetry
+                            : l10n.storePurchaseButton(_storeName),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colors.onSurfaceVariant,
-                          fontSize: 12,
-                          height: 1.55,
-                        ),
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),
+              if (account.canStartReaderTrial) ...[
+                const SizedBox(height: 4),
+                TextButton(
+                  key: const ValueKey('store-start-trial'),
+                  onPressed: busy
+                      ? null
+                      : () => _perform(account.startReaderTrial),
+                  child: Text(
+                    l10n.storeTrialStart(
+                      account.membershipConfig?.storeTrialDays ?? 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ],
+            TextButton.icon(
+              key: const ValueKey('store-reader-restore'),
+              onPressed: busy
+                  ? null
+                  : () => _perform(account.restoreReaderPurchases),
+              icon: const Icon(Icons.restore_rounded, size: 18),
+              label: Text(l10n.accountAppleRestore),
             ),
+            if (status != null) ...[
+              const SizedBox(height: 8),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  status,
+                  key: const ValueKey('store-reader-purchase-status'),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color:
+                        _messageIsError ||
+                            account.readerPurchasePhase ==
+                                StorePurchasePhase.failed
+                        ? colors.error
+                        : colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       );
     },
   );
 
-  Widget _licenseCard(
-    BuildContext context, {
-    required bool permanent,
-    required bool trial,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    final l10n = context.l10n;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.primaryContainer.withValues(alpha: 0.48),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
-        borderRadius: BorderRadius.circular(24),
+  Widget _summaryLine(IconData icon, String text, {Key? key}) => Row(
+    key: key,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    ],
+  );
+
+  List<({IconData icon, String title, String body})> _features() {
+    final l10n = context.l10n;
+    return [
+      (
+        icon: Icons.auto_stories_outlined,
+        title: l10n.basicReadingTitle,
+        body: l10n.basicReadingBody,
+      ),
+      (
+        icon: Icons.palette_outlined,
+        title: l10n.basicAppearanceTitle,
+        body: l10n.basicAppearanceBody,
+      ),
+      (
+        icon: Icons.headphones_rounded,
+        title: l10n.basicTtsTitle,
+        body: l10n.basicTtsBody,
+      ),
+      (
+        icon: Icons.cloud_outlined,
+        title: l10n.basicCloudTtsTitle,
+        body: l10n.basicCloudTtsBody,
+      ),
+      (
+        icon: Icons.auto_awesome_outlined,
+        title: l10n.basicAiTitle,
+        body: l10n.basicAiBody,
+      ),
+      (
+        icon: Icons.sync_rounded,
+        title: l10n.basicSyncTitle,
+        body: l10n.basicSyncBody,
+      ),
+      (
+        icon: Icons.edit_note_rounded,
+        title: l10n.basicNotesTitle,
+        body: l10n.basicNotesBody,
+      ),
+      (
+        icon: Icons.public_rounded,
+        title: l10n.basicSourcesTitle,
+        body: l10n.basicSourcesBody,
+      ),
+    ];
+  }
+
+  void _openBenefits() {
+    final l10n = context.l10n;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) => PurchaseDetailsPage(
+          key: const ValueKey('store-reader-benefits-page'),
+          title: l10n.basicBenefitsTitle,
           children: [
-            const AppBrandIcon(size: 46, borderRadius: 13),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    permanent
-                        ? l10n.storeReaderLifetimeTitle
-                        : l10n.storeReaderLicenseTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    permanent
-                        ? l10n.storeReaderOwned(_storeName)
-                        : trial && widget.account.readerTrialExpiresAt != null
-                        ? l10n.storeReaderTrialExpiresAt(
-                            MaterialLocalizations.of(context).formatFullDate(
-                              widget.account.readerTrialExpiresAt!.toLocal(),
-                            ),
-                          )
-                        : l10n.storeReaderLicenseSubtitle,
-                    style: TextStyle(
-                      color: colors.onSurfaceVariant,
-                      height: 1.45,
-                    ),
-                  ),
-                  if (permanent) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.verified_rounded,
-                          color: colors.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 7),
-                        Flexible(
-                          child: Text(
-                            l10n.storeReaderPurchaseSuccess,
-                            key: const ValueKey('store-reader-active'),
-                            style: TextStyle(
-                              color: colors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+            for (final feature in _features()) ...[
+              _summaryLine(feature.icon, feature.title),
+              const SizedBox(height: 8),
+              Text(feature.body),
+              const SizedBox(height: 24),
+            ],
+            Text(
+              l10n.basicFormatNote,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.basicServicesNote,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),
@@ -350,29 +397,35 @@ class _StoreReaderUnlockPageState extends State<StoreReaderUnlockPage>
     );
   }
 
-  Widget _section(BuildContext context, String title, List<Widget> children) {
-    final colors = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: PageStyleHelper.palette(context).card,
-        border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.35),
-        ),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+  void _openDetails() {
+    final l10n = context.l10n;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) => PurchaseDetailsPage(
+          key: const ValueKey('store-reader-details-page'),
+          title: l10n.purchaseDetailsTitle,
           children: [
             Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              l10n.storeReaderBenefitTitle,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 18),
-            ...children,
+            const SizedBox(height: 10),
+            Text(l10n.storeReaderBenefitBody),
+            const SizedBox(height: 24),
+            Text(l10n.storePurchaseBilling(_storeName)),
+            const SizedBox(height: 24),
+            Text(
+              l10n.storeTrialDetails(
+                widget.account.membershipConfig?.storeTrialDays ?? 14,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              l10n.accountAppleRestore,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 10),
+            Text(l10n.storePurchaseRestoreHelp(_storeName)),
           ],
         ),
       ),
@@ -385,9 +438,9 @@ class _StoreReaderUnlockPageState extends State<StoreReaderUnlockPage>
   ) {
     final l10n = context.l10n;
     return switch (account.readerPurchasePhase) {
-      StorePurchasePhase.idle ||
-      StorePurchasePhase.loadingProduct ||
-      StorePurchasePhase.purchasing => null,
+      StorePurchasePhase.idle => null,
+      StorePurchasePhase.loadingProduct => l10n.accountAppleProductLoading,
+      StorePurchasePhase.purchasing => l10n.loading,
       StorePurchasePhase.pending => l10n.storeReaderPendingApproval(_storeName),
       StorePurchasePhase.verifying => l10n.storeReaderVerifying,
       StorePurchasePhase.restoring => l10n.storeReaderRestoring,
@@ -405,7 +458,7 @@ class _StoreReaderUnlockPageState extends State<StoreReaderUnlockPage>
             : null,
       StorePurchasePhase.testVerified => l10n.storeReaderTestPurchaseVerified,
       StorePurchasePhase.revoked => l10n.storeReaderPurchaseRevoked,
-      StorePurchasePhase.nothingToRestore => l10n.storeRestoreEmpty,
+      StorePurchasePhase.nothingToRestore => l10n.basicRestoreEmpty,
       StorePurchasePhase.canceled => l10n.premiumPurchaseCanceled,
       StorePurchasePhase.failed => account.readerPurchaseError,
     };

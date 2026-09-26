@@ -1,0 +1,21 @@
+{
+  "iteration": 4,
+  "verdict": "pass",
+  "evidence": [
+    "docs/previews/purchase-redesign/basic-phone-light.png",
+    "docs/previews/purchase-redesign/basic-phone-dark.png",
+    "docs/previews/purchase-redesign/premium-phone-light.png",
+    "docs/previews/purchase-redesign/premium-phone-dark.png"
+  ],
+  "findings": [
+    "Basic six-category overview and all purchase actions fit 390x844 without scrolling",
+    "Eight detailed benefit groups are reachable through native secondary route",
+    "Premium stays compact with account and advanced source benefits",
+    "Both themes readable after idle animations settle; primary buttons 52px",
+    "Small-screen large-text and keyboard interactions pass widget regressions"
+  ],
+  "limits": [
+    "Screens rendered from production Flutter widgets with fixture accounts; not live store transactions",
+    "No new store build published or installed"
+  ]
+}

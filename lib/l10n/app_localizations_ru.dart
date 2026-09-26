@@ -7203,11 +7203,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsWebDavWorking => 'WebDAV выполняет операцию';
 
   @override
-  String get storeReaderLockedTitle => 'Разблокировать Origo X';
+  String get storeReaderLockedTitle => 'Купить базовую версию';
 
   @override
   String get storeReaderLockedBody =>
-      'Для чтения в этой версии из магазина нужен действующий пробный период или лицензия. Ваши книги и заметки сохранятся. Вернитесь на книжную полку, чтобы экспортировать данные.';
+      'Для чтения в этой версии из магазина нужен действующий пробный период или покупка базовой версии. Ваши книги и заметки сохранятся. Вернитесь на книжную полку, чтобы экспортировать данные.';
 
   @override
   String get storeReaderUnlock => 'Попробовать, купить или восстановить';
@@ -7219,11 +7219,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storeReaderChecking => 'Проверка доступа к чтению…';
 
   @override
-  String get storeReaderBenefitTitle => 'Полный доступ к чтению';
+  String get storeReaderBenefitTitle => 'Базовая версия';
 
   @override
   String get storeReaderBenefitBody =>
-      'Разблокируйте локальное чтение навсегда. Аккаунт Origo не требуется.';
+      'Локальное чтение навсегда. Аккаунт Origo не требуется.';
 
   @override
   String storeTrialStart(int days) {
@@ -7232,7 +7232,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String storeTrialDetails(int days) {
-    return 'Попробуйте локальное чтение $days дней без автоматического списания. Затем потребуется разовая покупка. Книги и заметки сохранятся.';
+    return 'Попробуйте локальное чтение $days дней без автоматического списания. Затем один раз купите базовую версию. Книги и заметки сохранятся.';
   }
 
   @override
@@ -7244,12 +7244,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String storePurchaseButton(String store) {
-    return 'Разблокировать навсегда через $store';
+    return 'Купить базовую версию через $store';
   }
 
   @override
   String storePurchaseBilling(String store) {
-    return 'Разовая покупка приложения без автопродления. $store показывает цену и обрабатывает оплату.';
+    return 'Разовая покупка базовой версии без автопродления. $store показывает цену и обрабатывает оплату.';
   }
 
   @override
@@ -7259,12 +7259,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String storePurchaseAccess(String store) {
-    return 'У вас уже есть доступ через $store. Повторная покупка не требуется.';
+    return 'Вы уже купили базовую версию через $store. Повторная покупка не требуется.';
   }
 
   @override
   String get storeRestoreEmpty =>
       'Покупка для восстановления не найдена. Проверьте аккаунт магазина и связанный аккаунт Origo X.';
+
+  @override
+  String get basicRestoreEmpty =>
+      'Покупка базовой версии не найдена. Проверьте аккаунт магазина.';
 
   @override
   String get storeGoogleRefundTerms =>
@@ -7285,7 +7289,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storeReaderSupportSubtitle =>
-      'Попробуйте все возможности чтения или разблокируйте их навсегда одной покупкой';
+      'Попробуйте локальное чтение или один раз купите базовую версию';
 
   @override
   String get storeBillingUnavailable =>
@@ -7352,27 +7356,118 @@ class AppLocalizationsRu extends AppLocalizations {
       'Запрос на вход истёк. Повторите попытку.';
 
   @override
-  String get storeReaderLicenseTitle => 'Разблокировать приложение';
+  String get purchaseDetailsTitle => 'Сведения о покупке';
+
+  @override
+  String get purchaseBenefitsAction => 'Все преимущества';
+
+  @override
+  String get purchaseTermsAction => 'Условия и конфиденциальность';
+
+  @override
+  String get purchaseAccountCaption => 'Привязано к аккаунту Origo';
+
+  @override
+  String get basicBenefitsTitle => 'Полноценное чтение';
+
+  @override
+  String get basicReadingTitle => 'Чтение разных форматов';
+
+  @override
+  String get basicReadingBody =>
+      'Читайте TXT, EPUB, PDF и другие форматы. Импортируйте книги с оглавлением и закладками, выбирайте способы перелистывания, режим чтения без отвлечений и развороты на планшете.';
+
+  @override
+  String get basicFormatNote =>
+      'Поддержка форматов зависит от платформы; книги с DRM не поддерживаются.';
+
+  @override
+  String get basicAppearanceTitle => 'Темы и шрифты';
+
+  @override
+  String get basicAppearanceBody =>
+      'Настраивайте темы и фон, импортируйте шрифты и точно регулируйте размер, интервалы, поля и абзацы.';
+
+  @override
+  String get basicTtsTitle => 'Чтение вслух и прослушивание';
+
+  @override
+  String get basicTtsBody =>
+      'Слушайте голосами устройства, регулируйте скорость и ставьте таймер сна.';
+
+  @override
+  String get basicCloudTtsTitle => 'Облачный TTS';
+
+  @override
+  String get basicCloudTtsBody =>
+      'Настраивайте облачные голосовые сервисы, выбирайте модели и голоса и сохраняйте несколько профилей.';
+
+  @override
+  String get basicAiTitle => 'ИИ-помощник для чтения';
+
+  @override
+  String get basicAiBody =>
+      'Подключите свой ИИ-сервис, задавайте вопросы во время чтения и лучше понимайте текст.';
+
+  @override
+  String get basicNotesTitle => 'Заметки и история чтения';
+
+  @override
+  String get basicNotesBody =>
+      'Ищите по тексту, сохраняйте закладки, выделения и заметки, смотрите статистику и экспортируйте данные чтения.';
+
+  @override
+  String get basicSourcesTitle => 'Открытые источники книг';
+
+  @override
+  String get basicSourcesBody =>
+      'Импортируйте совместимые источники ORSP для поиска и чтения онлайн. Приложение не предоставляет адреса источников или книги.';
+
+  @override
+  String get basicSyncTitle => 'Библиотека и резервные копии';
+
+  @override
+  String get basicSyncBody =>
+      'Управляйте локальной библиотекой и создавайте или восстанавливайте резервные копии книг, данных чтения и настроек через WebDAV.';
+
+  @override
+  String get basicServicesNote =>
+      'Для ИИ и облачного TTS нужны ваши собственные сервисы; сторонние платежи не включены.';
+
+  @override
+  String get basicEditionTitle => 'Базовая версия';
+
+  @override
+  String get basicEditionSummary => 'Одна покупка. Полноценное чтение.';
+
+  @override
+  String get basicEditionNoAccount => 'Вход в Origo не требуется';
+
+  @override
+  String get premiumEditionSummary =>
+      'Расширенные возможности. Больше форматов источников.';
+
+  @override
+  String get storeReaderLicenseTitle => 'Купить базовую версию';
 
   @override
   String get storeReaderLicenseSubtitle =>
-      'Попробуйте локальное чтение 14 дней, затем разблокируйте его разовой покупкой.';
+      'Попробуйте локальное чтение 14 дней, затем один раз купите базовую версию.';
 
   @override
-  String get storeReaderLifetimeTitle => 'Приложение навсегда';
+  String get storeReaderLifetimeTitle => 'Базовая версия';
 
   @override
   String storeReaderOwned(String store) {
-    return 'Приложение навсегда разблокировано через $store.';
+    return 'Базовая версия куплена через $store.';
   }
 
   @override
-  String get storePremiumPrerequisiteTitle =>
-      'Сначала разблокируйте приложение';
+  String get storePremiumPrerequisiteTitle => 'Сначала купите базовую версию';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'Premium продаётся отдельно после постоянной разблокировки приложения. Пробного доступа недостаточно.';
+      'Premium продаётся отдельно после покупки базовой версии. Пробного доступа недостаточно.';
 
   @override
   String get storePremiumPriceCaption =>
@@ -7395,30 +7490,31 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String storeReaderTrialExpiresAt(String date) {
-    return 'Пробный период приложения заканчивается $date.';
+    return 'Пробный период базовой версии заканчивается $date.';
   }
 
   @override
-  String get storeReaderPurchaseSuccess => 'Приложение разблокировано навсегда';
+  String get storeReaderPurchaseSuccess => 'Базовая версия куплена';
 
   @override
-  String get storeReaderRestoreSuccess => 'Покупка приложения восстановлена';
+  String get storeReaderRestoreSuccess =>
+      'Покупка базовой версии восстановлена';
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'Тестовая покупка подтверждена; постоянная лицензия не выдана.';
+      'Тестовая покупка базовой версии подтверждена; постоянная лицензия не выдана.';
 
   @override
-  String get storeReaderPurchaseRevoked => 'Разблокировка приложения отозвана.';
+  String get storeReaderPurchaseRevoked => 'Покупка базовой версии отозвана.';
 
   @override
   String storeReaderPendingApproval(String store) {
-    return 'Ожидание одобрения $store. Чтение откроется после проверки.';
+    return 'Ожидание одобрения $store. Базовая версия активируется после проверки.';
   }
 
   @override
-  String get storeReaderVerifying => 'Проверка покупки приложения…';
+  String get storeReaderVerifying => 'Проверка покупки базовой версии…';
 
   @override
-  String get storeReaderRestoring => 'Восстановление покупки приложения…';
+  String get storeReaderRestoring => 'Восстановление покупки базовой версии…';
 }
