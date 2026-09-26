@@ -92,6 +92,13 @@
 		E4F5A6B51F00000100EE0001 /* IOSFrameRateController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IOSFrameRateController.m; sourceTree = "<group>"; };
 		E4F5A6B61F00000100EE0001 /* IOSFrameRateController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IOSFrameRateController.h; sourceTree = "<group>"; };
 		F5A6B7C71F00000100F50001 /* ReaderAloudMediaBridge.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReaderAloudMediaBridge.swift; sourceTree = "<group>"; };
+		AABBCCDD0000000012345678 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "de"; path = "de.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		AABBCCDD0000000112345678 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "es"; path = "es.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		AABBCCDD0000000212345678 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "fr"; path = "fr.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		AABBCCDD0000000312345678 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "it"; path = "it.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		AABBCCDD0000000412345678 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "ja"; path = "ja.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		AABBCCDD0000000512345678 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt"; path = "pt.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		AABBCCDD0000000612345678 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "ru"; path = "ru.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -288,7 +295,14 @@
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
+				"de",
+				"en",
+				"es",
+				"fr",
+				"it",
+				"ja",
+				"pt",
+				"ru",
 				"zh-Hans",
 				"zh-Hant",
 				Base,
@@ -481,6 +495,13 @@
 		A1B2C3D71F00000100AA0001 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
+				AABBCCDD0000000012345678 /* de */,
+				AABBCCDD0000000112345678 /* es */,
+				AABBCCDD0000000212345678 /* fr */,
+				AABBCCDD0000000312345678 /* it */,
+				AABBCCDD0000000412345678 /* ja */,
+				AABBCCDD0000000512345678 /* pt */,
+				AABBCCDD0000000612345678 /* ru */,
 				A1B2C3D51F00000100AA0001 /* Base */,
 				A1B2C3D61F00000100AA0001 /* en */,
 				A1B2C3D81F00000100AA0001 /* zh-Hans */,
@@ -556,7 +577,7 @@
 				DEVELOPMENT_TEAM = 2HD5836RZ2;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "开元阅读";
+				INFOPLIST_KEY_CFBundleDisplayName = "Origo X";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -744,7 +765,7 @@
 				DEVELOPMENT_TEAM = 2HD5836RZ2;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "开元阅读";
+				INFOPLIST_KEY_CFBundleDisplayName = "Origo X";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -772,7 +793,7 @@
 				DEVELOPMENT_TEAM = 2HD5836RZ2;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "开元阅读";
+				INFOPLIST_KEY_CFBundleDisplayName = "Origo X";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
