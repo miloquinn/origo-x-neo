@@ -100,7 +100,7 @@ void main() {
         find.byKey(const ValueKey('premium-membership-card')),
         findsOneWidget,
       );
-      expect(find.textContaining('开卷 + 探源'), findsOneWidget);
+      expect(find.textContaining('开卷 + 探元'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('account-google-purchase')),
         findsOneWidget,
@@ -226,7 +226,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('¥28.00'), findsOneWidget);
-      expect(find.text('Origo 探源'), findsWidgets);
+      expect(find.text('Origo 探元'), findsWidgets);
       expect(
         find.byWidgetPredicate(
           (widget) =>
@@ -1021,7 +1021,7 @@ class _FakeAppleStore implements PurchaseStore {
             for (final id in identifiers)
               ProductDetails(
                 id: id,
-                title: id.contains('explorer') ? 'Origo 探源完整方案' : 'Origo 探源升级',
+                title: id.contains('explorer') ? 'Origo 探元完整方案' : 'Origo 探元升级',
                 description: '一次购买，账号跨平台使用',
                 price: id.contains('explorer') ? '¥58.00' : '¥28.00',
                 rawPrice: id.contains('explorer') ? 58 : 28,

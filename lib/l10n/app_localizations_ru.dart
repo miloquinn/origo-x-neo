@@ -7515,11 +7515,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Origo Read куплен · используйте тот же аккаунт Origo на поддерживаемых платформах';
 
   @override
-  String get storePremiumPrerequisiteTitle => 'Сначала купите базовую версию';
+  String get storePremiumPrerequisiteTitle => 'Выберите план Origo Explore';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'Premium продаётся отдельно после покупки базовой версии. Пробного доступа недостаточно.';
+      'Купите полный план Origo Explore с Origo Read или выберите более выгодное обновление Explore, если у аккаунта уже есть бессрочный Origo Read.';
 
   @override
   String get storePremiumPriceCaption =>

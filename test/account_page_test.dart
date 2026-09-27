@@ -868,7 +868,7 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('account-support')));
       await tester.pumpAndSettle();
-      expect(find.text('Origo 探源'), findsNWidgets(2));
+      expect(find.text('Origo 探元'), findsNWidgets(2));
       expect(find.text('更多书源协议'), findsWidgets);
       expect(find.text('允许内网书源'), findsWidgets);
       expect(

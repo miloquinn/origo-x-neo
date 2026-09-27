@@ -7561,12 +7561,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Origo Read comprado · úsalo con la misma cuenta Origo en plataformas compatibles';
 
   @override
-  String get storePremiumPrerequisiteTitle =>
-      'Compra primero la versión básica';
+  String get storePremiumPrerequisiteTitle => 'Elige tu plan Origo Explore';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'Premium se vende por separado después de comprar la versión básica. La prueba no es suficiente.';
+      'Compra el plan completo Origo Explore con Origo Read incluido, o elige la mejora Explore de menor precio si tu cuenta ya tiene Origo Read de forma permanente.';
 
   @override
   String get storePremiumPriceCaption =>

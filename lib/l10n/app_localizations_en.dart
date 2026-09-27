@@ -7450,11 +7450,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Origo Read owned · use the same Origo account on supported platforms';
 
   @override
-  String get storePremiumPrerequisiteTitle => 'Get Origo Read first';
+  String get storePremiumPrerequisiteTitle => 'Choose your Origo Explore plan';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'Origo Explore is an optional purchase sold separately after Origo Read is purchased. A trial does not qualify.';
+      'Buy the complete Origo Explore plan with Origo Read included, or choose the lower-priced Explore upgrade if your account already owns permanent Origo Read.';
 
   @override
   String get storePremiumPriceCaption =>

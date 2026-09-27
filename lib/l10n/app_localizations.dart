@@ -12941,13 +12941,13 @@ abstract class AppLocalizations {
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Get Origo Read first'**
+  /// **'Choose your Origo Explore plan'**
   String get storePremiumPrerequisiteTitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Origo Explore is an optional purchase sold separately after Origo Read is purchased. A trial does not qualify.'**
+  /// **'Buy the complete Origo Explore plan with Origo Read included, or choose the lower-priced Explore upgrade if your account already owns permanent Origo Read.'**
   String get storePremiumPrerequisiteBody;
 
   /// Separate app reader unlock and account Premium billing.

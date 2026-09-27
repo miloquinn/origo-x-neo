@@ -1145,10 +1145,12 @@ class MemberAccountController extends ChangeNotifier {
     await refreshReaderAccess();
     if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');
     if (!bundle && !hasAccountReaderUpgradeEligibility) {
-      throw const MemberAccountException('请先购买 Origo 开卷，再使用探源升级价格');
+      throw const MemberAccountException(
+        '探元升级价仅适用于已永久拥有 Origo 开卷的账号；你也可以选择完整探元方案',
+      );
     }
     if (bundle && hasAccountReaderUpgradeEligibility) {
-      throw const MemberAccountException('你已拥有 Origo 开卷，请选择探源升级价格');
+      throw const MemberAccountException('你已拥有 Origo 开卷，请选择探元升级方案');
     }
     _membershipConfig = await _api.membershipConfig();
     if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');

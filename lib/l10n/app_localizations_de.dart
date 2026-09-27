@@ -7558,11 +7558,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Origo Read gekauft · mit demselben Origo-Konto plattformübergreifend nutzen';
 
   @override
-  String get storePremiumPrerequisiteTitle => 'Zuerst die Basisversion kaufen';
+  String get storePremiumPrerequisiteTitle => 'Origo-Explore-Paket wählen';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'Premium wird nach dem Kauf der Basisversion separat angeboten. Eine Testphase reicht nicht aus.';
+      'Kaufe das vollständige Origo-Explore-Paket einschließlich Origo Read oder wähle das günstigere Explore-Upgrade, wenn dein Konto Origo Read bereits dauerhaft besitzt.';
 
   @override
   String get storePremiumPriceCaption =>

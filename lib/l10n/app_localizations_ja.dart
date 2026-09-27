@@ -7149,11 +7149,11 @@ class AppLocalizationsJa extends AppLocalizations {
       'Origo Read購入済み · 同じOrigoアカウントで対応プラットフォームから利用できます';
 
   @override
-  String get storePremiumPrerequisiteTitle => '先にベーシック版を購入';
+  String get storePremiumPrerequisiteTitle => 'Origo Exploreプランを選択';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'プレミアムはベーシック版の購入後に別途購入できます。試用中は購入できません。';
+      'Origo Readを含むOrigo Explore完全プランを購入できます。アカウントがOrigo Readの永久利用権を所有している場合は、割引価格のExploreアップグレードを選べます。';
 
   @override
   String get storePremiumPriceCaption => '買い切りの書籍ソース拡張 · アカウント共通';

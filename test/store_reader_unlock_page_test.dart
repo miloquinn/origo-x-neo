@@ -85,7 +85,7 @@ void main() {
     expect(find.byKey(const ValueKey('premium-store-price')), findsOneWidget);
     expect(find.text(r'$18.99'), findsOneWidget);
     expect(find.text('包含 Origo 开卷的永久使用权，以及更多书源格式兼容能力。'), findsWidgets);
-    expect(find.text('开卷 + 探源 · 一次购买跨平台使用'), findsOneWidget);
+    expect(find.text('开卷 + 探元 · 一次购买跨平台使用'), findsOneWidget);
   });
 
   testWidgets('guest actions open sign-in without starting store actions', (

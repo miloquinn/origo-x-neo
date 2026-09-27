@@ -7593,11 +7593,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get storePremiumPrerequisiteTitle =>
-      'Achetez d’abord la version de base';
+      'Choisissez votre formule Origo Explore';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'Premium est vendu séparément après l’achat de la version de base. La période d’essai ne suffit pas.';
+      'Achetez la formule Origo Explore complète incluant Origo Read, ou choisissez la mise à niveau Explore à prix réduit si votre compte possède déjà Origo Read à vie.';
 
   @override
   String get storePremiumPriceCaption =>
