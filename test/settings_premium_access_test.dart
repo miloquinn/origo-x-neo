@@ -205,7 +205,7 @@ void main() {
           find.byKey(const ValueKey('settings-account-premium-badge')),
           findsOneWidget,
         );
-        expect(find.text(l10n.accountSupporterBadge), findsOneWidget);
+        expect(find.text(l10n.premiumLifetimeTitle), findsOneWidget);
         expect(
           find.byKey(const ValueKey('settings-account-membership-group')),
           findsOneWidget,

@@ -8,6 +8,7 @@ import '../services/core/app_distribution.dart';
 import '../utils/localization_extension.dart';
 import '../utils/page_style_helper.dart';
 import 'account_avatar_image.dart';
+import 'account_identity_card.dart';
 import 'premium_card_style.dart';
 import 'membership_offer_card.dart';
 import '../pages/account/store_reader_unlock_page.dart';
@@ -54,97 +55,27 @@ class SettingsAccountCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            key: const ValueKey('settings-account-panel'),
-            decoration: BoxDecoration(
-              color: palette.card,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: palette.border),
+          AccountIdentityCard(
+            tier: explore
+                ? AccountIdentityTier.explore
+                : account.hasStoreReaderEntitlement ||
+                      (AppDistribution.isStore &&
+                          account.hasPermanentReaderAccess)
+                ? AccountIdentityTier.read
+                : AccountIdentityTier.none,
+            title: title,
+            subtitle: summary == null
+                ? l10n.settingsGuestSubtitle
+                : '@${summary.username}',
+            avatar: _AccountAvatar(
+              effectiveName: summary?.effectiveName,
+              avatarUrl: summary?.avatarUrl,
+              premium: false,
+              quiet: true,
             ),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(22),
-              clipBehavior: Clip.antiAlias,
-              child: Semantics(
-                button: true,
-                label: l10n.settingsAccountOpen,
-                child: InkWell(
-                  key: const ValueKey('settings-account-card'),
-                  onTap: () => Navigator.of(context).push<void>(
-                    MaterialPageRoute(builder: (_) => const AccountPage()),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-                    child: Row(
-                      children: [
-                        _AccountAvatar(
-                          effectiveName: summary?.effectiveName,
-                          avatarUrl: summary?.avatarUrl,
-                          premium: false,
-                          quiet: true,
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
-                                key: const ValueKey('settings-account-name'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              if (explore) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.accountSupporterBadge,
-                                  key: const ValueKey(
-                                    'settings-account-premium-badge',
-                                  ),
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: scheme.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ],
-                              const SizedBox(height: 4),
-                              Text(
-                                summary == null
-                                    ? l10n.settingsGuestSubtitle
-                                    : '@${summary.username}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: scheme.onSurfaceVariant),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SizedBox.square(
-                          dimension: 28,
-                          child: account.loading
-                              ? Padding(
-                                  padding: const EdgeInsets.all(6),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 1.5,
-                                    color: scheme.primary,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 20,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            loading: account.loading,
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) => const AccountPage()),
             ),
           ),
           if (!explore) ...[

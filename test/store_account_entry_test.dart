@@ -18,12 +18,15 @@ final _previewFontPath = Platform.environment['PROFILE_PREVIEW_FONT'];
 class _Account extends MemberAccountController {
   bool permanent = false;
   bool premium = false;
+  bool readerEntitlement = false;
   bool temporary = false;
 
   @override
   bool get hasPermanentReaderAccess => permanent;
   @override
   bool get hasPremiumAccess => premium;
+  @override
+  bool get hasStoreReaderEntitlement => readerEntitlement;
   @override
   bool get hasSandboxStoreAccess => temporary;
   @override
@@ -44,9 +47,14 @@ class _Account extends MemberAccountController {
     entitlements: const [],
   );
 
-  void update({required bool ownsApp, required bool ownsPremium}) {
+  void update({
+    required bool ownsApp,
+    required bool ownsPremium,
+    bool ownsReaderEntitlement = false,
+  }) {
     permanent = ownsApp;
     premium = ownsPremium;
+    readerEntitlement = ownsReaderEntitlement;
     temporary = false;
     notifyListeners();
   }
@@ -54,6 +62,7 @@ class _Account extends MemberAccountController {
   void grantTemporaryAccess() {
     permanent = false;
     premium = false;
+    readerEntitlement = false;
     temporary = true;
     notifyListeners();
   }
@@ -79,7 +88,8 @@ void main() {
     ) async {
       AppDistribution.debugOverride(channel: channel);
       addTearDown(AppDistribution.debugReset);
-      final account = _Account();
+      final store = channel != AppDistributionChannel.direct;
+      final account = _Account()..update(ownsApp: !store, ownsPremium: false);
       addTearDown(account.dispose);
       await tester.pumpWidget(
         ChangeNotifierProvider<MemberAccountController>.value(
@@ -97,10 +107,12 @@ void main() {
           ),
         ),
       );
-      final store = channel != AppDistributionChannel.direct;
       final reader = find.byKey(const ValueKey('settings-reader-license'));
       final upgrade = find.byKey(const ValueKey('settings-membership-entry'));
-      final badge = find.byKey(
+      final readerBadge = find.byKey(
+        const ValueKey('settings-account-reader-badge'),
+      );
+      final exploreBadge = find.byKey(
         const ValueKey('settings-account-premium-badge'),
       );
       final explore = find.byKey(
@@ -109,11 +121,15 @@ void main() {
       expect(reader, store ? findsOneWidget : findsNothing);
       expect(upgrade, store ? findsNothing : findsOneWidget);
       expect(explore, findsNothing);
+      // The direct build is free to use; free access is not a paid Read badge.
+      expect(readerBadge, findsNothing);
+      expect(exploreBadge, findsNothing);
 
       // Store testing access is temporary and must not impersonate ownership.
       account.grantTemporaryAccess();
       await tester.pump();
-      expect(badge, findsNothing);
+      expect(readerBadge, findsNothing);
+      expect(exploreBadge, findsNothing);
       expect(explore, findsNothing);
       expect(reader, store ? findsOneWidget : findsNothing);
       expect(upgrade, store ? findsNothing : findsOneWidget);
@@ -122,7 +138,9 @@ void main() {
       account.update(ownsApp: false, ownsPremium: true);
       await tester.pump();
       expect(upgrade, findsNothing);
-      expect(badge, findsOneWidget);
+      expect(readerBadge, findsNothing);
+      expect(exploreBadge, findsOneWidget);
+      expect(tester.widget<Text>(exploreBadge).data, 'Origo Explore');
       expect(explore, findsNothing);
       expect(
         find.byKey(const ValueKey('settings-membership-offer')),
@@ -130,16 +148,28 @@ void main() {
       );
       expect(reader, findsNothing);
 
-      account.update(ownsApp: true, ownsPremium: false);
+      account.update(
+        ownsApp: true,
+        ownsPremium: false,
+        ownsReaderEntitlement: !store,
+      );
       await tester.pump();
       expect(upgrade, findsOneWidget);
       expect(reader, findsNothing);
-      expect(badge, findsNothing);
+      expect(readerBadge, findsOneWidget);
+      expect(tester.widget<Text>(readerBadge).data, 'Origo Read');
+      expect(exploreBadge, findsNothing);
 
-      account.update(ownsApp: true, ownsPremium: true);
+      account.update(
+        ownsApp: true,
+        ownsPremium: true,
+        ownsReaderEntitlement: true,
+      );
       await tester.pump();
       expect(upgrade, findsNothing);
-      expect(badge, findsOneWidget);
+      expect(readerBadge, findsNothing);
+      expect(exploreBadge, findsOneWidget);
+      expect(tester.widget<Text>(exploreBadge).data, 'Origo Explore');
       expect(explore, findsNothing);
       expect(reader, findsNothing);
       expect(tester.takeException(), isNull);
@@ -180,6 +210,8 @@ void main() {
     (name: 'explore', read: true, explore: true, dark: false, scale: 1.0),
     (name: 'dark', read: true, explore: false, dark: true, scale: 1.0),
     (name: 'large', read: true, explore: false, dark: false, scale: 1.6),
+    (name: 'explore-dark', read: true, explore: true, dark: true, scale: 1.0),
+    (name: 'explore-large', read: true, explore: true, dark: false, scale: 1.6),
     (name: 'english', read: true, explore: false, dark: false, scale: 1.6),
     (name: 'german', read: false, explore: false, dark: false, scale: 1.0),
   ]) {
@@ -188,7 +220,7 @@ void main() {
     ) async {
       AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
       addTearDown(AppDistribution.debugReset);
-      tester.view.physicalSize = Size(layout.scale > 1 ? 320 : 390, 440);
+      tester.view.physicalSize = Size(layout.scale > 1 ? 320 : 390, 560);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final account = _Account()
@@ -251,11 +283,21 @@ void main() {
       expect(tester.takeException(), isNull);
       final panel = find.byKey(const ValueKey('settings-account-panel'));
       final offer = find.byKey(const ValueKey('settings-membership-offer'));
+      final readerBadge = find.byKey(
+        const ValueKey('settings-account-reader-badge'),
+      );
+      final exploreBadge = find.byKey(
+        const ValueKey('settings-account-premium-badge'),
+      );
       expect(panel, findsOneWidget);
       if (layout.explore) {
         expect(offer, findsNothing);
+        expect(readerBadge, findsNothing);
+        expect(exploreBadge, findsOneWidget);
       } else {
         expect(offer, findsOneWidget);
+        expect(exploreBadge, findsNothing);
+        expect(readerBadge, layout.read ? findsOneWidget : findsNothing);
         expect(tester.getTopLeft(panel).dx, tester.getTopLeft(offer).dx);
         expect(tester.getSize(panel).width, tester.getSize(offer).width);
         expect(
