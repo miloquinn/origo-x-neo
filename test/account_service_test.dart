@@ -71,6 +71,156 @@ void main() {
   });
 
   test(
+    'membership redemption pins the request to the captured account',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = _MemoryTokenStore();
+      Map<String, dynamic>? redemptionPayload;
+      String? redemptionAuthorization;
+      final controller = MemberAccountController(
+        api: _client(
+          _RouteAdapter((options) {
+            return switch (options.uri.path) {
+              '/api/v1/auth/password/login' => _json(
+                _session(
+                  access: 'access-a',
+                  refresh: 'refresh-a',
+                  userId: _memberAccountId,
+                ),
+              ),
+              '/api/v1/membership' => _json({
+                'user_id': _memberAccountId,
+                'premium': false,
+                'features': <String, bool>{},
+                'entitlements': <Object>[],
+              }),
+              '/api/v1/membership/referral' => _json({
+                'invite_code': 'TEST',
+                'invite_url': 'https://example.test/invite',
+              }),
+              '/api/v1/membership/redeem' => () {
+                redemptionPayload = (options.data as Map)
+                    .cast<String, dynamic>();
+                redemptionAuthorization =
+                    options.headers['Authorization'] as String?;
+                return _json({
+                  'user_id': _memberAccountId,
+                  'premium': true,
+                  'redeemed': true,
+                  'features': <String, bool>{},
+                  'entitlements': <Object>[],
+                });
+              }(),
+              _ => _json({}),
+            };
+          }),
+          storage,
+        ),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.loginPassword('reader@example.com', 'password');
+      await controller.redeemMembership('  ORP-TEST-CODE  ');
+
+      expect(redemptionAuthorization, 'Bearer access-a');
+      expect(redemptionPayload, {
+        'code': 'ORP-TEST-CODE',
+        'expected_user_id': _memberAccountId,
+      });
+      expect(controller.hasPremiumAccess, isTrue);
+    },
+  );
+
+  test('membership redemption rejects a token from another account', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = _MemoryTokenStore();
+    var redemptionCalls = 0;
+    final controller = MemberAccountController(
+      api: _client(
+        _RouteAdapter((options) {
+          return switch (options.uri.path) {
+            '/api/v1/auth/password/login' => _json(
+              _session(
+                access: 'access-a',
+                refresh: 'refresh-a',
+                userId: _memberAccountId,
+              ),
+            ),
+            '/api/v1/membership' => _json({
+              'user_id': _memberAccountId,
+              'premium': false,
+              'features': <String, bool>{},
+              'entitlements': <Object>[],
+            }),
+            '/api/v1/membership/referral' => _json({
+              'invite_code': 'TEST',
+              'invite_url': 'https://example.test/invite',
+            }),
+            '/api/v1/membership/redeem' => () {
+              redemptionCalls++;
+              expect(options.headers['Authorization'], 'Bearer access-b');
+              expect(
+                (options.data as Map)['expected_user_id'],
+                _memberAccountId,
+              );
+              return _json({
+                'message': '账号已切换，请重新确认兑换账号',
+                'code': 'accountChanged',
+              }, status: 409);
+            }(),
+            _ => _json({}),
+          };
+        }),
+        storage,
+      ),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.loginPassword('reader@example.com', 'password');
+    storage.accessToken = 'access-b';
+
+    await expectLater(
+      controller.redeemMembership('ORP-TEST-CODE'),
+      throwsA(
+        isA<MemberAccountException>()
+            .having((error) => error.code, 'code', 'accountChanged')
+            .having((error) => error.message, 'message', '账号已切换，请重新确认兑换账号'),
+      ),
+    );
+    expect(redemptionCalls, 1);
+    expect(controller.hasPremiumAccess, isFalse);
+  });
+
+  test('membership redemption rejects a signed-out account locally', () async {
+    SharedPreferences.setMockInitialValues({});
+    var redemptionCalls = 0;
+    final controller = MemberAccountController(
+      api: _client(
+        _RouteAdapter((options) {
+          if (options.uri.path == '/api/v1/membership/redeem') {
+            redemptionCalls++;
+          }
+          return _json({});
+        }),
+        _MemoryTokenStore(),
+      ),
+    );
+    addTearDown(controller.dispose);
+
+    await expectLater(
+      controller.redeemMembership('ORP-TEST-CODE'),
+      throwsA(
+        isA<MemberAccountException>().having(
+          (error) => error.message,
+          'message',
+          '请先登录 Origo 账号',
+        ),
+      ),
+    );
+    expect(redemptionCalls, 0);
+  });
+
+  test(
     'sandbox verification finishes StoreKit without granting access',
     () async {
       SharedPreferences.setMockInitialValues({});

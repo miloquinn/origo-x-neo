@@ -568,14 +568,16 @@ class MemberAccountApiClient {
     'X-Origo-Reader-Key': (await readerCredential()).value,
   };
 
-  Future<MemberMembership> redeemMembership(String code) async =>
-      MemberMembership.fromJson(
-        await _jsonRequest(
-          'POST',
-          '$membershipRoot/redeem',
-          data: {'code': code.trim()},
-        ),
-      );
+  Future<MemberMembership> redeemMembership(
+    String code, {
+    required String expectedUserId,
+  }) async => MemberMembership.fromJson(
+    await _jsonRequest(
+      'POST',
+      '$membershipRoot/redeem',
+      data: {'code': code.trim(), 'expected_user_id': expectedUserId},
+    ),
+  );
 
   Future<MemberReferral> referral() async => MemberReferral.fromJson(
     await _jsonRequest('GET', '$membershipRoot/referral'),

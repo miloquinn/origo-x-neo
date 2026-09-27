@@ -1345,8 +1345,14 @@ class MemberAccountController extends ChangeNotifier {
 
   Future<void> redeemMembership(String code) => _run(() async {
     final accountId = _user?.id;
-    final membership = await _api.redeemMembership(code);
-    if (accountId == null || _user?.id != accountId) {
+    if (accountId == null) {
+      throw const MemberAccountException('请先登录 Origo 账号');
+    }
+    final membership = await _api.redeemMembership(
+      code,
+      expectedUserId: accountId,
+    );
+    if (_user?.id != accountId) {
       throw const MemberAccountException('账号已切换，请重新验证会员权益');
     }
     _checkMembershipOwner(membership, accountId);
