@@ -1,8 +1,11 @@
 import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,7 +13,25 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/account/account_page.dart';
 import 'package:xxread/services/account/account.dart';
 
+final _screenshotDirectory =
+    Platform.environment['ACCOUNT_SECURITY_SCREENSHOT_DIR'];
+final _previewFontPath = Platform.environment['ACCOUNT_SECURITY_PREVIEW_FONT'];
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    final fontPath = _previewFontPath;
+    if (fontPath != null) {
+      final text = FontLoader('AccountSecurityPreview');
+      text.addFont(File(fontPath).readAsBytes().then(ByteData.sublistView));
+      await text.load();
+    }
+    final icons = FontLoader('MaterialIcons');
+    icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+    await icons.load();
+  });
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets(
@@ -77,6 +98,29 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('account-change-email')));
       await tester.pumpAndSettle();
+
+      final intro = find.byKey(const ValueKey('account-security-flow-intro'));
+      final introIcon = find.byKey(
+        const ValueKey('account-security-flow-intro-icon'),
+      );
+      final introTitle = find.byKey(
+        const ValueKey('account-security-flow-intro-title'),
+      );
+      final introBody = find.byKey(
+        const ValueKey('account-security-flow-intro-body'),
+      );
+      final backButton = find.byKey(const ValueKey('floating-subpage-back'));
+      expect(intro, findsOneWidget);
+      expect(
+        tester.widget<Column>(intro).crossAxisAlignment,
+        CrossAxisAlignment.center,
+      );
+      expect(tester.widget<Text>(introTitle).textAlign, TextAlign.center);
+      expect(tester.widget<Text>(introBody).textAlign, TextAlign.center);
+      expect(tester.getCenter(introIcon).dx, closeTo(160, 1));
+      expect(tester.getCenter(introTitle).dx, closeTo(160, 1));
+      expect(tester.getCenter(backButton).dx, lessThan(64));
+
       await tester.enterText(find.byType(TextField), 'new@example.com');
       await tester.tap(
         find.byKey(const ValueKey('account-change-email-submit')),
@@ -106,6 +150,79 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'exports centered account security subpage when requested',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final controller = MemberAccountController(
+        api: MemberAccountApiClient(
+          dio: Dio()..httpClientAdapter = _SecurityAdapter(),
+          tokenStore: _SecurityTokenStore(),
+        ),
+      );
+      addTearDown(controller.dispose);
+      await tester.runAsync(controller.initialize);
+
+      final boundaryKey = GlobalKey();
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: controller,
+          child: MaterialApp(
+            locale: const Locale('zh'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6750A4),
+              ),
+              fontFamily: _previewFontPath == null
+                  ? null
+                  : 'AccountSecurityPreview',
+            ),
+            builder: (context, child) =>
+                RepaintBoundary(key: boundaryKey, child: child),
+            home: const AccountPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('account-security')),
+        400,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(const ValueKey('account-security')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('account-change-email')));
+      await tester.pumpAndSettle();
+
+      final directory = Directory(_screenshotDirectory!);
+      await tester.runAsync(() => directory.create(recursive: true));
+      await tester.pump();
+      await _capture(
+        tester,
+        boundaryKey,
+        '${directory.path}/account-change-email-centered.png',
+      );
+      expect(tester.takeException(), isNull);
+    },
+    skip: _screenshotDirectory == null,
+  );
+}
+
+Future<void> _capture(WidgetTester tester, GlobalKey key, String path) async {
+  await tester.runAsync(() async {
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final image = await boundary.toImage();
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    await File(path).writeAsBytes(data!.buffer.asUint8List());
+    image.dispose();
+  });
 }
 
 class _SecurityAdapter implements HttpClientAdapter {

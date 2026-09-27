@@ -275,6 +275,36 @@ void main() {
     expect(find.byKey(const ValueKey('store-reader-active')), findsNothing);
   });
 
+  testWidgets('purchase pages inherit and react to app accent and brightness', (
+    tester,
+  ) async {
+    final account = _UnlockAccount(permanent: true, authenticated: true);
+    addTearDown(account.dispose);
+    for (final premium in [false, true]) {
+      for (final dark in [false, true]) {
+        for (final accent in [Colors.blue, Colors.deepOrange]) {
+          final scheme = ColorScheme.fromSeed(
+            seedColor: accent,
+            brightness: dark ? Brightness.dark : Brightness.light,
+          );
+          await _pumpWidgetPage(
+            tester,
+            dark: dark,
+            accent: accent,
+            child: premium
+                ? PremiumMembershipPage(account: account)
+                : StoreReaderUnlockPage(account: account),
+          );
+          final artwork = find.byType(PurchaseArtwork).first;
+          final actual = Theme.of(tester.element(artwork));
+          expect(actual.colorScheme, scheme);
+          expect(actual.brightness, scheme.brightness);
+          expect(tester.takeException(), isNull);
+        }
+      }
+    }
+  });
+
   testWidgets(
     'exports App Store reader and Premium purchase frames when requested',
     (tester) async {
@@ -396,6 +426,7 @@ Future<void> _pumpWidgetPage(
   required Widget child,
   GlobalKey? boundaryKey,
   bool dark = false,
+  Color accent = Colors.blue,
   bool settle = true,
 }) async {
   await tester.pumpWidget(
@@ -404,7 +435,10 @@ Future<void> _pumpWidgetPage(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
-        brightness: dark ? Brightness.dark : Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: accent,
+          brightness: dark ? Brightness.dark : Brightness.light,
+        ),
         fontFamily: _previewFontPath == null ? null : 'SplitBillingPreview',
       ),
       home: RepaintBoundary(key: boundaryKey, child: child),

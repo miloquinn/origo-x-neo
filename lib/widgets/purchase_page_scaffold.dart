@@ -2,57 +2,25 @@ import 'package:flutter/material.dart';
 
 import 'floating_subpage_scaffold.dart';
 
-/// A local art direction for the purchase flow; app-wide theme settings stay intact.
+/// Purchase-specific button sizing; colors and brightness belong to the app.
 class PurchasePageTheme extends StatelessWidget {
-  const PurchasePageTheme({
-    super.key,
-    this.premium = false,
-    required this.child,
-  });
-  final bool premium;
+  const PurchasePageTheme({super.key, required this.child});
+
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final base = Theme.of(context);
-    final dark = premium || base.brightness == Brightness.dark;
-    final surface = dark ? const Color(0xff1d3029) : const Color(0xfff6f4ed);
-    final ink = dark ? const Color(0xffe9e5d3) : const Color(0xff24392f);
-    final muted = dark ? const Color(0xffb0bba7) : const Color(0xff657060);
-    final scheme =
-        ColorScheme.fromSeed(
-          seedColor: const Color(0xff2d493b),
-          brightness: dark ? Brightness.dark : Brightness.light,
-        ).copyWith(
-          surface: surface,
-          onSurface: ink,
-          onSurfaceVariant: muted,
-          primary: dark ? const Color(0xffdfd4b2) : const Color(0xff2d493b),
-          onPrimary: dark ? const Color(0xff263b2d) : const Color(0xfff6f4e8),
-          outlineVariant: dark
-              ? const Color(0xff405044)
-              : const Color(0xffdedfd4),
-        );
     return Theme(
       data: base.copyWith(
-        brightness: scheme.brightness,
-        colorScheme: scheme,
-        scaffoldBackgroundColor: surface,
-        textTheme: base.textTheme.apply(bodyColor: ink, displayColor: ink),
-        iconTheme: base.iconTheme.copyWith(color: ink),
-        dividerColor: scheme.outlineVariant,
-        listTileTheme: base.listTileTheme.copyWith(
-          textColor: ink,
-          iconColor: ink,
-        ),
         filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: scheme.primary,
-            foregroundColor: scheme.onPrimary,
-            minimumSize: const Size.fromHeight(52),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+          style: (base.filledButtonTheme.style ?? const ButtonStyle()).merge(
+            FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ),

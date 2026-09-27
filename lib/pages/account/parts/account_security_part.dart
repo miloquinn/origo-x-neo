@@ -1564,9 +1564,11 @@ class _FlowIntro extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      key: const ValueKey('account-security-flow-intro'),
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
+          key: const ValueKey('account-security-flow-intro-icon'),
           width: 48,
           height: 48,
           alignment: Alignment.center,
@@ -1579,6 +1581,8 @@ class _FlowIntro extends StatelessWidget {
         const SizedBox(height: 18),
         Text(
           title,
+          key: const ValueKey('account-security-flow-intro-title'),
+          textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w900,
             letterSpacing: -0.7,
@@ -1587,6 +1591,8 @@ class _FlowIntro extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           body,
+          key: const ValueKey('account-security-flow-intro-body'),
+          textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: colorScheme.onSurfaceVariant,
             height: 1.5,

@@ -211,11 +211,14 @@ void main() {
       );
       expect(find.text('更多书源协议'), findsWidgets);
       expect(find.textContaining('局域网'), findsOneWidget);
+      final pageColors = Theme.of(
+        tester.element(find.byType(PurchaseArtwork)),
+      ).colorScheme;
       await _tapVisible(tester, const ValueKey('premium-benefits-details'));
       expect(find.byType(PurchaseDetailsPage), findsOneWidget);
       expect(
-        Theme.of(tester.element(find.byType(PurchaseDetailsPage))).brightness,
-        Brightness.dark,
+        Theme.of(tester.element(find.byType(PurchaseDetailsPage))).colorScheme,
+        pageColors,
       );
       expect(find.text('会员不提供书籍内容或书源地址，第三方服务可能另行收费。'), findsOneWidget);
       Navigator.of(

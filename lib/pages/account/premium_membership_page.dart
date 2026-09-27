@@ -37,7 +37,6 @@ class PremiumMembershipPage extends StatelessWidget {
         return StoreReaderUnlockPage(account: account);
       }
       return PurchasePageTheme(
-        premium: true,
         child: _PremiumMembershipContent(
           account: account,
           focusBilling: focusBilling,
@@ -661,7 +660,6 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => PurchasePageTheme(
-          premium: true,
           child: PurchaseDetailsPage(
             title: l10n.premiumBenefitsTitle,
             children: [
@@ -694,7 +692,6 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => PurchasePageTheme(
-          premium: true,
           child: PurchaseDetailsPage(
             title: l10n.purchaseDetailsTitle,
             children: [

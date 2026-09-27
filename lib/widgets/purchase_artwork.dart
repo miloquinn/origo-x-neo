@@ -57,16 +57,17 @@ class PurchaseArtwork extends StatelessWidget {
     child: Transform.rotate(angle: angle * math.pi / 180, child: child),
   );
 
-  BoxDecoration _paperDecoration({
-    Color color = const Color(0xfffffdf5),
+  BoxDecoration _paperDecoration(
+    BuildContext context, {
+    Color? color,
     double radius = 5,
   }) => BoxDecoration(
-    color: color,
+    color: color ?? Theme.of(context).colorScheme.surfaceContainerHigh,
     borderRadius: BorderRadius.circular(radius),
-    border: Border.all(color: const Color(0xffe6e5d9)),
+    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
     boxShadow: const [
       BoxShadow(
-        color: Color(0x29404935),
+        color: Color(0x29000000),
         blurRadius: 22,
         offset: Offset(3, 13),
       ),
@@ -74,6 +75,7 @@ class PurchaseArtwork extends StatelessWidget {
   );
 
   Widget _book(
+    BuildContext context,
     String image, {
     double width = 122,
     double height = 169,
@@ -84,7 +86,7 @@ class PurchaseArtwork extends StatelessWidget {
       borderRadius: const BorderRadius.horizontal(right: Radius.circular(6)),
       boxShadow: const [
         BoxShadow(
-          color: Color(0x5027352f),
+          color: Color(0x50000000),
           blurRadius: 17,
           offset: Offset(9, 13),
         ),
@@ -99,8 +101,9 @@ class PurchaseArtwork extends StatelessWidget {
             image,
             fit: BoxFit.cover,
             cacheWidth: 420,
-            errorBuilder: (_, _, _) =>
-                const ColoredBox(color: Color(0xffbcc3ab)),
+            errorBuilder: (_, _, _) => ColoredBox(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
           ),
           const DecoratedBox(
             decoration: BoxDecoration(
@@ -148,22 +151,22 @@ class PurchaseArtwork extends StatelessWidget {
     width: width,
     height: 192,
     padding: const EdgeInsets.all(17),
-    decoration: _paperDecoration(),
+    decoration: _paperDecoration(context),
     child: DefaultTextStyle.merge(
-      style: const TextStyle(
-        color: Color(0xff475347),
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
         fontSize: 10,
         height: 1.8,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'ORIGO READING',
             style: TextStyle(
               fontSize: 7,
               letterSpacing: 1.2,
-              color: Color(0xff889180),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 11),
@@ -175,7 +178,7 @@ class PurchaseArtwork extends StatelessWidget {
           ),
           const SizedBox(height: 9),
           Container(
-            color: const Color(0xffdce2c9),
+            color: Theme.of(context).colorScheme.primaryContainer,
             child: Text(
               context.l10n.basicEditorialSubtitle,
               maxLines: 2,
@@ -190,11 +193,14 @@ class PurchaseArtwork extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Align(
+          Align(
             alignment: Alignment.centerRight,
             child: Text(
               '24 / 168',
-              style: TextStyle(fontSize: 7, color: Color(0xff8a9183)),
+              style: TextStyle(
+                fontSize: 7,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -205,7 +211,12 @@ class PurchaseArtwork extends StatelessWidget {
   Widget _reading(BuildContext context) => Stack(
     clipBehavior: Clip.none,
     children: [
-      _layer(left: 30, top: 26, angle: -12, child: _book(imageAssets[0])),
+      _layer(
+        left: 30,
+        top: 26,
+        angle: -12,
+        child: _book(context, imageAssets[0]),
+      ),
       _layer(left: 153, top: 9, angle: 8, child: _paper(context)),
       _layer(
         left: 15,
@@ -213,19 +224,19 @@ class PurchaseArtwork extends StatelessWidget {
         angle: -4,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-          decoration: _paperDecoration(radius: 12),
+          decoration: _paperDecoration(context, radius: 12),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 PurchaseIcons.textAa,
                 size: 27,
-                color: Color(0xff475347),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               const SizedBox(width: 13),
               for (final color in [
-                const Color(0xffd7ddc1),
-                const Color(0xffd8c29e),
-                const Color(0xff294039),
+                Theme.of(context).colorScheme.primaryContainer,
+                Theme.of(context).colorScheme.secondaryContainer,
+                Theme.of(context).colorScheme.primary,
               ])
                 Padding(
                   padding: const EdgeInsets.only(right: 5),
@@ -251,7 +262,7 @@ class PurchaseArtwork extends StatelessWidget {
         left: 100,
         top: 13,
         angle: -7,
-        child: _book(imageAssets[1], width: 136, height: 178),
+        child: _book(context, imageAssets[1], width: 136, height: 178),
       ),
       _layer(
         left: 232,
@@ -261,24 +272,25 @@ class PurchaseArtwork extends StatelessWidget {
           width: 93,
           padding: const EdgeInsets.all(11),
           decoration: _paperDecoration(
-            color: const Color(0xffeceddf),
+            context,
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
             radius: 12,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
+              Icon(
                 PurchaseIcons.sparkle,
                 size: 19,
-                color: Color(0xff475347),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               const SizedBox(height: 7),
               Text(
                 context.l10n.basicAiTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   height: 1.6,
-                  color: Color(0xff475347),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -291,16 +303,16 @@ class PurchaseArtwork extends StatelessWidget {
         child: Container(
           width: 306,
           padding: const EdgeInsets.all(13),
-          decoration: _paperDecoration(radius: 15),
+          decoration: _paperDecoration(context, radius: 15),
           child: Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 16,
-                backgroundColor: Color(0xff36523f),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 child: Icon(
                   PurchaseIcons.play,
                   size: 15,
-                  color: Color(0xfff6f4ed),
+                  color: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -340,7 +352,7 @@ class PurchaseArtwork extends StatelessWidget {
                           width: 3,
                           height: h.toDouble(),
                           decoration: BoxDecoration(
-                            color: const Color(0xff748d6d),
+                            color: Theme.of(context).colorScheme.primary,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -349,9 +361,12 @@ class PurchaseArtwork extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 '1.0×',
-                style: TextStyle(fontSize: 9, color: Color(0xff6c7c68)),
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -371,30 +386,33 @@ class PurchaseArtwork extends StatelessWidget {
         child: Container(
           width: 155,
           padding: const EdgeInsets.all(16),
-          decoration: _paperDecoration(color: const Color(0xffdce4cf)),
+          decoration: _paperDecoration(
+            context,
+            color: Theme.of(context).colorScheme.primaryContainer,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 PurchaseIcons.quotes,
                 size: 19,
-                color: Color(0xff81906f),
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
               const SizedBox(height: 9),
               Text(
                 context.l10n.basicNotesHeadline,
-                style: const TextStyle(
-                  color: Color(0xff475347),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 15,
                   height: 1.5,
                 ),
               ),
               const SizedBox(height: 10),
-              const Icon(
+              Icon(
                 PurchaseIcons.cloudArrowUp,
                 size: 17,
-                color: Color(0xff81906f),
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
             ],
           ),
@@ -409,12 +427,14 @@ class PurchaseArtwork extends StatelessWidget {
         height: 83,
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: const Color(0xff354d3d),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: const Color(0xff71866b)),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x44102019),
+              color: Color(0x44000000),
               blurRadius: 18,
               offset: Offset(0, 9),
             ),
@@ -423,14 +443,14 @@ class PurchaseArtwork extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 23, color: const Color(0xffd5dfc8)),
+            Icon(icon, size: 23, color: Theme.of(context).colorScheme.primary),
             const Spacer(),
             Text(
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xffe1e7d5),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 9,
                 height: 1.3,
               ),
@@ -441,7 +461,13 @@ class PurchaseArtwork extends StatelessWidget {
 
   Widget _extensions(BuildContext context) => Stack(
     children: [
-      Positioned.fill(child: CustomPaint(painter: const _Orbits())),
+      Positioned.fill(
+        child: CustomPaint(
+          painter: _Orbits(
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.24),
+          ),
+        ),
+      ),
       _layer(
         left: 14,
         top: 23,
@@ -466,24 +492,24 @@ class PurchaseArtwork extends StatelessWidget {
           width: 83,
           height: 83,
           decoration: BoxDecoration(
-            color: const Color(0xff3c5744),
+            color: Theme.of(context).colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xff92a484)),
+            border: Border.all(color: Theme.of(context).colorScheme.primary),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x66102019),
+                color: Color(0x66000000),
                 blurRadius: 24,
                 offset: Offset(0, 13),
               ),
             ],
           ),
           alignment: Alignment.center,
-          child: const Text(
+          child: Text(
             'O',
             style: TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.w300,
-              color: Color(0xffece8d1),
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
             ),
           ),
         ),
@@ -493,6 +519,7 @@ class PurchaseArtwork extends StatelessWidget {
         top: 164,
         angle: -7,
         child: _networkCaption(
+          context,
           PurchaseIcons.graph,
           context.l10n.basicSourcesTitle,
         ),
@@ -502,6 +529,7 @@ class PurchaseArtwork extends StatelessWidget {
         top: 179,
         angle: 7,
         child: _networkCaption(
+          context,
           PurchaseIcons.cloudArrowUp,
           context.l10n.settingsPrivateBookSourceNetworkTitle,
         ),
@@ -509,38 +537,50 @@ class PurchaseArtwork extends StatelessWidget {
     ],
   );
 
-  Widget _networkCaption(IconData icon, String label) => Container(
-    constraints: const BoxConstraints(maxWidth: 126),
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    decoration: BoxDecoration(
-      color: const Color(0xff435b43),
-      borderRadius: BorderRadius.circular(9),
-      border: Border.all(color: const Color(0xff6a7c60)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: const Color(0xffdde6ce)),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 9, color: Color(0xffdde6ce)),
+  Widget _networkCaption(BuildContext context, IconData icon, String label) =>
+      Container(
+        constraints: const BoxConstraints(maxWidth: 126),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _Orbits extends CustomPainter {
-  const _Orbits();
+  const _Orbits(this.color);
+
+  final Color color;
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0x339aaf85)
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     canvas.translate(size.width / 2, size.height / 2);
@@ -557,5 +597,5 @@ class _Orbits extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_Orbits oldDelegate) => false;
+  bool shouldRepaint(_Orbits oldDelegate) => oldDelegate.color != color;
 }
