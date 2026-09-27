@@ -8,14 +8,30 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/pages/account/premium_membership_page.dart';
+import 'package:xxread/pages/account/store_reader_unlock_page.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/core/core_services.dart';
 import 'package:xxread/services/backup/webdav_backup_controller.dart';
-import 'package:xxread/widgets/premium_card_style.dart';
 
-import 'support/premium_account.dart';
+class _TieredTestAccount extends MemberAccountController {
+  bool _explore = false;
+  bool _reader = false;
+
+  @override
+  bool get hasPremiumAccess => _explore;
+
+  @override
+  bool get hasPermanentReaderAccess => _reader;
+
+  void setEntitlements({required bool reader, required bool explore}) {
+    _reader = reader;
+    _explore = explore;
+    notifyListeners();
+  }
+}
 
 class _FakeCacheManager extends AppCacheManager {
   @override
@@ -66,7 +82,7 @@ void main() {
         tester.view.physicalSize = Size(width, 5000);
         addTearDown(tester.view.reset);
         SharedPreferences.setMockInitialValues({});
-        final account = PremiumTestAccount(premium: false);
+        final account = _TieredTestAccount();
         final appSettings = (await tester.runAsync(() async {
           final settings = AppSettingsNotifier(account: account);
           final loaded = Completer<void>();
@@ -132,29 +148,36 @@ void main() {
         }
 
         expectSection(false);
-        expect(find.text(l10n.accountSupportAction), findsOneWidget);
-        final inactiveCardHeight = tester
-            .getSize(
-              find.byKey(const ValueKey('settings-combined-account-card')),
-            )
-            .height;
+        expect(find.text(l10n.storeReaderLicenseTitle), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('settings-reader-license')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('settings-membership-entry')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('settings-explore-entitlement')),
+          findsNothing,
+        );
         await tester.tap(
           find.byKey(const ValueKey('settings-category-contentServices')),
         );
         await tester.pumpAndSettle();
         expect(find.text(l10n.bookSourceManagementTitle), findsOneWidget);
-        account.setPremium(true);
+        account.setEntitlements(reader: true, explore: true);
         await tester.pump();
         expectSection(true);
         expect(appSettings.additionalSourceProtocolsEnabled, isTrue);
         expect(appSettings.privateBookSourceNetworkEnabled, isTrue);
-        account.setPremium(false);
+        account.setEntitlements(reader: false, explore: false);
         await tester.pump();
         expectSection(false);
         expect(appSettings.additionalSourceProtocolsEnabled, isFalse);
         await tester.pageBack();
         await tester.pumpAndSettle();
-        account.setPremium(true);
+        account.setEntitlements(reader: true, explore: true);
         await tester.pump();
         expect(find.text(l10n.settingsPremiumActive), findsNothing);
         expect(find.text(l10n.accountSupportAction), findsNothing);
@@ -163,25 +186,22 @@ void main() {
           findsNothing,
         );
         expect(
+          find.byKey(const ValueKey('settings-reader-license')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('settings-explore-entitlement')),
+          findsOneWidget,
+        );
+        expect(
           find.byKey(const ValueKey('settings-account-premium-badge')),
           findsOneWidget,
         );
         final memberCard = tester.widget<Container>(
           find.byKey(const ValueKey('settings-combined-account-card')),
         );
-        expect(
-          (memberCard.decoration! as BoxDecoration).gradient,
-          premiumCardGradient,
-        );
-        expect(
-          tester
-              .getSize(
-                find.byKey(const ValueKey('settings-combined-account-card')),
-              )
-              .height,
-          lessThan(inactiveCardHeight),
-        );
-        account.setPremium(false);
+        expect((memberCard.decoration! as BoxDecoration).gradient, isNull);
+        account.setEntitlements(reader: true, explore: false);
         await tester.pump();
         expect(find.text(l10n.accountSupportAction), findsOneWidget);
         expect(
@@ -189,9 +209,37 @@ void main() {
           findsOneWidget,
         );
         expect(
+          find.byKey(const ValueKey('settings-reader-license')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('settings-explore-entitlement')),
+          findsNothing,
+        );
+        expect(
           find.byKey(const ValueKey('settings-account-premium-badge')),
           findsNothing,
         );
+        await tester.tap(
+          find.byKey(const ValueKey('settings-membership-entry')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(PremiumMembershipPage), findsOneWidget);
+        expect(
+          tester
+              .widget<PremiumMembershipPage>(find.byType(PremiumMembershipPage))
+              .focusBilling,
+          isTrue,
+        );
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        account.setEntitlements(reader: false, explore: false);
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('settings-reader-license')));
+        await tester.pumpAndSettle();
+        expect(find.byType(StoreReaderUnlockPage), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
         await tester.tap(
           find.byKey(const ValueKey('settings-category-dataSync')),
         );

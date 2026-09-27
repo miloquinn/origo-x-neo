@@ -73,7 +73,7 @@ void main() {
   });
 
   for (final channel in AppDistributionChannel.values) {
-    testWidgets('$channel always exposes Explore while keeping reader status', (
+    testWidgets('$channel shows exactly one next membership step', (
       tester,
     ) async {
       AppDistribution.debugOverride(channel: channel);
@@ -106,7 +106,7 @@ void main() {
         const ValueKey('settings-explore-entitlement'),
       );
       expect(reader, store ? findsOneWidget : findsNothing);
-      expect(upgrade, findsOneWidget);
+      expect(upgrade, store ? findsNothing : findsOneWidget);
       expect(explore, findsNothing);
 
       // Store testing access is temporary and must not impersonate ownership.
@@ -114,7 +114,8 @@ void main() {
       await tester.pump();
       expect(badge, findsNothing);
       expect(explore, findsNothing);
-      expect(upgrade, findsOneWidget);
+      expect(reader, store ? findsOneWidget : findsNothing);
+      expect(upgrade, store ? findsNothing : findsOneWidget);
 
       // Explore includes reading, even when no separate Read purchase exists.
       account.update(ownsApp: false, ownsPremium: true);
@@ -129,6 +130,7 @@ void main() {
       account.update(ownsApp: true, ownsPremium: false);
       await tester.pump();
       expect(upgrade, findsOneWidget);
+      expect(reader, findsNothing);
       expect(badge, findsNothing);
 
       account.update(ownsApp: true, ownsPremium: true);
@@ -141,18 +143,23 @@ void main() {
     });
   }
 
-  testWidgets(
-    'exports the Explore account card when requested',
-    (tester) async {
+  for (final layout in [
+    (name: 'read', read: false, explore: false, dark: false, scale: 1.0),
+    (name: 'upgrade', read: true, explore: false, dark: false, scale: 1.0),
+    (name: 'explore', read: true, explore: true, dark: false, scale: 1.0),
+    (name: 'dark', read: true, explore: false, dark: true, scale: 1.0),
+    (name: 'large', read: true, explore: true, dark: false, scale: 1.6),
+  ]) {
+    testWidgets('aligned compact account card ${layout.name}', (tester) async {
       AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
       addTearDown(AppDistribution.debugReset);
-      tester.view.physicalSize = const Size(390, 844);
+      tester.view.physicalSize = Size(layout.scale > 1 ? 320 : 390, 300);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final account = _Account()..update(ownsApp: false, ownsPremium: true);
+      final account = _Account()
+        ..update(ownsApp: layout.read, ownsPremium: layout.explore);
       addTearDown(account.dispose);
       final boundaryKey = GlobalKey();
-
       await tester.pumpWidget(
         ChangeNotifierProvider<MemberAccountController>.value(
           value: account,
@@ -162,22 +169,27 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF3569A4),
+                seedColor: layout.dark
+                    ? const Color(0xFF8859BA)
+                    : const Color(0xFF3569A4),
+                brightness: layout.dark ? Brightness.dark : Brightness.light,
               ),
               fontFamily: _previewFontPath == null
                   ? null
                   : 'AccountCardPreview',
             ),
-            builder: (context, child) =>
-                RepaintBoundary(key: boundaryKey, child: child),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(layout.scale)),
+              child: RepaintBoundary(key: boundaryKey, child: child),
+            ),
             home: const Scaffold(
-              body: SafeArea(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(20, 28, 20, 24),
-                  child: SettingsAccountCard(
-                    quiet: true,
-                    showMembershipSection: true,
-                  ),
+              body: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(20, 28, 20, 24),
+                child: SettingsAccountCard(
+                  quiet: true,
+                  showMembershipSection: true,
                 ),
               ),
             ),
@@ -185,18 +197,26 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-
-      final directory = Directory(_screenshotDirectory!);
-      await tester.runAsync(() => directory.create(recursive: true));
-      await _capture(
-        tester,
-        boundaryKey,
-        '${directory.path}/settings-account-explore.png',
-      );
       expect(tester.takeException(), isNull);
-    },
-    skip: _screenshotDirectory == null,
-  );
+      final name = find.byKey(const ValueKey('settings-account-name'));
+      final membership = find.byKey(
+        const ValueKey('settings-membership-title'),
+      );
+      expect(tester.getTopLeft(name).dx, tester.getTopLeft(membership).dx);
+      expect(
+        tester
+            .getSize(
+              find.byKey(const ValueKey('settings-combined-account-card')),
+            )
+            .height,
+        lessThan(layout.scale > 1 ? 240 : 200),
+      );
+      if (_screenshotDirectory case final path?) {
+        await tester.runAsync(() => Directory(path).create(recursive: true));
+        await _capture(tester, boundaryKey, '$path/account-${layout.name}.png');
+      }
+    });
+  }
 }
 
 Future<void> _capture(WidgetTester tester, GlobalKey key, String path) async {

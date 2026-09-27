@@ -261,7 +261,7 @@ void main() {
         of: find.byKey(const ValueKey('settings-combined-account-card')),
         matching: find.byType(Divider),
       ),
-      findsNothing,
+      findsOneWidget,
     );
     expect(find.byKey(const ValueKey('settings-premium-card')), findsNothing);
     expect(find.text(l10n.settingsVolumeKeyTurnTitle), findsNothing);
