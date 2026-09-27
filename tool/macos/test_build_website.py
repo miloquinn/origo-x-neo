@@ -1,6 +1,7 @@
 import contextlib
 import io
 from pathlib import Path
+import plistlib
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -16,6 +17,7 @@ class BuildWebsiteTests(unittest.TestCase):
         self.root = Path(self.temp.name) / 'repo'
         (self.root / 'macos/Runner.xcworkspace').mkdir(parents=True)
         (self.root / 'pubspec.yaml').write_text('version: 2.6.7+260908001\n')
+        self.write_entitlements()
         for context in [
             patch.object(build, 'ROOT', self.root),
             patch.object(dist, 'ROOT', self.root),
@@ -28,6 +30,26 @@ class BuildWebsiteTests(unittest.TestCase):
         ]:
             context.start()
             self.addCleanup(context.stop)
+
+    def write_entitlements(self, *, website_native_sign_in=False, website_extra=None):
+        runner = self.root / 'macos/Runner'
+        runner.mkdir(parents=True, exist_ok=True)
+        common = {
+            'com.apple.developer.associated-domains': [
+                'webcredentials:open.xxread.top',
+            ],
+            'com.apple.security.app-sandbox': True,
+            'com.apple.security.network.client': True,
+        }
+        store = dict(common)
+        store[build.NATIVE_SIGN_IN_ENTITLEMENT] = ['Default']
+        website = dict(common)
+        if website_native_sign_in:
+            website[build.NATIVE_SIGN_IN_ENTITLEMENT] = ['Default']
+        if website_extra:
+            website.update(website_extra)
+        (self.root / build.STORE_ENTITLEMENTS).write_bytes(plistlib.dumps(store))
+        (self.root / build.WEBSITE_ENTITLEMENTS).write_bytes(plistlib.dumps(website))
 
     def write_defines(self, *assignments):
         xcconfig = dist.GENERATED_XCCONFIG
@@ -47,6 +69,23 @@ class BuildWebsiteTests(unittest.TestCase):
         with patch.object(build, 'run_step') as run, contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(build.execute(build.parser().parse_args(['--check'])), 0)
             run.assert_not_called()
+
+    def test_website_entitlements_remove_only_unsupported_native_sign_in(self):
+        build.verify_website_entitlements()
+        store = build.read_entitlements(build.STORE_ENTITLEMENTS)
+        website = build.read_entitlements(build.WEBSITE_ENTITLEMENTS)
+        self.assertIn(build.NATIVE_SIGN_IN_ENTITLEMENT, store)
+        self.assertNotIn(build.NATIVE_SIGN_IN_ENTITLEMENT, website)
+
+    def test_website_entitlements_reject_native_sign_in(self):
+        self.write_entitlements(website_native_sign_in=True)
+        with self.assertRaisesRegex(build.BuildError, 'except for unsupported'):
+            build.verify_website_entitlements()
+
+    def test_website_entitlements_reject_other_channel_drift(self):
+        self.write_entitlements(website_extra={'com.example.unexpected': True})
+        with self.assertRaisesRegex(build.BuildError, 'except for unsupported'):
+            build.verify_website_entitlements()
 
     def test_rejects_store_define_in_command(self):
         with self.assertRaisesRegex(build.BuildError, 'must not pass'):

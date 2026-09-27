@@ -535,6 +535,105 @@ void main() {
     _resetPlatform();
   });
 
+  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    testWidgets(
+      'direct $platform opens the configured Explore shop externally',
+      (tester) async {
+        _usePlatform(platform);
+        AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+        const purchaseUrl = 'https://shop.example.test/origo-explore';
+        const launcher = MethodChannel('plugins.flutter.io/url_launcher');
+        final launches = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(launcher, (call) async {
+              launches.add(call);
+              return true;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(launcher, null);
+        });
+        final store = _FakeAppleStore();
+        final account = _TestAccount(store: store, purchaseUrl: purchaseUrl);
+        addTearDown(account.dispose);
+        addTearDown(store.close);
+
+        await _pumpPage(tester, account: account);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('premium-direct-purchase')),
+          findsOneWidget,
+        );
+        await _tapVisible(tester, const ValueKey('premium-direct-purchase'));
+
+        expect(launches, hasLength(1));
+        expect(launches.single.method, 'launch');
+        final arguments = launches.single.arguments! as Map<Object?, Object?>;
+        expect(arguments['url'], purchaseUrl);
+        expect(arguments['useSafariVC'], isFalse);
+        expect(arguments['useWebView'], isFalse);
+        expect(tester.takeException(), isNull);
+        _resetPlatform();
+      },
+    );
+  }
+
+  for (final channel in [
+    AppDistributionChannel.googlePlay,
+    AppDistributionChannel.appleStore,
+  ]) {
+    testWidgets('$channel never exposes the direct Explore shop', (
+      tester,
+    ) async {
+      final platform = channel == AppDistributionChannel.googlePlay
+          ? TargetPlatform.android
+          : TargetPlatform.iOS;
+      _usePlatform(platform);
+      AppDistribution.debugOverride(channel: channel);
+      final store = _FakeAppleStore();
+      final account = _TestAccount(
+        store: store,
+        purchaseUrl: 'https://shop.example.test/origo-explore',
+      );
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+
+      await _pumpPage(tester, account: account);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('premium-direct-purchase')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+      _resetPlatform();
+    });
+  }
+
+  testWidgets('active direct member is not offered Explore again', (
+    tester,
+  ) async {
+    _usePlatform(TargetPlatform.android);
+    AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+    final store = _FakeAppleStore();
+    final account = _TestAccount(
+      store: store,
+      premium: true,
+      purchaseUrl: 'https://shop.example.test/origo-explore',
+    );
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('premium-direct-purchase')), findsNothing);
+    expect(find.byKey(const ValueKey('premium-active')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    _resetPlatform();
+  });
+
   testWidgets('active Android membership has no empty purchase panel', (
     tester,
   ) async {
@@ -918,6 +1017,7 @@ class _TestAccount extends MemberAccountController {
     this.authenticated = true,
     this.purchaseLoadingOverride,
     this.purchasePhaseOverride,
+    this.purchaseUrl,
   }) : super(purchaseStore: store);
 
   final bool premium;
@@ -929,6 +1029,7 @@ class _TestAccount extends MemberAccountController {
   final bool authenticated;
   final bool? purchaseLoadingOverride;
   final StorePurchasePhase? purchasePhaseOverride;
+  final String? purchaseUrl;
 
   @override
   bool get hasPermanentReaderAccess => permanentReader;
@@ -945,6 +1046,7 @@ class _TestAccount extends MemberAccountController {
   MemberMembershipConfig get membershipConfig => MemberMembershipConfig(
     product: 'premium_lifetime',
     features: const [],
+    purchaseUrl: purchaseUrl,
     googleProductId: MemberAccountController.appleProductId,
     premiumGoogleProductId: MemberAccountController.appleProductId,
     premiumAppleProductId: MemberAccountController.appleProductId,

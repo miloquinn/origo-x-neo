@@ -16,6 +16,12 @@ def workflow_fragment(start, end):
 
 
 class ReleaseVersioningPolicyTest(unittest.TestCase):
+    def test_unsigned_ios_is_a_free_direct_download(self):
+        ios_job = WORKFLOW[WORKFLOW.index('  ios:'):WORKFLOW.index('  publish:')]
+        self.assertIn('--dart-define=ORIGO_DISTRIBUTION_CHANNEL=direct', ios_job)
+        self.assertIn('--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=false', ios_job)
+        self.assertNotIn('ORIGO_DISTRIBUTION_CHANNEL=appleStore', ios_job)
+
     def test_version_then_numeric_build_order(self):
         source = workflow_fragment('          SEMVER = re.compile(', '          metadata = json.loads(')
         namespace = {'re': re}

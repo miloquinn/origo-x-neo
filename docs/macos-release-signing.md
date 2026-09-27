@@ -13,7 +13,7 @@ Mac App Store 包必须走另一条脚本，见 [App Store 对接与发布](app-
 | `OPEN_READING_MACOS_APP_STORE` | `false` | `true` |
 | `ORIGO_DISTRIBUTION_CHANNEL` | `direct` | `appleStore` |
 | `ORIGO_STORE_READER_LICENSE_REQUIRED` | `false` | `true` |
-| 高级版购买 | 卡密 / 小店 | App Store 内购 |
+| 探元购买 | 卡密 / 小店 | App Store 内购 |
 | 应用内更新 | 官网 / GitHub 检查更新 | 仅 App Store 更新 |
 | CI | `.github/workflows/release.yml` 的 `macos` job | 不进 GitHub Release；本地脚本归档/上传 |
 
@@ -111,3 +111,9 @@ python3 -m unittest discover -s tool/macos -p 'test_*.py' -v
 bash -n tool/macos/build_website.sh
 bash -n tool/macos/build_app_store.sh
 ```
+
+## 2026-09-27 官网签名边界
+
+官网包使用 `macos/Runner/WebsiteRelease.entitlements`，保留沙盒、选取文件、网络与关联域权限，不携带 Mac App Store 原生 Apple 登录 entitlement。
+`tool/macos/prepare_release_entitlements.py` 在构建前验证 Developer ID profile 授权并生成最终签名权限；不得将 profile 不支持的原生登录权限重新复制进去。
+官网 macOS 登录沿用浏览器 OAuth；签名、stapling、Gatekeeper 验证必须全部通过才发布。

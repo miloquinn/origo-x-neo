@@ -588,9 +588,6 @@ jobs:
           echo "MACOS_SIGNING_IDENTITY=$signing_identity" >> "$GITHUB_ENV"
           echo "MACOS_SIGNING_SERIAL=$signing_serial" >> "$GITHUB_ENV"
 
-      - name: Build website macOS release
-        run: bash tool/macos/build_website.sh --no-pub
-
       - name: Prepare macOS Developer ID provisioning profile
         shell: bash
         env:
@@ -619,8 +616,16 @@ jobs:
           if serial.upper() != os.environ['MACOS_SIGNING_SERIAL'].upper():
               raise SystemExit('Provisioning profile does not include the imported Developer ID certificate')
           PY
+          signed_entitlements="${RUNNER_TEMP}/OrigoX-release-entitlements.plist"
+          python3 tool/macos/prepare_release_entitlements.py \
+            --requested macos/Runner/WebsiteRelease.entitlements \
+            --profile "$profile_plist" \
+            --output "$signed_entitlements"
           echo "MACOS_PROVISIONING_PROFILE=$profile_path" >> "$GITHUB_ENV"
-          echo "MACOS_PROFILE_PLIST=$profile_plist" >> "$GITHUB_ENV"
+          echo "MACOS_RELEASE_ENTITLEMENTS=$signed_entitlements" >> "$GITHUB_ENV"
+
+      - name: Build website macOS release
+        run: bash tool/macos/build_website.sh --no-pub
 
       - name: Sign macOS application with hardened runtime
         shell: bash
@@ -636,19 +641,6 @@ jobs:
           fi
 
           cp "$MACOS_PROVISIONING_PROFILE" "$app_path/Contents/embedded.provisionprofile"
-          signed_entitlements="${RUNNER_TEMP}/OrigoX-release-entitlements.plist"
-          RELEASE_ENTITLEMENTS='macos/Runner/Release.entitlements' PROFILE_PLIST="$MACOS_PROFILE_PLIST" OUTPUT_ENTITLEMENTS="$signed_entitlements" python3 <<'PY'
-          import os, plistlib
-          with open(os.environ['RELEASE_ENTITLEMENTS'], 'rb') as stream:
-              requested = plistlib.load(stream)
-          with open(os.environ['PROFILE_PLIST'], 'rb') as stream:
-              granted = plistlib.load(stream)['Entitlements']
-          for key in ('com.apple.application-identifier', 'com.apple.developer.team-identifier', 'com.apple.developer.applesignin'):
-              if key in granted:
-                  requested[key] = granted[key]
-          with open(os.environ['OUTPUT_ENTITLEMENTS'], 'wb') as stream:
-              plistlib.dump(requested, stream, fmt=plistlib.FMT_XML, sort_keys=False)
-          PY
 
           while IFS= read -r -d '' nested_code; do
             codesign --force \
@@ -674,7 +666,7 @@ jobs:
             --options runtime \
             --timestamp \
             --keychain "$MACOS_SIGNING_KEYCHAIN" \
-            --entitlements "$signed_entitlements" \
+            --entitlements "$MACOS_RELEASE_ENTITLEMENTS" \
             --sign "$MACOS_SIGNING_IDENTITY" \
             "$app_path"
           codesign --verify --deep --strict --verbose=2 "$app_path"
@@ -808,8 +800,8 @@ jobs:
       - name: Build iOS release without code signing
         run: >-
           flutter build ios --release --no-codesign
-          --dart-define=ORIGO_DISTRIBUTION_CHANNEL=appleStore
-          --dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=true
+          --dart-define=ORIGO_DISTRIBUTION_CHANNEL=direct
+          --dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=false
 
       - name: Package and validate unsigned IPA
         shell: bash

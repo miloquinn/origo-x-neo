@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
+import plistlib
 import shutil
 import subprocess
 import sys
@@ -16,6 +18,11 @@ class BuildError(Exception):
     pass
 
 
+STORE_ENTITLEMENTS = Path('macos/Runner/Release.entitlements')
+WEBSITE_ENTITLEMENTS = Path('macos/Runner/WebsiteRelease.entitlements')
+NATIVE_SIGN_IN_ENTITLEMENT = 'com.apple.developer.applesignin'
+
+
 def parser():
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument('--check', action='store_true', help='Read-only local prerequisite check')
@@ -23,11 +30,38 @@ def parser():
     return result
 
 
+def read_entitlements(relative_path):
+    path = ROOT / relative_path
+    try:
+        with path.open('rb') as stream:
+            value = plistlib.load(stream)
+    except (OSError, plistlib.InvalidFileException) as error:
+        raise BuildError(f'Unable to read macOS entitlements: {relative_path}') from error
+    if not isinstance(value, dict):
+        raise BuildError(f'macOS entitlements must contain a dictionary: {relative_path}')
+    return value
+
+
+def verify_website_entitlements():
+    store = read_entitlements(STORE_ENTITLEMENTS)
+    website = read_entitlements(WEBSITE_ENTITLEMENTS)
+    if store.get(NATIVE_SIGN_IN_ENTITLEMENT) != ['Default']:
+        raise BuildError('Mac App Store release entitlements must keep native Sign in with Apple')
+    expected = dict(store)
+    del expected[NATIVE_SIGN_IN_ENTITLEMENT]
+    if website != expected:
+        raise BuildError(
+            'Website release entitlements must match Mac App Store release entitlements '
+            'except for unsupported native Sign in with Apple'
+        )
+
+
 def check_inputs():
     if shutil.which('flutter') is None:
         raise BuildError('Required tool is missing: flutter')
     if not (ROOT / 'macos/Runner.xcworkspace').is_dir():
         raise BuildError('macos/Runner.xcworkspace is missing')
+    verify_website_entitlements()
 
 
 def run_step(label, command, log=None, cwd=ROOT):

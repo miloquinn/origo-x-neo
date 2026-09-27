@@ -545,14 +545,16 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
             onPressed: busy ? null : _redeem,
             child: Text(l10n.accountRedeemPremium),
           ),
-          if (account.membershipConfig?.purchaseUrl case final url?)
-            TextButton(
-              onPressed: () => _openUrl(
-                Uri.parse(url),
-                mode: LaunchMode.externalApplication,
+          if (AppDistribution.allowsExternalSupport)
+            if (account.membershipConfig?.purchaseUrl case final url?)
+              TextButton(
+                key: const ValueKey('premium-direct-purchase'),
+                onPressed: () => _openUrl(
+                  Uri.parse(url),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Text(l10n.accountSupportAction),
               ),
-              child: Text(l10n.accountSupportAction),
-            ),
         ] else
           _activeBadge(),
         if (_usesStoreBilling && account.isAuthenticated)

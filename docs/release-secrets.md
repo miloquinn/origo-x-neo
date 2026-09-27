@@ -52,13 +52,13 @@ Every release build declares its commerce channel at compile time with
 
 | Artifact | Value | Purchase route |
 | --- | --- | --- |
-| Website/GitHub APK, desktop and web | `direct` | Website redemption |
+| Website/GitHub APK, unsigned IPA, desktop and web | `direct` | Website redemption |
 | Google Play AAB | `googlePlay` | Google Play Billing |
-| iOS and Mac App Store | `appleStore` | StoreKit |
+| iOS App Store / TestFlight and Mac App Store | `appleStore` | StoreKit |
 
 An unknown value or a channel that does not match the target platform is a
 configuration error. Legacy builds with no value keep the previous behavior:
-iOS uses StoreKit, Android and non-store desktop builds use direct distribution,
+Unspecified iOS builds use StoreKit; the unsigned GitHub IPA explicitly uses direct distribution. Android and non-store desktop builds use direct distribution,
 and macOS can still detect a Mac App Store receipt.
 
 `ORIGO_STORE_READER_LICENSE_REQUIRED` is enabled (`true`) by store release

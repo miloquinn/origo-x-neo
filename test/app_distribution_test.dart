@@ -142,14 +142,34 @@ void main() {
     );
   });
 
+  test(
+    'explicit direct iOS has free Read without sandbox Explore access',
+    () async {
+      expect(
+        AppDistribution.debugResolveChannel(
+          configuredChannel: 'direct',
+          platform: TargetPlatform.iOS,
+        ),
+        AppDistributionChannel.direct,
+      );
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+      var storeCalls = 0;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(appleChannel, (call) async {
+            storeCalls++;
+            return 'sandbox';
+          });
+      await AppDistribution.initialize();
+      expect(AppDistribution.readerLicenseRequired, isFalse);
+      expect(AppDistribution.usesStoreBilling, isFalse);
+      expect(AppDistribution.allowsExternalSupport, isTrue);
+      expect(AppDistribution.isAppleTestEnvironment, isFalse);
+      expect(storeCalls, 0);
+    },
+  );
+
   test('configured channels must match their platform', () {
-    expect(
-      () => AppDistribution.debugResolveChannel(
-        configuredChannel: 'direct',
-        platform: TargetPlatform.iOS,
-      ),
-      throwsStateError,
-    );
     expect(
       () => AppDistribution.debugResolveChannel(
         configuredChannel: 'appleStore',

@@ -5,7 +5,8 @@ enum AppDistributionChannel { direct, googlePlay, appleStore }
 
 /// Distinguishes store commerce from website / GitHub distribution.
 ///
-/// iOS always uses StoreKit. macOS uses StoreKit only for Mac App Store
+/// iOS defaults to StoreKit; explicitly configured direct IPAs use website
+/// redemption. macOS uses StoreKit only for Mac App Store
 /// builds, identified by `--dart-define=OPEN_READING_MACOS_APP_STORE=true`
 /// or a live `_MASReceipt`. Direct Developer ID / notarized builds keep the
 /// website redemption-code flow. Android defaults to direct distribution;
@@ -117,6 +118,7 @@ class AppDistribution {
 
     return switch (platform) {
       TargetPlatform.iOS => switch (configured) {
+        AppDistributionChannel.direct => AppDistributionChannel.direct,
         null ||
         AppDistributionChannel.appleStore => AppDistributionChannel.appleStore,
         _ => throw StateError('$configuredChannel is not valid for iOS'),
@@ -191,6 +193,7 @@ class AppDistribution {
     _appleTestEnvironment = false;
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       _validateConfiguredChannel();
+      if (!usesAppleBilling) return;
       try {
         final environment = await _applePurchaseChannel
             .invokeMethod<String>('verifiedAppEnvironment')
