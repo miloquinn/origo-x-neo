@@ -3,6 +3,22 @@
     "entries": [
         {
             "version": "2.7.2",
+            "buildNumber": "260928001",
+            "notes": {
+                "zh": [
+                    "Android 与 iOS 接入 Google 官方登录，继续使用同一个 Origo 账号。",
+                    "改善登录取消、重试和账号切换保护，保留二次验证与已购权益。",
+                    "登录后更换邮箱只需验证新邮箱，优化会员卡片与购买状态同步。"
+                ],
+                "en": [
+                    "Use the official Google sign-in flow on Android and iOS with your existing Origo account.",
+                    "Improve cancellation, retries, and account-switch protection while preserving MFA and purchases.",
+                    "Verify only the new address when changing email after login, with improved membership cards and purchase-state synchronization."
+                ]
+            }
+        },
+        {
+            "version": "2.7.2",
             "buildNumber": "260927003",
             "notes": {
                 "zh": [

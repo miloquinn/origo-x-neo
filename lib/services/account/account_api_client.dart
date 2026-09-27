@@ -67,12 +67,20 @@ class MemberAccountApiClient {
   final Uri baseUri;
   Future<MemberSession>? _refreshing;
   Future<void>? _tokenMutationBarrier;
+  int _sessionIntentGeneration = 0;
   final StreamController<void> _sessionInvalidations =
       StreamController<void>.broadcast();
 
   /// Emits after the server explicitly rejects the refresh session and local
   /// credentials have been revoked. Transient network failures never emit.
   Stream<void> get sessionInvalidations => _sessionInvalidations.stream;
+
+  /// Prevents an in-flight identity response from becoming the current
+  /// session. This is synchronous so UI-level cancellation can win before a
+  /// platform account chooser or network request resumes.
+  void invalidatePendingAuthentication() {
+    _sessionIntentGeneration++;
+  }
 
   Future<MemberAuthConfig> authConfig() async => MemberAuthConfig.fromJson(
     await _jsonRequest('GET', '$authRoot/config', authenticated: false),
@@ -174,6 +182,11 @@ class MemberAccountApiClient {
         'password': password,
       });
 
+  Future<MemberSession> loginGoogle(String identityToken) => _sessionRequest(
+    '$authRoot/google/login',
+    {'identity_token': identityToken.trim()},
+  );
+
   Future<MemberEmailChallenge> requestCode(
     String email,
     MemberEmailCodePurpose purpose,
@@ -248,15 +261,20 @@ class MemberAccountApiClient {
     String? currentChallengeId,
     String? currentCode,
     String? currentPassword,
-  }) => _sessionRequest('$authRoot/security/email/change', {
-    'new_email': newEmail.trim(),
-    'new_challenge_id': newChallengeId,
-    'new_code': newCode.trim(),
-    'current_challenge_id': ?currentChallengeId,
-    if (currentCode != null) 'current_code': currentCode.trim(),
-    if (currentPassword?.isNotEmpty ?? false)
-      'current_password': currentPassword,
-  }, authenticated: true);
+  }) => _sessionRequest(
+    '$authRoot/security/email/change',
+    {
+      'new_email': newEmail.trim(),
+      'new_challenge_id': newChallengeId,
+      'new_code': newCode.trim(),
+      'current_challenge_id': ?currentChallengeId,
+      if (currentCode != null) 'current_code': currentCode.trim(),
+      if (currentPassword?.isNotEmpty ?? false)
+        'current_password': currentPassword,
+    },
+    authenticated: true,
+    establishesSession: false,
+  );
 
   Future<MemberEmailChallenge> requestPasswordChangeCode() async =>
       MemberEmailChallenge.fromJson(
@@ -267,11 +285,12 @@ class MemberAccountApiClient {
     required String challengeId,
     required String code,
     required String password,
-  }) => _sessionRequest('$authRoot/security/password/change', {
-    'challenge_id': challengeId,
-    'code': code.trim(),
-    'password': password,
-  }, authenticated: true);
+  }) => _sessionRequest(
+    '$authRoot/security/password/change',
+    {'challenge_id': challengeId, 'code': code.trim(), 'password': password},
+    authenticated: true,
+    establishesSession: false,
+  );
 
   Future<MemberAccountDeletionPreview> accountDeletionPreview() async =>
       MemberAccountDeletionPreview.fromJson(
@@ -304,7 +323,10 @@ class MemberAccountApiClient {
     return result['apple_manual_revocation_required'] == true;
   }
 
-  Future<void> clearLocalSession() => _clearLocalSession(notify: false);
+  Future<void> clearLocalSession() {
+    final intent = ++_sessionIntentGeneration;
+    return _clearLocalSession(notify: false, expectedSessionIntent: intent);
+  }
 
   Future<MemberMfaStatus> mfaStatus() async => MemberMfaStatus.fromJson(
     await _jsonRequest('GET', '$authRoot/security/mfa/status'),
@@ -614,6 +636,8 @@ class MemberAccountApiClient {
   );
 
   Future<void> logout() async {
+    // Invalidate in-flight identity responses before the logout request yields.
+    final intent = ++_sessionIntentGeneration;
     try {
       final token = await _tokenStore.readAccessToken();
       if (token != null && token.isNotEmpty) {
@@ -625,7 +649,7 @@ class MemberAccountApiClient {
         );
       }
     } finally {
-      await _clearLocalSession(notify: false);
+      await _clearLocalSession(notify: false, expectedSessionIntent: intent);
     }
   }
 
@@ -655,9 +679,12 @@ class MemberAccountApiClient {
     }
     final oldBinding = _sessionBinding(refreshToken);
     try {
-      final session = await _sessionRequest('$authRoot/refresh', {
-        'refresh_token': refreshToken,
-      }, expectedRefreshToken: refreshToken);
+      final session = await _sessionRequest(
+        '$authRoot/refresh',
+        {'refresh_token': refreshToken},
+        expectedRefreshToken: refreshToken,
+        establishesSession: false,
+      );
       await _offlineReaderLicenseStore.rebind(
         oldBinding: oldBinding,
         newBinding: _sessionBinding(session.refreshToken),
@@ -680,11 +707,17 @@ class MemberAccountApiClient {
   Future<void> _clearLocalSession({
     required bool notify,
     String? expectedRefreshToken,
+    int? expectedSessionIntent,
   }) => _withTokenMutation(() async {
+    if (expectedSessionIntent != null &&
+        expectedSessionIntent != _sessionIntentGeneration) {
+      return;
+    }
     if (expectedRefreshToken != null &&
         await _tokenStore.readRefreshToken() != expectedRefreshToken) {
       return;
     }
+    if (expectedSessionIntent == null) _sessionIntentGeneration++;
     try {
       await _tokenStore.clear();
     } finally {
@@ -705,7 +738,11 @@ class MemberAccountApiClient {
     String? accessToken,
     bool retryAuthentication = true,
     String? expectedRefreshToken,
+    bool establishesSession = true,
   }) async {
+    final sessionIntent = establishesSession
+        ? ++_sessionIntentGeneration
+        : null;
     String? authorizationToken;
     final guardStoredSession =
         authenticated || accessToken != null || expectedRefreshToken != null;
@@ -723,6 +760,13 @@ class MemberAccountApiClient {
     final session = MemberSession.fromJson(json, baseUri: baseUri);
     try {
       await _withTokenMutation(() async {
+        if (sessionIntent != null &&
+            sessionIntent != _sessionIntentGeneration) {
+          throw const MemberAccountException(
+            '登录账号已变化，请重新操作',
+            code: 'session_changed',
+          );
+        }
         if (guardStoredSession) {
           final currentAccessToken = await _tokenStore.readAccessToken();
           final currentRefreshToken = await _tokenStore.readRefreshToken();

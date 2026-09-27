@@ -320,6 +320,13 @@ class _AccountPageState extends State<AccountPage> {
         _completeSignIn(account);
         return;
       }
+      if (method == MemberExternalAuthMethod.google &&
+          account.usesNativeGoogleLogin) {
+        final completed = await account.loginWithGoogleNative();
+        if (!mounted || generation != _authGeneration || !completed) return;
+        _completeSignIn(account);
+        return;
+      }
       final authorization = await account.beginExternalLogin(method);
       if (!mounted || generation != _authGeneration) return;
       final uri =

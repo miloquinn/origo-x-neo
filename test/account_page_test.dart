@@ -57,6 +57,7 @@ Future<MemberAccountController> _pumpAuthFlowPage(
   WidgetTester tester,
   _AuthFlowAdapter adapter, {
   Size size = const Size(390, 844),
+  GoogleNativeSignInClient? googleNativeSignIn,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -67,6 +68,7 @@ Future<MemberAccountController> _pumpAuthFlowPage(
       dio: Dio()..httpClientAdapter = adapter,
       tokenStore: _EmptyTokenStore(),
     ),
+    googleNativeSignIn: googleNativeSignIn,
   );
   addTearDown(controller.dispose);
   await tester.runAsync(controller.initialize);
@@ -166,6 +168,53 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
+  });
+
+  testWidgets('iOS Google button uses native identity token login', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final adapter = _AuthFlowAdapter(nativeGoogle: true);
+    final nativeGoogle = _FakeNativeGoogleSignIn('native-id-token');
+    final controller = await _pumpAuthFlowPage(
+      tester,
+      adapter,
+      googleNativeSignIn: nativeGoogle,
+    );
+
+    expect(controller.usesNativeGoogleLogin, isTrue);
+    await tester.tap(find.byKey(const ValueKey('account-provider-google')));
+    await tester.pumpAndSettle();
+
+    expect(nativeGoogle.calls, 1);
+    expect(nativeGoogle.platform, TargetPlatform.iOS);
+    expect(adapter.googleLoginAttempts, 1);
+    expect(adapter.googleIdentityToken, 'native-id-token');
+    expect(find.byKey(const ValueKey('account-mfa-verify')), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('canceled native Google chooser stays on sign-in', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final adapter = _AuthFlowAdapter(nativeGoogle: true);
+    final nativeGoogle = _FakeNativeGoogleSignIn(null);
+    await _pumpAuthFlowPage(tester, adapter, googleNativeSignIn: nativeGoogle);
+
+    await tester.tap(find.byKey(const ValueKey('account-provider-google')));
+    await tester.pumpAndSettle();
+
+    expect(nativeGoogle.calls, 1);
+    expect(adapter.googleLoginAttempts, 0);
+    expect(
+      find.byKey(const ValueKey('account-provider-google')),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.error_outline_rounded), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('iOS external login cancellation quietly stops authorization', (
@@ -1139,11 +1188,17 @@ class _AccountAdapter implements HttpClientAdapter {
 }
 
 class _AuthFlowAdapter implements HttpClientAdapter {
-  _AuthFlowAdapter({this.rejectFirstRegistration = false});
+  _AuthFlowAdapter({
+    this.rejectFirstRegistration = false,
+    this.nativeGoogle = false,
+  });
 
   final bool rejectFirstRegistration;
+  final bool nativeGoogle;
   int registrationCodeRequests = 0;
   int registrationAttempts = 0;
+  int googleLoginAttempts = 0;
+  String? googleIdentityToken;
   final List<Map<String, dynamic>> registrationBodies = [];
 
   @override
@@ -1158,7 +1213,13 @@ class _AuthFlowAdapter implements HttpClientAdapter {
     final path = options.uri.path;
     if (path == '/api/v1/auth/config') {
       return _response({
-        'providers': {'google': true, 'github': true, 'passkey': true},
+        'providers': {'google': !nativeGoogle, 'github': true, 'passkey': true},
+        if (nativeGoogle)
+          'google_native': {
+            'enabled': true,
+            'server_client_id': 'server.apps.googleusercontent.com',
+            'ios_client_id': 'ios.apps.googleusercontent.com',
+          },
         'username': {'min_length': 3, 'max_length': 30},
         'password': {'min_length': 12, 'max_length': 128},
       });
@@ -1212,6 +1273,19 @@ class _AuthFlowAdapter implements HttpClientAdapter {
         },
       });
     }
+    if (path == '/api/v1/auth/google/login') {
+      googleLoginAttempts++;
+      googleIdentityToken = (options.data as Map)['identity_token'] as String?;
+      return _response({
+        'token_type': 'bearer',
+        'access_token': 'google-access',
+        'refresh_token': 'google-refresh',
+        'access_expires_in': 900,
+        'refresh_expires_in': 2592000,
+        'mfa_required': true,
+        'user': _readerUser(),
+      });
+    }
     if (path == '/api/v1/membership') {
       return _response({
         'premium': false,
@@ -1238,6 +1312,24 @@ class _AuthFlowAdapter implements HttpClientAdapter {
           Headers.contentTypeHeader: ['application/json'],
         },
       );
+}
+
+class _FakeNativeGoogleSignIn implements GoogleNativeSignInClient {
+  _FakeNativeGoogleSignIn(this.identityToken);
+
+  final String? identityToken;
+  int calls = 0;
+  TargetPlatform? platform;
+
+  @override
+  Future<String?> authenticate(
+    GoogleNativeAuthConfig config, {
+    required TargetPlatform platform,
+  }) async {
+    calls++;
+    this.platform = platform;
+    return identityToken;
+  }
 }
 
 class _SlowLoginAdapter extends _AuthFlowAdapter {

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -1080,7 +1080,12 @@ void main() {
       final adapter = _RouteAdapter((options) {
         return switch (options.uri.path) {
           '/api/v1/auth/config' => _json({
-            'providers': {'google': true, 'github': false, 'passkey': true},
+            'providers': {'google': false, 'github': false, 'passkey': true},
+            'google_native': {
+              'enabled': true,
+              'server_client_id': 'server.apps.googleusercontent.com',
+              'ios_client_id': 'ios.apps.googleusercontent.com',
+            },
             'username': {'min_length': 3, 'max_length': 30},
             'password': {'min_length': 12, 'max_length': 128},
           }),
@@ -1102,14 +1107,195 @@ void main() {
       expect(controller.loading, isFalse);
       expect(controller.isAuthenticated, isFalse);
       expect(controller.providers.google, isTrue);
+      expect(controller.authConfig?.providers.google, isFalse);
       expect(controller.providers.passkey, isTrue);
+      expect(controller.authConfig?.googleNative.enabled, isTrue);
+      expect(
+        controller.authConfig?.googleNative.serverClientId,
+        'server.apps.googleusercontent.com',
+      );
       expect(
         controller.membershipConfig?.purchaseUrl,
         'https://open.xxread.top/support',
       );
       expect(controller.error, isNull);
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        expect(controller.usesNativeGoogleLogin, isFalse);
+        expect(controller.providers.google, isFalse);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     },
   );
+
+  test('native Google login exchanges only the identity token', () async {
+    final storage = _MemoryTokenStore();
+    final adapter = _RouteAdapter((options) {
+      expect(options.uri.path, '/api/v1/auth/google/login');
+      expect(options.method, 'POST');
+      expect(options.data, {'identity_token': 'google-id-token'});
+      expect(options.headers['Authorization'], isNull);
+      return _json(
+        _session(access: 'google-access', refresh: 'google-refresh'),
+      );
+    });
+    final client = _client(adapter, storage);
+
+    final session = await client.loginGoogle(' google-id-token ');
+
+    expect(session.user.email, 'reader@example.com');
+    expect(storage.accessToken, 'google-access');
+    expect(storage.refreshToken, 'google-refresh');
+  });
+
+  test('late native Google response cannot overwrite logout', () async {
+    final storage = _MemoryTokenStore(
+      accessToken: 'current-access',
+      refreshToken: 'current-refresh',
+    );
+    final googleResponse = Completer<ResponseBody>();
+    final googleStarted = Completer<void>();
+    final adapter = _AsyncRouteAdapter((options) async {
+      return switch (options.uri.path) {
+        '/api/v1/auth/google/login' => () async {
+          googleStarted.complete();
+          return googleResponse.future;
+        }(),
+        '/api/v1/auth/logout' => _json({}),
+        _ => throw StateError('Unexpected route ${options.uri.path}'),
+      };
+    });
+    final client = _client(adapter, storage);
+
+    final login = client.loginGoogle('google-id-token');
+    await googleStarted.future;
+    await client.logout();
+    googleResponse.complete(
+      _json(_session(access: 'late-access', refresh: 'late-refresh')),
+    );
+
+    await expectLater(
+      login,
+      throwsA(
+        isA<MemberAccountException>().having(
+          (error) => error.code,
+          'code',
+          'session_changed',
+        ),
+      ),
+    );
+    expect(storage.accessToken, isNull);
+    expect(storage.refreshToken, isNull);
+  });
+
+  test('late native Google response cannot overwrite a newer login', () async {
+    final storage = _MemoryTokenStore();
+    final googleResponse = Completer<ResponseBody>();
+    final googleStarted = Completer<void>();
+    final adapter = _AsyncRouteAdapter((options) async {
+      return switch (options.uri.path) {
+        '/api/v1/auth/google/login' => () async {
+          googleStarted.complete();
+          return googleResponse.future;
+        }(),
+        '/api/v1/auth/password/login' => _json(
+          _session(access: 'new-access', refresh: 'new-refresh'),
+        ),
+        _ => throw StateError('Unexpected route ${options.uri.path}'),
+      };
+    });
+    final client = _client(adapter, storage);
+
+    final oldLogin = client.loginGoogle('old-google-token');
+    await googleStarted.future;
+    await client.loginPassword('new@example.com', 'password');
+    googleResponse.complete(
+      _json(_session(access: 'old-access', refresh: 'old-refresh')),
+    );
+
+    await expectLater(
+      oldLogin,
+      throwsA(
+        isA<MemberAccountException>().having(
+          (error) => error.code,
+          'code',
+          'session_changed',
+        ),
+      ),
+    );
+    expect(storage.accessToken, 'new-access');
+    expect(storage.refreshToken, 'new-refresh');
+  });
+
+  for (final invalidation in ['logout', 'another login', 'dispose']) {
+    test(
+      'native Google chooser result is discarded after $invalidation',
+      () async {
+        final nativeGoogle = _PendingNativeGoogleSignIn();
+        var googleExchanges = 0;
+        final adapter = _RouteAdapter((options) {
+          return switch (options.uri.path) {
+            '/api/v1/auth/config' => _json({
+              'providers': {'google': true},
+              'google_native': {
+                'enabled': true,
+                'server_client_id': 'server.apps.googleusercontent.com',
+                'ios_client_id': 'ios.apps.googleusercontent.com',
+              },
+            }),
+            '/api/v1/membership/config' => _json({
+              'product': 'premium_lifetime',
+              'features': <String>[],
+            }),
+            '/api/v1/auth/google/login' => () {
+              googleExchanges++;
+              return _json(
+                _session(access: 'google-access', refresh: 'google-refresh'),
+              );
+            }(),
+            _ => throw StateError('Unexpected route ${options.uri.path}'),
+          };
+        });
+        final controller = MemberAccountController(
+          api: _client(adapter, _MemoryTokenStore()),
+          googleNativeSignIn: nativeGoogle,
+        );
+        if (invalidation != 'dispose') addTearDown(controller.dispose);
+        await controller.initialize();
+
+        final login = controller.loginWithGoogleNative();
+        await nativeGoogle.started.future;
+        switch (invalidation) {
+          case 'logout':
+            await expectLater(
+              controller.logout(),
+              throwsA(isA<MemberAccountException>()),
+            );
+          case 'another login':
+            await expectLater(
+              controller.loginPassword('other@example.com', 'password'),
+              throwsA(isA<MemberAccountException>()),
+            );
+          case 'dispose':
+            controller.dispose();
+        }
+        nativeGoogle.complete('native-id-token');
+
+        await expectLater(
+          login,
+          throwsA(
+            isA<MemberAccountException>().having(
+              (error) => error.code,
+              'code',
+              'session_changed',
+            ),
+          ),
+        );
+        expect(googleExchanges, 0);
+      },
+    );
+  }
 
   test(
     'trial expiry revokes access and notifies without another network request',
@@ -2760,6 +2946,22 @@ class _AsyncRouteAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) => handler(options);
+}
+
+class _PendingNativeGoogleSignIn implements GoogleNativeSignInClient {
+  final started = Completer<void>();
+  final _result = Completer<String?>();
+
+  void complete(String? identityToken) => _result.complete(identityToken);
+
+  @override
+  Future<String?> authenticate(
+    GoogleNativeAuthConfig config, {
+    required TargetPlatform platform,
+  }) async {
+    started.complete();
+    return _result.future;
+  }
 }
 
 class _MemoryTokenStore implements MemberTokenStore {

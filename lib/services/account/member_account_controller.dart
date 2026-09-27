@@ -19,6 +19,7 @@ import 'account_summary_cache.dart';
 import 'account_token_store.dart';
 import 'store_purchase_service.dart';
 import 'avatar_image_processor.dart';
+import 'google_native_sign_in.dart';
 import 'membership_cache.dart';
 import 'offline_reader_license.dart';
 
@@ -33,6 +34,7 @@ class MemberAccountController extends ChangeNotifier {
     ReaderAccessCache? readerAccessCache,
     PendingDeviceAuthorizationStore? pendingAuthorizationStore,
     AccountAuthCallbackBridge? authCallbackBridge,
+    GoogleNativeSignInClient? googleNativeSignIn,
     PurchaseStore? purchaseStore,
     ReadingAccountScope? readingScope,
     this.membershipRetryDelay = const Duration(seconds: 30),
@@ -52,8 +54,11 @@ class MemberAccountController extends ChangeNotifier {
        _pendingAuthorizationStore =
            pendingAuthorizationStore ?? SecurePendingDeviceAuthorizationStore(),
        _authCallbackBridge = authCallbackBridge ?? AccountAuthCallbackBridge() {
+    _googleNativeSignIn =
+        googleNativeSignIn ?? GoogleNativeSignInService.instance;
     _apiSessionSubscription = _api.sessionInvalidations.listen((_) {
       if (_disposed) return;
+      _authenticationGeneration++;
       _clearAccountReaderState();
       _user = null;
       _pendingSession = null;
@@ -198,6 +203,7 @@ class MemberAccountController extends ChangeNotifier {
   DateTime? _sandboxStoreExpiresAt;
   final PendingDeviceAuthorizationStore _pendingAuthorizationStore;
   final AccountAuthCallbackBridge _authCallbackBridge;
+  late final GoogleNativeSignInClient _googleNativeSignIn;
   late final StorePurchaseService _storePurchase;
 
   final Duration membershipRetryDelay;
@@ -332,6 +338,7 @@ class MemberAccountController extends ChangeNotifier {
   String? _deviceAuthorizationPollCode;
   Future<void>? _deviceAuthorizationCancellation;
   int _deviceAuthorizationGeneration = 0;
+  int _authenticationGeneration = 0;
 
   bool get initialized => _initialized;
   bool get loading => _loading || _deviceAuthorizationCancellation != null;
@@ -340,8 +347,22 @@ class MemberAccountController extends ChangeNotifier {
   MemberUser? get user => _user;
   MemberUser? get pendingUser => _pendingSession?.user;
   MemberAuthConfig? get authConfig => _authConfig;
-  MemberAuthProviders get providers =>
-      _authConfig?.providers ?? const MemberAuthProviders();
+  MemberAuthProviders get providers {
+    final configured = _authConfig?.providers ?? const MemberAuthProviders();
+    if (!usesNativeGoogleLogin || configured.google) return configured;
+    return MemberAuthProviders(
+      google: true,
+      github: configured.github,
+      apple: configured.apple,
+      passkey: configured.passkey,
+    );
+  }
+
+  bool get usesNativeGoogleLogin =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS) &&
+      (_authConfig?.googleNative.enabled ?? false);
   MemberMembershipConfig? get membershipConfig => _membershipConfig;
   MemberMembership? get membership => _membership;
 
@@ -643,21 +664,25 @@ class MemberAccountController extends ChangeNotifier {
   Future<void> loginPassword(String email, String password) =>
       _authenticate(() => _api.loginPassword(email, password));
 
-  Future<void> loginPasskey() => _run(() async {
-    final begin = await _api.beginPasskeyLogin();
-    final options = AuthenticateRequestType.fromJson(
-      Map<String, dynamic>.from(begin['public_key'] as Map),
-      preferImmediatelyAvailableCredentials: false,
-    );
-    final credential = await PasskeyAuthenticator().authenticate(options);
-    final session = await _api.finishPasskeyLogin(
-      challengeId: begin['challenge_id'] as String,
-      credential: credential.toJson(),
-    );
-    _acceptAuthenticatedSession(session);
-    await _loadAccountValues();
-    await _persistSummary();
-  });
+  Future<void> loginPasskey() {
+    final generation = _beginAuthenticationIntent();
+    return _run(() async {
+      final begin = await _api.beginPasskeyLogin();
+      final options = AuthenticateRequestType.fromJson(
+        Map<String, dynamic>.from(begin['public_key'] as Map),
+        preferImmediatelyAvailableCredentials: false,
+      );
+      final credential = await PasskeyAuthenticator().authenticate(options);
+      final session = await _api.finishPasskeyLogin(
+        challengeId: begin['challenge_id'] as String,
+        credential: credential.toJson(),
+      );
+      _checkAuthenticationGeneration(generation);
+      _acceptAuthenticatedSession(session);
+      await _loadAccountValues();
+      await _persistSummary();
+    });
+  }
 
   Future<void> loginWithApple() => _authenticate(() async {
     final credential = await SignInWithApple.getAppleIDCredential(
@@ -684,6 +709,35 @@ class MemberAccountController extends ChangeNotifier {
       authorizationCode: authorizationCode,
       fullName: fullName.isEmpty ? null : fullName,
     );
+  });
+
+  /// Returns false only when the user closes Google's native account chooser.
+  Future<bool> loginWithGoogleNative() => _runValue(() async {
+    final config = _authConfig?.googleNative;
+    if (!usesNativeGoogleLogin || config == null) {
+      throw const MemberAccountException(
+        'Google 原生登录尚未启用',
+        code: 'google_native_disabled',
+      );
+    }
+    final generation = _beginAuthenticationIntent();
+    final identityToken = await _googleNativeSignIn.authenticate(
+      config,
+      platform: defaultTargetPlatform,
+    );
+    if (identityToken == null) return false;
+    _checkAuthenticationGeneration(generation);
+    final session = await _api.loginGoogle(identityToken);
+    _checkAuthenticationGeneration(generation);
+    _acceptSession(session);
+    if (!session.mfaRequired) {
+      await _loadAccountValues();
+      await _persistSummary();
+    } else {
+      await _clearSummary();
+      await _clearMembershipCache();
+    }
+    return true;
   });
 
   Future<MemberEmailChallenge> requestCode(
@@ -832,6 +886,7 @@ class MemberAccountController extends ChangeNotifier {
   Future<DeviceAuthorization> beginExternalLogin(
     MemberExternalAuthMethod method,
   ) async {
+    _beginAuthenticationIntent();
     final cancellation = _deviceAuthorizationCancellation;
     if (cancellation != null) await cancellation;
     final generation = ++_deviceAuthorizationGeneration;
@@ -1443,49 +1498,70 @@ class MemberAccountController extends ChangeNotifier {
     return appleManualRevocationRequired;
   });
 
-  Future<void> logout() => _run(() async {
-    _clearAccountReaderState();
-    _user = null;
-    _membership = null;
-    notifyListeners();
-    await _readingScope.setOwner(null);
-    try {
-      await _api.logout();
-    } finally {
+  Future<void> logout() {
+    _beginAuthenticationIntent();
+    return _run(() async {
+      _clearAccountReaderState();
       _user = null;
-      _pendingSession = null;
-      _resetMembershipSync();
       _membership = null;
-      _referral = null;
-      _mfaStatus = null;
       notifyListeners();
-      await _clearSummary();
-      await _clearMembershipCache();
-    }
-  });
+      await _readingScope.setOwner(null);
+      try {
+        await _api.logout();
+      } finally {
+        _user = null;
+        _pendingSession = null;
+        _resetMembershipSync();
+        _membership = null;
+        _referral = null;
+        _mfaStatus = null;
+        notifyListeners();
+        await _clearSummary();
+        await _clearMembershipCache();
+      }
+    });
+  }
 
   @override
   void dispose() {
     _membershipExpiryTimer?.cancel();
     unawaited(_apiSessionSubscription.cancel());
     _disposed = true;
+    _beginAuthenticationIntent();
     _resetMembershipSync();
     _storePurchase.dispose();
     super.dispose();
   }
 
-  Future<void> _authenticate(Future<MemberSession> Function() action) =>
-      _run(() async {
-        final session = await action();
-        _acceptSession(session);
-        if (!session.mfaRequired) {
-          await _loadAccountValues();
-          await _persistSummary();
-        } else {
-          await _clearSummary();
-          await _clearMembershipCache();
-        }
-      });
+  Future<void> _authenticate(Future<MemberSession> Function() action) {
+    final generation = _beginAuthenticationIntent();
+    return _run(() async {
+      final session = await action();
+      _checkAuthenticationGeneration(generation);
+      _acceptSession(session);
+      if (!session.mfaRequired) {
+        await _loadAccountValues();
+        await _persistSummary();
+      } else {
+        await _clearSummary();
+        await _clearMembershipCache();
+      }
+    });
+  }
+
+  int _beginAuthenticationIntent() {
+    _api.invalidatePendingAuthentication();
+    return ++_authenticationGeneration;
+  }
+
+  void _checkAuthenticationGeneration(int generation) {
+    if (_disposed || generation != _authenticationGeneration) {
+      throw const MemberAccountException(
+        '登录账号已变化，请重新操作',
+        code: 'session_changed',
+      );
+    }
+  }
 
   void _acceptSession(MemberSession session) {
     if (session.mfaRequired) {

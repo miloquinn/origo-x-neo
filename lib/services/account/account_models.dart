@@ -99,6 +99,25 @@ class MemberAuthProviders {
   };
 }
 
+class GoogleNativeAuthConfig {
+  const GoogleNativeAuthConfig({
+    this.enabled = false,
+    this.serverClientId,
+    this.iosClientId,
+  });
+
+  factory GoogleNativeAuthConfig.fromJson(Map<String, dynamic> json) =>
+      GoogleNativeAuthConfig(
+        enabled: json['enabled'] as bool? ?? false,
+        serverClientId: _nonEmptyText(json['server_client_id'] as String?),
+        iosClientId: _nonEmptyText(json['ios_client_id'] as String?),
+      );
+
+  final bool enabled;
+  final String? serverClientId;
+  final String? iosClientId;
+}
+
 class MemberAuthConfig {
   const MemberAuthConfig({
     required this.providers,
@@ -106,6 +125,7 @@ class MemberAuthConfig {
     required this.usernameMaxLength,
     required this.passwordMinLength,
     required this.passwordMaxLength,
+    this.googleNative = const GoogleNativeAuthConfig(),
     this.usernamePattern,
   });
 
@@ -114,6 +134,9 @@ class MemberAuthConfig {
     final password = _map(json['password']);
     return MemberAuthConfig(
       providers: MemberAuthProviders.fromJson(_map(json['providers'])),
+      googleNative: GoogleNativeAuthConfig.fromJson(
+        _map(json['google_native']),
+      ),
       usernamePattern: username['pattern'] as String?,
       usernameMinLength: username['min_length'] as int? ?? 3,
       usernameMaxLength: username['max_length'] as int? ?? 30,
@@ -123,6 +146,7 @@ class MemberAuthConfig {
   }
 
   final MemberAuthProviders providers;
+  final GoogleNativeAuthConfig googleNative;
   final String? usernamePattern;
   final int usernameMinLength;
   final int usernameMaxLength;
@@ -866,6 +890,11 @@ Map<String, dynamic> _map(Object? value) =>
 
 DateTime? _optionalDate(Object? value) =>
     value is String && value.isNotEmpty ? DateTime.parse(value) : null;
+
+String? _nonEmptyText(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
 
 String? _absoluteUrl(String? value, Uri? baseUri) {
   if (value == null || value.isEmpty) return null;
