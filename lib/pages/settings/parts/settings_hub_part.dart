@@ -29,7 +29,7 @@ extension _SettingsHubPart on _SettingsPageState {
     ],
     const KeyedSubtree(
       key: ValueKey('settings-single-column-layout'),
-      child: SettingsAccountCard(quiet: true, showMembershipSection: true),
+      child: SettingsAccountCard(),
     ),
     const SizedBox(height: 28),
     _buildMyPageMenu(l10n),
@@ -49,9 +49,7 @@ extension _SettingsHubPart on _SettingsPageState {
             child: Column(
               key: const ValueKey('settings-primary-column'),
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: const [
-                SettingsAccountCard(quiet: true, showMembershipSection: true),
-              ],
+              children: const [SettingsAccountCard()],
             ),
           ),
           const SizedBox(width: 24),

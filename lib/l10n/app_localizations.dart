@@ -9905,19 +9905,19 @@ abstract class AppLocalizations {
   /// No description provided for @accountChangeEmailEnterHint.
   ///
   /// In en, this message translates to:
-  /// **'We will send one code to your current email and one to the new address.'**
+  /// **'We’ll send a code to your new email. Your old email does not need verification.'**
   String get accountChangeEmailEnterHint;
 
   /// No description provided for @accountChangeEmailVerifyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Verify both email addresses'**
+  /// **'Verify your new email'**
   String get accountChangeEmailVerifyTitle;
 
   /// No description provided for @accountChangeEmailVerifyHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter the two codes to finish changing your sign-in email.'**
+  /// **'Enter the code sent to your new email to complete the change.'**
   String get accountChangeEmailVerifyHint;
 
   /// No description provided for @accountCurrentEmail.

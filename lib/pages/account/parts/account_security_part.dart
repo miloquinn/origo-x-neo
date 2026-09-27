@@ -243,18 +243,12 @@ class _RelayEmailBannerCard extends StatelessWidget {
 
 class _ChangeEmailPageState extends State<_ChangeEmailPage> {
   final _newEmail = TextEditingController();
-  final _currentEmailCode = TextEditingController();
-  final _currentPassword = TextEditingController();
   final _newEmailCode = TextEditingController();
   MemberEmailChangeChallenge? _challenge;
-  _CurrentEmailVerification _currentVerification =
-      _CurrentEmailVerification.emailCode;
 
   @override
   void dispose() {
     _newEmail.dispose();
-    _currentEmailCode.dispose();
-    _currentPassword.dispose();
     _newEmailCode.dispose();
     super.dispose();
   }
@@ -270,19 +264,6 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
       }
       await account.changeEmail(
         newEmail: _newEmail.text,
-        currentChallengeId: challenge.currentChallengeId,
-        currentCode:
-            challenge.currentCodeRequired &&
-                _currentVerification == _CurrentEmailVerification.emailCode &&
-                _currentEmailCode.text.isNotEmpty
-            ? _currentEmailCode.text
-            : null,
-        currentPassword:
-            challenge.currentCodeRequired &&
-                _currentVerification == _CurrentEmailVerification.password &&
-                _currentPassword.text.isNotEmpty
-            ? _currentPassword.text
-            : null,
         newChallengeId: challenge.newChallengeId,
         newCode: _newEmailCode.text,
       );
@@ -300,11 +281,6 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
   Widget build(BuildContext context) {
     final account = context.watch<MemberAccountController>();
     final user = account.user;
-    // Apple 隐藏邮箱收不到当前侧验证码：请求前由用户标记判断，请求后以服务端回执为准。
-    final relaySkip = _challenge != null
-        ? !_challenge!.currentCodeRequired
-        : false;
-    final relayEmail = user?.emailIsRelay ?? false;
     return FloatingSubpageScaffold(
       title: '',
       showHeader: false,
@@ -331,12 +307,8 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
                           ? context.l10n.accountChangeEmailEnterTitle
                           : context.l10n.accountChangeEmailVerifyTitle,
                       body: _challenge == null
-                          ? (relayEmail
-                                ? context.l10n.accountChangeEmailEnterRelayHint
-                                : context.l10n.accountChangeEmailEnterHint)
-                          : (relaySkip
-                                ? context.l10n.accountChangeEmailVerifyRelayHint
-                                : context.l10n.accountChangeEmailVerifyHint),
+                          ? context.l10n.accountChangeEmailEnterHint
+                          : context.l10n.accountChangeEmailVerifyHint,
                     ),
                     const SizedBox(height: 16),
                     _SectionCard(
@@ -354,39 +326,8 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
                               Icons.mark_email_unread_outlined,
                               keyboardType: TextInputType.emailAddress,
                             )
-                          else if (relaySkip)
-                            _RelayEmailNotice(
-                              message: context
-                                  .l10n
-                                  .accountChangeEmailVerifyRelayHint,
-                            )
-                          else ...[
-                            if (user.authMethods.contains('password')) ...[
-                              _CurrentEmailVerificationPicker(
-                                value: _currentVerification,
-                                onChanged: (value) => setState(
-                                  () => _currentVerification = value,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            if (_currentVerification ==
-                                    _CurrentEmailVerification.password &&
-                                user.authMethods.contains('password'))
-                              _accountTextField(
-                                _currentPassword,
-                                context.l10n.accountCurrentPasswordInstead,
-                                Icons.key_rounded,
-                                obscure: true,
-                              )
-                            else
-                              _accountTextField(
-                                _currentEmailCode,
-                                context.l10n.accountCurrentEmailCode,
-                                Icons.password_rounded,
-                                keyboardType: TextInputType.number,
-                              ),
-                          ],
+                          else
+                            Text(_newEmail.text),
                           if (_challenge != null) ...[
                             const SizedBox(height: 12),
                             _accountTextField(
@@ -402,7 +343,7 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
                             onPressed: account.loading ? null : _submit,
                             child: Text(
                               _challenge == null
-                                  ? context.l10n.accountSendBothCodes
+                                  ? context.l10n.accountSendCode
                                   : context.l10n.accountChangeEmailAction,
                             ),
                           ),
@@ -413,74 +354,6 @@ class _ChangeEmailPageState extends State<_ChangeEmailPage> {
                 ),
               ),
             ),
-    );
-  }
-}
-
-enum _CurrentEmailVerification { emailCode, password }
-
-class _CurrentEmailVerificationPicker extends StatelessWidget {
-  const _CurrentEmailVerificationPicker({
-    required this.value,
-    required this.onChanged,
-  });
-
-  final _CurrentEmailVerification value;
-  final ValueChanged<_CurrentEmailVerification> onChanged;
-
-  @override
-  Widget build(BuildContext context) => Wrap(
-    key: const ValueKey('account-current-verification-picker'),
-    spacing: 8,
-    runSpacing: 8,
-    children: [
-      ChoiceChip(
-        key: const ValueKey('account-verify-current-email'),
-        label: Text(context.l10n.accountVerificationCode),
-        selected: value == _CurrentEmailVerification.emailCode,
-        onSelected: (_) => onChanged(_CurrentEmailVerification.emailCode),
-      ),
-      ChoiceChip(
-        key: const ValueKey('account-verify-current-password'),
-        label: Text(context.l10n.accountPassword),
-        selected: value == _CurrentEmailVerification.password,
-        onSelected: (_) => onChanged(_CurrentEmailVerification.password),
-      ),
-    ],
-  );
-}
-
-/// Apple 隐藏邮箱的当前侧豁免提示，替代收不到的“当前邮箱验证码”输入框。
-class _RelayEmailNotice extends StatelessWidget {
-  const _RelayEmailNotice({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: scheme.errorContainer,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.mark_email_unread_outlined, color: scheme.error),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onErrorContainer,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -5667,14 +5667,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountChangeEmailEnterHint =>
-      'We will send one code to your current email and one to the new address.';
+      'We’ll send a code to your new email. Your old email does not need verification.';
 
   @override
-  String get accountChangeEmailVerifyTitle => 'Verify both email addresses';
+  String get accountChangeEmailVerifyTitle => 'Verify your new email';
 
   @override
   String get accountChangeEmailVerifyHint =>
-      'Enter the two codes to finish changing your sign-in email.';
+      'Enter the code sent to your new email to complete the change.';
 
   @override
   String get accountCurrentEmail => 'Current email';

@@ -5718,14 +5718,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountChangeEmailEnterHint =>
-      'Мы отправим один код на текущий email и один на новый адрес.';
+      'Мы отправим код на новую почту. Подтверждать старую почту не нужно.';
 
   @override
-  String get accountChangeEmailVerifyTitle => 'Подтвердите оба адреса';
+  String get accountChangeEmailVerifyTitle => 'Подтвердите новую почту';
 
   @override
   String get accountChangeEmailVerifyHint =>
-      'Введите два кода, чтобы завершить смену email для входа.';
+      'Введите код, отправленный на новую почту, чтобы завершить смену адреса.';
 
   @override
   String get accountCurrentEmail => 'Текущий email';

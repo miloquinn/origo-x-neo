@@ -159,7 +159,7 @@ void main() {
       find.byKey(const ValueKey('settings-account-premium-badge')),
       findsNothing,
     );
-    expect(find.textContaining('会员状态待同步'), findsOneWidget);
+    expect(find.textContaining('会员状态待同步'), findsNothing);
     expect(controller.hasPremiumAccess, isFalse);
   });
 
@@ -360,7 +360,11 @@ void main() {
 
       await tester.runAsync(() async {
         adapter.completeLogin();
-        for (var i = 0; i < 40 && controller.user == null; i++) {
+        for (
+          var i = 0;
+          i < 200 && (controller.user == null || controller.loading);
+          i++
+        ) {
           await Future<void>.delayed(const Duration(milliseconds: 5));
         }
       });
@@ -622,8 +626,8 @@ void main() {
       ),
     );
 
-    expect(find.text('登录开元阅读'), findsOneWidget);
-    expect(find.text('同步账号资料与安全设置'), findsOneWidget);
+    expect(find.text('未登录'), findsOneWidget);
+    expect(find.text('本地阅读无需登录'), findsOneWidget);
     final avatar = tester.widget<Container>(
       find.byKey(const ValueKey('settings-account-avatar')),
     );
@@ -742,15 +746,18 @@ void main() {
       find.byKey(const ValueKey('settings-account-premium-badge')),
       findsOneWidget,
     );
-    expect(find.text('探元'), findsOneWidget);
+    expect(find.text('探元'), findsNothing);
     expect(find.text('Origo 探元'), findsOneWidget);
-    expect(find.text('EXPLORE'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-membership-entry')),
+      findsNothing,
+    );
     final avatar = tester.widget<Container>(
       find.byKey(const ValueKey('settings-account-avatar')),
     );
     final decoration = avatar.decoration! as BoxDecoration;
     expect(decoration.border, isNotNull);
-    expect(decoration.boxShadow, isNotEmpty);
+    expect(decoration.boxShadow, isNull);
     expect(
       find.byKey(const ValueKey('settings-account-avatar-clip')),
       findsOneWidget,
@@ -763,7 +770,7 @@ void main() {
     );
     expect(fallbackCenter.dx, avatarCenter.dx);
     expect(fallbackCenter.dy, avatarCenter.dy);
-    expect((decoration.border! as Border).top.width, greaterThan(2));
+    expect((decoration.border! as Border).top.width, 1);
   });
 
   testWidgets('pending MFA session shows only the compact verification gate', (

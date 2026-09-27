@@ -50,13 +50,9 @@ class InAppPurchaseStore implements PurchaseStore {
     }
     final inventory = Completer<Set<String>>();
     final listener = purchaseStream.listen((purchases) {
-      if (!inventory.isCompleted &&
-          (purchases.isEmpty ||
-              purchases.every(
-                (item) => item.status == PurchaseStatus.restored,
-              ))) {
-        inventory.complete({for (final item in purchases) ?item.purchaseID});
-      }
+      if (inventory.isCompleted) return;
+      final restored = restoredInventoryForBatch(purchases, productIds);
+      if (restored != null) inventory.complete(restored);
     });
     try {
       await _store.restorePurchases(applicationUserName: applicationUserName);
@@ -64,6 +60,24 @@ class InAppPurchaseStore implements PurchaseStore {
     } finally {
       await listener.cancel();
     }
+  }
+
+  @visibleForTesting
+  static Set<String>? restoredInventoryForBatch(
+    List<PurchaseDetails> purchases,
+    Set<String>? productIds,
+  ) {
+    if (purchases.any(
+      (purchase) => purchase.status != PurchaseStatus.restored,
+    )) {
+      return null;
+    }
+    final relevant = productIds == null
+        ? purchases
+        : purchases
+              .where((purchase) => productIds.contains(purchase.productID))
+              .toList(growable: false);
+    return {for (final purchase in relevant) ?purchase.purchaseID};
   }
 }
 
@@ -205,9 +219,6 @@ class StorePurchaseService extends ChangeNotifier {
     _notify();
   }
 
-  void configureProducts({required String lifetime, String? trial}) =>
-      configureProductIds(premiumLifetime: lifetime, readerTrial: trial);
-
   void _ensureListening() {
     _subscription ??= _activeStore.purchaseStream.listen(
       _handlePurchases,
@@ -314,10 +325,6 @@ class StorePurchaseService extends ChangeNotifier {
     }
   }
 
-  Future<void> purchase({bool trial = false}) => purchaseKind(
-    trial ? StoreProductKind.readerTrial : StoreProductKind.premiumLifetime,
-  );
-
   Future<void> restoreDomain(StorePurchaseDomain domain) async {
     if (_restoreSession != null) {
       throw const MemberAccountException('另一项商店恢复正在进行，请稍候');
@@ -368,8 +375,6 @@ class StorePurchaseService extends ChangeNotifier {
       if (identical(_restoreSession, session)) _restoreSession = null;
     }
   }
-
-  Future<void> restore() => restoreDomain(StorePurchaseDomain.premium);
 
   void _handlePurchases(List<PurchaseDetails> purchases) {
     for (final purchase in purchases) {

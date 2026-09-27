@@ -5744,15 +5744,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accountChangeEmailEnterHint =>
-      'Enviaremos un código a tu correo actual y otro a la nueva dirección.';
+      'Enviaremos un código a tu nuevo correo. No hace falta verificar el anterior.';
 
   @override
-  String get accountChangeEmailVerifyTitle =>
-      'Verifica ambas direcciones de correo';
+  String get accountChangeEmailVerifyTitle => 'Verificar el nuevo correo';
 
   @override
   String get accountChangeEmailVerifyHint =>
-      'Introduce los dos códigos para terminar de cambiar tu correo de inicio de sesión.';
+      'Introduce el código enviado a tu nuevo correo para completar el cambio.';
 
   @override
   String get accountCurrentEmail => 'Correo actual';

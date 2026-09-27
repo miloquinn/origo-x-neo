@@ -399,13 +399,10 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
-  /// Presents the GitHub/Google device-authorization URL. On iOS/macOS this
-  /// uses `ASWebAuthenticationSession` (via flutter_web_auth_2) so sign-in
-  /// stays inside the app instead of switching to the system browser (App
-  /// Store Guideline 4). The `xxread` scheme is already registered for this
-  /// purpose, so the sheet dismisses itself once the backend redirects to
-  /// it, racing the same way `account.waitForAuthCallback` already does for
-  /// the polling loop below. Returns false if the user cancelled.
+  /// Uses Apple's system authentication session on iOS/macOS and the external
+  /// browser on Android. The registered `xxread` callback completes sign-in;
+  /// polling also supports browsers that do not return the callback. Cancellation
+  /// stops the pending authorization without presenting an error.
   Future<bool> _openExternalLoginUri(Uri uri) async {
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||

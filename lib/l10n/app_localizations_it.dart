@@ -5757,15 +5757,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get accountChangeEmailEnterHint =>
-      'Invieremo un codice alla tua email attuale e uno al nuovo indirizzo.';
+      'Invieremo un codice al nuovo indirizzo email. Non è necessario verificare quello precedente.';
 
   @override
-  String get accountChangeEmailVerifyTitle =>
-      'Verifica entrambi gli indirizzi email';
+  String get accountChangeEmailVerifyTitle => 'Verifica la nuova email';
 
   @override
   String get accountChangeEmailVerifyHint =>
-      'Inserisci i due codici per completare il cambio dell\'email di accesso.';
+      'Inserisci il codice ricevuto al nuovo indirizzo email per completare la modifica.';
 
   @override
   String get accountCurrentEmail => 'Email attuale';

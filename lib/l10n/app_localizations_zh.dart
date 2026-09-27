@@ -5379,13 +5379,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountChangeEmailEnterTitle => '填写新邮箱';
 
   @override
-  String get accountChangeEmailEnterHint => '我们会分别向当前邮箱和新邮箱发送一个验证码。';
+  String get accountChangeEmailEnterHint => '验证码将发送到新邮箱，无需验证旧邮箱。';
 
   @override
-  String get accountChangeEmailVerifyTitle => '验证两个邮箱';
+  String get accountChangeEmailVerifyTitle => '验证新邮箱';
 
   @override
-  String get accountChangeEmailVerifyHint => '输入两封邮件中的验证码，完成登录邮箱更换。';
+  String get accountChangeEmailVerifyHint => '输入新邮箱收到的验证码，完成邮箱更换。';
 
   @override
   String get accountCurrentEmail => '当前邮箱';
@@ -12486,13 +12486,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountChangeEmailEnterTitle => '填寫新電子郵件';
 
   @override
-  String get accountChangeEmailEnterHint => '我們會分別向目前電子郵件和新電子郵件發送一個驗證碼。';
+  String get accountChangeEmailEnterHint => '驗證碼將傳送到新信箱，無需驗證舊信箱。';
 
   @override
-  String get accountChangeEmailVerifyTitle => '驗證兩個電子郵件';
+  String get accountChangeEmailVerifyTitle => '驗證新信箱';
 
   @override
-  String get accountChangeEmailVerifyHint => '輸入兩封郵件中的驗證碼，完成登入電子郵件更換。';
+  String get accountChangeEmailVerifyHint => '輸入新信箱收到的驗證碼，完成信箱變更。';
 
   @override
   String get accountCurrentEmail => '目前電子郵件';

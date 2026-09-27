@@ -736,7 +736,15 @@ class MemberAccountController extends ChangeNotifier {
   );
 
   Future<MemberEmailChangeChallenge> requestEmailChangeCode(String newEmail) =>
-      _runValue(() => _api.requestEmailChangeCode(newEmail));
+      _runValue(() async {
+        final owner = _user?.id;
+        if (owner == null) throw const MemberAccountException('请先登录 Origo 账号');
+        final challenge = await _api.requestEmailChangeCode(newEmail);
+        if (_user?.id != owner) {
+          throw const MemberAccountException('账号已切换，请重新发起邮箱验证');
+        }
+        return challenge;
+      });
 
   Future<void> changeEmail({
     required String newEmail,
@@ -746,6 +754,8 @@ class MemberAccountController extends ChangeNotifier {
     String? currentCode,
     String? currentPassword,
   }) => _run(() async {
+    final owner = _user?.id;
+    if (owner == null) throw const MemberAccountException('请先登录 Origo 账号');
     final session = await _api.changeEmail(
       newEmail: newEmail,
       currentChallengeId: currentChallengeId,
@@ -754,6 +764,9 @@ class MemberAccountController extends ChangeNotifier {
       newChallengeId: newChallengeId,
       newCode: newCode,
     );
+    if (_user?.id != owner || session.user.id != owner) {
+      throw const MemberAccountException('账号已切换，请重新发起邮箱验证');
+    }
     _acceptAuthenticatedSession(session);
     await _persistSummary();
   });
@@ -1152,8 +1165,9 @@ class MemberAccountController extends ChangeNotifier {
     if (bundle && hasAccountReaderUpgradeEligibility) {
       throw const MemberAccountException('你已拥有 Origo 开卷，请选择探元升级方案');
     }
-    _membershipConfig = await _api.membershipConfig();
+    final config = await _api.membershipConfig();
     if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');
+    _membershipConfig = config;
     _configureStoreProducts();
     if (!storeBillingReady) {
       throw const MemberAccountException('商店购买暂未开放，请稍后重试');
@@ -1177,15 +1191,20 @@ class MemberAccountController extends ChangeNotifier {
     await refreshReaderAccess();
     if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');
     if (hasPermanentReaderAccess) return;
-    _membershipConfig = await _api.membershipConfig();
+    final config = await _api.membershipConfig();
+    if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');
+    _membershipConfig = config;
     _configureStoreProducts();
     await _storePurchase.purchaseKind(StoreProductKind.readerLifetime);
   }
 
   Future<void> restoreReaderPurchases() async {
     if (!AppDistribution.isStore) return;
-    if (_user == null) throw const MemberAccountException('请先登录 Origo 账号');
-    _membershipConfig = await _api.membershipConfig();
+    final owner = _user?.id;
+    if (owner == null) throw const MemberAccountException('请先登录 Origo 账号');
+    final config = await _api.membershipConfig();
+    if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');
+    _membershipConfig = config;
     _configureStoreProducts();
     await _storePurchase.restoreDomain(StorePurchaseDomain.reader);
   }
@@ -1312,8 +1331,6 @@ class MemberAccountController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> startStoreTrial() => startReaderTrial();
-
   Future<void> startReaderTrial() async {
     if (AppDistribution.isAppleTestEnvironment) return;
     if (!AppDistribution.isStore) {
@@ -1325,7 +1342,12 @@ class MemberAccountController extends ChangeNotifier {
       throw const MemberAccountException('当前设备无法开始新的应用试用');
     }
     if (AppDistribution.usesAppleBilling) {
-      _membershipConfig = await _api.membershipConfig();
+      final owner = _user!.id;
+      final config = await _api.membershipConfig();
+      if (_user?.id != owner) {
+        throw const MemberAccountException('账号已切换，请重试');
+      }
+      _membershipConfig = config;
       _configureStoreProducts();
       await _storePurchase.purchaseKind(StoreProductKind.readerTrial);
       return;

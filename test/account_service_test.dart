@@ -2053,6 +2053,232 @@ void main() {
   });
 
   test(
+    'refresh clear failure still clears offline state and invalidates',
+    () async {
+      final storage = _ThrowingClearTokenStore(
+        accessToken: 'access-a',
+        refreshToken: 'refresh-a',
+      );
+      final offline = _ControlledOfflineReaderLicenseStore();
+      final client = _client(
+        _RouteAdapter((_) => _json({'detail': '登录状态已失效'}, status: 401)),
+        storage,
+        offlineReaderLicenseStore: offline,
+      );
+      final invalidated = client.sessionInvalidations.first;
+
+      await expectLater(client.refreshSession(), throwsA(isA<StateError>()));
+      await expectLater(
+        invalidated.timeout(const Duration(seconds: 1)),
+        completes,
+      );
+      expect(offline.clearCalls, 1);
+    },
+  );
+
+  test('offline cleanup remains inside the token mutation barrier', () async {
+    final storage = _MemoryTokenStore(
+      accessToken: 'access-a',
+      refreshToken: 'refresh-a',
+    );
+    final offline = _ControlledOfflineReaderLicenseStore(delayClear: true);
+    final client = _client(
+      _RouteAdapter((options) {
+        return switch (options.uri.path) {
+          '/api/v1/auth/logout' => _json({}),
+          '/api/v1/auth/password/login' => _json(
+            _session(
+              access: 'access-b',
+              refresh: 'refresh-b',
+              userId: '6e29be31-ffeb-4699-bf69-8b37afe15505',
+            ),
+          ),
+          _ => throw StateError('Unexpected route ${options.uri.path}'),
+        };
+      }),
+      storage,
+      offlineReaderLicenseStore: offline,
+    );
+
+    final loggingOut = client.logout();
+    await offline.clearStarted.future;
+    var loginFinished = false;
+    final loggingIn = client
+        .loginPassword('other@example.com', 'password')
+        .then((_) => loginFinished = true);
+    await pumpEventQueue();
+
+    expect(storage.accessToken, isNull);
+    expect(loginFinished, isFalse);
+    offline.allowClear.complete();
+    await loggingOut;
+    await loggingIn;
+    expect(storage.accessToken, 'access-b');
+    expect(storage.refreshToken, 'refresh-b');
+  });
+
+  for (final transition in ['logout', 'switch account']) {
+    test('late refresh cannot restore tokens after $transition', () async {
+      final storage = _MemoryTokenStore(
+        accessToken: 'access-a',
+        refreshToken: 'refresh-a',
+      );
+      final refreshStarted = Completer<void>();
+      final refreshResponse = Completer<ResponseBody>();
+      final client = _client(
+        _AsyncRouteAdapter((options) async {
+          return switch (options.uri.path) {
+            '/api/v1/auth/refresh' => () async {
+              refreshStarted.complete();
+              return refreshResponse.future;
+            }(),
+            '/api/v1/auth/logout' => _json({}),
+            '/api/v1/auth/password/login' => _json(
+              _session(
+                access: 'access-b',
+                refresh: 'refresh-b',
+                userId: '6e29be31-ffeb-4699-bf69-8b37afe15505',
+              ),
+            ),
+            _ => throw StateError('Unexpected route ${options.uri.path}'),
+          };
+        }),
+        storage,
+      );
+
+      final refreshing = client.refreshSession();
+      await refreshStarted.future;
+      if (transition == 'logout') {
+        await client.logout();
+      } else {
+        await client.loginPassword('other@example.com', 'password');
+      }
+      refreshResponse.complete(
+        _json(
+          _session(
+            access: 'stale-refreshed-access-a',
+            refresh: 'stale-refreshed-refresh-a',
+          ),
+        ),
+      );
+
+      await expectLater(
+        refreshing,
+        throwsA(
+          isA<MemberAccountException>().having(
+            (error) => error.code,
+            'code',
+            'session_changed',
+          ),
+        ),
+      );
+      if (transition == 'logout') {
+        expect(storage.accessToken, isNull);
+        expect(storage.refreshToken, isNull);
+      } else {
+        expect(storage.accessToken, 'access-b');
+        expect(storage.refreshToken, 'refresh-b');
+      }
+    });
+  }
+
+  test('late rejected refresh cannot clear a replacement account', () async {
+    final storage = _MemoryTokenStore(
+      accessToken: 'access-a',
+      refreshToken: 'refresh-a',
+    );
+    final refreshStarted = Completer<void>();
+    final refreshResponse = Completer<ResponseBody>();
+    final client = _client(
+      _AsyncRouteAdapter((options) async {
+        return switch (options.uri.path) {
+          '/api/v1/auth/refresh' => () async {
+            refreshStarted.complete();
+            return refreshResponse.future;
+          }(),
+          '/api/v1/auth/password/login' => _json(
+            _session(
+              access: 'access-b',
+              refresh: 'refresh-b',
+              userId: '6e29be31-ffeb-4699-bf69-8b37afe15505',
+            ),
+          ),
+          _ => throw StateError('Unexpected route ${options.uri.path}'),
+        };
+      }),
+      storage,
+    );
+
+    final refreshing = client.refreshSession();
+    await refreshStarted.future;
+    await client.loginPassword('other@example.com', 'password');
+    refreshResponse.complete(_json({'detail': 'expired'}, status: 401));
+
+    await expectLater(
+      refreshing,
+      throwsA(
+        isA<MemberAccountException>().having(
+          (error) => error.statusCode,
+          'statusCode',
+          401,
+        ),
+      ),
+    );
+    expect(storage.accessToken, 'access-b');
+    expect(storage.refreshToken, 'refresh-b');
+  });
+
+  test(
+    'late restore response cannot combine user A with account B tokens',
+    () async {
+      final storage = _MemoryTokenStore(
+        accessToken: 'access-a',
+        refreshToken: 'refresh-a',
+      );
+      final restoreStarted = Completer<void>();
+      final restoreResponse = Completer<ResponseBody>();
+      final client = _client(
+        _AsyncRouteAdapter((options) async {
+          return switch (options.uri.path) {
+            '/api/v1/auth/me' => () async {
+              expect(options.headers['Authorization'], 'Bearer access-a');
+              restoreStarted.complete();
+              return restoreResponse.future;
+            }(),
+            '/api/v1/auth/password/login' => _json(
+              _session(
+                access: 'access-b',
+                refresh: 'refresh-b',
+                userId: '6e29be31-ffeb-4699-bf69-8b37afe15505',
+              ),
+            ),
+            _ => throw StateError('Unexpected route ${options.uri.path}'),
+          };
+        }),
+        storage,
+      );
+
+      final restoring = client.restoreSession();
+      await restoreStarted.future;
+      await client.loginPassword('other@example.com', 'password');
+      restoreResponse.complete(_json({'user': _user()}));
+
+      await expectLater(
+        restoring,
+        throwsA(
+          isA<MemberAccountException>().having(
+            (error) => error.code,
+            'code',
+            'session_changed',
+          ),
+        ),
+      );
+      expect(storage.accessToken, 'access-b');
+      expect(storage.refreshToken, 'refresh-b');
+    },
+  );
+
+  test(
     'transient restore failure keeps tokens so a later retry can sign in',
     () async {
       SharedPreferences.setMockInitialValues({});
@@ -2271,6 +2497,74 @@ void main() {
     },
   );
 
+  for (final transition in ['logout', 'switch account']) {
+    test(
+      'late email change cannot overwrite tokens after $transition',
+      () async {
+        final storage = _MemoryTokenStore(
+          accessToken: 'access-a',
+          refreshToken: 'refresh-a',
+        );
+        final changeStarted = Completer<void>();
+        final changeResponse = Completer<ResponseBody>();
+        final client = _client(
+          _AsyncRouteAdapter((options) async {
+            return switch (options.uri.path) {
+              '/api/v1/auth/security/email/change' => () async {
+                expect(options.headers['Authorization'], 'Bearer access-a');
+                changeStarted.complete();
+                return changeResponse.future;
+              }(),
+              '/api/v1/auth/logout' => _json({}),
+              '/api/v1/auth/password/login' => _json(
+                _session(
+                  access: 'access-b',
+                  refresh: 'refresh-b',
+                  userId: '6e29be31-ffeb-4699-bf69-8b37afe15505',
+                ),
+              ),
+              _ => throw StateError('Unexpected route ${options.uri.path}'),
+            };
+          }),
+          storage,
+        );
+
+        final changing = client.changeEmail(
+          newEmail: 'new@example.com',
+          newChallengeId: 'new-id',
+          newCode: '222222',
+        );
+        await changeStarted.future;
+        if (transition == 'logout') {
+          await client.logout();
+        } else {
+          await client.loginPassword('other@example.com', 'password');
+        }
+        changeResponse.complete(
+          _json(_session(access: 'stale-access-a', refresh: 'stale-refresh-a')),
+        );
+
+        await expectLater(
+          changing,
+          throwsA(
+            isA<MemberAccountException>().having(
+              (error) => error.code,
+              'code',
+              'session_changed',
+            ),
+          ),
+        );
+        if (transition == 'logout') {
+          expect(storage.accessToken, isNull);
+          expect(storage.refreshToken, isNull);
+        } else {
+          expect(storage.accessToken, 'access-b');
+          expect(storage.refreshToken, 'refresh-b');
+        }
+      },
+    );
+  }
+
   test('relay email change parses a missing current challenge', () async {
     final adapter = _RouteAdapter((options) {
       return switch (options.uri.path) {
@@ -2388,10 +2682,15 @@ void main() {
 
 MemberAccountApiClient _client(
   HttpClientAdapter adapter,
-  MemberTokenStore storage,
-) {
+  MemberTokenStore storage, {
+  OfflineReaderLicenseStore? offlineReaderLicenseStore,
+}) {
   final dio = Dio()..httpClientAdapter = adapter;
-  return MemberAccountApiClient(dio: dio, tokenStore: storage);
+  return MemberAccountApiClient(
+    dio: dio,
+    tokenStore: storage,
+    offlineReaderLicenseStore: offlineReaderLicenseStore,
+  );
 }
 
 Map<String, dynamic> _session({
@@ -2499,6 +2798,29 @@ class _MemoryTokenStore implements MemberTokenStore {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
     this.mfaPending = mfaPending;
+  }
+}
+
+class _ThrowingClearTokenStore extends _MemoryTokenStore {
+  _ThrowingClearTokenStore({super.accessToken, super.refreshToken});
+
+  @override
+  Future<void> clear() => Future<void>.error(StateError('clear failed'));
+}
+
+class _ControlledOfflineReaderLicenseStore extends OfflineReaderLicenseStore {
+  _ControlledOfflineReaderLicenseStore({this.delayClear = false});
+
+  final bool delayClear;
+  final clearStarted = Completer<void>();
+  final allowClear = Completer<void>();
+  int clearCalls = 0;
+
+  @override
+  Future<void> clear() async {
+    clearCalls++;
+    if (!clearStarted.isCompleted) clearStarted.complete();
+    if (delayClear) await allowClear.future;
   }
 }
 

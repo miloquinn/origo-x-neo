@@ -117,6 +117,66 @@ void main() {
   });
 
   test(
+    'account switch aborts Premium restore before it can complete',
+    () async {
+      var accountId = _accountId;
+      final restoreStarted = Completer<void>();
+      final allowRestore = Completer<void>();
+      final store = _FakeStore(
+        onRestoreAsync: (_) async {
+          restoreStarted.complete();
+          await allowRestore.future;
+        },
+      );
+      final service = _service(store, accountId: () => accountId);
+      addTearDown(store.close);
+      addTearDown(service.dispose);
+
+      final restoring = service.restoreDomain(StorePurchaseDomain.premium);
+      await restoreStarted.future;
+      accountId = _otherAccountId;
+      allowRestore.complete();
+
+      await expectLater(
+        restoring,
+        throwsA(
+          isA<MemberAccountException>().having(
+            (error) => error.message,
+            'message',
+            contains('账号已切换'),
+          ),
+        ),
+      );
+      expect(
+        service.phaseFor(StorePurchaseDomain.premium),
+        StorePurchasePhase.failed,
+      );
+    },
+  );
+
+  test('Google restore inventory ignores unknown historical products', () {
+    final mixed = InAppPurchaseStore.restoredInventoryForBatch(
+      [
+        _purchase(_readerId, PurchaseStatus.restored, 'reader-restore'),
+        _purchase('retired_sku', PurchaseStatus.restored, 'retired-restore'),
+      ],
+      const {_readerId},
+    );
+    final unknownRestored = InAppPurchaseStore.restoredInventoryForBatch(
+      [_purchase('retired_sku', PurchaseStatus.restored, 'retired-restore')],
+      const {_readerId},
+    );
+    final unknownPurchased = InAppPurchaseStore.restoredInventoryForBatch(
+      [_purchase('retired_sku', PurchaseStatus.purchased, 'retired-purchase')],
+      const {_readerId},
+    );
+
+    expect(mixed, {'reader-restore'});
+    expect(unknownRestored, isEmpty);
+    expect(unknownPurchased, isNull);
+  });
+
+  test(
     'pending reader payment never completes or changes premium state',
     () async {
       final store = _FakeStore();
@@ -386,8 +446,13 @@ class _TestPurchase extends PurchaseDetails {
 }
 
 class _FakeStore implements PurchaseStore {
-  _FakeStore({this.onRestore, this.restoreIds = const <String>{}});
+  _FakeStore({
+    this.onRestore,
+    this.onRestoreAsync,
+    this.restoreIds = const <String>{},
+  });
   final void Function(_FakeStore store)? onRestore;
+  final Future<void> Function(_FakeStore store)? onRestoreAsync;
   final Set<String>? restoreIds;
   final _controller = StreamController<List<PurchaseDetails>>.broadcast();
   final completed = <PurchaseDetails>[];
@@ -437,6 +502,7 @@ class _FakeStore implements PurchaseStore {
     Set<String>? productIds,
   }) async {
     onRestore?.call(this);
+    await onRestoreAsync?.call(this);
     return restoreIds;
   }
 }

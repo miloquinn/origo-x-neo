@@ -5765,15 +5765,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get accountChangeEmailEnterHint =>
-      'Nous enverrons un code à votre e-mail actuel et un autre à la nouvelle adresse.';
+      'Un code sera envoyé à votre nouvelle adresse. Il n’est pas nécessaire de vérifier l’ancienne.';
 
   @override
-  String get accountChangeEmailVerifyTitle =>
-      'Vérifier les deux adresses e-mail';
+  String get accountChangeEmailVerifyTitle => 'Vérifier la nouvelle adresse';
 
   @override
   String get accountChangeEmailVerifyHint =>
-      'Saisissez les deux codes pour terminer le changement de votre e-mail de connexion.';
+      'Saisissez le code reçu à votre nouvelle adresse pour terminer le changement.';
 
   @override
   String get accountCurrentEmail => 'E-mail actuel';

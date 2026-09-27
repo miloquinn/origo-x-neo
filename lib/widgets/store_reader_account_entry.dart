@@ -4,7 +4,7 @@ import '../pages/account/store_reader_unlock_page.dart';
 import '../services/account/account.dart';
 import '../utils/localization_extension.dart';
 
-/// A store purchase remains available independently of the Origo login form.
+/// Shows the store offer; purchasing and restoring require an Origo login.
 class StoreReaderAccountEntry extends StatelessWidget {
   const StoreReaderAccountEntry({super.key, required this.account});
 

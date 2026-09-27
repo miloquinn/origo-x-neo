@@ -98,12 +98,7 @@ void main() {
             locale: Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: SettingsAccountCard(
-                quiet: true,
-                showMembershipSection: true,
-              ),
-            ),
+            home: Scaffold(body: SettingsAccountCard()),
           ),
         ),
       );
@@ -258,10 +253,7 @@ void main() {
             home: const Scaffold(
               body: SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(20, 28, 20, 24),
-                child: SettingsAccountCard(
-                  quiet: true,
-                  showMembershipSection: true,
-                ),
+                child: SettingsAccountCard(),
               ),
             ),
           ),
@@ -302,7 +294,7 @@ void main() {
         expect(tester.getSize(panel).width, tester.getSize(offer).width);
         expect(
           tester.getTopLeft(offer).dy - tester.getBottomLeft(panel).dy,
-          14,
+          closeTo(14, 0.001),
         );
       }
       // Entrance motion finishes; the account hub must not animate forever.

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/l10n/app_localizations.dart';
@@ -32,7 +33,10 @@ void main() {
     await icons.load();
   });
 
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+  });
 
   testWidgets(
     'security overview stays compact and email verification shows one method',
@@ -127,20 +131,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('新邮箱验证码'), findsOneWidget);
+      expect(find.text('验证新邮箱'), findsOneWidget);
+      expect(find.text('验证两个邮箱'), findsNothing);
+      expect(find.text('new@example.com'), findsOneWidget);
+      expect(find.text('当前邮箱验证码'), findsNothing);
+      expect(find.text('当前密码（可代替验证码）'), findsNothing);
       expect(
         find.byKey(const ValueKey('account-current-verification-picker')),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.text('当前邮箱验证码'), findsOneWidget);
-      expect(find.text('当前密码（可代替验证码）'), findsNothing);
-
-      await tester.tap(
-        find.byKey(const ValueKey('account-verify-current-password')),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('当前邮箱验证码'), findsNothing);
-      expect(find.text('当前密码（可代替验证码）'), findsOneWidget);
       await tester.drag(find.byType(ListView).last, const Offset(0, -320));
       await tester.pump();
       expect(
@@ -208,6 +209,18 @@ void main() {
         boundaryKey,
         '${directory.path}/account-change-email-centered.png',
       );
+      await tester.enterText(find.byType(TextField), 'new@example.com');
+      await tester.tap(
+        find.byKey(const ValueKey('account-change-email-submit')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('当前邮箱验证码'), findsNothing);
+      await _capture(
+        tester,
+        boundaryKey,
+        '${directory.path}/account-change-email-new-code.png',
+      );
       expect(tester.takeException(), isNull);
     },
     skip: _screenshotDirectory == null,
@@ -235,6 +248,9 @@ class _SecurityAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    if (options.uri.path == '/api/v1/membership/reader/account-status') {
+      return ResponseBody.fromString('{}', 503);
+    }
     final body = switch (options.uri.path) {
       '/api/v1/auth/config' => {
         'providers': <String, bool>{},
@@ -275,7 +291,8 @@ class _SecurityAdapter implements HttpClientAdapter {
         'recovery_codes_remaining': 0,
       },
       '/api/v1/auth/security/email/code' => {
-        'current': {'challenge_id': 'current-id', 'expires_in': 600},
+        'current': null,
+        'current_code_required': false,
         'new': {'challenge_id': 'new-id', 'expires_in': 600},
         'message': 'sent',
       },

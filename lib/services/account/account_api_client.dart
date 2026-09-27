@@ -66,6 +66,7 @@ class MemberAccountApiClient {
   final ReaderInstallationCredentialStore _readerCredentialStore;
   final Uri baseUri;
   Future<MemberSession>? _refreshing;
+  Future<void>? _tokenMutationBarrier;
   final StreamController<void> _sessionInvalidations =
       StreamController<void>.broadcast();
 
@@ -121,27 +122,42 @@ class MemberAccountApiClient {
 
   Future<MemberSession> restoreSession() async {
     final storedPending = await _tokenStore.readMfaPending();
+    String? authorizationToken;
     final json = await _jsonRequest(
       'GET',
       '$authRoot/me',
       retryAuthentication: !storedPending,
+      onAccessTokenUsed: (token) => authorizationToken = token,
     );
-    final accessToken = await _tokenStore.readAccessToken();
-    final refreshToken = await _tokenStore.readRefreshToken();
-    if (accessToken == null ||
-        accessToken.isEmpty ||
-        refreshToken == null ||
-        refreshToken.isEmpty) {
-      throw const MemberAccountException('请先登录', statusCode: 401);
-    }
     final mfaRequired = json['mfa_required'] as bool? ?? false;
-    if (mfaRequired != storedPending) {
-      await _tokenStore.saveTokens(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        mfaPending: mfaRequired,
-      );
-    }
+    late final String accessToken;
+    late final String refreshToken;
+    await _withTokenMutation(() async {
+      final currentAccessToken = await _tokenStore.readAccessToken();
+      final currentRefreshToken = await _tokenStore.readRefreshToken();
+      if (authorizationToken == null ||
+          currentAccessToken != authorizationToken) {
+        throw const MemberAccountException(
+          '登录账号已变化，请重新操作',
+          code: 'session_changed',
+        );
+      }
+      if (currentAccessToken == null ||
+          currentAccessToken.isEmpty ||
+          currentRefreshToken == null ||
+          currentRefreshToken.isEmpty) {
+        throw const MemberAccountException('请先登录', statusCode: 401);
+      }
+      accessToken = currentAccessToken;
+      refreshToken = currentRefreshToken;
+      if (mfaRequired != storedPending) {
+        await _tokenStore.saveTokens(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          mfaPending: mfaRequired,
+        );
+      }
+    });
     return MemberSession(
       accessToken: accessToken,
       refreshToken: refreshToken,
@@ -431,14 +447,6 @@ class MemberAccountApiClient {
     return _sessionBinding(token);
   }
 
-  Future<MemberMembership> startStoreTrial() async => MemberMembership.fromJson(
-    await _jsonRequest(
-      'POST',
-      '$membershipRoot/store-trial',
-      data: {'channel': 'google_play'},
-    ),
-  );
-
   Future<MemberMembership> submitGooglePurchase(String purchaseToken) async =>
       MemberMembership.fromJson(
         await _jsonRequest(
@@ -649,7 +657,7 @@ class MemberAccountApiClient {
     try {
       final session = await _sessionRequest('$authRoot/refresh', {
         'refresh_token': refreshToken,
-      });
+      }, expectedRefreshToken: refreshToken);
       await _offlineReaderLicenseStore.rebind(
         oldBinding: oldBinding,
         newBinding: _sessionBinding(session.refreshToken),
@@ -660,13 +668,23 @@ class MemberAccountApiClient {
       // Only discard the stored session when the server actually rejects it.
       // Timeouts, proxy drops, and DNS failures must not log the user out.
       if (error.shouldDiscardSession) {
-        await _clearLocalSession(notify: true);
+        await _clearLocalSession(
+          notify: true,
+          expectedRefreshToken: refreshToken,
+        );
       }
       rethrow;
     }
   }
 
-  Future<void> _clearLocalSession({required bool notify}) async {
+  Future<void> _clearLocalSession({
+    required bool notify,
+    String? expectedRefreshToken,
+  }) => _withTokenMutation(() async {
+    if (expectedRefreshToken != null &&
+        await _tokenStore.readRefreshToken() != expectedRefreshToken) {
+      return;
+    }
     try {
       await _tokenStore.clear();
     } finally {
@@ -678,7 +696,7 @@ class MemberAccountApiClient {
       }
       if (notify) _sessionInvalidations.add(null);
     }
-  }
+  });
 
   Future<MemberSession> _sessionRequest(
     String path,
@@ -686,7 +704,11 @@ class MemberAccountApiClient {
     bool authenticated = false,
     String? accessToken,
     bool retryAuthentication = true,
+    String? expectedRefreshToken,
   }) async {
+    String? authorizationToken;
+    final guardStoredSession =
+        authenticated || accessToken != null || expectedRefreshToken != null;
     final json = await _jsonRequest(
       'POST',
       path,
@@ -694,18 +716,55 @@ class MemberAccountApiClient {
       authenticated: authenticated,
       accessToken: accessToken,
       retryAuthentication: retryAuthentication,
+      onAccessTokenUsed: guardStoredSession
+          ? (token) => authorizationToken = token
+          : null,
     );
     final session = MemberSession.fromJson(json, baseUri: baseUri);
     try {
-      await _tokenStore.saveTokens(
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
-        mfaPending: session.mfaRequired,
-      );
+      await _withTokenMutation(() async {
+        if (guardStoredSession) {
+          final currentAccessToken = await _tokenStore.readAccessToken();
+          final currentRefreshToken = await _tokenStore.readRefreshToken();
+          final authorizationRequired = authenticated || accessToken != null;
+          final authorizationChanged =
+              authorizationRequired &&
+              (authorizationToken == null ||
+                  currentAccessToken != authorizationToken);
+          final refreshChanged =
+              expectedRefreshToken != null &&
+              currentRefreshToken != expectedRefreshToken;
+          if (authorizationChanged || refreshChanged) {
+            throw const MemberAccountException(
+              '登录账号已变化，请重新操作',
+              code: 'session_changed',
+            );
+          }
+        }
+        await _tokenStore.saveTokens(
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          mfaPending: session.mfaRequired,
+        );
+      });
+    } on MemberAccountException {
+      rethrow;
     } catch (_) {
       throw const MemberAccountException('无法安全保存登录状态，请检查系统安全存储设置');
     }
     return session;
+  }
+
+  Future<T> _withTokenMutation<T>(Future<T> Function() action) async {
+    final previous = _tokenMutationBarrier;
+    final release = Completer<void>();
+    _tokenMutationBarrier = release.future;
+    if (previous != null) await previous;
+    try {
+      return await action();
+    } finally {
+      release.complete();
+    }
   }
 
   Future<Map<String, dynamic>> _jsonRequest(
@@ -716,6 +775,7 @@ class MemberAccountApiClient {
     String? accessToken,
     bool retryAuthentication = true,
     Map<String, String>? headers,
+    void Function(String?)? onAccessTokenUsed,
   }) async {
     final response = await _request(
       method,
@@ -725,6 +785,7 @@ class MemberAccountApiClient {
       accessToken: accessToken,
       retryAuthentication: retryAuthentication,
       headers: headers,
+      onAccessTokenUsed: onAccessTokenUsed,
     );
     if (response.data is! Map) {
       throw const MemberAccountException('服务器返回了无法识别的数据');
@@ -744,6 +805,7 @@ class MemberAccountApiClient {
     String? accessToken,
     bool retryAuthentication = true,
     Map<String, String>? headers,
+    void Function(String?)? onAccessTokenUsed,
   }) async {
     var token = accessToken;
     if (authenticated && token == null) {
@@ -752,6 +814,7 @@ class MemberAccountApiClient {
         throw const MemberAccountException('请先登录', statusCode: 401);
       }
     }
+    onAccessTokenUsed?.call(token);
     try {
       return await _dio.request<dynamic>(
         baseUri.resolve(path).toString(),
@@ -776,6 +839,7 @@ class MemberAccountApiClient {
           accessToken: refreshed.accessToken,
           retryAuthentication: false,
           headers: headers,
+          onAccessTokenUsed: onAccessTokenUsed,
         );
       }
       throw _friendlyError(error);

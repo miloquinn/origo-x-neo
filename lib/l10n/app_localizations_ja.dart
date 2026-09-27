@@ -5455,14 +5455,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountChangeEmailEnterHint =>
-      '現在のメールアドレスと新しいメールアドレスに、それぞれ確認コードを送信します。';
+      '新しいメールアドレスに確認コードを送信します。現在のアドレスの確認は不要です。';
 
   @override
-  String get accountChangeEmailVerifyTitle => '両方のメールアドレスを確認';
+  String get accountChangeEmailVerifyTitle => '新しいメールアドレスを確認';
 
   @override
   String get accountChangeEmailVerifyHint =>
-      '2通のメールに記載されたコードを入力して、ログインメールアドレスの変更を完了してください。';
+      '新しいメールアドレスに届いた確認コードを入力して、変更を完了します。';
 
   @override
   String get accountCurrentEmail => '現在のメール';

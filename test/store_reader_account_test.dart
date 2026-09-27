@@ -248,6 +248,38 @@ void main() {
   );
 
   test(
+    'reader purchase rejects an account switch while loading store config',
+    () => _expectConfigWaitRejectsAccountSwitch(
+      (account) => account.purchaseReaderLifetime(),
+    ),
+  );
+
+  test(
+    'Apple reader trial rejects an account switch while loading store config',
+    () => _expectConfigWaitRejectsAccountSwitch(
+      (account) => account.startReaderTrial(),
+      apple: true,
+    ),
+  );
+
+  test(
+    'reader restore rejects an account switch while loading store config',
+    () => _expectConfigWaitRejectsAccountSwitch(
+      (account) => account.restoreReaderPurchases(),
+    ),
+  );
+
+  test(
+    'email challenge rejects a session invalidation while awaiting response',
+    () => _expectEmailActionRejectsSessionInvalidation(change: false),
+  );
+
+  test(
+    'email change rejects a session invalidation while awaiting response',
+    () => _expectEmailActionRejectsSessionInvalidation(change: true),
+  );
+
+  test(
     'Apple beta purchase entry points never start a store payment',
     () async {
       await _enableAppleBeta();
@@ -341,6 +373,85 @@ void main() {
     expect(account.hasPremiumAccess, isFalse);
     expect(account.hasAdvancedSourceAccess, isTrue);
   });
+
+  test(
+    'active Premium notifies listeners when its entitlement expires',
+    () async {
+      final expiresAt = DateTime.now().add(const Duration(milliseconds: 150));
+      final fixture = _Fixture((request) {
+        if (request.uri.path == '/api/v1/membership') {
+          return _json({
+            'user_id': _userId,
+            'premium': true,
+            'features': const <String, bool>{},
+            'entitlements': [
+              {
+                'feature_key': 'premium',
+                'source': 'test',
+                'status': 'active',
+                'granted_at': DateTime.now().toIso8601String(),
+                'expires_at': expiresAt.toIso8601String(),
+              },
+            ],
+          });
+        }
+        return _routes(request, access: 'locked');
+      });
+      final account = fixture.account();
+      addTearDown(account.dispose);
+      await account.initialize();
+      await account.loginPassword('reader@example.com', 'password');
+      expect(account.hasPremiumAccess, isTrue);
+
+      final expired = Completer<void>();
+      account.addListener(() {
+        if (!account.hasPremiumAccess && !expired.isCompleted) {
+          expired.complete();
+        }
+      });
+
+      await expectLater(
+        expired.future.timeout(const Duration(seconds: 1)),
+        completes,
+      );
+      expect(account.hasPremiumAccess, isFalse);
+    },
+  );
+
+  test(
+    'active reader trial notifies listeners and revokes reading at expiry',
+    () async {
+      final expiresAt = DateTime.now().add(const Duration(milliseconds: 150));
+      final fixture = _Fixture((request) {
+        if (request.uri.path.endsWith('/reader/account-status')) {
+          return _json(
+            _readerResult(request, 'trial', trialExpiresAt: expiresAt),
+          );
+        }
+        return _routes(request, access: 'locked');
+      });
+      final account = fixture.account();
+      addTearDown(account.dispose);
+      await account.initialize();
+      await account.loginPassword('reader@example.com', 'password');
+      expect(account.hasActiveReaderTrial, isTrue);
+      expect(account.hasReaderAccess, isTrue);
+
+      final expired = Completer<void>();
+      account.addListener(() {
+        if (!account.hasReaderAccess && !expired.isCompleted) {
+          expired.complete();
+        }
+      });
+
+      await expectLater(
+        expired.future.timeout(const Duration(seconds: 1)),
+        completes,
+      );
+      expect(account.hasActiveReaderTrial, isFalse);
+      expect(account.hasReaderAccess, isFalse);
+    },
+  );
 
   test('online refund replaces an older premium-derived attestation', () async {
     var premium = true;
@@ -576,6 +687,149 @@ Future<void> _enableAppleBeta() async {
   }
 }
 
+Future<void> _expectConfigWaitRejectsAccountSwitch(
+  Future<void> Function(MemberAccountController account) action, {
+  bool apple = false,
+}) async {
+  if (apple) {
+    AppDistribution.debugOverride(
+      channel: AppDistributionChannel.appleStore,
+      readerLicenseRequired: true,
+    );
+  }
+  final store = _TestStore();
+  final configRequested = Completer<void>();
+  final delayedConfig = Completer<ResponseBody>();
+  var delayConfig = false;
+  var currentUserId = _userId;
+  final fixture = _Fixture((request) {
+    if (request.uri.path == '/api/v1/auth/password/login') {
+      final email = (request.data as Map)['email'] as String;
+      currentUserId = email.startsWith('other') ? _otherUserId : _userId;
+      return _json(_session(userId: currentUserId, email: email));
+    }
+    if (request.uri.path == '/api/v1/membership/config' && delayConfig) {
+      if (!configRequested.isCompleted) configRequested.complete();
+      return delayedConfig.future;
+    }
+    if (request.uri.path == '/api/v1/membership') {
+      return _json({
+        'user_id': currentUserId,
+        'premium': false,
+        'features': const <String, bool>{},
+        'entitlements': const <Object>[],
+      });
+    }
+    if (request.uri.path.endsWith('/reader/account-status')) {
+      return _json(_readerResult(request, 'locked', accountId: currentUserId));
+    }
+    return _routes(request, access: 'locked');
+  });
+  final account = fixture.account(store: store);
+  addTearDown(store.close);
+  addTearDown(account.dispose);
+  await account.initialize();
+  await account.loginPassword('reader@example.com', 'password');
+
+  delayConfig = true;
+  final operation = action(account);
+  await configRequested.future;
+  await account.logout();
+  await account.loginPassword('other@example.com', 'password');
+  delayedConfig.complete(
+    _routes(
+      RequestOptions(path: '/api/v1/membership/config'),
+      access: 'locked',
+    ),
+  );
+
+  await expectLater(
+    operation,
+    throwsA(
+      isA<MemberAccountException>().having(
+        (error) => error.message,
+        'message',
+        contains('账号已切换'),
+      ),
+    ),
+  );
+  expect(store.lastPurchase, isNull);
+  expect(store.restoreCalls, 0);
+}
+
+Future<void> _expectEmailActionRejectsSessionInvalidation({
+  required bool change,
+}) async {
+  final tokens = _Tokens();
+  final requestStarted = Completer<void>();
+  final delayedResponse = Completer<ResponseBody>();
+  var delayEmailRequest = false;
+  final dio = Dio()
+    ..httpClientAdapter = _Adapter((request) {
+      if (delayEmailRequest &&
+          request.uri.path ==
+              (change
+                  ? '/api/v1/auth/security/email/change'
+                  : '/api/v1/auth/security/email/code')) {
+        requestStarted.complete();
+        return delayedResponse.future;
+      }
+      if (request.uri.path == '/api/v1/auth/refresh') {
+        return _json({'detail': 'session revoked'}, statusCode: 401);
+      }
+      return _routes(request, access: 'locked');
+    });
+  final api = MemberAccountApiClient(dio: dio, tokenStore: tokens);
+  final account = MemberAccountController(api: api);
+  addTearDown(account.dispose);
+  await account.initialize();
+  await account.loginPassword('reader@example.com', 'password');
+
+  delayEmailRequest = true;
+  final operation = change
+      ? account.changeEmail(
+          newEmail: 'new@example.com',
+          newChallengeId: 'new-id',
+          newCode: '123456',
+        )
+      : account.requestEmailChangeCode('new@example.com').then<void>((_) {});
+  await requestStarted.future;
+  await expectLater(
+    api.refreshSession(),
+    throwsA(isA<MemberAccountException>()),
+  );
+  await pumpEventQueue();
+  expect(account.isAuthenticated, isFalse);
+  delayedResponse.complete(
+    change
+        ? _json(_session(email: 'new@example.com'))
+        : _json({
+            'current': null,
+            'current_code_required': false,
+            'new': {'challenge_id': 'new-id', 'expires_in': 600},
+            'message': 'sent',
+          }),
+  );
+
+  await expectLater(
+    operation,
+    throwsA(
+      change
+          ? isA<MemberAccountException>().having(
+              (error) => error.code,
+              'code',
+              'session_changed',
+            )
+          : isA<MemberAccountException>().having(
+              (error) => error.message,
+              'message',
+              contains('账号已切换'),
+            ),
+    ),
+  );
+  expect(account.isAuthenticated, isFalse);
+}
+
 class _Fixture {
   _Fixture(this.handler);
   final FutureOr<ResponseBody> Function(RequestOptions request) handler;
@@ -602,7 +856,9 @@ ResponseBody _routes(RequestOptions request, {required String access}) {
         'features': const <String>[],
         'reader_trial_enabled': true,
         'google_billing_enabled': true,
+        'apple_billing_enabled': true,
         'reader_google_product_id': 'origo_x_reader_lifetime',
+        'reader_apple_trial_product_id': 'com.niki.xxread.reader.trial14d',
         'premium_google_product_id': 'origo_x_premium_lifetime',
         'premium_full_google_product_id': 'origo_x_explorer_lifetime',
       });
@@ -645,13 +901,17 @@ Map<String, Object?> _readerResult(
   RequestOptions request,
   String access, {
   bool derivedFromPremium = false,
+  String accountId = _userId,
+  DateTime? trialExpiresAt,
 }) {
   final now = DateTime.now();
   final accountOwned = request.uri.path.contains('account-');
   final key = request.headers['X-Origo-Reader-Key'] as String;
   final trial = access == 'trial';
   final lifetime = access == 'lifetime';
-  final expires = trial ? now.add(const Duration(days: 14)) : null;
+  final expires = trial
+      ? trialExpiresAt ?? now.add(const Duration(days: 14))
+      : null;
   return {
     'reader_access': {
       'unlocked': trial || lifetime,
@@ -663,7 +923,7 @@ Map<String, Object?> _readerResult(
     },
     'offline_license': {
       'version': accountOwned ? 2 : 1,
-      if (accountOwned) 'account_id': _userId,
+      if (accountOwned) 'account_id': accountId,
       if (accountOwned) 'subject_type': 'account',
       if (accountOwned) 'permanent': lifetime,
       if (accountOwned) 'derived_from_premium': derivedFromPremium,
@@ -680,14 +940,17 @@ Map<String, Object?> _readerResult(
   };
 }
 
-Map<String, Object?> _session() => {
+Map<String, Object?> _session({
+  String userId = _userId,
+  String email = 'reader@example.com',
+}) => {
   'access_token': 'access',
   'refresh_token': 'refresh',
   'access_expires_in': 900,
   'refresh_expires_in': 2592000,
   'user': {
-    'id': _userId,
-    'email': 'reader@example.com',
+    'id': userId,
+    'email': email,
     'email_verified': true,
     'username': 'reader',
     'effective_name': 'Reader',
@@ -697,6 +960,7 @@ Map<String, Object?> _session() => {
 };
 
 const _userId = '123e4567-e89b-42d3-a456-426614174000';
+const _otherUserId = '123e4567-e89b-42d3-a456-426614174001';
 
 ResponseBody _json(Map<String, Object?> value, {int statusCode = 200}) =>
     ResponseBody.fromString(
@@ -750,6 +1014,7 @@ class _Tokens implements MemberTokenStore {
 
 class _TestStore implements PurchaseStore {
   PurchaseParam? lastPurchase;
+  int restoreCalls = 0;
   final _stream = StreamController<List<PurchaseDetails>>.broadcast();
   Future<void> close() => _stream.close();
   void emit(String product, String id) => _stream.add([
@@ -797,5 +1062,8 @@ class _TestStore implements PurchaseStore {
   Future<Set<String>?> restorePurchases({
     String? applicationUserName,
     Set<String>? productIds,
-  }) async => {};
+  }) async {
+    restoreCalls++;
+    return {};
+  }
 }
