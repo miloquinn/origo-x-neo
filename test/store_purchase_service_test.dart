@@ -57,33 +57,37 @@ void main() {
     },
   );
 
-  test(
-    'reader purchase is anonymous while premium requires an Origo account',
-    () async {
-      final store = _FakeStore();
-      String? accountId;
-      final service = _service(
-        store,
-        accountId: () => accountId,
-        applicationUserName: (kind) => kind.domain == StorePurchaseDomain.reader
-            ? 'reader-key-hash'
-            : accountId,
-      );
-      addTearDown(store.close);
-      addTearDown(service.dispose);
+  test('all new purchases require and carry the Origo account', () async {
+    final store = _FakeStore();
+    String? accountId;
+    final service = _service(
+      store,
+      accountId: () => accountId,
+      applicationUserName: (_) => accountId,
+    );
+    addTearDown(store.close);
+    addTearDown(service.dispose);
 
-      await service.purchaseKind(StoreProductKind.readerLifetime);
-      expect(store.lastPurchase?.applicationUserName, 'reader-key-hash');
-      await expectLater(
-        service.purchaseKind(StoreProductKind.premiumLifetime),
-        throwsA(isA<MemberAccountException>()),
-      );
+    await expectLater(
+      service.purchaseKind(StoreProductKind.readerLifetime),
+      throwsA(isA<MemberAccountException>()),
+    );
+    await expectLater(
+      service.restoreDomain(StorePurchaseDomain.reader),
+      throwsA(isA<MemberAccountException>()),
+    );
+    expect(store.lastPurchase, isNull);
+    await expectLater(
+      service.purchaseKind(StoreProductKind.premiumLifetime),
+      throwsA(isA<MemberAccountException>()),
+    );
 
-      accountId = _accountId;
-      await service.purchaseKind(StoreProductKind.premiumLifetime);
-      expect(store.lastPurchase?.applicationUserName, _accountId);
-    },
-  );
+    accountId = _accountId;
+    await service.purchaseKind(StoreProductKind.readerLifetime);
+    expect(store.lastPurchase?.applicationUserName, _accountId);
+    await service.purchaseKind(StoreProductKind.premiumLifetime);
+    expect(store.lastPurchase?.applicationUserName, _accountId);
+  });
 
   test('account switch prevents Premium transaction completion', () async {
     final store = _FakeStore();

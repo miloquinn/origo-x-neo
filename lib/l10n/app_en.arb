@@ -6066,7 +6066,7 @@
   "settingsQqGroup": "QQ Group",
   "settingsOpenSourceTitle": "Open-source details",
   "settingsOpenSourceDetails": "All features except advanced features are open source. The open-source code is licensed under AGPL-3.0; see the GitHub repository for its scope.",
-  "premiumLifetimeTitle": "Lifetime Premium",
+  "premiumLifetimeTitle": "Origo Explore",
   "@premiumLifetimeTitle": {
     "description": "Lifetime Premium"
   },
@@ -6074,7 +6074,7 @@
   "@premiumLifetimeCaption": {
     "description": "One-time purchase · No auto-renewal"
   },
-  "premiumBenefitsTitle": "Included with Premium",
+  "premiumBenefitsTitle": "Included with Origo Explore",
   "@premiumBenefitsTitle": {
     "description": "Included with Premium"
   },
@@ -6126,7 +6126,7 @@
   "@premiumAccountBindingTitle": {
     "description": "Account and access"
   },
-  "premiumAccountBindingBody": "After verification, Premium is linked to the current Origo X account and syncs across supported platforms. Advanced settings become available with membership. Signing out or revocation disables advanced features. Check your account before purchasing.",
+  "premiumAccountBindingBody": "After verification, Origo Explore is linked to your current Origo account and can be used on supported platforms. Cross-platform access applies to the purchased entitlement; it does not automatically sync books or reading data. Signing out or revocation disables the extension. Check your account before purchasing.",
   "@premiumAccountBindingBody": {
     "description": "After verification, Premium is linked to the current Origo X account and syncs across supported platforms. Advanced settings become available with membership. Signing out or revocation disables advanced features. Check your account before purchasing."
   },
@@ -6154,7 +6154,7 @@
   "@premiumPrivacyAccountBody": {
     "description": "The Origo X account service processes account details and membership records for sign-in, security verification and access across devices. Contact us about support or privacy using the contact options on the official website."
   },
-  "premiumPurchaseSuccess": "Premium unlocked",
+  "premiumPurchaseSuccess": "Origo Explore unlocked",
   "@premiumPurchaseSuccess": {
     "description": "Premium unlocked"
   },
@@ -6676,23 +6676,23 @@
   "settingsPremiumActive": "Premium active",
   "settingsPremiumSyncFailed": "Could not sync membership status",
   "settingsWebDavWorking": "WebDAV is working",
-  "storeReaderLockedTitle": "Get Basic edition",
+  "storeReaderLockedTitle": "Get Origo Read",
   "storeReaderLockedBody": "Reading in this store edition requires an active trial or a Basic edition purchase. Your books and notes are kept. Return to your library to export your data.",
   "storeReaderUnlock": "Trial, purchase or restore",
   "storeReaderBack": "Back to library",
   "storeReaderChecking": "Checking reading access…",
-  "storeReaderBenefitTitle": "Basic edition",
-  "storeReaderBenefitBody": "Local reading, yours to keep. No Origo account is required.",
+  "storeReaderBenefitTitle": "Origo Read",
+  "storeReaderBenefitBody": "The complete local reading experience, yours to keep. Access is linked to your Origo account and works on supported platforms.",
   "storeTrialStart": "Try free for {days} days",
-  "storeTrialDetails": "Try local reading for {days} days. No automatic charge. After the trial, purchase Basic edition once to keep reading. Your books and notes are kept.",
+  "storeTrialDetails": "Sign in to your Origo account to try local reading for {days} days. There is no automatic charge. After the trial, purchase Origo Read once to keep reading. Your books and notes are kept.",
   "storeTrialStarted": "Your store trial has started.",
   "storeTrialExpired": "Your store trial has ended. Purchase once to continue, or restore an existing purchase.",
-  "storePurchaseButton": "Buy Basic edition with {store}",
-  "storePurchaseBilling": "One-time Basic edition purchase. No automatic renewal. {store} displays the actual price and processes payment.",
-  "storePurchaseRestoreHelp": "Restore with the {store} account used to purchase. No Origo login or additional charge is required.",
-  "storePurchaseAccess": "You already own Basic edition through {store}. No repeat purchase is needed.",
+  "storePurchaseButton": "Buy Origo Read with {store}",
+  "storePurchaseBilling": "Origo Read is a one-time purchase with no automatic renewal. {store} displays the price and processes payment. After verification, access is linked to your Origo account and works on supported platforms.",
+  "storePurchaseRestoreHelp": "Sign in to the linked Origo account, then restore with the {store} account used to purchase. Restoring does not charge again.",
+  "storePurchaseAccess": "Origo Read is linked to your Origo account and works on supported platforms. No repeat purchase is needed.",
   "storeRestoreEmpty": "No restorable purchase was found. Check your store account and the linked Origo X account.",
-  "basicRestoreEmpty": "No Basic edition purchase found. Check your store account.",
+  "basicRestoreEmpty": "No Origo Read purchase was found. Check your Origo account and store account.",
   "storeGoogleRefundTerms": "Request a refund through Google Play. A verified refund removes only the access associated with that purchase; independent entitlements remain valid.",
   "storeReaderLegacyNotice": "Your existing basic reading access is preserved. Advanced source compatibility still requires Premium.",
   "storePrivacyPurchaseBody": "Store verification data and an account identifier are sent to our server to verify and restore access. Google Play verification includes a purchase token and a hashed account identifier. We do not receive payment card details.",
@@ -6796,8 +6796,8 @@
   "basicReadingSummary": "Book formats · Themes · Fonts & layout",
   "basicListeningSummary": "Device voices · Cloud TTS · Reading AI",
   "basicNotesSummary": "Notes & bookmarks · Statistics · WebDAV backup",
-  "premiumEditorialTitle": "Take reading a little further.",
-  "premiumEditorialSubtitle": "More source options for curious readers.",
+  "premiumEditorialTitle": "Origo Explore",
+  "premiumEditorialSubtitle": "An optional source extension with broader format compatibility.",
   "basicReadingTitle": "Multi-format reading",
   "basicReadingBody": "Read TXT, EPUB, PDF and more. Import books with contents and bookmarks, multiple page-turn modes, immersive reading and tablet spreads.",
   "basicFormatNote": "Format support varies by platform; DRM-protected books are not supported.",
@@ -6816,18 +6816,29 @@
   "basicSyncTitle": "Library & backup",
   "basicSyncBody": "Manage your local library and back up or restore books, reading data and settings with WebDAV.",
   "basicServicesNote": "AI and cloud TTS require your own service configuration; third-party fees are not included.",
-  "basicEditionTitle": "Basic edition",
+  "basicEditionTitle": "Origo Read",
   "basicEditionSummary": "One purchase. The complete reading experience.",
-  "basicEditionNoAccount": "No Origo sign-in needed",
-  "premiumEditionSummary": "Advanced extensions. More source formats.",
-  "storeReaderLicenseTitle": "Basic edition purchase",
-  "storeReaderLicenseSubtitle": "Try local reading for 14 days, then purchase Basic edition once.",
-  "storeReaderLifetimeTitle": "Basic edition",
-  "storeReaderOwned": "Basic edition purchased through {store}.",
-  "storePremiumPrerequisiteTitle": "Buy Basic edition first",
-  "storePremiumPrerequisiteBody": "Premium is sold separately after Basic edition is purchased. A trial does not qualify.",
-  "storePremiumPriceCaption": "Lifetime Premium · linked to your Origo account",
-  "storePremiumPurchaseButton": "Buy Premium with {store}",
+  "basicEditionAccountBound": "Linked to Origo · cross-platform access",
+  "premiumEditionSummary": "Optional source extension. More compatible formats.",
+  "storeReaderLicenseTitle": "Origo Read",
+  "storeReaderLicenseSubtitle": "Sign in to try or purchase. Your purchased access works on supported platforms.",
+  "storeReaderLifetimeTitle": "Origo Read",
+  "storeReaderOwned": "Origo Read is linked to your Origo account and works on supported platforms.",
+  "storeReaderSignInAction": "Sign in to Origo and continue",
+  "storeReaderCrossPlatformAccess": "Origo Read owned · use the same Origo account on supported platforms",
+  "storePremiumPrerequisiteTitle": "Get Origo Read first",
+  "storePremiumPrerequisiteBody": "Origo Explore is an optional purchase sold separately after Origo Read is purchased. A trial does not qualify.",
+  "storePremiumPriceCaption": "Lifetime source extension · cross-platform account access",
+  "premiumCrossPlatformAccess": "Use the same Origo account to keep access on supported platforms.",
+  "storeBetaAccessAvailable": "All features are available during beta testing",
+  "premiumIncludesReaderAccess": "Includes permanent Origo Read access plus broader source format compatibility.",
+  "storeExploreBundlePriceCaption": "Origo Read + Explore · one purchase, cross-platform access",
+  "storeExploreUpgradePriceCaption": "Origo Read owned · upgrade to Explore",
+  "storeExploreBundleBilling": "This is a one-time purchase containing Origo Read and the Explore extension, with no auto-renewal. {store} displays the price and processes payment. Access is linked to your current Origo account after verification.",
+  "@storeExploreBundleBilling": {"placeholders": {"store": {"type": "String"}}},
+  "storeExploreUpgradeBilling": "This is a one-time Explore upgrade for Origo Read owners, with no auto-renewal. {store} displays the price and processes payment.",
+  "@storeExploreUpgradeBilling": {"placeholders": {"store": {"type": "String"}}},
+  "storePremiumPurchaseButton": "Buy Origo Explore with {store}",
   "@storeReaderLicenseTitle": {
     "description": "Separate app reader unlock and account Premium billing."
   },
@@ -6862,7 +6873,7 @@
       }
     }
   },
-  "storePremiumBilling": "A separate one-time Premium purchase with no auto-renewal. {store} shows the actual price and processes payment. Premium is linked to your signed-in Origo account.",
+  "storePremiumBilling": "Origo Explore is a separate one-time purchase with no auto-renewal. {store} shows the actual price and processes payment. It is linked to your signed-in Origo account.",
   "@storePremiumBilling": {
     "description": "Separate account-bound Premium purchase or restore.",
     "placeholders": {
@@ -6871,7 +6882,7 @@
       }
     }
   },
-  "storePremiumRestoreHelp": "Restore with the {store} account used to buy Premium while signed in to the linked Origo account. Restoring does not charge again.",
+  "storePremiumRestoreHelp": "Restore with the {store} account used to buy Origo Explore while signed in to the linked Origo account. Restoring does not charge again.",
   "@storePremiumRestoreHelp": {
     "description": "Separate account-bound Premium purchase or restore.",
     "placeholders": {
@@ -6889,11 +6900,11 @@
       }
     }
   },
-  "storeReaderPurchaseSuccess": "Basic edition purchased",
+  "storeReaderPurchaseSuccess": "Origo Read purchased",
   "@storeReaderPurchaseSuccess": {
     "description": "App reader purchase status, separate from Premium."
   },
-  "storeReaderRestoreSuccess": "Basic edition purchase restored",
+  "storeReaderRestoreSuccess": "Origo Read purchase restored",
   "@storeReaderRestoreSuccess": {
     "description": "App reader purchase status, separate from Premium."
   },

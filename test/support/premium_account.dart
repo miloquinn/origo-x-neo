@@ -9,6 +9,9 @@ class PremiumTestAccount extends MemberAccountController {
   @override
   bool get hasPremiumAccess => _premium;
 
+  @override
+  bool get hasPermanentReaderAccess => _premium;
+
   void setPremium(bool value) {
     _premium = value;
     notifyListeners();

@@ -617,12 +617,7 @@ class _AccountPageState extends State<AccountPage> {
     MemberAccountController account,
     MemberUser user,
   ) => [
-    _SignedInHeader(
-      user: user,
-      supporter:
-          account.hasPremiumAccess &&
-          (!AppDistribution.isStore || account.hasPermanentReaderAccess),
-    ),
+    _SignedInHeader(user: user, supporter: account.hasPremiumAccess),
     const SizedBox(height: 16),
     _AccountActionsCard(
       user: user,

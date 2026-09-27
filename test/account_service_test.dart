@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -22,6 +23,16 @@ void main() {
       api: _client(
         _RouteAdapter((options) {
           return switch (options.uri.path) {
+            '/api/v1/membership/reader/account-status' => _accountReaderStatus(
+              options,
+            ),
+            '/api/v1/membership/config' => _json({
+              'product': 'premium',
+              'features': <String>[],
+              'apple_billing_enabled': true,
+              'premium_apple_product_id':
+                  MemberAccountController.appleProductId,
+            }),
             '/api/v1/auth/password/login' => _json(
               _session(
                 access: 'access',
@@ -69,6 +80,15 @@ void main() {
         api: _client(
           _RouteAdapter((options) {
             return switch (options.uri.path) {
+              '/api/v1/membership/reader/account-status' =>
+                _accountReaderStatus(options),
+              '/api/v1/membership/config' => _json({
+                'product': 'premium',
+                'features': <String>[],
+                'apple_billing_enabled': true,
+                'premium_apple_product_id':
+                    MemberAccountController.appleProductId,
+              }),
               '/api/v1/auth/password/login' => _json(
                 _session(
                   access: 'access',
@@ -123,6 +143,15 @@ void main() {
           api: _client(
             _RouteAdapter((options) {
               return switch (options.uri.path) {
+                '/api/v1/membership/reader/account-status' =>
+                  _accountReaderStatus(options),
+                '/api/v1/membership/config' => _json({
+                  'product': 'premium',
+                  'features': <String>[],
+                  'apple_billing_enabled': true,
+                  'premium_apple_product_id':
+                      MemberAccountController.appleProductId,
+                }),
                 '/api/v1/auth/password/login' => _json(
                   _session(
                     access: 'access',
@@ -360,65 +389,62 @@ void main() {
     expect(restored?.membership.features['private_network_sources'], isTrue);
   });
 
-  test(
-    'cold start exposes cached membership while server refresh is pending',
-    () async {
-      SharedPreferences.setMockInitialValues({});
-      const cache = MemberMembershipCache();
-      const accountId = '6e29be31-ffeb-4699-bf69-8b37afe15504';
-      await cache.save(
-        accountId,
-        const MemberMembership(
-          userId: accountId,
-          premium: true,
-          features: {},
-          entitlements: [],
-        ),
-      );
-      final membershipResponse = Completer<ResponseBody>();
-      final controller = MemberAccountController(
-        membershipCache: cache,
-        api: _client(
-          _AsyncRouteAdapter((options) async {
-            return switch (options.uri.path) {
-              '/api/v1/auth/config' => _json({'providers': {}}),
-              '/api/v1/membership/config' => _json({
-                'product': 'premium_lifetime',
-                'features': [],
-              }),
-              '/api/v1/auth/me' => _json({'user': _user()}),
-              '/api/v1/membership' => membershipResponse.future,
-              '/api/v1/membership/referral' => _json({
-                'invite_code': 'TEST',
-                'invite_url': 'https://example.test/invite',
-              }),
-              _ => throw StateError('Unexpected route ${options.uri.path}'),
-            };
-          }),
-          _MemoryTokenStore(accessToken: 'access', refreshToken: 'refresh'),
-        ),
-      );
-      addTearDown(controller.dispose);
+  test('cold start never authorizes mutable cached membership', () async {
+    SharedPreferences.setMockInitialValues({});
+    const cache = MemberMembershipCache();
+    const accountId = '6e29be31-ffeb-4699-bf69-8b37afe15504';
+    await cache.save(
+      accountId,
+      const MemberMembership(
+        userId: accountId,
+        premium: true,
+        features: {},
+        entitlements: [],
+      ),
+    );
+    final membershipResponse = Completer<ResponseBody>();
+    final controller = MemberAccountController(
+      membershipCache: cache,
+      api: _client(
+        _AsyncRouteAdapter((options) async {
+          return switch (options.uri.path) {
+            '/api/v1/auth/config' => _json({'providers': {}}),
+            '/api/v1/membership/config' => _json({
+              'product': 'premium_lifetime',
+              'features': [],
+            }),
+            '/api/v1/auth/me' => _json({'user': _user()}),
+            '/api/v1/membership' => membershipResponse.future,
+            '/api/v1/membership/referral' => _json({
+              'invite_code': 'TEST',
+              'invite_url': 'https://example.test/invite',
+            }),
+            _ => throw StateError('Unexpected route ${options.uri.path}'),
+          };
+        }),
+        _MemoryTokenStore(accessToken: 'access', refreshToken: 'refresh'),
+      ),
+    );
+    addTearDown(controller.dispose);
 
-      final initialization = controller.initialize();
-      for (
-        var attempt = 0;
-        attempt < 20 && !controller.hasPremiumAccess;
-        attempt++
-      ) {
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-      }
-      expect(controller.isAuthenticated, isTrue);
-      expect(controller.hasPremiumAccess, isTrue);
+    final initialization = controller.initialize();
+    for (
+      var attempt = 0;
+      attempt < 20 && !controller.isAuthenticated;
+      attempt++
+    ) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    expect(controller.isAuthenticated, isTrue);
+    expect(controller.hasPremiumAccess, isFalse);
 
-      membershipResponse.complete(
-        _json({'premium': false, 'features': {}, 'entitlements': []}),
-      );
-      await initialization;
-      expect(controller.hasPremiumAccess, isFalse);
-      expect((await cache.load())?.membership.premium, isFalse);
-    },
-  );
+    membershipResponse.complete(
+      _json({'premium': true, 'features': {}, 'entitlements': []}),
+    );
+    await initialization;
+    expect(controller.hasPremiumAccess, isTrue);
+    expect((await cache.load())?.membership.premium, isTrue);
+  });
 
   test(
     'password login stores the rotated session without exposing secrets',
@@ -2104,3 +2130,29 @@ class _AccountAppleStore implements PurchaseStore {
 }
 
 const _memberAccountId = '123e4567-e89b-42d3-a456-426614174000';
+
+ResponseBody _accountReaderStatus(RequestOptions request) {
+  final now = DateTime.now();
+  final key = request.headers['X-Origo-Reader-Key'] as String;
+  return _json({
+    'reader_access': {
+      'unlocked': true,
+      'trial_active': false,
+      'access': 'lifetime',
+      'channel': 'account',
+    },
+    'offline_license': {
+      'version': 2,
+      'account_id': _memberAccountId,
+      'subject_type': 'account',
+      'permanent': true,
+      'upgrade_eligible': true,
+      'issued_at': now.toIso8601String(),
+      'valid_until': now.add(const Duration(days: 30)).toIso8601String(),
+      'reader_unlocked': true,
+      'installation_key_hash': sha256.convert(utf8.encode(key)).toString(),
+      'channel': 'account',
+      'signature': 'opaque-test',
+    },
+  });
+}

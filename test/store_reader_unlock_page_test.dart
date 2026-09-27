@@ -1,12 +1,15 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:provider/provider.dart';
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/pages/account/account_page.dart';
 import 'package:xxread/pages/account/premium_membership_page.dart';
 import 'package:xxread/pages/account/store_reader_unlock_page.dart';
 import 'package:xxread/services/account/account.dart';
@@ -42,7 +45,50 @@ void main() {
   });
   tearDown(AppDistribution.debugReset);
 
-  testWidgets('guest can buy or restore the permanent app unlock', (
+  testWidgets('Apple beta opens features without presenting a purchase', (
+    tester,
+  ) async {
+    await _enableAppleBeta();
+    final account = _UnlockAccount(authenticated: true);
+    addTearDown(account.dispose);
+    await _pumpPage(tester, account);
+
+    expect(
+      find.byKey(const ValueKey('store-reader-beta-status')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('store-reader-beta-access')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('store-reader-lifetime-price')),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('store-reader-purchase')), findsNothing);
+    expect(find.byKey(const ValueKey('store-start-trial')), findsNothing);
+    expect(find.byKey(const ValueKey('store-reader-restore')), findsNothing);
+  });
+
+  testWidgets('complete Explore offer uses the full App Store product price', (
+    tester,
+  ) async {
+    AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+    final account = _UnlockAccount(authenticated: true);
+    addTearDown(account.dispose);
+    await _pumpWidgetPage(
+      tester,
+      child: PremiumMembershipPage(account: account),
+    );
+
+    expect(account.hasAccountReaderUpgradeEligibility, isFalse);
+    expect(find.byKey(const ValueKey('premium-store-price')), findsOneWidget);
+    expect(find.text(r'$18.99'), findsOneWidget);
+    expect(find.text('包含 Origo 开卷的永久使用权，以及更多书源格式兼容能力。'), findsWidgets);
+    expect(find.text('开卷 + 探源 · 一次购买跨平台使用'), findsOneWidget);
+  });
+
+  testWidgets('guest actions open sign-in without starting store actions', (
     tester,
   ) async {
     final account = _UnlockAccount();
@@ -52,23 +98,45 @@ void main() {
     expect(find.text(r'$9.99'), findsOneWidget);
     expect(find.byKey(const ValueKey('store-reader-purchase')), findsOneWidget);
     expect(find.byKey(const ValueKey('store-reader-restore')), findsOneWidget);
-    expect(find.byKey(const ValueKey('premium-sign-in')), findsNothing);
+    expect(find.text('登录 Origo 账号并继续'), findsOneWidget);
 
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('store-reader-purchase')),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('store-reader-purchase')));
-    await tester.pump();
+    for (final key in const [
+      ValueKey('store-reader-purchase'),
+      ValueKey('store-start-trial'),
+      ValueKey('store-reader-restore'),
+    ]) {
+      await tester.ensureVisible(find.byKey(key));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(key));
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountPage), findsOneWidget);
+      Navigator.of(tester.element(find.byType(AccountPage))).pop<void>();
+      await tester.pumpAndSettle();
+    }
+    expect(account.purchaseCalls, 0);
+    expect(account.restoreCalls, 0);
+    expect(account.trialCalls, 0);
+  });
+
+  testWidgets('signed-in account can purchase restore and start a trial', (
+    tester,
+  ) async {
+    final account = _UnlockAccount(authenticated: true);
+    addTearDown(account.dispose);
+    await _pumpPage(tester, account);
+
+    for (final key in const [
+      ValueKey('store-reader-purchase'),
+      ValueKey('store-start-trial'),
+      ValueKey('store-reader-restore'),
+    ]) {
+      await tester.ensureVisible(find.byKey(key));
+      await tester.tap(find.byKey(key));
+      await tester.pump();
+    }
     expect(account.purchaseCalls, 1);
-
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('store-reader-restore')),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('store-reader-restore')));
-    await tester.pump();
     expect(account.restoreCalls, 1);
+    expect(account.trialCalls, 1);
   });
 
   testWidgets(
@@ -77,10 +145,10 @@ void main() {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final account = _UnlockAccount();
+      final account = _UnlockAccount(authenticated: true);
       addTearDown(account.dispose);
       await _pumpPage(tester, account);
-      expect(find.text('基础版购买'), findsOneWidget);
+      expect(find.text('Origo 开卷'), findsOneWidget);
       expect(find.text('应用解锁'), findsNothing);
       expect(
         find.byKey(const ValueKey('purchase-fixed-footer')),
@@ -163,7 +231,7 @@ void main() {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final account = _UnlockAccount();
+    final account = _UnlockAccount(authenticated: true);
     addTearDown(account.dispose);
     await _pumpWidgetPage(
       tester,
@@ -198,7 +266,10 @@ void main() {
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
-    final account = _UnlockAccount(phase: StorePurchasePhase.verifying);
+    final account = _UnlockAccount(
+      authenticated: true,
+      phase: StorePurchasePhase.verifying,
+    );
     addTearDown(account.dispose);
     await _pumpPage(tester, account);
     expect(
@@ -237,7 +308,6 @@ void main() {
   ) async {
     final account = _UnlockAccount(
       trialExpiresAt: DateTime.now().add(const Duration(days: 10)),
-      premium: true,
     );
     addTearDown(account.dispose);
     await _pumpPage(tester, account);
@@ -262,7 +332,7 @@ void main() {
     expect(find.byKey(const ValueKey('store-reader-restore')), findsOneWidget);
   });
 
-  testWidgets('Premium alone does not unlock the reader purchase page', (
+  testWidgets('Origo Explore includes permanent Origo Read access', (
     tester,
   ) async {
     final account = _UnlockAccount(premium: true);
@@ -270,9 +340,9 @@ void main() {
     await _pumpPage(tester, account);
 
     expect(account.hasPremiumAccess, isTrue);
-    expect(account.hasPermanentReaderAccess, isFalse);
-    expect(find.byKey(const ValueKey('store-reader-purchase')), findsOneWidget);
-    expect(find.byKey(const ValueKey('store-reader-active')), findsNothing);
+    expect(account.hasPermanentReaderAccess, isTrue);
+    expect(find.byKey(const ValueKey('store-reader-purchase')), findsNothing);
+    expect(find.byKey(const ValueKey('store-reader-active')), findsOneWidget);
   });
 
   testWidgets('purchase pages inherit and react to app accent and brightness', (
@@ -349,6 +419,22 @@ void main() {
           '$screenshotDirectory/apple-premium-1290x2796.png',
           pixelRatio: 3,
         );
+        final fullExploreAccount = _UnlockAccount(authenticated: true);
+        addTearDown(fullExploreAccount.dispose);
+        final fullExploreBoundary = GlobalKey();
+        await _pumpWidgetPage(
+          tester,
+          boundaryKey: fullExploreBoundary,
+          child: PremiumMembershipPage(account: fullExploreAccount),
+        );
+        await _precacheBrandIcon(tester, find.byType(PremiumMembershipPage));
+        expect(tester.takeException(), isNull);
+        await _capture(
+          tester,
+          fullExploreBoundary,
+          '$screenshotDirectory/apple-explore-full-1290x2796.png',
+          pixelRatio: 3,
+        );
         AppDistribution.debugOverride(
           channel: AppDistributionChannel.googlePlay,
         );
@@ -408,6 +494,21 @@ void main() {
   );
 }
 
+Future<void> _enableAppleBeta() async {
+  AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+  debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+  const channel = MethodChannel('com.niki.xxread/apple_purchase_support');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) async => 'sandbox');
+  try {
+    await AppDistribution.initialize();
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
+  }
+}
+
 Future<void> _pumpPage(
   WidgetTester tester,
   MemberAccountController account, {
@@ -417,6 +518,7 @@ Future<void> _pumpPage(
     tester,
     boundaryKey: boundaryKey,
     settle: !account.readerPurchaseLoading,
+    account: account,
     child: StoreReaderUnlockPage(account: account),
   );
 }
@@ -428,21 +530,28 @@ Future<void> _pumpWidgetPage(
   bool dark = false,
   Color accent = Colors.blue,
   bool settle = true,
+  MemberAccountController? account,
 }) async {
-  await tester.pumpWidget(
-    MaterialApp(
-      locale: const Locale('zh'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: accent,
-          brightness: dark ? Brightness.dark : Brightness.light,
-        ),
-        fontFamily: _previewFontPath == null ? null : 'SplitBillingPreview',
+  final app = MaterialApp(
+    locale: const Locale('zh'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    theme: ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: accent,
+        brightness: dark ? Brightness.dark : Brightness.light,
       ),
-      home: RepaintBoundary(key: boundaryKey, child: child),
+      fontFamily: _previewFontPath == null ? null : 'SplitBillingPreview',
     ),
+    home: RepaintBoundary(key: boundaryKey, child: child),
+  );
+  await tester.pumpWidget(
+    account == null
+        ? app
+        : ChangeNotifierProvider<MemberAccountController>.value(
+            value: account,
+            child: app,
+          ),
   );
   if (settle) {
     await tester.pumpAndSettle();
@@ -493,6 +602,7 @@ class _UnlockAccount extends MemberAccountController {
   final StorePurchasePhase phase;
   int purchaseCalls = 0;
   int restoreCalls = 0;
+  int trialCalls = 0;
 
   @override
   bool get initialized => true;
@@ -514,7 +624,7 @@ class _UnlockAccount extends MemberAccountController {
       : null;
 
   @override
-  bool get hasPermanentReaderAccess => permanent;
+  bool get hasPermanentReaderAccess => permanent || premium;
 
   @override
   bool get hasActiveReaderTrial =>
@@ -528,6 +638,9 @@ class _UnlockAccount extends MemberAccountController {
 
   @override
   bool get hasPremiumAccess => premium;
+
+  @override
+  bool get hasAccountReaderUpgradeEligibility => authenticated && permanent;
 
   @override
   bool get storeBillingReady => true;
@@ -550,6 +663,17 @@ class _UnlockAccount extends MemberAccountController {
     description: 'Lifetime Premium bound to your Origo account',
     price: r'$8.99',
     rawPrice: 8.99,
+    currencyCode: 'USD',
+    currencySymbol: r'$',
+  );
+
+  @override
+  ProductDetails? get premiumBundleProduct => ProductDetails(
+    id: 'com.niki.xxread.explorer.lifetime',
+    title: 'Origo Explore',
+    description: 'Origo Read and Explore lifetime access',
+    price: r'$18.99',
+    rawPrice: 18.99,
     currencyCode: 'USD',
     currencySymbol: r'$',
   );
@@ -602,7 +726,12 @@ class _UnlockAccount extends MemberAccountController {
   }
 
   @override
-  Future<void> startReaderTrial() async {}
+  Future<void> startReaderTrial() async {
+    trialCalls += 1;
+  }
+
+  @override
+  Future<void> initialize({bool force = false}) async {}
 
   @override
   Future<void> loadStoreProducts() async {}

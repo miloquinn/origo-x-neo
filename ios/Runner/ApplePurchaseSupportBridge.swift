@@ -29,6 +29,36 @@ final class ApplePurchaseSupportBridge {
 
   private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
+    case "verifiedAppEnvironment":
+      Task { @MainActor in
+        guard #available(iOS 16.0, *) else {
+          guard
+            let receiptURL = Bundle.main.appStoreReceiptURL,
+            receiptURL.lastPathComponent == "sandboxReceipt",
+            FileManager.default.fileExists(atPath: receiptURL.path)
+          else {
+            result("unavailable")
+            return
+          }
+          result("legacySandbox")
+          return
+        }
+        do {
+          switch try await AppTransaction.shared {
+          case .verified(let transaction):
+            switch transaction.environment {
+            case .sandbox: result("sandbox")
+            case .production: result("production")
+            case .xcode: result("xcode")
+            default: result("unavailable")
+            }
+          case .unverified:
+            result("unavailable")
+          }
+        } catch {
+          result("unavailable")
+        }
+      }
     case "syncPurchases":
       let arguments = call.arguments as? [String: Any]
       let productIDs = (arguments?["productIds"] as? [String]).map { Set($0) }

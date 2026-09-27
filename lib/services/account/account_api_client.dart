@@ -454,6 +454,54 @@ class MemberAccountApiClient {
   Future<ReaderAccessResult> readerStatus(String channel) =>
       _readerRequest('GET', '$membershipRoot/reader/status?channel=$channel');
 
+  Future<ReaderAccessResult> accountReaderStatus() =>
+      _accountReaderRequest('GET', '$membershipRoot/reader/account-status');
+
+  Future<ReaderAccessResult> startAccountReaderTrial(String channel) =>
+      _accountReaderRequest(
+        'POST',
+        '$membershipRoot/reader/account-trial',
+        data: {'channel': channel},
+      );
+
+  Future<ReaderAccessResult> submitAccountReaderGooglePurchase(
+    String purchaseToken, {
+    bool restore = false,
+  }) => _accountReaderRequest(
+    'POST',
+    '$membershipRoot/reader/google/account-${restore ? 'restore' : 'purchase'}',
+    data: {'purchase_token': purchaseToken},
+  );
+
+  Future<ReaderAccessResult> submitAccountReaderApplePurchase(
+    String signedTransactionInfo, {
+    bool restore = false,
+  }) => _accountReaderRequest(
+    'POST',
+    '$membershipRoot/reader/apple/account-${restore ? 'restore' : 'purchase'}',
+    data: {'signed_transaction_info': signedTransactionInfo},
+  );
+
+  Future<ReaderAccessResult> _accountReaderRequest(
+    String method,
+    String path, {
+    Object? data,
+  }) async {
+    final response = await _jsonRequest(
+      method,
+      path,
+      data: data,
+      headers: await _readerHeaders(),
+    );
+    try {
+      return ReaderAccessResult.fromJson(response);
+    } on FormatException {
+      throw const MemberAccountException('阅读权益响应无效，请稍后重试');
+    } on TypeError {
+      throw const MemberAccountException('阅读权益响应无效，请稍后重试');
+    }
+  }
+
   Future<ReaderAccessResult> startReaderTrial(String channel) => _readerRequest(
     'POST',
     '$membershipRoot/reader/trial',
@@ -479,11 +527,12 @@ class MemberAccountApiClient {
   );
 
   Future<MemberMembership> submitPremiumGooglePurchase(
-    String purchaseToken,
-  ) async => MemberMembership.fromJson(
+    String purchaseToken, {
+    bool restore = false,
+  }) async => MemberMembership.fromJson(
     await _jsonRequest(
       'POST',
-      '$membershipRoot/premium/google/purchase',
+      '$membershipRoot/premium/google/${restore ? "restore" : "purchase"}',
       data: {'purchase_token': purchaseToken},
       headers: await _readerHeaders(),
     ),

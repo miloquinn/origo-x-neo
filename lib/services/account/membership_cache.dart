@@ -15,9 +15,10 @@ class CachedMemberMembership {
   final MemberMembership membership;
 }
 
-/// An account-bound membership snapshot used while the server refresh is in
-/// flight. The account ID is checked against the restored authenticated
-/// session before this value can grant access.
+/// A UI-only snapshot of the last server response.
+///
+/// Shared preferences are mutable and have no server-controlled validity, so
+/// callers must never promote this value into an authorization decision.
 class MemberMembershipCache {
   const MemberMembershipCache();
 

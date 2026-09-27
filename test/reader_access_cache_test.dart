@@ -58,6 +58,65 @@ void main() {
   );
 
   test(
+    'account cache requires the same session, account, device and TTL',
+    () async {
+      const cache = ReaderAccessCache();
+      final credential = await const ReaderInstallationCredentialStore()
+          .getOrCreate();
+      final now = DateTime.utc(2026, 9, 27);
+      final license = ReaderOfflineAttestation(
+        version: 2,
+        accountId: 'account-a',
+        subjectType: 'account',
+        issuedAt: now,
+        validUntil: now.add(const Duration(days: 30)),
+        readerUnlocked: true,
+        installationKeyHash: credential.hash,
+        channel: 'account',
+        signature: 'opaque-server-attestation',
+      );
+      await cache.saveAccount(license, sessionBinding: 'session-a');
+      Future<ReaderOfflineAttestation?> read({
+        String? session = 'session-a',
+        String? account = 'account-a',
+        DateTime? at,
+        ReaderInstallationCredential? device,
+      }) => cache.loadAccount(
+        credential: device ?? credential,
+        sessionBinding: session,
+        accountId: account,
+        now: at ?? now,
+      );
+      expect((await read())?.accountId, 'account-a');
+      expect(await read(session: null), isNull);
+      expect(await read(session: 'session-b'), isNull);
+      expect(await read(account: 'account-b'), isNull);
+      expect(await read(at: now.add(const Duration(days: 30))), isNull);
+      expect(
+        await read(device: const ReaderInstallationCredential('different')),
+        isNull,
+      );
+      // A device license must not be interpreted as an account license.
+      await cache.saveAccount(
+        ReaderOfflineAttestation(
+          version: 1,
+          issuedAt: now,
+          validUntil: now.add(const Duration(days: 30)),
+          readerUnlocked: true,
+          installationKeyHash: credential.hash,
+          channel: 'google_play',
+          signature: 'old-license',
+        ),
+        sessionBinding: 'session-a',
+      );
+      expect(await read(), isNull);
+      await cache.saveAccount(license, sessionBinding: 'session-a');
+      await cache.clearAccount();
+      expect(await read(), isNull);
+    },
+  );
+
+  test(
     'logout storage cleanup does not erase anonymous reader state',
     () async {
       const credentials = ReaderInstallationCredentialStore();

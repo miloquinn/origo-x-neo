@@ -71,6 +71,7 @@ enum StoreProductKind {
   readerLifetime,
   readerTrial,
   premiumLifetime,
+  premiumBundle,
   legacyBundle,
 }
 
@@ -81,7 +82,8 @@ extension StoreProductKindDomain on StoreProductKind {
     StoreProductKind.readerLifetime ||
     StoreProductKind.readerTrial ||
     StoreProductKind.legacyBundle => StorePurchaseDomain.reader,
-    StoreProductKind.premiumLifetime => StorePurchaseDomain.premium,
+    StoreProductKind.premiumLifetime ||
+    StoreProductKind.premiumBundle => StorePurchaseDomain.premium,
   };
 }
 
@@ -179,6 +181,7 @@ class StorePurchaseService extends ChangeNotifier {
     String? readerLifetime,
     String? readerTrial,
     String? premiumLifetime,
+    String? premiumBundle,
     String? legacyBundle,
   }) {
     final next = <StoreProductKind, String>{
@@ -188,6 +191,8 @@ class StorePurchaseService extends ChangeNotifier {
         StoreProductKind.readerTrial: readerTrial!,
       if (premiumLifetime?.isNotEmpty == true)
         StoreProductKind.premiumLifetime: premiumLifetime!,
+      if (premiumBundle?.isNotEmpty == true)
+        StoreProductKind.premiumBundle: premiumBundle!,
       if (legacyBundle?.isNotEmpty == true)
         StoreProductKind.legacyBundle: legacyBundle!,
     };
@@ -282,13 +287,9 @@ class StorePurchaseService extends ChangeNotifier {
     if (!_productIds.containsKey(kind)) {
       throw const MemberAccountException('商品尚未配置');
     }
-    final accountId = kind.domain == StorePurchaseDomain.premium
-        ? _requireAccountId()
-        : null;
+    final accountId = _requireAccountId();
     await initialize();
-    if (accountId != null) {
-      _ensureSameAccount(accountId);
-    }
+    _ensureSameAccount(accountId);
     final product = _products[kind];
     if (product == null) throw const MemberAccountException('商品信息未加载');
     final domain = kind.domain;
@@ -329,9 +330,7 @@ class StorePurchaseService extends ChangeNotifier {
         )
         .toSet();
     if (kinds.isEmpty) throw const MemberAccountException('商品尚未配置');
-    final accountId = domain == StorePurchaseDomain.premium
-        ? _requireAccountId()
-        : null;
+    final accountId = _requireAccountId();
     final session = _RestoreSession(domain: domain, kinds: kinds);
     _restoreSession = session;
     _setError(domain, null);
@@ -345,7 +344,7 @@ class StorePurchaseService extends ChangeNotifier {
         applicationUserName: applicationUserNameProvider?.call(kinds.first),
       );
       await session.wait(expected, restoreDeliveryTimeout);
-      if (accountId != null) _ensureSameAccount(accountId);
+      _ensureSameAccount(accountId);
       if (session.error != null) throw session.error!;
       _setPhase(
         domain,
@@ -425,19 +424,15 @@ class StorePurchaseService extends ChangeNotifier {
     late final Future<bool> transaction;
     transaction =
         (() async {
-          final accountId = domain == StorePurchaseDomain.premium
-              ? accountIdProvider()
-              : null;
+          final accountId = accountIdProvider();
           _setPhase(domain, StorePurchasePhase.verifying);
           try {
-            if (domain == StorePurchaseDomain.premium) {
-              if (accountId == null) {
-                throw const MemberAccountException('请先登录账号');
-              }
-              _ensureSameAccount(accountId);
+            if (accountId == null) {
+              throw const MemberAccountException('请先登录 Origo 账号后恢复购买');
             }
+            _ensureSameAccount(accountId);
             final result = await _verify(kind, purchase, accountId);
-            if (accountId != null) _ensureSameAccount(accountId);
+            _ensureSameAccount(accountId);
             if (result.pending) {
               restoreSession?.pending = true;
               _setPhase(domain, StorePurchasePhase.pending);

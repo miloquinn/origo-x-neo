@@ -6073,13 +6073,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '除高级功能外，其余功能全部开源。开源部分遵循 AGPL-3.0 协议，具体范围以 GitHub 仓库为准。';
 
   @override
-  String get premiumLifetimeTitle => '永久高级会员';
+  String get premiumLifetimeTitle => 'Origo 探源';
 
   @override
   String get premiumLifetimeCaption => '一次购买 · 无自动续费';
 
   @override
-  String get premiumBenefitsTitle => '会员权益';
+  String get premiumBenefitsTitle => 'Origo 探源包含';
 
   @override
   String get premiumProtocolsBenefit => '导入和使用更多兼容的书源协议。';
@@ -6121,7 +6121,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get premiumAccountBindingBody =>
-      '购买验证后，会员权益绑定当前开元阅读账号，并在支持的平台间同步。设置入口会随会员状态显示；退出登录或权益被撤销后，高级功能将停用。请在购买前确认当前账号。';
+      '购买验证后，Origo 探源绑定当前 Origo 账号，可在支持的平台登录使用。跨平台通用的是已购权益，不代表书籍和阅读数据会自动同步。退出登录或权益被撤销后，扩展功能将停用，请在购买前确认当前账号。';
 
   @override
   String get premiumRefundTitle => '申请退款';
@@ -6145,7 +6145,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '账号资料及会员权益记录由开元阅读账号服务处理，用于登录、安全验证和跨设备权益同步。支持与隐私问题可通过官网提供的联系方式反馈。';
 
   @override
-  String get premiumPurchaseSuccess => '高级会员已解锁';
+  String get premiumPurchaseSuccess => 'Origo 探源已解锁';
 
   @override
   String get premiumTestPurchaseVerified => '测试购买已验证，不会开通正式会员';
@@ -6734,7 +6734,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWebDavWorking => 'WebDAV 正在处理';
 
   @override
-  String get storeReaderLockedTitle => '购买基础版';
+  String get storeReaderLockedTitle => '获取 Origo 开卷';
 
   @override
   String get storeReaderLockedBody =>
@@ -6750,10 +6750,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storeReaderChecking => '正在检查阅读授权…';
 
   @override
-  String get storeReaderBenefitTitle => '基础版';
+  String get storeReaderBenefitTitle => 'Origo 开卷';
 
   @override
-  String get storeReaderBenefitBody => '本地阅读，一次购买长期使用，无需登录 Origo 账号。';
+  String get storeReaderBenefitBody =>
+      '完整本地阅读体验，一次购买长期使用。权益绑定当前 Origo 账号，可在支持的平台登录使用。';
 
   @override
   String storeTrialStart(int days) {
@@ -6762,7 +6763,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String storeTrialDetails(int days) {
-    return '免费试用本地阅读 $days 天，不会自动扣款。试用结束后需一次性购买基础版才能继续阅读，已有书籍与笔记会保留。';
+    return '登录 Origo 账号可免费试用本地阅读 $days 天，不会自动扣款。试用结束后需一次性购买 Origo 开卷才能继续阅读，已有书籍与笔记会保留。';
   }
 
   @override
@@ -6773,29 +6774,29 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String storePurchaseButton(String store) {
-    return '通过 $store 购买基础版';
+    return '通过 $store 购买 Origo 开卷';
   }
 
   @override
   String storePurchaseBilling(String store) {
-    return '基础版为一次性购买，不自动续费。实际价格由 $store 显示并处理支付。';
+    return 'Origo 开卷为一次性购买，不自动续费。实际价格由 $store 显示并处理支付，验证后绑定当前 Origo 账号并跨支持平台通用。';
   }
 
   @override
   String storePurchaseRestoreHelp(String store) {
-    return '使用原购买时的 $store 账号恢复，无需登录 Origo，也不会再次收费。';
+    return '请先登录绑定的 Origo 账号，再使用原购买时的 $store 账号恢复；恢复不会再次收费。';
   }
 
   @override
   String storePurchaseAccess(String store) {
-    return '你已通过 $store 购买基础版，无需重复购买。';
+    return 'Origo 开卷已绑定当前 Origo 账号，可在支持的平台使用，无需重复购买。';
   }
 
   @override
   String get storeRestoreEmpty => '未找到可恢复的购买，请检查商店账号及绑定的 Origo X 账号。';
 
   @override
-  String get basicRestoreEmpty => '没有找到基础版购买记录，请确认当前商店账号。';
+  String get basicRestoreEmpty => '没有找到 Origo 开卷购买记录，请确认当前 Origo 账号和商店账号。';
 
   @override
   String get storeGoogleRefundTerms =>
@@ -6926,10 +6927,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get basicNotesSummary => '书签与笔记 · 阅读统计 · WebDAV 备份';
 
   @override
-  String get premiumEditorialTitle => '给阅读，更多可能。';
+  String get premiumEditorialTitle => 'Origo 探源';
 
   @override
-  String get premiumEditorialSubtitle => '为喜欢探索的你，拓展书源的边界。';
+  String get premiumEditorialSubtitle => '可选书源扩展，为喜欢探索的你拓展兼容边界。';
 
   @override
   String get basicReadingTitle => '多格式阅读';
@@ -6987,53 +6988,86 @@ class AppLocalizationsZh extends AppLocalizations {
   String get basicServicesNote => 'AI 与云端 TTS 需自行配置服务；第三方服务费用不包含在基础版价格内。';
 
   @override
-  String get basicEditionTitle => '基础版';
+  String get basicEditionTitle => 'Origo 开卷';
 
   @override
   String get basicEditionSummary => '一次购买，完整阅读体验';
 
   @override
-  String get basicEditionNoAccount => '无需登录 Origo 账号';
+  String get basicEditionAccountBound => '绑定 Origo 账号 · 跨平台通用';
 
   @override
-  String get premiumEditionSummary => '进阶扩展，兼容更多书源';
+  String get premiumEditionSummary => '可选书源扩展，兼容更多格式';
 
   @override
-  String get storeReaderLicenseTitle => '基础版购买';
+  String get storeReaderLicenseTitle => 'Origo 开卷';
 
   @override
-  String get storeReaderLicenseSubtitle => '先试用本地阅读 14 天，再一次购买基础版长期使用。';
+  String get storeReaderLicenseSubtitle => '登录 Origo 账号试用或购买，已购权益可在支持的平台使用。';
 
   @override
-  String get storeReaderLifetimeTitle => '基础版';
+  String get storeReaderLifetimeTitle => 'Origo 开卷';
 
   @override
   String storeReaderOwned(String store) {
-    return '已通过 $store 购买基础版。';
+    return 'Origo 开卷已绑定当前 Origo 账号，可在支持的平台使用。';
   }
 
   @override
-  String get storePremiumPrerequisiteTitle => '请先购买基础版';
+  String get storeReaderSignInAction => '登录 Origo 账号并继续';
 
   @override
-  String get storePremiumPrerequisiteBody => '高级版单独出售，仅在购买基础版后开放；试用期间不可购买。';
+  String get storeReaderCrossPlatformAccess =>
+      'Origo 开卷已购 · 登录同一 Origo 账号可跨平台使用';
 
   @override
-  String get storePremiumPriceCaption => '永久高级版 · 绑定 Origo 账号';
+  String get storePremiumPrerequisiteTitle => '请先获取 Origo 开卷';
+
+  @override
+  String get storePremiumPrerequisiteBody =>
+      'Origo 探源是单独出售的可选扩展，仅在购买 Origo 开卷后开放；试用期间不可购买。';
+
+  @override
+  String get storePremiumPriceCaption => '永久书源扩展 · 账号跨平台通用';
+
+  @override
+  String get premiumCrossPlatformAccess => '登录同一 Origo 账号，可在支持的平台继续使用。';
+
+  @override
+  String get storeBetaAccessAvailable => '测试期间已开放全部功能';
+
+  @override
+  String get premiumIncludesReaderAccess => '包含 Origo 开卷的永久使用权，以及更多书源格式兼容能力。';
+
+  @override
+  String get storeExploreBundlePriceCaption => '开卷 + 探源 · 一次购买跨平台使用';
+
+  @override
+  String get storeExploreUpgradePriceCaption => '已拥有开卷 · 升级探源';
+
+  @override
+  String storeExploreBundleBilling(String store) {
+    return '这是包含 Origo 开卷与探源扩展的完整一次性购买，不自动续费。实际价格由 $store 显示并处理付款，验证后绑定当前 Origo 账号。';
+  }
+
+  @override
+  String storeExploreUpgradeBilling(String store) {
+    return '这是为已拥有 Origo 开卷用户提供的探源升级，一次性购买且不自动续费。实际价格由 $store 显示并处理付款。';
+  }
 
   @override
   String storePremiumPurchaseButton(String store) {
-    return '通过 $store 购买高级版';
+    return '通过 $store 购买 Origo 探源';
   }
 
   @override
   String storePremiumBilling(String store) {
-    return '高级版为单独的一次性购买，不自动续费。实际价格由 $store 显示并处理付款，验证后绑定当前登录的 Origo 账号。';
+    return 'Origo 探源是单独的一次性购买，不自动续费。实际价格由 $store 显示并处理付款，验证后绑定当前登录的 Origo 账号。';
   }
 
   @override
   String storePremiumRestoreHelp(String store) {
-    return '请登录绑定的 Origo 账号，并使用购买高级版时的 $store 账号恢复；恢复不会再次收费。';
+    return '请登录绑定的 Origo 账号，并使用购买 Origo 探源时的 $store 账号恢复；恢复不会再次收费。';
   }
 
   @override
@@ -7042,10 +7076,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get storeReaderPurchaseSuccess => '基础版购买成功';
+  String get storeReaderPurchaseSuccess => 'Origo 开卷购买成功';
 
   @override
-  String get storeReaderRestoreSuccess => '基础版购买已恢复';
+  String get storeReaderRestoreSuccess => 'Origo 开卷购买已恢复';
 
   @override
   String get storeReaderTestPurchaseVerified => '基础版测试购买已验证，未授予正式许可。';
@@ -13134,13 +13168,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '除進階功能外，其餘功能全部開源。開源部分遵循 AGPL-3.0 授權條款，具體範圍以 GitHub 儲存庫為準。';
 
   @override
-  String get premiumLifetimeTitle => '永久高級會員';
+  String get premiumLifetimeTitle => 'Origo 探源';
 
   @override
   String get premiumLifetimeCaption => '一次購買 · 無自動續費';
 
   @override
-  String get premiumBenefitsTitle => '會員權益';
+  String get premiumBenefitsTitle => 'Origo 探源包含';
 
   @override
   String get premiumProtocolsBenefit => '匯入及使用更多相容的書源協議。';
@@ -13182,7 +13216,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get premiumAccountBindingBody =>
-      '購買驗證後，會員權益綁定目前的開元閱讀帳號，並在支援的平台間同步。設定入口會隨會員狀態顯示；登出或權益被撤銷後，高級功能將停用。請在購買前確認目前的帳號。';
+      '購買驗證後，Origo 探源綁定目前的 Origo 帳號，可在支援的平台登入使用。跨平台通用的是已購權益，不代表書籍與閱讀資料會自動同步。登出或權益被撤銷後，擴充功能將停用，請在購買前確認目前帳號。';
 
   @override
   String get premiumRefundTitle => '申請退款';
@@ -13206,7 +13240,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '帳號資料及會員權益紀錄由開元閱讀帳號服務處理，用於登入、安全驗證及跨裝置權益同步。支援與隱私問題可透過官網提供的聯絡方式反映。';
 
   @override
-  String get premiumPurchaseSuccess => '高級會員已解鎖';
+  String get premiumPurchaseSuccess => 'Origo 探源已解鎖';
 
   @override
   String get premiumTestPurchaseVerified => '測試購買已驗證，不會開通正式會員';
@@ -13796,7 +13830,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsWebDavWorking => 'WebDAV 正在處理';
 
   @override
-  String get storeReaderLockedTitle => '購買基礎版';
+  String get storeReaderLockedTitle => '取得 Origo 開卷';
 
   @override
   String get storeReaderLockedBody =>
@@ -13812,10 +13846,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get storeReaderChecking => '正在檢查閱讀授權…';
 
   @override
-  String get storeReaderBenefitTitle => '基礎版';
+  String get storeReaderBenefitTitle => 'Origo 開卷';
 
   @override
-  String get storeReaderBenefitBody => '本機閱讀，一次購買長期使用，無須登入 Origo 帳號。';
+  String get storeReaderBenefitBody =>
+      '完整本機閱讀體驗，一次購買長期使用。權益綁定目前 Origo 帳號，可在支援的平台登入使用。';
 
   @override
   String storeTrialStart(int days) {
@@ -13824,7 +13859,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String storeTrialDetails(int days) {
-    return '免費試用本機閱讀 $days 天，不會自動扣款。試用結束後需一次性購買基礎版才能繼續閱讀，書籍與筆記會保留。';
+    return '登入 Origo 帳號可免費試用本機閱讀 $days 天，不會自動扣款。試用結束後需一次性購買 Origo 開卷才能繼續閱讀，書籍與筆記會保留。';
   }
 
   @override
@@ -13835,29 +13870,29 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String storePurchaseButton(String store) {
-    return '透過 $store 購買基礎版';
+    return '透過 $store 購買 Origo 開卷';
   }
 
   @override
   String storePurchaseBilling(String store) {
-    return '基礎版為一次性購買，不自動續費。實際價格由 $store 顯示並處理付款。';
+    return 'Origo 開卷為一次性購買，不自動續費。實際價格由 $store 顯示並處理付款，驗證後綁定目前 Origo 帳號並在支援的平台通用。';
   }
 
   @override
   String storePurchaseRestoreHelp(String store) {
-    return '使用原購買時的 $store 帳號恢復，無須登入 Origo，也不會再次收費。';
+    return '請先登入綁定的 Origo 帳號，再使用原購買時的 $store 帳號恢復；恢復不會再次收費。';
   }
 
   @override
   String storePurchaseAccess(String store) {
-    return '你已透過 $store 購買基礎版，無需重複購買。';
+    return 'Origo 開卷已綁定目前 Origo 帳號，可在支援的平台使用，無須重複購買。';
   }
 
   @override
   String get storeRestoreEmpty => '找不到可恢復的購買，請檢查商店帳號及綁定的 Origo X 帳號。';
 
   @override
-  String get basicRestoreEmpty => '找不到基礎版購買記錄，請確認目前的商店帳號。';
+  String get basicRestoreEmpty => '找不到 Origo 開卷購買記錄，請確認目前的 Origo 帳號和商店帳號。';
 
   @override
   String get storeGoogleRefundTerms =>
@@ -13988,10 +14023,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get basicNotesSummary => '書籤與筆記 · 閱讀統計 · WebDAV 備份';
 
   @override
-  String get premiumEditorialTitle => '給閱讀，更多可能。';
+  String get premiumEditorialTitle => 'Origo 探源';
 
   @override
-  String get premiumEditorialSubtitle => '為喜歡探索的你，拓展書源的邊界。';
+  String get premiumEditorialSubtitle => '可選書源擴充，為喜歡探索的你拓展相容邊界。';
 
   @override
   String get basicReadingTitle => '多格式閱讀';
@@ -14049,53 +14084,86 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get basicServicesNote => 'AI 與雲端 TTS 需自行設定服務；第三方服務費用不包含在基礎版價格內。';
 
   @override
-  String get basicEditionTitle => '基礎版';
+  String get basicEditionTitle => 'Origo 開卷';
 
   @override
   String get basicEditionSummary => '一次購買，完整閱讀體驗';
 
   @override
-  String get basicEditionNoAccount => '無須登入 Origo 帳號';
+  String get basicEditionAccountBound => '綁定 Origo 帳號 · 跨平台通用';
 
   @override
-  String get premiumEditionSummary => '進階擴充，相容更多書源';
+  String get premiumEditionSummary => '可選書源擴充，相容更多格式';
 
   @override
-  String get storeReaderLicenseTitle => '基礎版購買';
+  String get storeReaderLicenseTitle => 'Origo 開卷';
 
   @override
-  String get storeReaderLicenseSubtitle => '先試用本機閱讀 14 天，再一次購買基礎版長期使用。';
+  String get storeReaderLicenseSubtitle => '登入 Origo 帳號試用或購買，已購權益可在支援的平台使用。';
 
   @override
-  String get storeReaderLifetimeTitle => '基礎版';
+  String get storeReaderLifetimeTitle => 'Origo 開卷';
 
   @override
   String storeReaderOwned(String store) {
-    return '已透過 $store 購買基礎版。';
+    return 'Origo 開卷已綁定目前 Origo 帳號，可在支援的平台使用。';
   }
 
   @override
-  String get storePremiumPrerequisiteTitle => '請先購買基礎版';
+  String get storeReaderSignInAction => '登入 Origo 帳號並繼續';
 
   @override
-  String get storePremiumPrerequisiteBody => '進階版獨立販售，僅在購買基礎版後開放；試用期間無法購買。';
+  String get storeReaderCrossPlatformAccess =>
+      'Origo 開卷已購 · 登入同一 Origo 帳號可跨平台使用';
 
   @override
-  String get storePremiumPriceCaption => '永久進階版 · 綁定 Origo 帳號';
+  String get storePremiumPrerequisiteTitle => '請先取得 Origo 開卷';
+
+  @override
+  String get storePremiumPrerequisiteBody =>
+      'Origo 探源是單獨出售的可選擴充，僅在購買 Origo 開卷後開放；試用期間不可購買。';
+
+  @override
+  String get storePremiumPriceCaption => '永久書源擴充 · 帳號跨平台通用';
+
+  @override
+  String get premiumCrossPlatformAccess => '登入同一 Origo 帳號，可在支援的平台繼續使用。';
+
+  @override
+  String get storeBetaAccessAvailable => '測試期間已開放全部功能';
+
+  @override
+  String get premiumIncludesReaderAccess => '包含 Origo 開卷的永久使用權，以及更多書源格式相容能力。';
+
+  @override
+  String get storeExploreBundlePriceCaption => '開卷 + 探源 · 一次購買跨平台使用';
+
+  @override
+  String get storeExploreUpgradePriceCaption => '已擁有開卷 · 升級探源';
+
+  @override
+  String storeExploreBundleBilling(String store) {
+    return '這是包含 Origo 開卷與探源擴充的完整一次性購買，不自動續費。實際價格由 $store 顯示並處理付款，驗證後綁定目前 Origo 帳號。';
+  }
+
+  @override
+  String storeExploreUpgradeBilling(String store) {
+    return '這是為已擁有 Origo 開卷使用者提供的探源升級，一次性購買且不自動續費。實際價格由 $store 顯示並處理付款。';
+  }
 
   @override
   String storePremiumPurchaseButton(String store) {
-    return '透過 $store 購買進階版';
+    return '透過 $store 購買 Origo 探源';
   }
 
   @override
   String storePremiumBilling(String store) {
-    return '進階版為獨立的一次性購買，不自動續費。實際價格由 $store 顯示並處理付款，驗證後綁定目前登入的 Origo 帳號。';
+    return 'Origo 探源是單獨的一次性購買，不自動續費。實際價格由 $store 顯示並處理付款，驗證後綁定目前登入的 Origo 帳號。';
   }
 
   @override
   String storePremiumRestoreHelp(String store) {
-    return '請登入綁定的 Origo 帳號，並使用購買進階版時的 $store 帳號恢復；恢復不會再次收費。';
+    return '請登入綁定的 Origo 帳號，並使用購買 Origo 探源時的 $store 帳號恢復；恢復不會再次收費。';
   }
 
   @override
@@ -14104,10 +14172,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get storeReaderPurchaseSuccess => '基礎版購買成功';
+  String get storeReaderPurchaseSuccess => 'Origo 開卷購買成功';
 
   @override
-  String get storeReaderRestoreSuccess => '基礎版購買已恢復';
+  String get storeReaderRestoreSuccess => 'Origo 開卷購買已恢復';
 
   @override
   String get storeReaderTestPurchaseVerified => '基礎版測試購買已驗證，未授予正式授權。';

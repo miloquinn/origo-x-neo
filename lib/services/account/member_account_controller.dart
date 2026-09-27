@@ -54,6 +54,7 @@ class MemberAccountController extends ChangeNotifier {
        _authCallbackBridge = authCallbackBridge ?? AccountAuthCallbackBridge() {
     _apiSessionSubscription = _api.sessionInvalidations.listen((_) {
       if (_disposed) return;
+      _clearAccountReaderState();
       _user = null;
       _pendingSession = null;
       _sandboxStoreAccountId = null;
@@ -61,7 +62,6 @@ class MemberAccountController extends ChangeNotifier {
       _resetMembershipSync();
       _membership = null;
       _summary = null;
-      _cachedMembership = null;
       _referral = null;
       _mfaStatus = null;
       unawaited(_readingScope.setOwner(null));
@@ -75,11 +75,9 @@ class MemberAccountController extends ChangeNotifier {
       accountIdProvider: () => _user?.id,
       applicationUserNameProvider: (kind) {
         if (!AppDistribution.usesGoogleBilling) {
-          return kind.domain == StorePurchaseDomain.premium ? _user?.id : null;
+          return _user?.id;
         }
-        final source = kind.domain == StorePurchaseDomain.premium
-            ? _user?.id
-            : _readerCredential?.value;
+        final source = _user?.id;
         return source == null
             ? null
             : sha256.convert(utf8.encode(source)).toString();
@@ -87,18 +85,25 @@ class MemberAccountController extends ChangeNotifier {
       verify: (kind, purchase, accountId) async {
         final verification = purchase.verificationData.serverVerificationData;
         if (kind.domain == StorePurchaseDomain.reader) {
+          if (accountId == null || _user?.id != accountId) {
+            throw const MemberAccountException('请先登录 Origo 账号');
+          }
+          final request = ++_accountReaderRequest;
           final result = AppDistribution.usesGoogleBilling
-              ? await _api.submitReaderGooglePurchase(
+              ? await _api.submitAccountReaderGooglePurchase(
                   verification,
                   restore: purchase.status == PurchaseStatus.restored,
                 )
-              : await _api.submitReaderApplePurchase(
+              : await _api.submitAccountReaderApplePurchase(
                   verification,
                   restore: purchase.status == PurchaseStatus.restored,
                 );
-          await _acceptReaderResult(result);
+          if (_user?.id != accountId || request != _accountReaderRequest) {
+            throw const MemberAccountException('账号或权益已变化，请重新恢复购买');
+          }
+          await _acceptReaderResult(result, accountRequest: request);
           var legacyPremiumAuthorized = true;
-          if (kind == StoreProductKind.legacyBundle && accountId != null) {
+          if (kind == StoreProductKind.legacyBundle) {
             final owner = _user!.id;
             final legacyMembership = AppDistribution.usesGoogleBilling
                 ? await _api.submitGooglePurchase(verification)
@@ -129,7 +134,10 @@ class MemberAccountController extends ChangeNotifier {
           throw const MemberAccountException('请先登录账号');
         }
         final membership = AppDistribution.usesGoogleBilling
-            ? await _api.submitPremiumGooglePurchase(verification)
+            ? await _api.submitPremiumGooglePurchase(
+                verification,
+                restore: purchase.status == PurchaseStatus.restored,
+              )
             : await _api.submitPremiumApplePurchase(
                 verification,
                 restore: purchase.status == PurchaseStatus.restored,
@@ -183,6 +191,9 @@ class MemberAccountController extends ChangeNotifier {
   ReaderAccessSnapshot? _readerAccess;
   StoreTestAccess? _readerTestAccess;
   ReaderOfflineAttestation? _readerAttestation;
+  ReaderOfflineAttestation? _accountReaderAttestation;
+  String? _offlineReaderAccountId;
+  int _accountReaderRequest = 0;
   String? _sandboxStoreAccountId;
   DateTime? _sandboxStoreExpiresAt;
   final PendingDeviceAuthorizationStore _pendingAuthorizationStore;
@@ -247,6 +258,7 @@ class MemberAccountController extends ChangeNotifier {
               await initialize(force: true);
             } else {
               await loadMembership();
+              await refreshReaderAccess();
             }
           } catch (_) {
             // Public explicit actions still throw; background lifecycle sync reports
@@ -272,8 +284,6 @@ class MemberAccountController extends ChangeNotifier {
   MemberAuthConfig? _authConfig;
   MemberMembershipConfig? _membershipConfig;
   MemberMembership? _membershipValue;
-  CachedMemberMembership? _cachedMembership;
-  bool _membershipCacheLoaded = false;
   Timer? _membershipExpiryTimer;
   MemberMembership? get _membership => _membershipValue;
   set _membership(MemberMembership? value) {
@@ -290,6 +300,8 @@ class MemberAccountController extends ChangeNotifier {
       ?_sandboxStoreExpiresAt,
       ?_readerTestAccess?.expiresAt,
       ?_readerAccess?.trialExpiresAt,
+      ?_accountReaderAttestation?.validUntil,
+      ?_accountReaderAttestation?.trialExpiresAt,
       ?_readerAttestation?.validUntil,
       ?_readerAttestation?.trialExpiresAt,
       for (final grant in value?.entitlements ?? <MemberEntitlement>[])
@@ -350,31 +362,57 @@ class MemberAccountController extends ChangeNotifier {
       (_sandboxStoreExpiresAt == null ||
           _sandboxStoreExpiresAt!.isAfter(DateTime.now()));
   bool get hasAdvancedSourceAccess =>
-      (hasPremiumAccess || hasSandboxStoreAccess) &&
-      (!AppDistribution.isStore || hasPermanentReaderAccess);
+      AppDistribution.isAppleTestEnvironment ||
+      hasPremiumAccess ||
+      hasSandboxStoreAccess ||
+      (_membership == null &&
+          _accountReaderAttestationIsCurrent &&
+          _accountReaderAttestation!.readerUnlocked &&
+          _accountReaderAttestation!.derivedFromPremium);
   bool get storeBillingReady => AppDistribution.usesGoogleBilling
       ? membershipConfig?.googleBillingEnabled == true
       : !AppDistribution.usesAppleBilling ||
             membershipConfig?.appleBillingEnabled == true;
   bool get hasStoreReaderEntitlement =>
       _user != null && _membership?.hasStoreReaderEntitlement == true;
+  bool get _hasPermanentStoreReaderEntitlement =>
+      _user != null &&
+      (_membership?.entitlements.any(
+            (entry) =>
+                entry.featureKey == 'store_reader' &&
+                entry.status == 'active' &&
+                entry.expiresAt == null,
+          ) ??
+          false);
   bool get hasReaderAccess =>
-      !AppDistribution.readerLicenseRequired || _hasLicensedReaderAccess;
+      AppDistribution.isAppleTestEnvironment ||
+      !AppDistribution.readerLicenseRequired ||
+      _hasLicensedReaderAccess;
   ReaderAccessSnapshot? get readerAccess => _readerAccess;
   bool get hasPermanentReaderAccess =>
       !AppDistribution.isStore ||
+      (hasPremiumAccess && _membership!.premiumExpiresAt == null) ||
+      _hasPermanentStoreReaderEntitlement ||
+      (_accountReaderAttestationIsCurrent &&
+          _accountReaderAttestation!.readerUnlocked &&
+          _accountReaderAttestation!.permanent) ||
       _readerTestAccess?.isReaderLifetime == true ||
       (_readerAttestationIsCurrent &&
-          (_readerAccess?.hasPermanentAccess == true ||
-              (_readerAttestation?.readerUnlocked == true &&
-                  _readerAttestation?.trialExpiresAt == null)));
+          _readerAttestation!.readerUnlocked &&
+          _readerAttestation!.trialExpiresAt == null);
   bool get hasActiveReaderTrial =>
       AppDistribution.isStore &&
-      (_readerTestAccess?.isReaderTrial == true ||
-          _readerAccess?.isTrialActiveAt(DateTime.now()) == true ||
-          (_readerAttestation?.trialExpiresAt?.isAfter(DateTime.now()) ==
-              true));
+      ((_accountReaderAttestationIsCurrent &&
+              _accountReaderAttestation!.trialExpiresAt?.isAfter(
+                    DateTime.now(),
+                  ) ==
+                  true) ||
+          _readerTestAccess?.isReaderTrial == true ||
+          (_readerAttestationIsCurrent &&
+              _readerAttestation?.trialExpiresAt?.isAfter(DateTime.now()) ==
+                  true));
   DateTime? get readerTrialExpiresAt =>
+      _accountReaderAttestation?.trialExpiresAt ??
       (_readerTestAccess?.isReaderTrial == true
           ? _readerTestAccess?.expiresAt
           : null) ??
@@ -391,10 +429,21 @@ class MemberAccountController extends ChangeNotifier {
       (AppDistribution.usesGoogleBilling
           ? true
           : membershipConfig?.readerAppleTrialProductId?.isNotEmpty == true);
+
+  /// Only paid/granted account rights qualify for the discounted upgrade.
+  /// Direct-build free access and old device licenses do not qualify.
+  bool get hasAccountReaderUpgradeEligibility =>
+      isAuthenticated &&
+      (_hasPermanentStoreReaderEntitlement ||
+          (_accountReaderAttestationIsCurrent &&
+              _accountReaderAttestation!.readerUnlocked &&
+              _accountReaderAttestation!.upgradeEligible) ||
+          _readerTestAccess?.isReaderLifetime == true);
+
   bool get canPurchaseStorePremium =>
       AppDistribution.isStore &&
       isAuthenticated &&
-      hasPermanentReaderAccess &&
+      hasAccountReaderUpgradeEligibility &&
       !hasPremiumAccess;
   MemberAccountSummary? get summary => _summary;
   MemberReferral? get referral => _referral;
@@ -407,6 +456,8 @@ class MemberAccountController extends ChangeNotifier {
       _storePurchase.productFor(StoreProductKind.readerTrial);
   ProductDetails? get premiumLifetimeProduct =>
       _storePurchase.productFor(StoreProductKind.premiumLifetime);
+  ProductDetails? get premiumBundleProduct =>
+      _storePurchase.productFor(StoreProductKind.premiumBundle);
   StorePurchasePhase get readerPurchasePhase =>
       _storePurchase.phaseFor(StorePurchaseDomain.reader);
   bool get readerPurchaseLoading =>
@@ -429,16 +480,52 @@ class MemberAccountController extends ChangeNotifier {
         value.trialExpiresAt?.isAfter(DateTime.now()) == true;
   }
 
+  bool get _accountReaderAttestationIsCurrent {
+    final value = _accountReaderAttestation;
+    if (value == null || !value.validUntil.isAfter(DateTime.now())) {
+      return false;
+    }
+    final owner = _user?.id ?? _offlineReaderAccountId;
+    return owner != null && value.accountId == owner;
+  }
+
+  void _clearAccountReaderState() {
+    _accountReaderRequest++;
+    _accountReaderAttestation = null;
+    _offlineReaderAccountId = null;
+    _readerTestAccess = null;
+    _sandboxStoreAccountId = null;
+    _sandboxStoreExpiresAt = null;
+    // Legacy anonymous licenses retain their original installation semantics.
+    if (_readerAccess?.channel == 'account') _readerAccess = null;
+    unawaited(_queueAccountReaderCache(_readerAccessCache.clearAccount));
+  }
+
+  Future<void> _accountReaderCacheOperation = Future<void>.value();
+
+  Future<void> _queueAccountReaderCache(Future<void> Function() operation) {
+    final next = _accountReaderCacheOperation.then((_) => operation());
+    _accountReaderCacheOperation = next.catchError((Object _) {});
+    return _accountReaderCacheOperation;
+  }
+
   bool get _readerAttestationIsCurrent =>
       _readerAttestation?.validUntil.isAfter(DateTime.now()) == true;
 
   bool get _hasLicensedReaderAccess =>
       LegacyReaderAccess.allowed ||
+      hasPremiumAccess ||
+      hasSandboxStoreAccess ||
       _readerTestAccess?.isReaderLifetime == true ||
       _readerTestAccess?.isReaderTrial == true ||
       hasStoreReaderEntitlement ||
-      (_readerAttestationIsCurrent &&
-          (_readerAccess?.unlocked == true || _readerAttestationGrantsAccess));
+      (_accountReaderAttestationIsCurrent &&
+          (_accountReaderAttestation!.readerUnlocked ||
+              _accountReaderAttestation!.trialExpiresAt?.isAfter(
+                    DateTime.now(),
+                  ) ==
+                  true)) ||
+      _readerAttestationGrantsAccess;
 
   void clearError() {
     if (_error == null) return;
@@ -453,16 +540,15 @@ class MemberAccountController extends ChangeNotifier {
       await _run(() async {
         await _restorePendingDeviceAuthorization();
         unawaited(_initializeAuthCallbackBridge());
-        final cachedValues = await Future.wait<Object?>([
-          _summaryCache.load(),
-          _membershipCache.load(),
-        ]);
-        _summary = cachedValues[0] as MemberAccountSummary?;
-        _cachedMembership = cachedValues[1] as CachedMemberMembership?;
-        _membershipCacheLoaded = true;
+        _summary = await _summaryCache.load();
         if (AppDistribution.isStore) {
           try {
             _readerCredential = await _readerCredentialStore.getOrCreate();
+            _accountReaderAttestation = await _readerAccessCache.loadAccount(
+              credential: _readerCredential!,
+              sessionBinding: await _api.offlineReaderSessionBinding(),
+            );
+            _offlineReaderAccountId = _accountReaderAttestation?.accountId;
             _readerAttestation = await _readerAccessCache.load(
               credential: _readerCredential!,
               channel: _readerChannel,
@@ -475,7 +561,9 @@ class MemberAccountController extends ChangeNotifier {
           }
         }
         _scheduleMembershipExpiry();
-        if (_summary != null || _readerAttestation != null) {
+        if (_summary != null ||
+            _readerAttestation != null ||
+            _accountReaderAttestation != null) {
           notifyListeners();
         }
         MemberAccountException? deferred;
@@ -511,6 +599,7 @@ class MemberAccountController extends ChangeNotifier {
           }
         } on MemberAccountException catch (error) {
           if (error.statusCode == 401) {
+            _clearAccountReaderState();
             _user = null;
             _pendingSession = null;
             _resetMembershipSync();
@@ -533,6 +622,7 @@ class MemberAccountController extends ChangeNotifier {
       }
       if (error is! MemberAccountException ||
           !_isRetryableMembershipError(error)) {
+        _clearAccountReaderState();
         _user = null;
         _pendingSession = null;
         _resetMembershipSync();
@@ -1039,32 +1129,38 @@ class MemberAccountController extends ChangeNotifier {
     await _persistSummary();
   });
 
-  Future<void> purchaseStorePremium() async {
-    if (_user == null) throw const MemberAccountException('请先登录账号');
-    await refreshReaderAccess();
-    if (!hasPermanentReaderAccess) {
-      throw const MemberAccountException('请先永久解锁应用，再购买高级版');
-    }
-    if (AppDistribution.usesGoogleBilling) {
-      _membershipConfig = await _api.membershipConfig();
-      _configureStoreProducts();
-      if (!storeBillingReady) {
-        notifyListeners();
-        throw const MemberAccountException('Google Play 购买暂未开放，请稍后重试');
-      }
-    }
-    // Check authoritative access immediately before opening the payment sheet.
-    final accountId = _user!.id;
+  Future<void> purchaseStorePremium() => _purchasePremium(bundle: false);
+
+  Future<void> purchaseStorePremiumBundle() => _purchasePremium(bundle: true);
+
+  Future<void> _purchasePremium({required bool bundle}) async {
+    if (AppDistribution.isAppleTestEnvironment) return;
+    final owner = _user?.id;
+    if (owner == null) throw const MemberAccountException('请先登录 Origo 账号');
     await loadMembership();
-    if (_user?.id != accountId || _membership == null) {
+    if (_user?.id != owner || _membership == null) {
       throw const MemberAccountException('账号已切换，请重新验证会员权益');
     }
-    if ((hasPremiumAccess && _membership!.premiumExpiresAt == null) ||
-        _membership!.purchaseAllowed == false) {
-      return;
+    if (hasPremiumAccess || _membership!.purchaseAllowed == false) return;
+    await refreshReaderAccess();
+    if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');
+    if (!bundle && !hasAccountReaderUpgradeEligibility) {
+      throw const MemberAccountException('请先购买 Origo 开卷，再使用探源升级价格');
     }
+    if (bundle && hasAccountReaderUpgradeEligibility) {
+      throw const MemberAccountException('你已拥有 Origo 开卷，请选择探源升级价格');
+    }
+    _membershipConfig = await _api.membershipConfig();
+    if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');
     _configureStoreProducts();
-    await _storePurchase.purchaseKind(StoreProductKind.premiumLifetime);
+    if (!storeBillingReady) {
+      throw const MemberAccountException('商店购买暂未开放，请稍后重试');
+    }
+    await _storePurchase.purchaseKind(
+      bundle
+          ? StoreProductKind.premiumBundle
+          : StoreProductKind.premiumLifetime,
+    );
   }
 
   Future<void> restoreStorePurchases() async {
@@ -1072,7 +1168,13 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> purchaseReaderLifetime() async {
+    if (AppDistribution.isAppleTestEnvironment) return;
     if (!AppDistribution.isStore) return;
+    final owner = _user?.id;
+    if (owner == null) throw const MemberAccountException('请先登录 Origo 账号');
+    await refreshReaderAccess();
+    if (_user?.id != owner) throw const MemberAccountException('账号已切换，请重试');
+    if (hasPermanentReaderAccess) return;
     _membershipConfig = await _api.membershipConfig();
     _configureStoreProducts();
     await _storePurchase.purchaseKind(StoreProductKind.readerLifetime);
@@ -1080,6 +1182,7 @@ class MemberAccountController extends ChangeNotifier {
 
   Future<void> restoreReaderPurchases() async {
     if (!AppDistribution.isStore) return;
+    if (_user == null) throw const MemberAccountException('请先登录 Origo 账号');
     _membershipConfig = await _api.membershipConfig();
     _configureStoreProducts();
     await _storePurchase.restoreDomain(StorePurchaseDomain.reader);
@@ -1087,10 +1190,6 @@ class MemberAccountController extends ChangeNotifier {
 
   Future<void> restoreStorePremiumPurchases() async {
     if (_user == null) throw const MemberAccountException('请先登录账号');
-    await refreshReaderAccess();
-    if (!hasPermanentReaderAccess) {
-      throw const MemberAccountException('请先恢复或购买应用永久解锁');
-    }
     _configureStoreProducts();
     await _storePurchase.restoreDomain(StorePurchaseDomain.premium);
   }
@@ -1122,6 +1221,9 @@ class MemberAccountController extends ChangeNotifier {
       premiumLifetime: AppDistribution.usesGoogleBilling
           ? membershipConfig?.premiumGoogleProductId ?? googlePremiumProductId
           : membershipConfig?.premiumAppleProductId ?? appleProductId,
+      premiumBundle: AppDistribution.usesGoogleBilling
+          ? membershipConfig?.premiumFullGoogleProductId
+          : membershipConfig?.premiumFullAppleProductId,
       legacyBundle: AppDistribution.usesAppleBilling
           ? membershipConfig?.legacyAppleProductIds.firstOrNull ??
                 legacyAppleBundleProductId
@@ -1133,15 +1235,62 @@ class MemberAccountController extends ChangeNotifier {
       AppDistribution.usesGoogleBilling ? 'google_play' : 'apple';
 
   Future<void> refreshReaderAccess() async {
-    if (!AppDistribution.isStore) return;
-    final result = await _api.readerStatus(_readerChannel);
-    await _acceptReaderResult(result);
+    final owner = _user?.id;
+    if (owner == null) {
+      if (!AppDistribution.isStore) return;
+      final result = await _api.readerStatus(_readerChannel);
+      if (_user != null) return;
+      await _acceptReaderResult(result);
+      return;
+    }
+    final request = ++_accountReaderRequest;
+    final result = await _api.accountReaderStatus();
+    if (_user?.id != owner || request != _accountReaderRequest) return;
+    await _acceptReaderResult(result, accountRequest: request);
   }
 
-  Future<void> _acceptReaderResult(ReaderAccessResult result) async {
+  Future<void> _acceptReaderResult(
+    ReaderAccessResult result, {
+    int? accountRequest,
+  }) async {
     final credential = _readerCredential ??= await _readerCredentialStore
         .getOrCreate();
     final attestation = result.offlineLicense;
+    if (attestation.version == 2) {
+      final owner = _user?.id;
+      final request = accountRequest ?? _accountReaderRequest;
+      if (owner == null ||
+          attestation.accountId != owner ||
+          attestation.subjectType != 'account' ||
+          attestation.channel != 'account' ||
+          attestation.installationKeyHash != credential.hash) {
+        throw const MemberAccountException('购买权益与当前 Origo 账号不匹配');
+      }
+      final binding = await _api.offlineReaderSessionBinding();
+      if (_user?.id != owner || request != _accountReaderRequest) {
+        throw const MemberAccountException('账号已切换，请重新验证购买');
+      }
+      _accountReaderAttestation = attestation;
+      _offlineReaderAccountId = owner;
+      _readerAccess = result.readerAccess;
+      if (result.testPurchase) {
+        _readerTestAccess = result.purchaseStatus == 'active'
+            ? result.testAccess
+            : null;
+      }
+      if (binding != null) {
+        await _queueAccountReaderCache(() async {
+          if (_user?.id != owner || request != _accountReaderRequest) return;
+          await _readerAccessCache.saveAccount(
+            attestation,
+            sessionBinding: binding,
+          );
+        });
+      }
+      _scheduleMembershipExpiry();
+      notifyListeners();
+      return;
+    }
     if (attestation.installationKeyHash != credential.hash ||
         attestation.channel != _readerChannel ||
         attestation.version != 1) {
@@ -1164,9 +1313,11 @@ class MemberAccountController extends ChangeNotifier {
   Future<void> startStoreTrial() => startReaderTrial();
 
   Future<void> startReaderTrial() async {
+    if (AppDistribution.isAppleTestEnvironment) return;
     if (!AppDistribution.isStore) {
       throw const MemberAccountException('试用仅适用于商店版');
     }
+    if (_user == null) throw const MemberAccountException('请先登录 Origo 账号');
     if (_hasLicensedReaderAccess) return;
     if (!canStartStoreTrial) {
       throw const MemberAccountException('当前设备无法开始新的应用试用');
@@ -1178,8 +1329,13 @@ class MemberAccountController extends ChangeNotifier {
       return;
     }
     await _run(() async {
-      final result = await _api.startReaderTrial(_readerChannel);
-      await _acceptReaderResult(result);
+      final owner = _user!.id;
+      final request = ++_accountReaderRequest;
+      final result = await _api.startAccountReaderTrial(_readerChannel);
+      if (_user?.id != owner || request != _accountReaderRequest) {
+        throw const MemberAccountException('账号已切换，请重试');
+      }
+      await _acceptReaderResult(result, accountRequest: request);
     });
   }
 
@@ -1223,6 +1379,7 @@ class MemberAccountController extends ChangeNotifier {
       confirmation: confirmation,
       mfaCode: mfaCode,
     );
+    _clearAccountReaderState();
     await _readingScope.setOwner(null);
     _resetMembershipSync();
     _user = null;
@@ -1242,6 +1399,10 @@ class MemberAccountController extends ChangeNotifier {
   });
 
   Future<void> logout() => _run(() async {
+    _clearAccountReaderState();
+    _user = null;
+    _membership = null;
+    notifyListeners();
     await _readingScope.setOwner(null);
     try {
       await _api.logout();
@@ -1283,6 +1444,7 @@ class MemberAccountController extends ChangeNotifier {
 
   void _acceptSession(MemberSession session) {
     if (session.mfaRequired) {
+      _clearAccountReaderState();
       _sandboxStoreAccountId = null;
       _sandboxStoreExpiresAt = null;
       _pendingSession = session;
@@ -1302,6 +1464,9 @@ class MemberAccountController extends ChangeNotifier {
     unawaited(_readingScope.setOwner(session.user.id));
     final accountChanged = _user?.id != session.user.id;
     if (accountChanged) {
+      if (_offlineReaderAccountId != session.user.id) {
+        _clearAccountReaderState();
+      }
       _sandboxStoreAccountId = null;
       _sandboxStoreExpiresAt = null;
       _resetMembershipSync();
@@ -1310,7 +1475,6 @@ class MemberAccountController extends ChangeNotifier {
     }
     _pendingSession = null;
     _user = session.user;
-    _restoreCachedMembership(session.user.id);
     _updateSummaryFromAccount();
     if (accountChanged) notifyListeners();
   }
@@ -1347,35 +1511,10 @@ class MemberAccountController extends ChangeNotifier {
     }
   }
 
-  void _restoreCachedMembership(String accountId) {
-    final cached = _cachedMembership;
-    if (_membership != null || cached?.userId != accountId) return;
-    final owner = cached!.membership.userId;
-    if (owner != null && owner != accountId) return;
-    _membership = cached.membership;
-  }
-
-  Future<void> _ensureMembershipCacheLoaded() async {
-    if (_membershipCacheLoaded) return;
-    _cachedMembership = await _membershipCache.load();
-    _membershipCacheLoaded = true;
-    final accountId = _user?.id;
-    if (accountId != null) {
-      _restoreCachedMembership(accountId);
-      _updateSummaryFromAccount();
-      notifyListeners();
-    }
-  }
-
   Future<void> _persistMembership() async {
     final accountId = _user?.id;
     final membership = _membership;
     if (accountId == null || membership == null) return;
-    _cachedMembership = CachedMemberMembership(
-      userId: accountId,
-      membership: membership,
-    );
-    _membershipCacheLoaded = true;
     try {
       await _membershipCache.save(accountId, membership);
     } catch (_) {
@@ -1387,8 +1526,6 @@ class MemberAccountController extends ChangeNotifier {
     _sandboxStoreAccountId = null;
     _sandboxStoreExpiresAt = null;
     _scheduleMembershipExpiry();
-    _cachedMembership = null;
-    _membershipCacheLoaded = true;
     try {
       await _membershipCache.clear();
     } catch (_) {
@@ -1454,12 +1591,17 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> _loadAccountValues() async {
-    await _ensureMembershipCacheLoaded();
     try {
       await _loadMembershipValue();
     } on MemberAccountException {
       // The session and user returned by authentication are authoritative.
       // Membership is supplementary and can recover on a later account load.
+    }
+    try {
+      await refreshReaderAccess();
+    } on MemberAccountException {
+      // Account login succeeds independently from billing availability. A
+      // verified account-bound offline license remains usable within its TTL.
     }
     if (AppDistribution.usesStoreBilling) {
       try {

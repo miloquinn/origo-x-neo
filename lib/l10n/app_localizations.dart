@@ -11225,7 +11225,7 @@ abstract class AppLocalizations {
   /// Lifetime Premium
   ///
   /// In en, this message translates to:
-  /// **'Lifetime Premium'**
+  /// **'Origo Explore'**
   String get premiumLifetimeTitle;
 
   /// One-time purchase · No auto-renewal
@@ -11237,7 +11237,7 @@ abstract class AppLocalizations {
   /// Included with Premium
   ///
   /// In en, this message translates to:
-  /// **'Included with Premium'**
+  /// **'Included with Origo Explore'**
   String get premiumBenefitsTitle;
 
   /// Import and use additional compatible source protocols.
@@ -11315,7 +11315,7 @@ abstract class AppLocalizations {
   /// After verification, Premium is linked to the current Origo X account and syncs across supported platforms. Advanced settings become available with membership. Signing out or revocation disables advanced features. Check your account before purchasing.
   ///
   /// In en, this message translates to:
-  /// **'After verification, Premium is linked to the current Origo X account and syncs across supported platforms. Advanced settings become available with membership. Signing out or revocation disables advanced features. Check your account before purchasing.'**
+  /// **'After verification, Origo Explore is linked to your current Origo account and can be used on supported platforms. Cross-platform access applies to the purchased entitlement; it does not automatically sync books or reading data. Signing out or revocation disables the extension. Check your account before purchasing.'**
   String get premiumAccountBindingBody;
 
   /// Request a refund
@@ -11357,7 +11357,7 @@ abstract class AppLocalizations {
   /// Premium unlocked
   ///
   /// In en, this message translates to:
-  /// **'Premium unlocked'**
+  /// **'Origo Explore unlocked'**
   String get premiumPurchaseSuccess;
 
   /// Sandbox purchase verification result
@@ -12419,7 +12419,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeReaderLockedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Get Basic edition'**
+  /// **'Get Origo Read'**
   String get storeReaderLockedTitle;
 
   /// No description provided for @storeReaderLockedBody.
@@ -12449,13 +12449,13 @@ abstract class AppLocalizations {
   /// No description provided for @storeReaderBenefitTitle.
   ///
   /// In en, this message translates to:
-  /// **'Basic edition'**
+  /// **'Origo Read'**
   String get storeReaderBenefitTitle;
 
   /// No description provided for @storeReaderBenefitBody.
   ///
   /// In en, this message translates to:
-  /// **'Local reading, yours to keep. No Origo account is required.'**
+  /// **'The complete local reading experience, yours to keep. Access is linked to your Origo account and works on supported platforms.'**
   String get storeReaderBenefitBody;
 
   /// No description provided for @storeTrialStart.
@@ -12467,7 +12467,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeTrialDetails.
   ///
   /// In en, this message translates to:
-  /// **'Try local reading for {days} days. No automatic charge. After the trial, purchase Basic edition once to keep reading. Your books and notes are kept.'**
+  /// **'Sign in to your Origo account to try local reading for {days} days. There is no automatic charge. After the trial, purchase Origo Read once to keep reading. Your books and notes are kept.'**
   String storeTrialDetails(int days);
 
   /// No description provided for @storeTrialStarted.
@@ -12485,25 +12485,25 @@ abstract class AppLocalizations {
   /// No description provided for @storePurchaseButton.
   ///
   /// In en, this message translates to:
-  /// **'Buy Basic edition with {store}'**
+  /// **'Buy Origo Read with {store}'**
   String storePurchaseButton(String store);
 
   /// No description provided for @storePurchaseBilling.
   ///
   /// In en, this message translates to:
-  /// **'One-time Basic edition purchase. No automatic renewal. {store} displays the actual price and processes payment.'**
+  /// **'Origo Read is a one-time purchase with no automatic renewal. {store} displays the price and processes payment. After verification, access is linked to your Origo account and works on supported platforms.'**
   String storePurchaseBilling(String store);
 
   /// No description provided for @storePurchaseRestoreHelp.
   ///
   /// In en, this message translates to:
-  /// **'Restore with the {store} account used to purchase. No Origo login or additional charge is required.'**
+  /// **'Sign in to the linked Origo account, then restore with the {store} account used to purchase. Restoring does not charge again.'**
   String storePurchaseRestoreHelp(String store);
 
   /// No description provided for @storePurchaseAccess.
   ///
   /// In en, this message translates to:
-  /// **'You already own Basic edition through {store}. No repeat purchase is needed.'**
+  /// **'Origo Read is linked to your Origo account and works on supported platforms. No repeat purchase is needed.'**
   String storePurchaseAccess(String store);
 
   /// No description provided for @storeRestoreEmpty.
@@ -12515,7 +12515,7 @@ abstract class AppLocalizations {
   /// No description provided for @basicRestoreEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No Basic edition purchase found. Check your store account.'**
+  /// **'No Origo Read purchase was found. Check your Origo account and store account.'**
   String get basicRestoreEmpty;
 
   /// No description provided for @storeGoogleRefundTerms.
@@ -12761,13 +12761,13 @@ abstract class AppLocalizations {
   /// No description provided for @premiumEditorialTitle.
   ///
   /// In en, this message translates to:
-  /// **'Take reading a little further.'**
+  /// **'Origo Explore'**
   String get premiumEditorialTitle;
 
   /// No description provided for @premiumEditorialSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'More source options for curious readers.'**
+  /// **'An optional source extension with broader format compatibility.'**
   String get premiumEditorialSubtitle;
 
   /// No description provided for @basicReadingTitle.
@@ -12881,7 +12881,7 @@ abstract class AppLocalizations {
   /// No description provided for @basicEditionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Basic edition'**
+  /// **'Origo Read'**
   String get basicEditionTitle;
 
   /// No description provided for @basicEditionSummary.
@@ -12890,76 +12890,130 @@ abstract class AppLocalizations {
   /// **'One purchase. The complete reading experience.'**
   String get basicEditionSummary;
 
-  /// No description provided for @basicEditionNoAccount.
+  /// No description provided for @basicEditionAccountBound.
   ///
   /// In en, this message translates to:
-  /// **'No Origo sign-in needed'**
-  String get basicEditionNoAccount;
+  /// **'Linked to Origo · cross-platform access'**
+  String get basicEditionAccountBound;
 
   /// No description provided for @premiumEditionSummary.
   ///
   /// In en, this message translates to:
-  /// **'Advanced extensions. More source formats.'**
+  /// **'Optional source extension. More compatible formats.'**
   String get premiumEditionSummary;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Basic edition purchase'**
+  /// **'Origo Read'**
   String get storeReaderLicenseTitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Try local reading for 14 days, then purchase Basic edition once.'**
+  /// **'Sign in to try or purchase. Your purchased access works on supported platforms.'**
   String get storeReaderLicenseSubtitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Basic edition'**
+  /// **'Origo Read'**
   String get storeReaderLifetimeTitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Basic edition purchased through {store}.'**
+  /// **'Origo Read is linked to your Origo account and works on supported platforms.'**
   String storeReaderOwned(String store);
+
+  /// No description provided for @storeReaderSignInAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Origo and continue'**
+  String get storeReaderSignInAction;
+
+  /// No description provided for @storeReaderCrossPlatformAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Origo Read owned · use the same Origo account on supported platforms'**
+  String get storeReaderCrossPlatformAccess;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Buy Basic edition first'**
+  /// **'Get Origo Read first'**
   String get storePremiumPrerequisiteTitle;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Premium is sold separately after Basic edition is purchased. A trial does not qualify.'**
+  /// **'Origo Explore is an optional purchase sold separately after Origo Read is purchased. A trial does not qualify.'**
   String get storePremiumPrerequisiteBody;
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Lifetime Premium · linked to your Origo account'**
+  /// **'Lifetime source extension · cross-platform account access'**
   String get storePremiumPriceCaption;
+
+  /// No description provided for @premiumCrossPlatformAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the same Origo account to keep access on supported platforms.'**
+  String get premiumCrossPlatformAccess;
+
+  /// No description provided for @storeBetaAccessAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'All features are available during beta testing'**
+  String get storeBetaAccessAvailable;
+
+  /// No description provided for @premiumIncludesReaderAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes permanent Origo Read access plus broader source format compatibility.'**
+  String get premiumIncludesReaderAccess;
+
+  /// No description provided for @storeExploreBundlePriceCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Origo Read + Explore · one purchase, cross-platform access'**
+  String get storeExploreBundlePriceCaption;
+
+  /// No description provided for @storeExploreUpgradePriceCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Origo Read owned · upgrade to Explore'**
+  String get storeExploreUpgradePriceCaption;
+
+  /// No description provided for @storeExploreBundleBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a one-time purchase containing Origo Read and the Explore extension, with no auto-renewal. {store} displays the price and processes payment. Access is linked to your current Origo account after verification.'**
+  String storeExploreBundleBilling(String store);
+
+  /// No description provided for @storeExploreUpgradeBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a one-time Explore upgrade for Origo Read owners, with no auto-renewal. {store} displays the price and processes payment.'**
+  String storeExploreUpgradeBilling(String store);
 
   /// Separate app reader unlock and account Premium billing.
   ///
   /// In en, this message translates to:
-  /// **'Buy Premium with {store}'**
+  /// **'Buy Origo Explore with {store}'**
   String storePremiumPurchaseButton(String store);
 
   /// Separate account-bound Premium purchase or restore.
   ///
   /// In en, this message translates to:
-  /// **'A separate one-time Premium purchase with no auto-renewal. {store} shows the actual price and processes payment. Premium is linked to your signed-in Origo account.'**
+  /// **'Origo Explore is a separate one-time purchase with no auto-renewal. {store} shows the actual price and processes payment. It is linked to your signed-in Origo account.'**
   String storePremiumBilling(String store);
 
   /// Separate account-bound Premium purchase or restore.
   ///
   /// In en, this message translates to:
-  /// **'Restore with the {store} account used to buy Premium while signed in to the linked Origo account. Restoring does not charge again.'**
+  /// **'Restore with the {store} account used to buy Origo Explore while signed in to the linked Origo account. Restoring does not charge again.'**
   String storePremiumRestoreHelp(String store);
 
   /// App reader purchase status, separate from Premium.
@@ -12971,13 +13025,13 @@ abstract class AppLocalizations {
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'Basic edition purchased'**
+  /// **'Origo Read purchased'**
   String get storeReaderPurchaseSuccess;
 
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'Basic edition purchase restored'**
+  /// **'Origo Read purchase restored'**
   String get storeReaderRestoreSuccess;
 
   /// App reader purchase status, separate from Premium.

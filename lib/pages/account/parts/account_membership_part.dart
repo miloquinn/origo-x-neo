@@ -55,9 +55,6 @@ class _AccountActionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final account = context.watch<MemberAccountController>();
-    final canShowPremium =
-        !AppDistribution.isStore || account.hasPermanentReaderAccess;
     return Semantics(
       container: true,
       label: user.effectiveName,
@@ -93,15 +90,13 @@ class _AccountActionsCard extends StatelessWidget {
                   onTap: onOpenReferral,
                 ),
               ],
-              if (canShowPremium) ...[
-                const Divider(height: 1),
-                _AccountActionTile(
-                  key: const ValueKey('account-support'),
-                  icon: Icons.receipt_long_outlined,
-                  title: context.l10n.premiumAccountBindingTitle,
-                  onTap: onOpenSupport,
-                ),
-              ],
+              const Divider(height: 1),
+              _AccountActionTile(
+                key: const ValueKey('account-support'),
+                icon: Icons.receipt_long_outlined,
+                title: context.l10n.premiumAccountBindingTitle,
+                onTap: onOpenSupport,
+              ),
             ],
           ),
         ),

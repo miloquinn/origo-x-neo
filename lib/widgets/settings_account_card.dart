@@ -25,9 +25,7 @@ class SettingsAccountCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final account = context.watch<MemberAccountController>();
     final summary = account.summary;
-    final canShowPremium =
-        !AppDistribution.isStore || account.hasPermanentReaderAccess;
-    final premium = account.hasPremiumAccess && canShowPremium && !quiet;
+    final premium = account.hasPremiumAccess && !quiet;
     final scheme = Theme.of(context).colorScheme;
     final palette = PageStyleHelper.palette(context);
     final title =
@@ -43,7 +41,7 @@ class SettingsAccountCard extends StatelessWidget {
 
     if (showMembershipSection) {
       final l10n = context.l10n;
-      final premiumActive = account.hasPremiumAccess && canShowPremium;
+      final premiumActive = account.hasPremiumAccess;
       final membershipTitle = account.membershipSyncFailed
           ? l10n.settingsPremiumSyncFailed
           : account.isAuthenticated && account.membership == null
@@ -187,7 +185,7 @@ class SettingsAccountCard extends StatelessWidget {
                         account: account,
                       ),
                     ),
-                  if (canShowPremium && !premiumActive) ...[
+                  if (!premiumActive) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
                       child: Material(

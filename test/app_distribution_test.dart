@@ -10,11 +10,14 @@ const _configuredDistributionChannel = String.fromEnvironment(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('com.niki.xxread/app_distribution');
+  const appleChannel = MethodChannel('com.niki.xxread/apple_purchase_support');
 
   setUp(AppDistribution.debugReset);
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(appleChannel, null);
     AppDistribution.debugReset();
     debugDefaultTargetPlatformOverride = null;
   });
@@ -27,7 +30,7 @@ void main() {
     expect(AppDistribution.usesStoreBilling, isTrue);
     expect(AppDistribution.isStore, isTrue);
     expect(AppDistribution.allowsExternalSupport, isFalse);
-    expect(AppDistribution.readerLicenseRequired, isFalse);
+    expect(AppDistribution.readerLicenseRequired, isTrue);
     expect(AppDistribution.suppressesExternalUpdates, isFalse);
   });
 
@@ -53,7 +56,7 @@ void main() {
     expect(AppDistribution.usesStoreBilling, isTrue);
     expect(AppDistribution.isStore, isTrue);
     expect(AppDistribution.allowsExternalSupport, isFalse);
-    expect(AppDistribution.readerLicenseRequired, isFalse);
+    expect(AppDistribution.readerLicenseRequired, isTrue);
     expect(AppDistribution.suppressesExternalUpdates, isTrue);
   });
 
@@ -64,7 +67,7 @@ void main() {
 
       expect(AppDistribution.channel, AppDistributionChannel.googlePlay);
       expect(AppDistribution.usesGoogleBilling, isTrue);
-      expect(AppDistribution.readerLicenseRequired, isFalse);
+      expect(AppDistribution.readerLicenseRequired, isTrue);
     },
     skip: _configuredDistributionChannel == 'googlePlay'
         ? false
@@ -85,6 +88,49 @@ void main() {
     );
     expect(AppDistribution.readerLicenseRequired, isFalse);
   });
+
+  test(
+    'verified Apple sandbox is ephemeral and production resets it',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      var environment = 'sandbox';
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(appleChannel, (call) async {
+            expect(call.method, 'verifiedAppEnvironment');
+            return environment;
+          });
+      await AppDistribution.initialize();
+      expect(AppDistribution.isAppleTestEnvironment, isTrue);
+      expect(AppDistribution.readerLicenseRequired, isTrue);
+      environment = 'legacySandbox';
+      await AppDistribution.initialize();
+      expect(AppDistribution.isAppleTestEnvironment, isTrue);
+      for (final next in ['production', 'xcode', 'unavailable', 'unverified']) {
+        environment = next;
+        await AppDistribution.initialize();
+        expect(AppDistribution.isAppleTestEnvironment, isFalse);
+      }
+      environment = 'sandbox';
+      await AppDistribution.initialize();
+      AppDistribution.debugReset();
+      expect(AppDistribution.isAppleTestEnvironment, isFalse);
+    },
+  );
+
+  test(
+    'missing Apple bridge and platform failures never grant free access',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      await AppDistribution.initialize();
+      expect(AppDistribution.isAppleTestEnvironment, isFalse);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(appleChannel, (call) async {
+            throw PlatformException(code: 'verification_failed');
+          });
+      await AppDistribution.initialize();
+      expect(AppDistribution.isAppleTestEnvironment, isFalse);
+    },
+  );
 
   test('unknown configured channels fail closed', () {
     expect(

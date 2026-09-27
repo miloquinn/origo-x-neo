@@ -81,6 +81,54 @@ class ReaderAccessCache {
   Future<void> save(ReaderOfflineAttestation value) =>
       _storage.write(key: storageKey, value: jsonEncode(value.toJson()));
 
+  static const accountStorageKey = 'origo_x.reader.account_attestation.v2';
+
+  /// Account rights are separate from legacy installation rights. Secure
+  /// session binding allows offline reading without pretending to authenticate.
+  Future<ReaderOfflineAttestation?> loadAccount({
+    required ReaderInstallationCredential credential,
+    required String? sessionBinding,
+    String? accountId,
+    DateTime? now,
+  }) async {
+    if (sessionBinding == null) return null;
+    try {
+      final encoded = await _storage.read(key: accountStorageKey);
+      if (encoded == null) return null;
+      final payload = (jsonDecode(encoded) as Map).cast<String, dynamic>();
+      if (payload['session_binding'] != sessionBinding) return null;
+      final value = ReaderOfflineAttestation.fromJson(
+        (payload['license'] as Map).cast<String, dynamic>(),
+      );
+      if (value.version != 2 ||
+          value.subjectType != 'account' ||
+          value.accountId == null ||
+          value.accountId!.isEmpty ||
+          (accountId != null && value.accountId != accountId) ||
+          value.installationKeyHash != credential.hash ||
+          value.channel != 'account' ||
+          !value.validUntil.isAfter(now ?? DateTime.now())) {
+        return null;
+      }
+      return value;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveAccount(
+    ReaderOfflineAttestation value, {
+    required String sessionBinding,
+  }) => _storage.write(
+    key: accountStorageKey,
+    value: jsonEncode({
+      'session_binding': sessionBinding,
+      'license': value.toJson(),
+    }),
+  );
+
+  Future<void> clearAccount() => _storage.delete(key: accountStorageKey);
+
   Future<void> clear() => _storage.delete(key: storageKey);
 }
 

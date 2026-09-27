@@ -24,6 +24,24 @@ void main() {
 
   setUp(AppDistribution.debugReset);
 
+  testWidgets('Apple beta opens Explore without price or purchase actions', (
+    tester,
+  ) async {
+    await _enableAppleBeta();
+    final store = _FakeAppleStore();
+    final account = _TestAccount(store: store);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('premium-beta-status')), findsOneWidget);
+    expect(find.byKey(const ValueKey('premium-beta-access')), findsOneWidget);
+    expect(find.byKey(const ValueKey('premium-store-price')), findsNothing);
+    expect(find.byKey(const ValueKey('account-apple-purchase')), findsNothing);
+    expect(find.byKey(const ValueKey('account-apple-restore')), findsNothing);
+  });
+
   for (final ready in [true, false]) {
     testWidgets('Google Play shows only native payment actions, ready=$ready', (
       tester,
@@ -64,24 +82,32 @@ void main() {
     });
   }
 
-  testWidgets('store Premium stays hidden until the app is permanently owned', (
-    tester,
-  ) async {
-    AppDistribution.debugOverride(channel: AppDistributionChannel.googlePlay);
-    final store = _FakeAppleStore();
-    final account = _TestAccount(store: store, permanentReader: false);
-    addTearDown(account.dispose);
-    addTearDown(store.close);
-    await _pumpPage(tester, account: account);
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('store-reader-license-page')),
-      findsOneWidget,
-    );
-    expect(find.byKey(const ValueKey('premium-membership-card')), findsNothing);
-    expect(find.byKey(const ValueKey('account-google-purchase')), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'account without Origo Read can buy the complete Explore bundle',
+    (tester) async {
+      AppDistribution.debugOverride(channel: AppDistributionChannel.googlePlay);
+      final store = _FakeAppleStore();
+      final account = _TestAccount(store: store, permanentReader: false);
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+      await _pumpPage(tester, account: account);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('store-reader-license-page')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('premium-membership-card')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('开卷 + 探源'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('account-google-purchase')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('owned store app keeps Premium sign-in action in the footer', (
     tester,
@@ -168,7 +194,7 @@ void main() {
       await _pumpPage(tester, account: account);
       await tester.pumpAndSettle();
       expect(
-        find.text(switch (source) {
+        find.textContaining(switch (source) {
           'admin' => '你已获赠高级会员，无需重复购买。',
           'card' => '你已通过其他渠道开通高级会员，无需重复购买。',
           _ => '你已通过 App Store 开通高级会员，无需重复购买。',
@@ -200,7 +226,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('¥28.00'), findsOneWidget);
-      expect(find.text('给阅读，更多可能。'), findsOneWidget);
+      expect(find.text('Origo 探源'), findsWidgets);
       expect(
         find.byWidgetPredicate(
           (widget) =>
@@ -757,6 +783,21 @@ void main() {
   );
 }
 
+Future<void> _enableAppleBeta() async {
+  AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+  debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+  const channel = MethodChannel('com.niki.xxread/apple_purchase_support');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) async => 'sandbox');
+  try {
+    await AppDistribution.initialize();
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
+  }
+}
+
 Future<void> _pumpPage(
   WidgetTester tester, {
   required MemberAccountController account,
@@ -891,6 +932,8 @@ class _TestAccount extends MemberAccountController {
     googleProductId: MemberAccountController.appleProductId,
     premiumGoogleProductId: MemberAccountController.appleProductId,
     premiumAppleProductId: MemberAccountController.appleProductId,
+    premiumFullGoogleProductId: 'origo_x_explorer_lifetime',
+    premiumFullAppleProductId: 'com.niki.xxread.explorer.lifetime',
     appleTrialProductId: 'trial.14days',
     googleBillingEnabled: billingReady,
     appleBillingEnabled: billingReady,
@@ -915,6 +958,10 @@ class _TestAccount extends MemberAccountController {
 
   @override
   bool get isAuthenticated => authenticated;
+
+  @override
+  bool get hasAccountReaderUpgradeEligibility =>
+      authenticated && permanentReader;
 
   @override
   bool get hasPremiumAccess => premium;
@@ -971,15 +1018,16 @@ class _FakeAppleStore implements PurchaseStore {
   ) async => ProductDetailsResponse(
     productDetails: productAvailable
         ? [
-            ProductDetails(
-              id: MemberAccountController.appleProductId,
-              title: '永久高级会员',
-              description: '一次购买，永久解锁',
-              price: '¥28.00',
-              rawPrice: 28,
-              currencyCode: 'CNY',
-              currencySymbol: '¥',
-            ),
+            for (final id in identifiers)
+              ProductDetails(
+                id: id,
+                title: id.contains('explorer') ? 'Origo 探源完整方案' : 'Origo 探源升级',
+                description: '一次购买，账号跨平台使用',
+                price: id.contains('explorer') ? '¥58.00' : '¥28.00',
+                rawPrice: id.contains('explorer') ? 58 : 28,
+                currencyCode: 'CNY',
+                currencySymbol: '¥',
+              ),
           ]
         : const [],
     notFoundIDs: productAvailable

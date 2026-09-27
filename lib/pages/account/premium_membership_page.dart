@@ -13,7 +13,6 @@ import '../../widgets/purchase_icons.dart';
 import '../../widgets/purchase_page_scaffold.dart';
 import 'account_page.dart';
 import 'premium_policy_page.dart';
-import 'store_reader_unlock_page.dart';
 
 class PremiumMembershipPage extends StatelessWidget {
   const PremiumMembershipPage({
@@ -31,18 +30,12 @@ class PremiumMembershipPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: Listenable.merge([account, account.storePurchase]),
-    builder: (context, _) {
-      if (AppDistribution.usesStoreBilling &&
-          !account.hasPermanentReaderAccess) {
-        return StoreReaderUnlockPage(account: account);
-      }
-      return PurchasePageTheme(
-        child: _PremiumMembershipContent(
-          account: account,
-          focusBilling: focusBilling,
-        ),
-      );
-    },
+    builder: (context, _) => PurchasePageTheme(
+      child: _PremiumMembershipContent(
+        account: account,
+        focusBilling: focusBilling,
+      ),
+    ),
   );
 }
 
@@ -81,9 +74,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (_usesStoreBilling &&
-          widget.account.isAuthenticated &&
-          widget.account.hasPermanentReaderAccess) {
+      if (_usesStoreBilling && widget.account.isAuthenticated) {
         unawaited(_initializeStore());
       }
       if (widget.focusBilling) {
@@ -201,6 +192,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
   Widget _summary(MemberAccountController account) {
     final l10n = context.l10n;
     final premium = account.hasPremiumAccess;
+    final betaAccess = AppDistribution.isAppleTestEnvironment;
     final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -226,7 +218,18 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                 height: 1.55,
               ),
             ),
-            if (premium) ...[
+            if (betaAccess) ...[
+              const SizedBox(height: 9),
+              Text(
+                l10n.storeBetaAccessAvailable,
+                key: const ValueKey('premium-beta-status'),
+                style: TextStyle(
+                  color: colors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ] else if (premium) ...[
               const SizedBox(height: 9),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -294,6 +297,12 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
           ),
           child: Column(
             children: [
+              _benefit(
+                PurchaseIcons.bookOpenText,
+                l10n.storeReaderLifetimeTitle,
+                l10n.premiumIncludesReaderAccess,
+              ),
+              Divider(height: 1, color: colors.outlineVariant),
               _benefit(
                 PurchaseIcons.stack,
                 l10n.settingsAdditionalSourceProtocolsTitle,
@@ -368,6 +377,8 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     final l10n = context.l10n;
     final colors = Theme.of(context).colorScheme;
     final premium = account.hasPremiumAccess;
+    final betaAccess = AppDistribution.isAppleTestEnvironment;
+    final upgradeEligible = account.hasAccountReaderUpgradeEligibility;
     final busy = account.premiumPurchaseLoading || account.loading;
     final expiring = account.membership?.premiumExpiresAt != null;
     final status = account.isAuthenticated
@@ -377,8 +388,11 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_usesStoreBilling) ...[
-          if (account.premiumLifetimeProduct case final product?) ...[
+        if (_usesStoreBilling && !betaAccess) ...[
+          if ((upgradeEligible
+                  ? account.premiumLifetimeProduct
+                  : account.premiumBundleProduct)
+              case final product?) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -393,7 +407,9 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    l10n.storePremiumPriceCaption,
+                    upgradeEligible
+                        ? l10n.storeExploreUpgradePriceCaption
+                        : l10n.storeExploreBundlePriceCaption,
                     textAlign: TextAlign.end,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -409,7 +425,14 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
             const SizedBox(height: 12),
           ],
         ],
-        if (!account.isAuthenticated)
+        if (betaAccess)
+          FilledButton(
+            key: const ValueKey('premium-beta-access'),
+            style: _footerButtonStyle,
+            onPressed: null,
+            child: Text(l10n.storeBetaAccessAvailable),
+          )
+        else if (!account.isAuthenticated)
           FilledButton(
             key: const ValueKey('premium-sign-in'),
             style: _footerButtonStyle,
@@ -440,10 +463,15 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
               onPressed: busy
                   ? null
                   : () => _perform(
-                      account.premiumLifetimeProduct == null ||
+                      (upgradeEligible
+                                      ? account.premiumLifetimeProduct
+                                      : account.premiumBundleProduct) ==
+                                  null ||
                               !account.storeBillingReady
                           ? account.loadStoreProducts
-                          : account.purchaseStorePremium,
+                          : upgradeEligible
+                          ? account.purchaseStorePremium
+                          : account.purchaseStorePremiumBundle,
                       usePurchaseStatus: true,
                     ),
               child: busy
@@ -462,7 +490,10 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                       ],
                     )
                   : Text(
-                      account.premiumLifetimeProduct == null ||
+                      (upgradeEligible
+                                      ? account.premiumLifetimeProduct
+                                      : account.premiumBundleProduct) ==
+                                  null ||
                               !account.storeBillingReady
                           ? l10n.accountAppleProductRetry
                           : l10n.storePremiumPurchaseButton(_storeName),
@@ -664,6 +695,10 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
             title: l10n.premiumBenefitsTitle,
             children: [
               _detailsSection(
+                l10n.storeReaderLifetimeTitle,
+                l10n.premiumIncludesReaderAccess,
+              ),
+              _detailsSection(
                 l10n.settingsAdditionalSourceProtocolsTitle,
                 l10n.premiumProtocolsBenefit,
               ),
@@ -698,7 +733,9 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
               _detailsSection(
                 l10n.premiumBillingTitle,
                 _usesStoreBilling
-                    ? l10n.storePremiumBilling(_storeName)
+                    ? account.hasAccountReaderUpgradeEligibility
+                          ? l10n.storeExploreUpgradeBilling(_storeName)
+                          : l10n.storeExploreBundleBilling(_storeName)
                     : l10n.premiumBillingBodyOther,
               ),
               _detailsSection(
@@ -794,11 +831,15 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     if (sources.any(
       {'admin', 'manual', 'promotion', 'referral_card'}.contains,
     )) {
-      return l10n.premiumGrantedAccess;
+      return '${l10n.premiumGrantedAccess} ${l10n.premiumCrossPlatformAccess}';
     }
-    if (sources.contains('card')) return l10n.premiumOtherChannelAccess;
-    if (sources.contains('apple')) return l10n.premiumAppleAccess;
-    return l10n.premiumExistingAccess;
+    if (sources.contains('card')) {
+      return '${l10n.premiumOtherChannelAccess} ${l10n.premiumCrossPlatformAccess}';
+    }
+    if (sources.contains('apple')) {
+      return '${l10n.premiumAppleAccess} ${l10n.premiumCrossPlatformAccess}';
+    }
+    return '${l10n.premiumExistingAccess} ${l10n.premiumCrossPlatformAccess}';
   }
 
   String? _purchaseStatus(

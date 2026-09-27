@@ -23,6 +23,7 @@ class AppDistribution {
   );
   static const _storeReaderLicenseRequiredDefine = bool.fromEnvironment(
     'ORIGO_STORE_READER_LICENSE_REQUIRED',
+    defaultValue: true,
   );
 
   static const MethodChannel _channel = MethodChannel(_channelName);
@@ -30,6 +31,17 @@ class AppDistribution {
   static AppDistributionChannel? _debugOverrideChannel;
   static bool? _debugOverrideReaderLicenseRequired;
   static bool? _runtimeMacAppStore;
+  static bool _appleTestEnvironment = false;
+  static const _applePurchaseChannel = MethodChannel(
+    'com.niki.xxread/apple_purchase_support',
+  );
+
+  /// Apple sandbox for this launch only (including TestFlight/review).
+  /// iOS 16+ uses verified StoreKit 2 data; iOS 15 accepts only Apple's
+  /// existing sandbox receipt path and does not persist that weaker signal.
+  /// This never creates a paid account entitlement or a persisted free license.
+  static bool get isAppleTestEnvironment =>
+      usesAppleBilling && _appleTestEnvironment;
 
   /// Test-only override. `null` restores production detection.
   @visibleForTesting
@@ -54,6 +66,7 @@ class AppDistribution {
     _debugOverrideChannel = null;
     _debugOverrideReaderLicenseRequired = null;
     _runtimeMacAppStore = null;
+    _appleTestEnvironment = false;
   }
 
   static AppDistributionChannel get channel {
@@ -151,8 +164,8 @@ class AppDistribution {
 
   /// Whether this store build requires a trial or permanent purchase to read.
   ///
-  /// Store release scripts explicitly enable this. Local developer builds may
-  /// leave it disabled while testing unrelated reading features.
+  /// Store builds default to paid access even if a release command omits the
+  /// define. Developer builds may explicitly disable it for unrelated tests.
   static bool get readerLicenseRequired =>
       isStore &&
       (_debugOverrideReaderLicenseRequired ??
@@ -175,6 +188,22 @@ class AppDistribution {
   }
 
   static Future<void> initialize() async {
+    _appleTestEnvironment = false;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      _validateConfiguredChannel();
+      try {
+        final environment = await _applePurchaseChannel
+            .invokeMethod<String>('verifiedAppEnvironment')
+            .timeout(const Duration(seconds: 5));
+        _appleTestEnvironment =
+            environment == 'sandbox' || environment == 'legacySandbox';
+      } catch (_) {
+        // Unknown, unverifiable, missing-receipt, and offline failures never
+        // grant test access. Production rights are evaluated separately.
+        _appleTestEnvironment = false;
+      }
+      return;
+    }
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.macOS) {
       _runtimeMacAppStore = false;
       _validateConfiguredChannel();

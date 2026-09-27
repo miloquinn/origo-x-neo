@@ -370,6 +370,8 @@ class MemberMembershipConfig {
     this.readerAppleTrialProductId,
     this.premiumGoogleProductId,
     this.premiumAppleProductId,
+    this.premiumFullGoogleProductId,
+    this.premiumFullAppleProductId,
     this.legacyGoogleProductId,
     this.legacyAppleProductIds = const [],
   });
@@ -409,6 +411,9 @@ class MemberMembershipConfig {
     premiumAppleProductId:
         json['premium_apple_product_id'] as String? ??
         json['apple_product_id'] as String?,
+    premiumFullGoogleProductId:
+        json['premium_full_google_product_id'] as String?,
+    premiumFullAppleProductId: json['premium_full_apple_product_id'] as String?,
     legacyGoogleProductId: json['legacy_google_product_id'] as String?,
     legacyAppleProductIds: List<String>.unmodifiable(
       (json['legacy_apple_product_ids'] as List? ?? const [])
@@ -433,12 +438,14 @@ class MemberMembershipConfig {
   final String? readerAppleTrialProductId;
   final String? premiumGoogleProductId;
   final String? premiumAppleProductId;
+  final String? premiumFullGoogleProductId;
+  final String? premiumFullAppleProductId;
   final String? legacyGoogleProductId;
   final List<String> legacyAppleProductIds;
   final List<String> features;
 }
 
-enum ReaderAccessKind { locked, trial, lifetime }
+enum ReaderAccessKind { locked, trial, lifetime, temporary }
 
 class ReaderAccessSnapshot {
   const ReaderAccessSnapshot({
@@ -457,6 +464,7 @@ class ReaderAccessSnapshot {
         access: switch (json['access']) {
           'trial' => ReaderAccessKind.trial,
           'lifetime' => ReaderAccessKind.lifetime,
+          'temporary' => ReaderAccessKind.temporary,
           _ => ReaderAccessKind.locked,
         },
         channel: json['channel'] as String?,
@@ -489,6 +497,12 @@ class ReaderOfflineAttestation {
     required this.installationKeyHash,
     required this.channel,
     required this.signature,
+    this.accountId,
+    this.subjectType,
+    this.permanent = false,
+    this.derivedFromPremium = false,
+    this.upgradeEligible = false,
+    this.unlockedUntil,
     this.trialExpiresAt,
   });
 
@@ -502,6 +516,12 @@ class ReaderOfflineAttestation {
         installationKeyHash: json['installation_key_hash'] as String,
         channel: json['channel'] as String,
         signature: json['signature'] as String,
+        accountId: json['account_id'] as String?,
+        subjectType: json['subject_type'] as String?,
+        permanent: json['permanent'] as bool? ?? false,
+        derivedFromPremium: json['derived_from_premium'] as bool? ?? false,
+        upgradeEligible: json['upgrade_eligible'] as bool? ?? false,
+        unlockedUntil: _optionalDate(json['unlocked_until']),
       );
 
   final int version;
@@ -512,9 +532,19 @@ class ReaderOfflineAttestation {
   final String installationKeyHash;
   final String channel;
   final String signature;
+  final String? accountId;
+  final String? subjectType;
+  final bool permanent;
+  final bool derivedFromPremium;
+  final bool upgradeEligible;
+  final DateTime? unlockedUntil;
 
   Map<String, Object?> toJson() => {
     'version': version,
+    if (version == 2) 'permanent': permanent,
+    if (version == 2) 'derived_from_premium': derivedFromPremium,
+    if (version == 2) 'upgrade_eligible': upgradeEligible,
+    if (version == 2) 'unlocked_until': unlockedUntil?.toIso8601String(),
     'issued_at': issuedAt.toIso8601String(),
     'valid_until': validUntil.toIso8601String(),
     'reader_unlocked': readerUnlocked,
@@ -522,6 +552,8 @@ class ReaderOfflineAttestation {
     'installation_key_hash': installationKeyHash,
     'channel': channel,
     'signature': signature,
+    if (accountId != null) 'account_id': accountId,
+    if (subjectType != null) 'subject_type': subjectType,
   };
 }
 

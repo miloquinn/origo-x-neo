@@ -29,6 +29,41 @@ void main() {
     },
   );
 
+  test(
+    'account reader endpoints send authentication and device binding',
+    () async {
+      final requests = <RequestOptions>[];
+      final api = _api((value) {
+        requests.add(value);
+        return _json(_readerResult());
+      }, tokens: _Tokens(access: 'origo-access'));
+      await api.accountReaderStatus();
+      await api.startAccountReaderTrial('google_play');
+      await api.submitAccountReaderGooglePurchase('google-token');
+      await api.submitAccountReaderGooglePurchase(
+        'google-token',
+        restore: true,
+      );
+      await api.submitAccountReaderApplePurchase('apple-jws');
+      await api.submitAccountReaderApplePurchase('apple-jws', restore: true);
+      expect(requests.map((r) => r.uri.path.split('/reader/').last), [
+        'account-status',
+        'account-trial',
+        'google/account-purchase',
+        'google/account-restore',
+        'apple/account-purchase',
+        'apple/account-restore',
+      ]);
+      for (final request in requests) {
+        expect(request.headers['Authorization'], 'Bearer origo-access');
+        expect(request.headers['X-Origo-Reader-Key'], isNotEmpty);
+      }
+      expect(requests[1].data, {'channel': 'google_play'});
+      expect(requests[2].data, {'purchase_token': 'google-token'});
+      expect(requests[4].data, {'signed_transaction_info': 'apple-jws'});
+    },
+  );
+
   test('premium purchase carries both bearer and reader credential', () async {
     late RequestOptions request;
     final tokens = _Tokens(access: 'access-token');

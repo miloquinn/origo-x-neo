@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_web_auth_2_platform_interface/flutter_web_auth_2_platform_interface.dart';
 // ignore: depend_on_referenced_packages
@@ -93,10 +96,12 @@ void main() {
       AppDistribution.debugOverride(channel: channel);
       addTearDown(AppDistribution.debugReset);
       final controller = MemberAccountController(
-        api: MemberAccountApiClient(
+        api: _PageApiClient(
           dio: Dio()..httpClientAdapter = _SignedInAdapter(),
           tokenStore: _PageTokenStore()..mfaPending = false,
         ),
+        purchaseStore: const _UnavailablePurchaseStore(),
+        readerAccessCache: _MemoryReaderAccessCache(),
       );
       addTearDown(controller.dispose);
       await tester.runAsync(controller.initialize);
@@ -113,7 +118,17 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('account-referral')), findsNothing);
-      expect(find.byKey(const ValueKey('account-support')), findsNothing);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('account-support')),
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.byKey(const ValueKey('account-support')), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('account-reader-license')),
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(
         find.byKey(const ValueKey('account-reader-license')),
         findsOneWidget,
@@ -148,7 +163,10 @@ void main() {
     expect(controller.hasPremiumAccess, isFalse);
   });
 
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+  });
 
   testWidgets('iOS external login cancellation quietly stops authorization', (
     tester,
@@ -694,10 +712,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final controller = MemberAccountController(
-      api: MemberAccountApiClient(
+      api: _PageApiClient(
         dio: Dio()..httpClientAdapter = _SignedInAdapter(premium: true),
         tokenStore: _PageTokenStore()..mfaPending = false,
       ),
+      readerAccessCache: _MemoryReaderAccessCache(),
     );
     await tester.runAsync(controller.initialize);
 
@@ -792,10 +811,11 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final tokenStore = _PageTokenStore()..mfaPending = false;
       final controller = MemberAccountController(
-        api: MemberAccountApiClient(
+        api: _PageApiClient(
           dio: Dio()..httpClientAdapter = _SignedInAdapter(),
           tokenStore: tokenStore,
         ),
+        readerAccessCache: _MemoryReaderAccessCache(),
       );
       await tester.runAsync(controller.initialize);
 
@@ -848,9 +868,9 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('account-support')));
       await tester.pumpAndSettle();
-      expect(find.text('永久高级会员'), findsNWidgets(2));
-      expect(find.text('更多书源协议'), findsOneWidget);
-      expect(find.text('允许内网书源'), findsOneWidget);
+      expect(find.text('Origo 探源'), findsNWidgets(2));
+      expect(find.text('更多书源协议'), findsWidgets);
+      expect(find.text('允许内网书源'), findsWidgets);
       expect(
         find.byKey(const ValueKey('account-redemption-code')),
         findsOneWidget,
@@ -956,10 +976,11 @@ void main() {
   ) async {
     final adapter = _SlowProfileAdapter();
     final controller = MemberAccountController(
-      api: MemberAccountApiClient(
+      api: _PageApiClient(
         dio: Dio()..httpClientAdapter = adapter,
         tokenStore: _PageTokenStore()..mfaPending = false,
       ),
+      readerAccessCache: _MemoryReaderAccessCache(),
     );
     addTearDown(controller.dispose);
     await tester.runAsync(controller.initialize);
@@ -1372,6 +1393,33 @@ class _SignedInAdapter implements HttpClientAdapter {
         'features': <String, bool>{},
         'entitlements': <Object>[],
       },
+      '/api/v1/membership/reader/account-status' => () {
+        final now = DateTime.now();
+        final installationKey = options.headers['X-Origo-Reader-Key'] as String;
+        return {
+          'reader_access': {
+            'unlocked': premium,
+            'trial_active': false,
+            'access': premium ? 'lifetime' : 'locked',
+            'channel': 'account',
+          },
+          'offline_license': {
+            'version': 2,
+            'account_id': '6e29be31-ffeb-4699-bf69-8b37afe15504',
+            'subject_type': 'account',
+            'permanent': premium,
+            'upgrade_eligible': premium,
+            'issued_at': now.toIso8601String(),
+            'valid_until': now.add(const Duration(days: 30)).toIso8601String(),
+            'reader_unlocked': premium,
+            'installation_key_hash': sha256
+                .convert(utf8.encode(installationKey))
+                .toString(),
+            'channel': 'account',
+            'signature': 'opaque-test',
+          },
+        };
+      }(),
       '/api/v1/membership/referral' => {
         'invite_code': 'OR-MY-CODE',
         'invite_url': 'https://open.xxread.top/account?invite=OR-MY-CODE',
@@ -1404,6 +1452,76 @@ class _SignedInAdapter implements HttpClientAdapter {
       },
     );
   }
+}
+
+class _PageApiClient extends MemberAccountApiClient {
+  _PageApiClient({required super.dio, required super.tokenStore});
+
+  @override
+  Future<String?> offlineReaderSessionBinding() async => null;
+}
+
+class _UnavailablePurchaseStore implements PurchaseStore {
+  const _UnavailablePurchaseStore();
+
+  @override
+  Stream<List<PurchaseDetails>> get purchaseStream => const Stream.empty();
+
+  @override
+  Future<bool> isAvailable() async => false;
+
+  @override
+  Future<ProductDetailsResponse> queryProductDetails(
+    Set<String> identifiers,
+  ) async => ProductDetailsResponse(
+    productDetails: const [],
+    notFoundIDs: identifiers.toList(),
+  );
+
+  @override
+  Future<bool> buyNonConsumable({required PurchaseParam purchaseParam}) async =>
+      false;
+
+  @override
+  Future<Set<String>?> restorePurchases({
+    String? applicationUserName,
+    Set<String>? productIds,
+  }) async => const {};
+
+  @override
+  Future<void> completePurchase(PurchaseDetails purchase) async {}
+}
+
+class _MemoryReaderAccessCache extends ReaderAccessCache {
+  @override
+  Future<ReaderOfflineAttestation?> load({
+    required ReaderInstallationCredential credential,
+    required String channel,
+    DateTime? now,
+  }) async => null;
+
+  @override
+  Future<ReaderOfflineAttestation?> loadAccount({
+    required ReaderInstallationCredential credential,
+    required String? sessionBinding,
+    String? accountId,
+    DateTime? now,
+  }) async => null;
+
+  @override
+  Future<void> save(ReaderOfflineAttestation value) async {}
+
+  @override
+  Future<void> saveAccount(
+    ReaderOfflineAttestation value, {
+    required String sessionBinding,
+  }) async {}
+
+  @override
+  Future<void> clearAccount() async {}
+
+  @override
+  Future<void> clear() async {}
 }
 
 class _SlowProfileAdapter extends _SignedInAdapter {

@@ -26,7 +26,7 @@ class _Account extends MemberAccountController {
 
 void main() {
   for (final channel in AppDistributionChannel.values) {
-    testWidgets('$channel separates reader and Premium account entries', (
+    testWidgets('$channel always exposes Explore while keeping reader status', (
       tester,
     ) async {
       AppDistribution.debugOverride(channel: channel);
@@ -56,13 +56,13 @@ void main() {
         const ValueKey('settings-account-premium-badge'),
       );
       expect(reader, store ? findsOneWidget : findsNothing);
-      expect(upgrade, store ? findsNothing : findsOneWidget);
+      expect(upgrade, findsOneWidget);
 
-      // Merely syncing Premium during the reading trial cannot reveal it.
+      // Explore includes reading, even when no separate Read purchase exists.
       account.update(ownsApp: false, ownsPremium: true);
       await tester.pump();
       expect(upgrade, findsNothing);
-      expect(badge, store ? findsNothing : findsOneWidget);
+      expect(badge, findsOneWidget);
 
       account.update(ownsApp: true, ownsPremium: false);
       await tester.pump();

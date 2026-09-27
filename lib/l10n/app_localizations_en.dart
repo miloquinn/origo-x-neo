@@ -6420,13 +6420,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'All features except advanced features are open source. The open-source code is licensed under AGPL-3.0; see the GitHub repository for its scope.';
 
   @override
-  String get premiumLifetimeTitle => 'Lifetime Premium';
+  String get premiumLifetimeTitle => 'Origo Explore';
 
   @override
   String get premiumLifetimeCaption => 'One-time purchase · No auto-renewal';
 
   @override
-  String get premiumBenefitsTitle => 'Included with Premium';
+  String get premiumBenefitsTitle => 'Included with Origo Explore';
 
   @override
   String get premiumProtocolsBenefit =>
@@ -6473,7 +6473,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumAccountBindingBody =>
-      'After verification, Premium is linked to the current Origo X account and syncs across supported platforms. Advanced settings become available with membership. Signing out or revocation disables advanced features. Check your account before purchasing.';
+      'After verification, Origo Explore is linked to your current Origo account and can be used on supported platforms. Cross-platform access applies to the purchased entitlement; it does not automatically sync books or reading data. Signing out or revocation disables the extension. Check your account before purchasing.';
 
   @override
   String get premiumRefundTitle => 'Request a refund';
@@ -6497,7 +6497,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The Origo X account service processes account details and membership records for sign-in, security verification and access across devices. Contact us about support or privacy using the contact options on the official website.';
 
   @override
-  String get premiumPurchaseSuccess => 'Premium unlocked';
+  String get premiumPurchaseSuccess => 'Origo Explore unlocked';
 
   @override
   String get premiumTestPurchaseVerified =>
@@ -7139,7 +7139,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsWebDavWorking => 'WebDAV is working';
 
   @override
-  String get storeReaderLockedTitle => 'Get Basic edition';
+  String get storeReaderLockedTitle => 'Get Origo Read';
 
   @override
   String get storeReaderLockedBody =>
@@ -7155,11 +7155,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storeReaderChecking => 'Checking reading access…';
 
   @override
-  String get storeReaderBenefitTitle => 'Basic edition';
+  String get storeReaderBenefitTitle => 'Origo Read';
 
   @override
   String get storeReaderBenefitBody =>
-      'Local reading, yours to keep. No Origo account is required.';
+      'The complete local reading experience, yours to keep. Access is linked to your Origo account and works on supported platforms.';
 
   @override
   String storeTrialStart(int days) {
@@ -7168,7 +7168,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String storeTrialDetails(int days) {
-    return 'Try local reading for $days days. No automatic charge. After the trial, purchase Basic edition once to keep reading. Your books and notes are kept.';
+    return 'Sign in to your Origo account to try local reading for $days days. There is no automatic charge. After the trial, purchase Origo Read once to keep reading. Your books and notes are kept.';
   }
 
   @override
@@ -7180,22 +7180,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String storePurchaseButton(String store) {
-    return 'Buy Basic edition with $store';
+    return 'Buy Origo Read with $store';
   }
 
   @override
   String storePurchaseBilling(String store) {
-    return 'One-time Basic edition purchase. No automatic renewal. $store displays the actual price and processes payment.';
+    return 'Origo Read is a one-time purchase with no automatic renewal. $store displays the price and processes payment. After verification, access is linked to your Origo account and works on supported platforms.';
   }
 
   @override
   String storePurchaseRestoreHelp(String store) {
-    return 'Restore with the $store account used to purchase. No Origo login or additional charge is required.';
+    return 'Sign in to the linked Origo account, then restore with the $store account used to purchase. Restoring does not charge again.';
   }
 
   @override
   String storePurchaseAccess(String store) {
-    return 'You already own Basic edition through $store. No repeat purchase is needed.';
+    return 'Origo Read is linked to your Origo account and works on supported platforms. No repeat purchase is needed.';
   }
 
   @override
@@ -7204,7 +7204,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get basicRestoreEmpty =>
-      'No Basic edition purchase found. Check your store account.';
+      'No Origo Read purchase was found. Check your Origo account and store account.';
 
   @override
   String get storeGoogleRefundTerms =>
@@ -7342,11 +7342,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notes & bookmarks · Statistics · WebDAV backup';
 
   @override
-  String get premiumEditorialTitle => 'Take reading a little further.';
+  String get premiumEditorialTitle => 'Origo Explore';
 
   @override
   String get premiumEditorialSubtitle =>
-      'More source options for curious readers.';
+      'An optional source extension with broader format compatibility.';
 
   @override
   String get basicReadingTitle => 'Multi-format reading';
@@ -7413,58 +7413,96 @@ class AppLocalizationsEn extends AppLocalizations {
       'AI and cloud TTS require your own service configuration; third-party fees are not included.';
 
   @override
-  String get basicEditionTitle => 'Basic edition';
+  String get basicEditionTitle => 'Origo Read';
 
   @override
   String get basicEditionSummary =>
       'One purchase. The complete reading experience.';
 
   @override
-  String get basicEditionNoAccount => 'No Origo sign-in needed';
+  String get basicEditionAccountBound =>
+      'Linked to Origo · cross-platform access';
 
   @override
   String get premiumEditionSummary =>
-      'Advanced extensions. More source formats.';
+      'Optional source extension. More compatible formats.';
 
   @override
-  String get storeReaderLicenseTitle => 'Basic edition purchase';
+  String get storeReaderLicenseTitle => 'Origo Read';
 
   @override
   String get storeReaderLicenseSubtitle =>
-      'Try local reading for 14 days, then purchase Basic edition once.';
+      'Sign in to try or purchase. Your purchased access works on supported platforms.';
 
   @override
-  String get storeReaderLifetimeTitle => 'Basic edition';
+  String get storeReaderLifetimeTitle => 'Origo Read';
 
   @override
   String storeReaderOwned(String store) {
-    return 'Basic edition purchased through $store.';
+    return 'Origo Read is linked to your Origo account and works on supported platforms.';
   }
 
   @override
-  String get storePremiumPrerequisiteTitle => 'Buy Basic edition first';
+  String get storeReaderSignInAction => 'Sign in to Origo and continue';
+
+  @override
+  String get storeReaderCrossPlatformAccess =>
+      'Origo Read owned · use the same Origo account on supported platforms';
+
+  @override
+  String get storePremiumPrerequisiteTitle => 'Get Origo Read first';
 
   @override
   String get storePremiumPrerequisiteBody =>
-      'Premium is sold separately after Basic edition is purchased. A trial does not qualify.';
+      'Origo Explore is an optional purchase sold separately after Origo Read is purchased. A trial does not qualify.';
 
   @override
   String get storePremiumPriceCaption =>
-      'Lifetime Premium · linked to your Origo account';
+      'Lifetime source extension · cross-platform account access';
+
+  @override
+  String get premiumCrossPlatformAccess =>
+      'Use the same Origo account to keep access on supported platforms.';
+
+  @override
+  String get storeBetaAccessAvailable =>
+      'All features are available during beta testing';
+
+  @override
+  String get premiumIncludesReaderAccess =>
+      'Includes permanent Origo Read access plus broader source format compatibility.';
+
+  @override
+  String get storeExploreBundlePriceCaption =>
+      'Origo Read + Explore · one purchase, cross-platform access';
+
+  @override
+  String get storeExploreUpgradePriceCaption =>
+      'Origo Read owned · upgrade to Explore';
+
+  @override
+  String storeExploreBundleBilling(String store) {
+    return 'This is a one-time purchase containing Origo Read and the Explore extension, with no auto-renewal. $store displays the price and processes payment. Access is linked to your current Origo account after verification.';
+  }
+
+  @override
+  String storeExploreUpgradeBilling(String store) {
+    return 'This is a one-time Explore upgrade for Origo Read owners, with no auto-renewal. $store displays the price and processes payment.';
+  }
 
   @override
   String storePremiumPurchaseButton(String store) {
-    return 'Buy Premium with $store';
+    return 'Buy Origo Explore with $store';
   }
 
   @override
   String storePremiumBilling(String store) {
-    return 'A separate one-time Premium purchase with no auto-renewal. $store shows the actual price and processes payment. Premium is linked to your signed-in Origo account.';
+    return 'Origo Explore is a separate one-time purchase with no auto-renewal. $store shows the actual price and processes payment. It is linked to your signed-in Origo account.';
   }
 
   @override
   String storePremiumRestoreHelp(String store) {
-    return 'Restore with the $store account used to buy Premium while signed in to the linked Origo account. Restoring does not charge again.';
+    return 'Restore with the $store account used to buy Origo Explore while signed in to the linked Origo account. Restoring does not charge again.';
   }
 
   @override
@@ -7473,10 +7511,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get storeReaderPurchaseSuccess => 'Basic edition purchased';
+  String get storeReaderPurchaseSuccess => 'Origo Read purchased';
 
   @override
-  String get storeReaderRestoreSuccess => 'Basic edition purchase restored';
+  String get storeReaderRestoreSuccess => 'Origo Read purchase restored';
 
   @override
   String get storeReaderTestPurchaseVerified =>
