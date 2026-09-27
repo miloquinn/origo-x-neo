@@ -69,6 +69,7 @@ class ReaderTextLayout {
       String value, {
       required int replacedSourceStart,
       required int replacedSourceEnd,
+      bool isIndent = false,
     }) {
       if (value.isEmpty) return;
       output.write(value);
@@ -77,6 +78,7 @@ class ReaderTextLayout {
           displayStart: displayOffset,
           displayEnd: displayOffset + value.length,
           text: value,
+          isIndent: isIndent,
         ),
       );
       final globalStart = sourceOffset + replacedSourceStart;
@@ -101,9 +103,10 @@ class ReaderTextLayout {
         if (sourceCursor < sourceText.length &&
             !isReaderLineBreakCodeUnit(sourceText.codeUnitAt(sourceCursor))) {
           appendGenerated(
-            List.filled(indent, '\u3000').join(),
+            List.filled(indent, '\u00a0').join(),
             replacedSourceStart: existingIndentStart,
             replacedSourceEnd: sourceCursor,
+            isIndent: true,
           );
           atParagraphStart = false;
         }
@@ -246,7 +249,18 @@ class ReaderTextLayout {
         children.add(
           TextSpan(
             text: run.generatedText!.substring(localStart, localEnd),
-            style: generatedStyle,
+            // Breakable spaces lose their advance during justification. Our
+            // NBSP-only font reserves exactly one em per indent without font
+            // fallback or placeholders that would split selectable text.
+            style: run.isIndent
+                ? generatedStyle.copyWith(
+                    fontFamily: 'ReaderIndent',
+                    fontFamilyFallback: const [],
+                    height: kTextHeightNone,
+                    letterSpacing: 0,
+                    wordSpacing: 0,
+                  )
+                : generatedStyle,
           ),
         );
       } else {
@@ -270,6 +284,7 @@ class _ReaderTextRun {
     this.sourceStart,
     this.sourceEnd,
     this.generatedText,
+    this.isIndent = false,
   });
 
   const _ReaderTextRun.source({
@@ -288,10 +303,12 @@ class _ReaderTextRun {
     required int displayStart,
     required int displayEnd,
     required String text,
+    bool isIndent = false,
   }) : this._(
          displayStart: displayStart,
          displayEnd: displayEnd,
          generatedText: text,
+         isIndent: isIndent,
        );
 
   final int displayStart;
@@ -299,6 +316,7 @@ class _ReaderTextRun {
   final int? sourceStart;
   final int? sourceEnd;
   final String? generatedText;
+  final bool isIndent;
 
   bool get isGenerated => generatedText != null;
 }
