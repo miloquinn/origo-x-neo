@@ -12,6 +12,7 @@ import '../../widgets/purchase_artwork.dart';
 import '../../widgets/purchase_icons.dart';
 import '../../widgets/purchase_page_scaffold.dart';
 import 'account_page.dart';
+import 'membership_redemption_page.dart';
 import 'premium_policy_page.dart';
 
 class PremiumMembershipPage extends StatelessWidget {
@@ -554,6 +555,19 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
             ),
         ] else
           _activeBadge(),
+        if (_usesStoreBilling && account.isAuthenticated)
+          TextButton(
+            key: const ValueKey('premium-redeem-entry'),
+            onPressed: busy
+                ? null
+                : () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          MembershipRedemptionPage(account: account),
+                    ),
+                  ),
+            child: Text(l10n.accountHaveRedemptionCode),
+          ),
         if (status != null) ...[
           const SizedBox(height: 8),
           Semantics(

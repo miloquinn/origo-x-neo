@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -96,7 +97,10 @@ Future<void> _acceptTermsAndSendCode(WidgetTester tester) async {
 void main() {
   // The controller clears its summary cache while deleting. Without an in-memory
   // backend that platform channel never answers under the test's fake clock.
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({});
+  });
 
   testWidgets('deletion opens on the terms and states every consequence', (
     tester,
@@ -107,11 +111,11 @@ void main() {
     expect(find.text('注销后会发生什么'), findsOneWidget);
     expect(find.text('注销条款'), findsOneWidget);
     expect(find.textContaining('账号注销不可撤销、不可恢复'), findsOneWidget);
-    expect(find.textContaining('高级版权益会被删除'), findsOneWidget);
+    expect(find.textContaining('探元权益会被删除'), findsOneWidget);
     // A member who paid on the App Store must be told the purchase survives.
     expect(find.textContaining('恢复购买'), findsOneWidget);
     expect(find.textContaining('本来就只保存在你的设备里'), findsOneWidget);
-    expect(find.text('高级版已解锁（将被移除）'), findsOneWidget);
+    expect(find.text('探元已解锁（将被移除）'), findsOneWidget);
     expect(find.textContaining('2 个已登录设备'), findsOneWidget);
     expect(adapter.deletions, isEmpty);
   });
@@ -379,6 +383,12 @@ class _DeletionAdapter implements HttpClientAdapter {
         'features': <String, bool>{},
         'entitlements': <Object>[],
       },
+      // Reader access is supplementary to account deletion. Model the
+      // endpoint as temporarily unavailable so initialization exercises the
+      // controller's real fallback without inventing an unrelated license.
+      '/api/v1/membership/reader/account-status' => {
+        'detail': 'reader status unavailable',
+      },
       '/api/v1/membership/referral' => {
         'invite_code': 'OR-MY-CODE',
         'invite_url': 'https://open.xxread.top/account?invite=OR-MY-CODE',
@@ -431,9 +441,11 @@ class _DeletionAdapter implements HttpClientAdapter {
     };
     return ResponseBody.fromString(
       jsonEncode(body),
-      options.uri.path == '/api/v1/auth/security/deletion'
-          ? deletionStatus
-          : 200,
+      switch (options.uri.path) {
+        '/api/v1/auth/security/deletion' => deletionStatus,
+        '/api/v1/membership/reader/account-status' => 503,
+        _ => 200,
+      },
       headers: {
         Headers.contentTypeHeader: ['application/json'],
       },

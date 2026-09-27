@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/pages/account/membership_redemption_page.dart';
 import 'package:xxread/pages/account/premium_membership_page.dart';
 import 'package:xxread/pages/account/premium_policy_page.dart';
 import 'package:xxread/services/account/account.dart';
@@ -40,6 +41,13 @@ void main() {
     expect(find.byKey(const ValueKey('premium-store-price')), findsNothing);
     expect(find.byKey(const ValueKey('account-apple-purchase')), findsNothing);
     expect(find.byKey(const ValueKey('account-apple-restore')), findsNothing);
+    expect(find.byKey(const ValueKey('premium-redeem-entry')), findsOneWidget);
+    await _tapVisible(tester, const ValueKey('premium-redeem-entry'));
+    expect(find.byType(MembershipRedemptionPage), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('account-redemption-code')),
+      findsOneWidget,
+    );
   });
 
   for (final ready in [true, false]) {
@@ -67,8 +75,8 @@ void main() {
       );
       expect(find.byKey(const ValueKey('store-start-trial')), findsNothing);
       expect(
-        find.byKey(const ValueKey('account-redemption-code')),
-        findsNothing,
+        find.byKey(const ValueKey('premium-redeem-entry')),
+        findsOneWidget,
       );
       expect(
         find.byKey(const ValueKey('account-apple-purchase')),
@@ -77,6 +85,12 @@ void main() {
       expect(
         find.text('商店购买暂未开放，请稍后重试。已有权益不受影响。'),
         ready ? findsNothing : findsOneWidget,
+      );
+      await _tapVisible(tester, const ValueKey('premium-redeem-entry'));
+      expect(find.byType(MembershipRedemptionPage), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('account-redemption-code')),
+        findsOneWidget,
       );
       expect(tester.takeException(), isNull);
     });
@@ -130,6 +144,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('account-google-purchase')), findsNothing);
+    expect(find.byKey(const ValueKey('premium-redeem-entry')), findsNothing);
     expect(tester.takeException(), isNull);
   });
   tearDown(() {
@@ -168,8 +183,8 @@ void main() {
     addTearDown(store.close);
     await _pumpPage(tester, account: account);
     await tester.pumpAndSettle();
-    expect(find.text('高级版体验'), findsOneWidget);
-    expect(find.textContaining('高级版体验有效至'), findsWidgets);
+    expect(find.text('探元体验'), findsOneWidget);
+    expect(find.textContaining('探元体验有效至'), findsWidgets);
     expect(
       find.byKey(const ValueKey('account-redemption-code')),
       findsOneWidget,
@@ -195,9 +210,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.textContaining(switch (source) {
-          'admin' => '你已获赠高级会员，无需重复购买。',
-          'card' => '你已通过其他渠道开通高级会员，无需重复购买。',
-          _ => '你已通过 App Store 开通高级会员，无需重复购买。',
+          'admin' => '你已获赠探元，无需重复购买。',
+          'card' => '你已通过其他渠道开通探元，无需重复购买。',
+          _ => '你已通过 App Store 开通探元，无需重复购买。',
         }),
         findsOneWidget,
       );
@@ -256,13 +271,15 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('account-redemption-code')),
-        findsNothing,
+        find.byKey(const ValueKey('premium-redeem-entry')),
+        findsOneWidget,
       );
       expect(
         find.byKey(const ValueKey('account-apple-purchase')),
         findsOneWidget,
       );
+      await _tapVisible(tester, const ValueKey('premium-redeem-entry'));
+      expect(find.byType(MembershipRedemptionPage), findsOneWidget);
       _resetPlatform();
     },
   );
@@ -409,10 +426,7 @@ void main() {
       expect(find.byKey(const ValueKey('premium-eula-link')), findsNothing);
       await _tapVisible(tester, const ValueKey('premium-purchase-details'));
       expect(find.byKey(const ValueKey('premium-eula-link')), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('account-redemption-code')),
-        findsNothing,
-      );
+      expect(find.byKey(const ValueKey('premium-redeem-entry')), findsNothing);
       _resetPlatform();
     },
   );
@@ -497,7 +511,9 @@ void main() {
     _resetPlatform();
   });
 
-  testWidgets('preserves redemption-code access on Android', (tester) async {
+  testWidgets('preserves inline redemption-code access on direct Android', (
+    tester,
+  ) async {
     _usePlatform(TargetPlatform.android);
     final store = _FakeAppleStore();
     final account = _TestAccount(store: store);

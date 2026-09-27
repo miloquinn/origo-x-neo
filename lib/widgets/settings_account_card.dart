@@ -177,7 +177,15 @@ class SettingsAccountCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (AppDistribution.isStore)
+                  if (premiumActive)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+                      child: _ExploreEntitlementSummary(
+                        title: l10n.premiumLifetimeTitle,
+                        subtitle: l10n.accountExploreIncludesReader,
+                      ),
+                    )
+                  else if (AppDistribution.isStore)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
                       child: StoreReaderAccountEntry(
@@ -426,7 +434,7 @@ class SettingsAccountCard extends StatelessWidget {
                             const SizedBox(width: 7),
                             Expanded(
                               child: Text(
-                                context.l10n.accountPremiumLifetime,
+                                context.l10n.premiumLifetimeTitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -438,7 +446,7 @@ class SettingsAccountCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              'PREMIUM',
+                              'EXPLORE',
                               style: TextStyle(
                                 color: premiumIvory.withValues(alpha: 0.48),
                                 fontSize: 9,
@@ -459,6 +467,80 @@ class SettingsAccountCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ExploreEntitlementSummary extends StatelessWidget {
+  const _ExploreEntitlementSummary({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: '$title, $subtitle',
+    child: Container(
+      key: const ValueKey('settings-explore-entitlement'),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+      decoration: BoxDecoration(
+        color: premiumIvory.withValues(alpha: 0.065),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: premiumGold.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: premiumGold.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: premiumGold,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: premiumIvory,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: premiumIvory.withValues(alpha: 0.66),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.verified_rounded, color: premiumGold, size: 20),
+        ],
+      ),
+    ),
+  );
 }
 
 class _PremiumBadge extends StatelessWidget {

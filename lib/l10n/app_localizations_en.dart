@@ -2765,7 +2765,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      'Allow sources to access this device, the local network, and other private addresses. On by default with Premium; use only sources you trust.';
+      'Allow sources to access this device, the local network, and other private addresses. On by default with Explore; use only sources you trust.';
 
   @override
   String get additionalSourcesImport => 'Import more source protocols';
@@ -3111,17 +3111,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSignOut => 'Sign out';
 
   @override
-  String get accountSupportTitle => 'Premium membership';
+  String get accountSupportTitle => 'Explore membership';
 
   @override
   String get accountSupportFreeSubtitle =>
       'Basic reading features are free to use.';
 
   @override
-  String get accountSupportAction => 'Get Premium';
+  String get accountSupportAction => 'Get Explore';
 
   @override
-  String get accountSupporterBadge => 'Premium';
+  String get accountSupporterBadge => 'Explore';
 
   @override
   String get accountPasswordLengthHint => 'At least 12 characters';
@@ -5846,17 +5846,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountRecoveryCodesSaved => 'I saved these codes';
 
   @override
-  String get accountPremiumLifetime => 'Lifetime Premium unlocked';
+  String get accountPremiumLifetime => 'Lifetime Explore unlocked';
 
   @override
   String get accountPremiumLifetimeSubtitle =>
-      'Premium is linked to this account and syncs across supported platforms.';
+      'Explore is linked to this account and syncs across supported platforms.';
 
   @override
-  String get accountRedemptionCode => 'Lifetime Premium code';
+  String get accountRedemptionCode => 'Redemption code';
 
   @override
-  String get accountRedeemPremium => 'Redeem and unlock forever';
+  String get accountRedeemPremium => 'Redeem';
 
   @override
   String get accountApplePurchase => 'Unlock forever with App Store';
@@ -5881,24 +5881,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountApplePurchaseSubmitted =>
-      'Purchase submitted; verifying Premium access';
+      'Purchase submitted; verifying Explore access';
 
   @override
   String get accountAppleRestoreSubmitted => 'Purchase restoration requested';
 
   @override
-  String get accountPremiumUnlocked => 'Lifetime Premium unlocked';
+  String get accountPremiumUnlocked => 'Lifetime Explore unlocked';
 
   @override
   String get accountPremiumUnlockedReferral =>
-      'Redeemed: you and your inviter both unlocked Lifetime Premium';
+      'Redeemed: you and your inviter both unlocked Lifetime Explore';
 
   @override
   String get accountInviteTitle => 'Invite friends';
 
   @override
   String get accountInviteSubtitle =>
-      'When a friend binds your code and redeems a Lifetime Premium code, both of you unlock Premium forever.';
+      'When a friend binds your code and redeems a Lifetime Explore code, both of you unlock Explore forever.';
 
   @override
   String get accountInviteMyCode => 'My invite code';
@@ -5972,7 +5972,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountInviteStepRedeemBody =>
-      'When they redeem a Lifetime Premium code, both accounts unlock Premium immediately.';
+      'When they redeem a Lifetime Explore code, both accounts unlock Explore immediately.';
 
   @override
   String get accountInviteMyBinding => 'My invite relationship';
@@ -5983,7 +5983,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountInviteBindingNotNeeded =>
-      'This account already has Premium, so no invite code is needed.';
+      'This account already has Explore, so no invite code is needed.';
 
   @override
   String get readingDataExportAction => 'Export reading data';
@@ -6588,10 +6588,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDeleteJoined => 'Joined';
 
   @override
-  String get accountDeletePremiumActive => 'Premium unlocked (will be removed)';
+  String get accountDeletePremiumActive => 'Explore unlocked (will be removed)';
 
   @override
-  String get accountDeletePremiumNone => 'Premium not unlocked';
+  String get accountDeletePremiumNone => 'Explore not unlocked';
 
   @override
   String get accountDeleteHasTitle => 'This account currently has';
@@ -6646,7 +6646,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountDeleteTermsPremium =>
-      'Premium access is removed, however you unlocked it — a redemption code, an invite reward, or an Apple purchase.';
+      'Explore access is removed, however you unlocked it — a redemption code, an invite reward, or an Apple purchase.';
 
   @override
   String get accountDeleteTermsReferrals =>
@@ -6658,7 +6658,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountDeleteTermsApple =>
-      'You bought lifetime Premium on the App Store. Deleting your account does not refund it and does not cancel any App Store transaction — refunds can only be requested from Apple. Your purchase receipt is unlinked from this account and kept, so you can later tap Restore purchases on a new account with the same Apple ID and get Premium back.';
+      'You bought lifetime Explore on the App Store. Deleting your account does not refund it and does not cancel any App Store transaction — refunds can only be requested from Apple. Your purchase receipt is unlinked from this account and kept, so you can later tap Restore purchases on a new account with the same Apple ID and get Explore back.';
 
   @override
   String get accountDeleteTermsLocalData =>
@@ -6880,19 +6880,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumGrantedAccess =>
-      'You have complimentary Premium access. No additional purchase is needed.';
+      'You have complimentary Explore access. No additional purchase is needed.';
 
   @override
   String get premiumOtherChannelAccess =>
-      'You have Premium through another channel. No additional purchase is needed.';
+      'You have Explore through another channel. No additional purchase is needed.';
 
   @override
   String get premiumAppleAccess =>
-      'You have Premium through App Store. No additional purchase is needed.';
+      'You have Explore through App Store. No additional purchase is needed.';
 
   @override
   String get premiumExistingAccess =>
-      'You already have Premium. No additional purchase is needed.';
+      'You already have Explore. No additional purchase is needed.';
 
   @override
   String get premiumSyncPending => 'Syncing membership status';
@@ -7030,11 +7030,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String premiumTrialExpiresAt(String date) {
-    return 'Premium trial expires on $date.';
+    return 'Explore trial expires on $date.';
   }
 
   @override
-  String get premiumTrialTitle => 'Premium trial';
+  String get premiumTrialTitle => 'Explore trial';
 
   @override
   String get bookSourceCheckUpdates => 'Check for updates';
@@ -7130,7 +7130,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsWebDavConfigured => 'WebDAV backup configured';
 
   @override
-  String get settingsPremiumActive => 'Premium active';
+  String get settingsPremiumActive => 'Explore active';
 
   @override
   String get settingsPremiumSyncFailed => 'Could not sync membership status';
@@ -7212,7 +7212,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeReaderLegacyNotice =>
-      'Your existing basic reading access is preserved. Advanced source compatibility still requires Premium.';
+      'Your existing basic reading access is preserved. Advanced source compatibility still requires Explore.';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7534,4 +7534,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeReaderRestoring => 'Restoring Basic edition purchase…';
+
+  @override
+  String get accountHaveRedemptionCode => 'I have a code';
+
+  @override
+  String get accountRedemptionHint =>
+      'Redeem an Origo code for the account shown below.';
+
+  @override
+  String get accountRedemptionSuccess =>
+      'Code redeemed. Your access has been updated.';
+
+  @override
+  String get accountExploreIncludesReader => 'Origo Read included';
 }

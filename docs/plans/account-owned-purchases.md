@@ -33,3 +33,34 @@ The SharedPreferences membership snapshot is UI history only and never grants Re
 ## Apple beta runtime
 
 iOS 16+ uses verified StoreKit `AppTransaction.shared.environment == sandbox` in memory, probed on each launch. This includes TestFlight and may include App Review; it is not a TestFlight-only identity. On iOS 15 only, the compatibility path accepts Apple's `Bundle.main.appStoreReceiptURL` when its filename is `sandboxReceipt` and the receipt file already exists. Apple does not guarantee that receipt is present before the first receipt refresh, so an iOS 15 TestFlight first launch may remain locked until Apple supplies it; the app does not initiate a receipt refresh during startup. Production, Xcode, missing receipt, unknown/unverified and errors do not grant beta access. There is no persisted beta flag and no production entitlement write. Store builds now require licensing by default even if a manual build omits the define. Real iOS 15 TestFlight first launch and TestFlight -> App Store installation transitions remain device verification requirements.
+
+## Origo code redemption (2026-09-27)
+
+The user explicitly selected self-generated **Origo account codes**, not Apple
+or Google promotional codes. Store Explore pages expose “I have a code” after
+sign-in, including the Apple test environment. The entry opens a compact
+secondary page showing the receiving account. It has no external purchase link,
+shop branding or review-specific visibility switch. Existing native purchase
+and restore actions remain available independently.
+
+Redemption reuses `POST /api/v1/membership/redeem`, with `expected_user_id` pinned
+to the signed-in account. The backend remains authoritative for code validity,
+duration and usage; returned membership updates the shared Read/Explore model.
+Blank and duplicate submissions are blocked. Account changes clear the input;
+failed redemption preserves the code for retry. A failed supplementary referral
+refresh cannot turn an already accepted redemption into a failure.
+
+This product decision does not establish store-policy approval. Apple 3.1.1
+restricts custom unlocking mechanisms and Google payment rules may apply to
+external paid codes. The entry must be described honestly in review notes; do
+not hide it during review or replace Origo codes with official store codes.
+No backend schema, new dependency or duplicated payment service is introduced.
+
+## Profile card and naming (2026-09-27)
+
+User-facing legacy Premium labels are now Explore / 探元 across the supported
+locales. Backend fields and historical entitlement IDs stay compatible. The
+profile card uses actual active Premium/Explore rights for its Explore badge
+and an integrated “Origo Read included” summary. It does not display an
+independent Read purchase tile for those accounts. Temporary store-test access
+is not presented as purchased Explore ownership.

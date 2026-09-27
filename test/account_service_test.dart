@@ -128,8 +128,288 @@ void main() {
         'expected_user_id': _memberAccountId,
       });
       expect(controller.hasPremiumAccess, isTrue);
+      expect(controller.hasReaderAccess, isTrue);
+      expect(controller.hasAdvancedSourceAccess, isTrue);
+      expect(controller.error, isNull);
     },
   );
+
+  test('pending referral refresh does not block redeemed access', () async {
+    SharedPreferences.setMockInitialValues({});
+    final referralStarted = Completer<void>();
+    final referralResponse = Completer<ResponseBody>();
+    var redeemed = false;
+    final controller = MemberAccountController(
+      api: _client(
+        _AsyncRouteAdapter((options) async {
+          switch (options.uri.path) {
+            case '/api/v1/auth/password/login':
+              return _json(
+                _session(
+                  access: 'access-a',
+                  refresh: 'refresh-a',
+                  userId: _memberAccountId,
+                ),
+              );
+            case '/api/v1/membership':
+              return _json({
+                'user_id': _memberAccountId,
+                'premium': false,
+                'features': <String, bool>{},
+                'entitlements': <Object>[],
+              });
+            case '/api/v1/membership/referral':
+              if (redeemed) {
+                referralStarted.complete();
+                return await referralResponse.future;
+              }
+              return _json({
+                'invite_code': 'OLD',
+                'invite_url': 'https://example.test/invite/old',
+              });
+            case '/api/v1/membership/redeem':
+              redeemed = true;
+              return _json({
+                'user_id': _memberAccountId,
+                'premium': true,
+                'redeemed': true,
+                'features': <String, bool>{},
+                'entitlements': <Object>[],
+              });
+            default:
+              return _json({});
+          }
+        }),
+        _MemoryTokenStore(),
+      ),
+    );
+    addTearDown(controller.dispose);
+    var premiumNotification = false;
+    controller.addListener(() {
+      if (controller.hasPremiumAccess) premiumNotification = true;
+    });
+
+    await controller.loginPassword('reader@example.com', 'password');
+    final redemption = controller.redeemMembership('ORP-TEST-CODE');
+    await referralStarted.future;
+    await redemption.timeout(const Duration(seconds: 1));
+
+    expect(controller.hasPremiumAccess, isTrue);
+    expect(premiumNotification, isTrue);
+    expect(controller.referral?.inviteCode, 'OLD');
+
+    referralResponse.complete(
+      _json({
+        'invite_code': 'NEW',
+        'invite_url': 'https://example.test/invite/new',
+      }),
+    );
+    await pumpEventQueue();
+    expect(controller.referral?.inviteCode, 'NEW');
+  });
+
+  test(
+    'failed referral refresh preserves the last verified referral',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      var redeemed = false;
+      final controller = MemberAccountController(
+        api: _client(
+          _RouteAdapter((options) {
+            return switch (options.uri.path) {
+              '/api/v1/auth/password/login' => _json(
+                _session(
+                  access: 'access-a',
+                  refresh: 'refresh-a',
+                  userId: _memberAccountId,
+                ),
+              ),
+              '/api/v1/membership' => _json({
+                'user_id': _memberAccountId,
+                'premium': false,
+                'features': <String, bool>{},
+                'entitlements': <Object>[],
+              }),
+              '/api/v1/membership/referral' =>
+                redeemed
+                    ? _json({'message': 'temporarily unavailable'}, status: 503)
+                    : _json({
+                        'invite_code': 'OLD',
+                        'invite_url': 'https://example.test/invite/old',
+                      }),
+              '/api/v1/membership/redeem' => () {
+                redeemed = true;
+                return _json({
+                  'user_id': _memberAccountId,
+                  'premium': true,
+                  'redeemed': true,
+                  'features': <String, bool>{},
+                  'entitlements': <Object>[],
+                });
+              }(),
+              _ => _json({}),
+            };
+          }),
+          _MemoryTokenStore(),
+        ),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.loginPassword('reader@example.com', 'password');
+      await controller.redeemMembership('ORP-TEST-CODE');
+      await pumpEventQueue();
+
+      expect(controller.hasPremiumAccess, isTrue);
+      expect(controller.referral?.inviteCode, 'OLD');
+      expect(controller.error, isNull);
+    },
+  );
+
+  test(
+    'late referral cannot flow back across an A-B-A account switch',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final lateReferral = Completer<ResponseBody>();
+      final lateReferralStarted = Completer<void>();
+      var loginCount = 0;
+      var referralCount = 0;
+      const accountB = '123e4567-e89b-42d3-a456-426614174001';
+      final controller = MemberAccountController(
+        api: _client(
+          _AsyncRouteAdapter((options) async {
+            switch (options.uri.path) {
+              case '/api/v1/auth/password/login':
+                loginCount++;
+                final userId = loginCount == 2 ? accountB : _memberAccountId;
+                return _json(
+                  _session(
+                    access: 'access-$loginCount',
+                    refresh: 'refresh-$loginCount',
+                    userId: userId,
+                  ),
+                );
+              case '/api/v1/membership':
+                return _json({
+                  'user_id': loginCount == 2 ? accountB : _memberAccountId,
+                  'premium': false,
+                  'features': <String, bool>{},
+                  'entitlements': <Object>[],
+                });
+              case '/api/v1/membership/referral':
+                referralCount++;
+                if (referralCount == 2) {
+                  lateReferralStarted.complete();
+                  return await lateReferral.future;
+                }
+                final code = switch (referralCount) {
+                  1 => 'ORIGINAL-A',
+                  3 => 'ACCOUNT-B',
+                  _ => 'FRESH-A',
+                };
+                return _json({
+                  'invite_code': code,
+                  'invite_url': 'https://example.test/invite/$code',
+                });
+              case '/api/v1/membership/redeem':
+                return _json({
+                  'user_id': _memberAccountId,
+                  'premium': true,
+                  'redeemed': true,
+                  'features': <String, bool>{},
+                  'entitlements': <Object>[],
+                });
+              default:
+                return _json({});
+            }
+          }),
+          _MemoryTokenStore(),
+        ),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.loginPassword('a@example.com', 'password');
+      await controller.redeemMembership('ORP-TEST-CODE');
+      await lateReferralStarted.future;
+      await controller.loginPassword('b@example.com', 'password');
+      await controller.loginPassword('a@example.com', 'password');
+      expect(controller.user?.id, _memberAccountId);
+      expect(controller.referral?.inviteCode, 'FRESH-A');
+
+      lateReferral.complete(
+        _json({
+          'invite_code': 'STALE-A',
+          'invite_url': 'https://example.test/invite/stale',
+        }),
+      );
+      await pumpEventQueue();
+      expect(controller.referral?.inviteCode, 'FRESH-A');
+    },
+  );
+
+  test('late referral is ignored after controller disposal', () async {
+    SharedPreferences.setMockInitialValues({});
+    final lateReferral = Completer<ResponseBody>();
+    final lateReferralStarted = Completer<void>();
+    var redeemed = false;
+    final controller = MemberAccountController(
+      api: _client(
+        _AsyncRouteAdapter((options) async {
+          switch (options.uri.path) {
+            case '/api/v1/auth/password/login':
+              return _json(
+                _session(
+                  access: 'access-a',
+                  refresh: 'refresh-a',
+                  userId: _memberAccountId,
+                ),
+              );
+            case '/api/v1/membership':
+              return _json({
+                'user_id': _memberAccountId,
+                'premium': false,
+                'features': <String, bool>{},
+                'entitlements': <Object>[],
+              });
+            case '/api/v1/membership/referral':
+              if (redeemed) {
+                lateReferralStarted.complete();
+                return await lateReferral.future;
+              }
+              return _json({
+                'invite_code': 'ORIGINAL',
+                'invite_url': 'https://example.test/invite/original',
+              });
+            case '/api/v1/membership/redeem':
+              redeemed = true;
+              return _json({
+                'user_id': _memberAccountId,
+                'premium': true,
+                'redeemed': true,
+                'features': <String, bool>{},
+                'entitlements': <Object>[],
+              });
+            default:
+              return _json({});
+          }
+        }),
+        _MemoryTokenStore(),
+      ),
+    );
+
+    await controller.loginPassword('reader@example.com', 'password');
+    await controller.redeemMembership('ORP-TEST-CODE');
+    await lateReferralStarted.future;
+    controller.dispose();
+    lateReferral.complete(
+      _json({
+        'invite_code': 'STALE',
+        'invite_url': 'https://example.test/invite/stale',
+      }),
+    );
+    await pumpEventQueue();
+
+    expect(controller.referral?.inviteCode, 'ORIGINAL');
+  });
 
   test('membership redemption rejects a token from another account', () async {
     SharedPreferences.setMockInitialValues({});

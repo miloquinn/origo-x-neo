@@ -1355,14 +1355,29 @@ class MemberAccountController extends ChangeNotifier {
     if (_user?.id != accountId) {
       throw const MemberAccountException('账号已切换，请重新验证会员权益');
     }
+    final referralOwner = _user!;
     _checkMembershipOwner(membership, accountId);
     _resetMembershipSync();
     _membership = membership;
     await _persistMembership();
     _updateSummaryFromAccount();
     await _persistSummary();
-    await _loadReferralValue();
+    unawaited(_refreshReferralAfterRedemption(referralOwner));
   });
+
+  Future<void> _refreshReferralAfterRedemption(MemberUser owner) async {
+    if (_disposed || !identical(_user, owner)) return;
+    try {
+      final referral = await _api.referral();
+      if (_disposed || !identical(_user, owner)) return;
+      _referral = referral;
+      notifyListeners();
+    } catch (_) {
+      // The code is already consumed and membership accepted. A supplementary
+      // referral refresh must not turn a successful redemption into a retry or
+      // discard the last verified referral state.
+    }
+  }
 
   Future<void> bindReferral(String code) => _run(() async {
     _referral = await _api.bindReferral(code);

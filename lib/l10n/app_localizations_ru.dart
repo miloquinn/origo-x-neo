@@ -2790,7 +2790,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      'Разрешить источникам доступ к этому устройству, локальной сети и другим частным адресам. С Premium включено по умолчанию; используйте только доверенные источники.';
+      'Разрешить источникам доступ к этому устройству, локальной сети и другим частным адресам. С Explore включено по умолчанию; используйте только доверенные источники.';
 
   @override
   String get additionalSourcesImport => 'Импорт других протоколов источников';
@@ -3137,16 +3137,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get accountSignOut => 'Выйти';
 
   @override
-  String get accountSupportTitle => 'Премиум-доступ';
+  String get accountSupportTitle => 'Explore-доступ';
 
   @override
   String get accountSupportFreeSubtitle => 'Базовые функции чтения бесплатны.';
 
   @override
-  String get accountSupportAction => 'Получить Premium';
+  String get accountSupportAction => 'Получить Explore';
 
   @override
-  String get accountSupporterBadge => 'Premium';
+  String get accountSupporterBadge => 'Explore';
 
   @override
   String get accountPasswordLengthHint => 'Минимум 12 символов';
@@ -5897,17 +5897,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get accountRecoveryCodesSaved => 'Я сохранил(а) коды';
 
   @override
-  String get accountPremiumLifetime => 'Пожизненный Premium открыт';
+  String get accountPremiumLifetime => 'Пожизненный Explore открыт';
 
   @override
   String get accountPremiumLifetimeSubtitle =>
-      'Premium привязан к этой учётной записи и синхронизируется между поддерживаемыми платформами.';
+      'Explore привязан к этой учётной записи и синхронизируется между поддерживаемыми платформами.';
 
   @override
-  String get accountRedemptionCode => 'Код пожизненного Premium';
+  String get accountRedemptionCode => 'Код активации';
 
   @override
-  String get accountRedeemPremium => 'Активировать и открыть навсегда';
+  String get accountRedeemPremium => 'Активировать';
 
   @override
   String get accountApplePurchase => 'Открыть навсегда через App Store';
@@ -5932,24 +5932,24 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountApplePurchaseSubmitted =>
-      'Покупка отправлена; идёт проверка доступа Premium';
+      'Покупка отправлена; идёт проверка доступа Explore';
 
   @override
   String get accountAppleRestoreSubmitted => 'Запрошено восстановление покупки';
 
   @override
-  String get accountPremiumUnlocked => 'Пожизненный Premium открыт';
+  String get accountPremiumUnlocked => 'Пожизненный Explore открыт';
 
   @override
   String get accountPremiumUnlockedReferral =>
-      'Активировано: вы и пригласивший открыли пожизненный Premium';
+      'Активировано: вы и пригласивший открыли пожизненный Explore';
 
   @override
   String get accountInviteTitle => 'Приглашайте друзей';
 
   @override
   String get accountInviteSubtitle =>
-      'Когда друг привяжет ваш код и активирует код пожизненного Premium, вы оба навсегда получите Premium.';
+      'Когда друг привяжет ваш код и активирует код пожизненного Explore, вы оба навсегда получите Explore.';
 
   @override
   String get accountInviteMyCode => 'Мой код приглашения';
@@ -6024,7 +6024,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountInviteStepRedeemBody =>
-      'Когда друг активирует код пожизненного Premium, обе учётные записи сразу получат Premium.';
+      'Когда друг активирует код пожизненного Explore, обе учётные записи сразу получат Explore.';
 
   @override
   String get accountInviteMyBinding => 'Моя связь по приглашению';
@@ -6035,7 +6035,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountInviteBindingNotNeeded =>
-      'У этой учётной записи уже есть Premium, поэтому код приглашения не нужен.';
+      'У этой учётной записи уже есть Explore, поэтому код приглашения не нужен.';
 
   @override
   String get readingDataExportAction => 'Экспортировать данные чтения';
@@ -6648,10 +6648,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get accountDeleteJoined => 'Дата регистрации';
 
   @override
-  String get accountDeletePremiumActive => 'Premium открыт (будет удалён)';
+  String get accountDeletePremiumActive => 'Explore открыт (будет удалён)';
 
   @override
-  String get accountDeletePremiumNone => 'Premium не открыт';
+  String get accountDeletePremiumNone => 'Explore не открыт';
 
   @override
   String get accountDeleteHasTitle => 'Сейчас у этой учётной записи есть';
@@ -6706,7 +6706,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountDeleteTermsPremium =>
-      'Доступ Premium удаляется независимо от того, как он был открыт: код активации, награда за приглашение или покупка через Apple.';
+      'Доступ Explore удаляется независимо от того, как он был открыт: код активации, награда за приглашение или покупка через Apple.';
 
   @override
   String get accountDeleteTermsReferrals =>
@@ -6718,7 +6718,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountDeleteTermsApple =>
-      'Вы купили пожизненный Premium в App Store. Удаление учётной записи не возвращает средства и не отменяет транзакцию в App Store — возврат можно запросить только у Apple. Чек покупки отвязывается от этой учётной записи и сохраняется, поэтому позже вы сможете нажать «Восстановить покупки» в новой учётной записи с тем же Apple ID и вернуть Premium.';
+      'Вы купили пожизненный Explore в App Store. Удаление учётной записи не возвращает средства и не отменяет транзакцию в App Store — возврат можно запросить только у Apple. Чек покупки отвязывается от этой учётной записи и сохраняется, поэтому позже вы сможете нажать «Восстановить покупки» в новой учётной записи с тем же Apple ID и вернуть Explore.';
 
   @override
   String get accountDeleteTermsLocalData =>
@@ -6941,19 +6941,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumGrantedAccess =>
-      'У вас бесплатный доступ Premium. Дополнительная покупка не требуется.';
+      'У вас бесплатный доступ Explore. Дополнительная покупка не требуется.';
 
   @override
   String get premiumOtherChannelAccess =>
-      'У вас есть Premium через другой канал. Дополнительная покупка не требуется.';
+      'У вас есть Explore через другой канал. Дополнительная покупка не требуется.';
 
   @override
   String get premiumAppleAccess =>
-      'У вас есть Premium через App Store. Дополнительная покупка не требуется.';
+      'У вас есть Explore через App Store. Дополнительная покупка не требуется.';
 
   @override
   String get premiumExistingAccess =>
-      'У вас уже есть Premium. Дополнительная покупка не требуется.';
+      'У вас уже есть Explore. Дополнительная покупка не требуется.';
 
   @override
   String get premiumSyncPending => 'Синхронизация статуса членства';
@@ -7092,11 +7092,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String premiumTrialExpiresAt(String date) {
-    return 'Пробный период Premium истекает $date.';
+    return 'Пробный период Explore истекает $date.';
   }
 
   @override
-  String get premiumTrialTitle => 'Пробный период Premium';
+  String get premiumTrialTitle => 'Пробный период Explore';
 
   @override
   String get bookSourceCheckUpdates => 'Проверить обновления';
@@ -7193,7 +7193,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Резервное копирование WebDAV настроено';
 
   @override
-  String get settingsPremiumActive => 'Премиум активен';
+  String get settingsPremiumActive => 'Explore активен';
 
   @override
   String get settingsPremiumSyncFailed =>
@@ -7276,7 +7276,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storeReaderLegacyNotice =>
-      'Ваш прежний базовый доступ к чтению сохраняется. Для расширенной совместимости с источниками по-прежнему нужен Premium.';
+      'Ваш прежний базовый доступ к чтению сохраняется. Для расширенной совместимости с источниками по-прежнему нужен Explore.';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7599,4 +7599,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storeReaderRestoring => 'Восстановление покупки базовой версии…';
+
+  @override
+  String get accountHaveRedemptionCode => 'У меня есть код';
+
+  @override
+  String get accountRedemptionHint =>
+      'Активируйте код Origo для указанной ниже учётной записи.';
+
+  @override
+  String get accountRedemptionSuccess =>
+      'Код активирован. Ваш доступ обновлён.';
+
+  @override
+  String get accountExploreIncludesReader => 'Origo Read включён';
 }

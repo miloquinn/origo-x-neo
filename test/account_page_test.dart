@@ -742,9 +742,9 @@ void main() {
       find.byKey(const ValueKey('settings-account-premium-badge')),
       findsOneWidget,
     );
-    expect(find.text('高级会员'), findsOneWidget);
-    expect(find.text('永久高级版已解锁'), findsOneWidget);
-    expect(find.text('PREMIUM'), findsOneWidget);
+    expect(find.text('探元'), findsOneWidget);
+    expect(find.text('Origo 探元'), findsOneWidget);
+    expect(find.text('EXPLORE'), findsOneWidget);
     final avatar = tester.widget<Container>(
       find.byKey(const ValueKey('settings-account-avatar')),
     );

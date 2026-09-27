@@ -2673,7 +2673,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      '書籍ソースからこの端末、ローカルネットワーク、その他のプライベートアドレスへのアクセスを許可します。プレミアムでは標準で有効です。信頼できるソースのみ使用してください。';
+      '書籍ソースからこの端末、ローカルネットワーク、その他のプライベートアドレスへのアクセスを許可します。Exploreでは標準で有効です。信頼できるソースのみ使用してください。';
 
   @override
   String get additionalSourcesImport => '追加プロトコルのソースをインポート';
@@ -3004,16 +3004,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountSignOut => 'ログアウト';
 
   @override
-  String get accountSupportTitle => 'プレミアム会員';
+  String get accountSupportTitle => 'Explore';
 
   @override
   String get accountSupportFreeSubtitle => '基本的な読書機能は無料で利用できます。';
 
   @override
-  String get accountSupportAction => 'プレミアムを購入';
+  String get accountSupportAction => 'Exploreを購入';
 
   @override
-  String get accountSupporterBadge => 'プレミアム会員';
+  String get accountSupporterBadge => 'Explore';
 
   @override
   String get accountPasswordLengthHint => '12 文字以上';
@@ -5629,17 +5629,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountRecoveryCodesSaved => '復旧コードを保存しました';
 
   @override
-  String get accountPremiumLifetime => '永久プレミアムを解除済み';
+  String get accountPremiumLifetime => '永久Exploreを解除済み';
 
   @override
   String get accountPremiumLifetimeSubtitle =>
-      'プレミアム特典はこのアカウントに紐づき、対応プラットフォーム間で同期されます。';
+      'Explore特典はこのアカウントに紐づき、対応プラットフォーム間で同期されます。';
 
   @override
-  String get accountRedemptionCode => '永久プレミアムコード';
+  String get accountRedemptionCode => '引き換えコード';
 
   @override
-  String get accountRedeemPremium => '引き換えて永久解除';
+  String get accountRedeemPremium => '引き換える';
 
   @override
   String get accountApplePurchase => 'App Store で永久にアンロック';
@@ -5661,24 +5661,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountApplePurchasePending => '購入は App Store の確認待ちです';
 
   @override
-  String get accountApplePurchaseSubmitted => '購入を送信しました。Premium 特典を確認しています';
+  String get accountApplePurchaseSubmitted => '購入を送信しました。Explore 特典を確認しています';
 
   @override
   String get accountAppleRestoreSubmitted => '購入の復元をリクエストしました';
 
   @override
-  String get accountPremiumUnlocked => '永久プレミアムを解除しました';
+  String get accountPremiumUnlocked => '永久Exploreを解除しました';
 
   @override
   String get accountPremiumUnlockedReferral =>
-      '引き換え完了：あなたと招待者の両方が永久プレミアムを解除しました';
+      '引き換え完了：あなたと招待者の両方が永久Exploreを解除しました';
 
   @override
   String get accountInviteTitle => '友達を招待';
 
   @override
   String get accountInviteSubtitle =>
-      '友達があなたの招待コードを紐づけ、永久プレミアムコードを引き換えると、2 人とも永久に解除されます。';
+      '友達があなたの招待コードを紐づけ、永久Exploreコードを引き換えると、2 人とも永久に解除されます。';
 
   @override
   String get accountInviteMyCode => '自分の招待コード';
@@ -5751,7 +5751,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountInviteStepRedeemBody =>
-      '友達が永久プレミアムコードを引き換えると、両方のアカウントがすぐ解除されます。';
+      '友達が永久Exploreコードを引き換えると、両方のアカウントがすぐ解除されます。';
 
   @override
   String get accountInviteMyBinding => '自分の招待関係';
@@ -5761,7 +5761,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountInviteBindingNotNeeded =>
-      'このアカウントはプレミアム解除済みのため、招待コードは不要です。';
+      'このアカウントはExplore解除済みのため、招待コードは不要です。';
 
   @override
   String get readingDataExportAction => '読書データを書き出す';
@@ -6329,10 +6329,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountDeleteJoined => '登録日';
 
   @override
-  String get accountDeletePremiumActive => 'プレミアム有効（削除されます）';
+  String get accountDeletePremiumActive => 'Explore有効（削除されます）';
 
   @override
-  String get accountDeletePremiumNone => 'プレミアム未購入';
+  String get accountDeletePremiumNone => 'Explore未購入';
 
   @override
   String get accountDeleteHasTitle => 'このアカウントの現在の状態';
@@ -6386,7 +6386,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountDeleteTermsPremium =>
-      'プレミアム特典は削除されます。引き換えコード、招待報酬、Apple での購入のいずれで取得した場合も同様です。';
+      'Explore特典は削除されます。引き換えコード、招待報酬、Apple での購入のいずれで取得した場合も同様です。';
 
   @override
   String get accountDeleteTermsReferrals =>
@@ -6398,7 +6398,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountDeleteTermsApple =>
-      'App Store で買い切りのプレミアムを購入済みです。アカウントを削除しても返金されず、App Store の取引が取り消されることもありません。返金は Apple にのみ申請できます。購入レシートはアカウントとの紐づけを解除したうえで保持されるため、後日同じ Apple ID で新しいアカウントから「購入を復元」を実行すればプレミアムを取り戻せます。';
+      'App Store で買い切りのExploreを購入済みです。アカウントを削除しても返金されず、App Store の取引が取り消されることもありません。返金は Apple にのみ申請できます。購入レシートはアカウントとの紐づけを解除したうえで保持されるため、後日同じ Apple ID で新しいアカウントから「購入を復元」を実行すればExploreを取り戻せます。';
 
   @override
   String get accountDeleteTermsLocalData =>
@@ -6606,16 +6606,16 @@ class AppLocalizationsJa extends AppLocalizations {
       '会員情報を同期できませんでした。自動的に再試行します。接続エラーで確認済みの権限が取り消されることはありません。';
 
   @override
-  String get premiumGrantedAccess => 'プレミアム会員特典が付与されています。追加購入は不要です。';
+  String get premiumGrantedAccess => 'Explore特典が付与されています。追加購入は不要です。';
 
   @override
-  String get premiumOtherChannelAccess => '別の経路でプレミアムが有効です。追加購入は不要です。';
+  String get premiumOtherChannelAccess => '別の経路でExploreが有効です。追加購入は不要です。';
 
   @override
-  String get premiumAppleAccess => 'App Store でプレミアムが有効です。追加購入は不要です。';
+  String get premiumAppleAccess => 'App Store でExploreが有効です。追加購入は不要です。';
 
   @override
-  String get premiumExistingAccess => 'プレミアムが有効です。追加購入は不要です。';
+  String get premiumExistingAccess => 'Exploreが有効です。追加購入は不要です。';
 
   @override
   String get premiumSyncPending => '会員情報の同期待ち';
@@ -6745,11 +6745,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String premiumTrialExpiresAt(String date) {
-    return 'プレミアム体験の有効期限：$date。';
+    return 'Explore体験の有効期限：$date。';
   }
 
   @override
-  String get premiumTrialTitle => 'プレミアム体験';
+  String get premiumTrialTitle => 'Explore体験';
 
   @override
   String get bookSourceCheckUpdates => '更新を確認';
@@ -6843,7 +6843,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsWebDavConfigured => 'WebDAVバックアップ設定済み';
 
   @override
-  String get settingsPremiumActive => 'プレミアムが有効です';
+  String get settingsPremiumActive => 'Exploreが有効です';
 
   @override
   String get settingsPremiumSyncFailed => '会員状態を同期できません';
@@ -6925,7 +6925,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get storeReaderLegacyNotice =>
-      'これまでの基本的な読書機能の利用権は保持されます。高度なソース互換機能には引き続きプレミアムが必要です。';
+      'これまでの基本的な読書機能の利用権は保持されます。高度なソース互換機能には引き続きExploreが必要です。';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7230,4 +7230,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get storeReaderRestoring => 'ベーシック版の購入を復元中…';
+
+  @override
+  String get accountHaveRedemptionCode => 'コードをお持ちの方';
+
+  @override
+  String get accountRedemptionHint => 'Origo コードを引き換えると、下記のアカウントに利用権が付与されます。';
+
+  @override
+  String get accountRedemptionSuccess => '引き換えが完了し、利用権が更新されました。';
+
+  @override
+  String get accountExploreIncludesReader => 'Origo Read を含む';
 }

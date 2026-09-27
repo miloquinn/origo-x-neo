@@ -4904,7 +4904,7 @@ abstract class AppLocalizations {
   /// Warning that private-network book sources are enabled by default with Premium
   ///
   /// In en, this message translates to:
-  /// **'Allow sources to access this device, the local network, and other private addresses. On by default with Premium; use only sources you trust.'**
+  /// **'Allow sources to access this device, the local network, and other private addresses. On by default with Explore; use only sources you trust.'**
   String get settingsPrivateBookSourceNetworkSubtitle;
 
   /// No description provided for @additionalSourcesImport.
@@ -5527,7 +5527,7 @@ abstract class AppLocalizations {
   /// Premium membership card title
   ///
   /// In en, this message translates to:
-  /// **'Premium membership'**
+  /// **'Explore membership'**
   String get accountSupportTitle;
 
   /// Explains that basic reading remains free
@@ -5539,13 +5539,13 @@ abstract class AppLocalizations {
   /// Open the Premium purchase page
   ///
   /// In en, this message translates to:
-  /// **'Get Premium'**
+  /// **'Get Explore'**
   String get accountSupportAction;
 
   /// Premium membership badge
   ///
   /// In en, this message translates to:
-  /// **'Premium'**
+  /// **'Explore'**
   String get accountSupporterBadge;
 
   /// Password minimum length hint
@@ -10229,25 +10229,25 @@ abstract class AppLocalizations {
   /// No description provided for @accountPremiumLifetime.
   ///
   /// In en, this message translates to:
-  /// **'Lifetime Premium unlocked'**
+  /// **'Lifetime Explore unlocked'**
   String get accountPremiumLifetime;
 
   /// No description provided for @accountPremiumLifetimeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Premium is linked to this account and syncs across supported platforms.'**
+  /// **'Explore is linked to this account and syncs across supported platforms.'**
   String get accountPremiumLifetimeSubtitle;
 
   /// No description provided for @accountRedemptionCode.
   ///
   /// In en, this message translates to:
-  /// **'Lifetime Premium code'**
+  /// **'Redemption code'**
   String get accountRedemptionCode;
 
   /// No description provided for @accountRedeemPremium.
   ///
   /// In en, this message translates to:
-  /// **'Redeem and unlock forever'**
+  /// **'Redeem'**
   String get accountRedeemPremium;
 
   /// No description provided for @accountApplePurchase.
@@ -10289,7 +10289,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountApplePurchaseSubmitted.
   ///
   /// In en, this message translates to:
-  /// **'Purchase submitted; verifying Premium access'**
+  /// **'Purchase submitted; verifying Explore access'**
   String get accountApplePurchaseSubmitted;
 
   /// No description provided for @accountAppleRestoreSubmitted.
@@ -10301,13 +10301,13 @@ abstract class AppLocalizations {
   /// No description provided for @accountPremiumUnlocked.
   ///
   /// In en, this message translates to:
-  /// **'Lifetime Premium unlocked'**
+  /// **'Lifetime Explore unlocked'**
   String get accountPremiumUnlocked;
 
   /// No description provided for @accountPremiumUnlockedReferral.
   ///
   /// In en, this message translates to:
-  /// **'Redeemed: you and your inviter both unlocked Lifetime Premium'**
+  /// **'Redeemed: you and your inviter both unlocked Lifetime Explore'**
   String get accountPremiumUnlockedReferral;
 
   /// No description provided for @accountInviteTitle.
@@ -10319,7 +10319,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountInviteSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'When a friend binds your code and redeems a Lifetime Premium code, both of you unlock Premium forever.'**
+  /// **'When a friend binds your code and redeems a Lifetime Explore code, both of you unlock Explore forever.'**
   String get accountInviteSubtitle;
 
   /// No description provided for @accountInviteMyCode.
@@ -10451,7 +10451,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountInviteStepRedeemBody.
   ///
   /// In en, this message translates to:
-  /// **'When they redeem a Lifetime Premium code, both accounts unlock Premium immediately.'**
+  /// **'When they redeem a Lifetime Explore code, both accounts unlock Explore immediately.'**
   String get accountInviteStepRedeemBody;
 
   /// No description provided for @accountInviteMyBinding.
@@ -10469,7 +10469,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountInviteBindingNotNeeded.
   ///
   /// In en, this message translates to:
-  /// **'This account already has Premium, so no invite code is needed.'**
+  /// **'This account already has Explore, so no invite code is needed.'**
   String get accountInviteBindingNotNeeded;
 
   /// No description provided for @readingDataExportAction.
@@ -11507,13 +11507,13 @@ abstract class AppLocalizations {
   /// Premium status line when premium will be removed
   ///
   /// In en, this message translates to:
-  /// **'Premium unlocked (will be removed)'**
+  /// **'Explore unlocked (will be removed)'**
   String get accountDeletePremiumActive;
 
   /// Premium status line when no premium is held
   ///
   /// In en, this message translates to:
-  /// **'Premium not unlocked'**
+  /// **'Explore not unlocked'**
   String get accountDeletePremiumNone;
 
   /// Heading above the counts of data the deletion removes
@@ -11591,7 +11591,7 @@ abstract class AppLocalizations {
   /// Deletion term about premium entitlements
   ///
   /// In en, this message translates to:
-  /// **'Premium access is removed, however you unlocked it — a redemption code, an invite reward, or an Apple purchase.'**
+  /// **'Explore access is removed, however you unlocked it — a redemption code, an invite reward, or an Apple purchase.'**
   String get accountDeleteTermsPremium;
 
   /// Deletion term about referrals and invite codes
@@ -11609,7 +11609,7 @@ abstract class AppLocalizations {
   /// Deletion term about App Store purchases and restoring them
   ///
   /// In en, this message translates to:
-  /// **'You bought lifetime Premium on the App Store. Deleting your account does not refund it and does not cancel any App Store transaction — refunds can only be requested from Apple. Your purchase receipt is unlinked from this account and kept, so you can later tap Restore purchases on a new account with the same Apple ID and get Premium back.'**
+  /// **'You bought lifetime Explore on the App Store. Deleting your account does not refund it and does not cancel any App Store transaction — refunds can only be requested from Apple. Your purchase receipt is unlinked from this account and kept, so you can later tap Restore purchases on a new account with the same Apple ID and get Explore back.'**
   String get accountDeleteTermsApple;
 
   /// Deletion term clarifying that on-device library data stays
@@ -11981,25 +11981,25 @@ abstract class AppLocalizations {
   /// Membership synchronization or existing entitlement channel notice.
   ///
   /// In en, this message translates to:
-  /// **'You have complimentary Premium access. No additional purchase is needed.'**
+  /// **'You have complimentary Explore access. No additional purchase is needed.'**
   String get premiumGrantedAccess;
 
   /// Membership synchronization or existing entitlement channel notice.
   ///
   /// In en, this message translates to:
-  /// **'You have Premium through another channel. No additional purchase is needed.'**
+  /// **'You have Explore through another channel. No additional purchase is needed.'**
   String get premiumOtherChannelAccess;
 
   /// Membership synchronization or existing entitlement channel notice.
   ///
   /// In en, this message translates to:
-  /// **'You have Premium through App Store. No additional purchase is needed.'**
+  /// **'You have Explore through App Store. No additional purchase is needed.'**
   String get premiumAppleAccess;
 
   /// Membership synchronization or existing entitlement channel notice.
   ///
   /// In en, this message translates to:
-  /// **'You already have Premium. No additional purchase is needed.'**
+  /// **'You already have Explore. No additional purchase is needed.'**
   String get premiumExistingAccess;
 
   /// Membership has not yet been verified for this session.
@@ -12227,13 +12227,13 @@ abstract class AppLocalizations {
   /// No description provided for @premiumTrialExpiresAt.
   ///
   /// In en, this message translates to:
-  /// **'Premium trial expires on {date}.'**
+  /// **'Explore trial expires on {date}.'**
   String premiumTrialExpiresAt(String date);
 
   /// No description provided for @premiumTrialTitle.
   ///
   /// In en, this message translates to:
-  /// **'Premium trial'**
+  /// **'Explore trial'**
   String get premiumTrialTitle;
 
   /// bookSourceCheckUpdates
@@ -12401,7 +12401,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsPremiumActive.
   ///
   /// In en, this message translates to:
-  /// **'Premium active'**
+  /// **'Explore active'**
   String get settingsPremiumActive;
 
   /// No description provided for @settingsPremiumSyncFailed.
@@ -12527,7 +12527,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeReaderLegacyNotice.
   ///
   /// In en, this message translates to:
-  /// **'Your existing basic reading access is preserved. Advanced source compatibility still requires Premium.'**
+  /// **'Your existing basic reading access is preserved. Advanced source compatibility still requires Explore.'**
   String get storeReaderLegacyNotice;
 
   /// No description provided for @storePrivacyPurchaseBody.
@@ -13063,6 +13063,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restoring Basic edition purchase…'**
   String get storeReaderRestoring;
+
+  /// No description provided for @accountHaveRedemptionCode.
+  ///
+  /// In en, this message translates to:
+  /// **'I have a code'**
+  String get accountHaveRedemptionCode;
+
+  /// No description provided for @accountRedemptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem an Origo code for the account shown below.'**
+  String get accountRedemptionHint;
+
+  /// No description provided for @accountRedemptionSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Code redeemed. Your access has been updated.'**
+  String get accountRedemptionSuccess;
+
+  /// No description provided for @accountExploreIncludesReader.
+  ///
+  /// In en, this message translates to:
+  /// **'Origo Read included'**
+  String get accountExploreIncludesReader;
 }
 
 class _AppLocalizationsDelegate

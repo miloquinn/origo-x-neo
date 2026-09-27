@@ -2796,7 +2796,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      'Permite que fontes acessem este dispositivo, a rede local e outros endereços privados. Ativado por padrão com Premium; use apenas fontes confiáveis.';
+      'Permite que fontes acessem este dispositivo, a rede local e outros endereços privados. Ativado por padrão com Explore; use apenas fontes confiáveis.';
 
   @override
   String get additionalSourcesImport => 'Importar mais protocolos de fontes';
@@ -3144,17 +3144,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get accountSignOut => 'Sair';
 
   @override
-  String get accountSupportTitle => 'Assinatura Premium';
+  String get accountSupportTitle => 'Assinatura Explore';
 
   @override
   String get accountSupportFreeSubtitle =>
       'Os recursos básicos de leitura são gratuitos.';
 
   @override
-  String get accountSupportAction => 'Obter Premium';
+  String get accountSupportAction => 'Obter Explore';
 
   @override
-  String get accountSupporterBadge => 'Premium';
+  String get accountSupporterBadge => 'Explore';
 
   @override
   String get accountPasswordLengthHint => 'Pelo menos 12 caracteres';
@@ -5912,17 +5912,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get accountRecoveryCodesSaved => 'Salvei estes códigos';
 
   @override
-  String get accountPremiumLifetime => 'Premium vitalício desbloqueado';
+  String get accountPremiumLifetime => 'Explore vitalício desbloqueado';
 
   @override
   String get accountPremiumLifetimeSubtitle =>
-      'O Premium fica vinculado a esta conta e sincroniza entre plataformas suportadas.';
+      'O Explore fica vinculado a esta conta e sincroniza entre plataformas suportadas.';
 
   @override
-  String get accountRedemptionCode => 'Código de Premium vitalício';
+  String get accountRedemptionCode => 'Código de resgate';
 
   @override
-  String get accountRedeemPremium => 'Resgatar e desbloquear para sempre';
+  String get accountRedeemPremium => 'Resgatar';
 
   @override
   String get accountApplePurchase => 'Desbloquear para sempre pela App Store';
@@ -5947,24 +5947,24 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountApplePurchaseSubmitted =>
-      'Compra enviada; verificando acesso ao Premium';
+      'Compra enviada; verificando acesso ao Explore';
 
   @override
   String get accountAppleRestoreSubmitted => 'Restauração de compra solicitada';
 
   @override
-  String get accountPremiumUnlocked => 'Premium vitalício desbloqueado';
+  String get accountPremiumUnlocked => 'Explore vitalício desbloqueado';
 
   @override
   String get accountPremiumUnlockedReferral =>
-      'Resgatado: você e quem o convidou desbloquearam o Premium vitalício';
+      'Resgatado: você e quem o convidou desbloquearam o Explore vitalício';
 
   @override
   String get accountInviteTitle => 'Convidar amigos';
 
   @override
   String get accountInviteSubtitle =>
-      'Quando um amigo vincula seu código e resgata um código de Premium vitalício, vocês dois desbloqueiam o Premium para sempre.';
+      'Quando um amigo vincula seu código e resgata um código de Explore vitalício, vocês dois desbloqueiam o Explore para sempre.';
 
   @override
   String get accountInviteMyCode => 'Meu código de convite';
@@ -6039,7 +6039,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountInviteStepRedeemBody =>
-      'Quando ele resgatar um código de Premium vitalício, as duas contas desbloqueiam o Premium imediatamente.';
+      'Quando ele resgatar um código de Explore vitalício, as duas contas desbloqueiam o Explore imediatamente.';
 
   @override
   String get accountInviteMyBinding => 'Meu vínculo de convite';
@@ -6050,7 +6050,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountInviteBindingNotNeeded =>
-      'Esta conta já tem Premium, então não é preciso código de convite.';
+      'Esta conta já tem Explore, então não é preciso código de convite.';
 
   @override
   String get readingDataExportAction => 'Exportar dados de leitura';
@@ -6668,10 +6668,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountDeletePremiumActive =>
-      'Premium desbloqueado (será removido)';
+      'Explore desbloqueado (será removido)';
 
   @override
-  String get accountDeletePremiumNone => 'Premium não desbloqueado';
+  String get accountDeletePremiumNone => 'Explore não desbloqueado';
 
   @override
   String get accountDeleteHasTitle => 'Esta conta atualmente tem';
@@ -6726,7 +6726,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountDeleteTermsPremium =>
-      'O acesso ao Premium é removido, independentemente de como você o desbloqueou — código de resgate, recompensa de convite ou compra na Apple.';
+      'O acesso ao Explore é removido, independentemente de como você o desbloqueou — código de resgate, recompensa de convite ou compra na Apple.';
 
   @override
   String get accountDeleteTermsReferrals =>
@@ -6738,7 +6738,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountDeleteTermsApple =>
-      'Você comprou o Premium vitalício na App Store. Excluir sua conta não o reembolsa e não cancela nenhuma transação da App Store — reembolsos só podem ser pedidos à Apple. O recibo da sua compra é desvinculado desta conta e mantido, para que você possa tocar em Restaurar compras em uma nova conta com o mesmo Apple ID e recuperar o Premium.';
+      'Você comprou o Explore vitalício na App Store. Excluir sua conta não o reembolsa e não cancela nenhuma transação da App Store — reembolsos só podem ser pedidos à Apple. O recibo da sua compra é desvinculado desta conta e mantido, para que você possa tocar em Restaurar compras em uma nova conta com o mesmo Apple ID e recuperar o Explore.';
 
   @override
   String get accountDeleteTermsLocalData =>
@@ -6963,19 +6963,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get premiumGrantedAccess =>
-      'Você tem acesso Premium cortesia. Não é necessária nenhuma compra adicional.';
+      'Você tem acesso Explore cortesia. Não é necessária nenhuma compra adicional.';
 
   @override
   String get premiumOtherChannelAccess =>
-      'Você tem o Premium por outro canal. Não é necessária nenhuma compra adicional.';
+      'Você tem o Explore por outro canal. Não é necessária nenhuma compra adicional.';
 
   @override
   String get premiumAppleAccess =>
-      'Você tem o Premium pela App Store. Não é necessária nenhuma compra adicional.';
+      'Você tem o Explore pela App Store. Não é necessária nenhuma compra adicional.';
 
   @override
   String get premiumExistingAccess =>
-      'Você já tem o Premium. Não é necessária nenhuma compra adicional.';
+      'Você já tem o Explore. Não é necessária nenhuma compra adicional.';
 
   @override
   String get premiumSyncPending => 'Sincronizando status da associação';
@@ -7114,11 +7114,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String premiumTrialExpiresAt(String date) {
-    return 'O período de teste do Premium expira em $date.';
+    return 'O período de teste do Explore expira em $date.';
   }
 
   @override
-  String get premiumTrialTitle => 'Teste do Premium';
+  String get premiumTrialTitle => 'Teste do Explore';
 
   @override
   String get bookSourceCheckUpdates => 'Verificar atualizações';
@@ -7215,7 +7215,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsWebDavConfigured => 'Backup WebDAV configurado';
 
   @override
-  String get settingsPremiumActive => 'Premium ativo';
+  String get settingsPremiumActive => 'Explore ativo';
 
   @override
   String get settingsPremiumSyncFailed =>
@@ -7299,7 +7299,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get storeReaderLegacyNotice =>
-      'Seu acesso básico à leitura é mantido. A compatibilidade avançada com fontes continua exigindo o Premium.';
+      'Seu acesso básico à leitura é mantido. A compatibilidade avançada com fontes continua exigindo o Explore.';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7624,4 +7624,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get storeReaderRestoring => 'Restaurando a compra da versão básica…';
+
+  @override
+  String get accountHaveRedemptionCode => 'Tenho um código';
+
+  @override
+  String get accountRedemptionHint =>
+      'Resgate um código Origo para a conta indicada abaixo.';
+
+  @override
+  String get accountRedemptionSuccess =>
+      'Código resgatado. Seu acesso foi atualizado.';
+
+  @override
+  String get accountExploreIncludesReader => 'Origo Read incluído';
 }

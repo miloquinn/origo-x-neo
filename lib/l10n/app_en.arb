@@ -2691,7 +2691,7 @@
   "@settingsPrivateBookSourceNetworkTitle": {
     "description": "Settings toggle that allows book sources on LAN, loopback, and other private addresses"
   },
-  "settingsPrivateBookSourceNetworkSubtitle": "Allow sources to access this device, the local network, and other private addresses. On by default with Premium; use only sources you trust.",
+  "settingsPrivateBookSourceNetworkSubtitle": "Allow sources to access this device, the local network, and other private addresses. On by default with Explore; use only sources you trust.",
   "@settingsPrivateBookSourceNetworkSubtitle": {
     "description": "Warning that private-network book sources are enabled by default with Premium"
   },
@@ -3121,7 +3121,7 @@
   "@accountSignOut": {
     "description": "Sign out of the member account"
   },
-  "accountSupportTitle": "Premium membership",
+  "accountSupportTitle": "Explore membership",
   "@accountSupportTitle": {
     "description": "Premium membership card title"
   },
@@ -3129,11 +3129,11 @@
   "@accountSupportFreeSubtitle": {
     "description": "Explains that basic reading remains free"
   },
-  "accountSupportAction": "Get Premium",
+  "accountSupportAction": "Get Explore",
   "@accountSupportAction": {
     "description": "Open the Premium purchase page"
   },
-  "accountSupporterBadge": "Premium",
+  "accountSupporterBadge": "Explore",
   "@accountSupporterBadge": {
     "description": "Premium membership badge"
   },
@@ -5794,10 +5794,10 @@
   "accountCopyRecoveryCodes": "Copy recovery codes",
   "accountRecoveryCodesCopied": "Recovery codes copied",
   "accountRecoveryCodesSaved": "I saved these codes",
-  "accountPremiumLifetime": "Lifetime Premium unlocked",
-  "accountPremiumLifetimeSubtitle": "Premium is linked to this account and syncs across supported platforms.",
-  "accountRedemptionCode": "Lifetime Premium code",
-  "accountRedeemPremium": "Redeem and unlock forever",
+  "accountPremiumLifetime": "Lifetime Explore unlocked",
+  "accountPremiumLifetimeSubtitle": "Explore is linked to this account and syncs across supported platforms.",
+  "accountRedemptionCode": "Redemption code",
+  "accountRedeemPremium": "Redeem",
   "accountApplePurchase": "Unlock forever with App Store",
   "accountApplePurchaseHint": "A one-time purchase permanently links Premium to this Origo X account and syncs it to supported platforms.",
   "accountAppleProductLoading": "Loading product info…",
@@ -5810,12 +5810,12 @@
   },
   "accountAppleRestore": "Restore purchases",
   "accountApplePurchasePending": "The purchase is waiting for App Store approval",
-  "accountApplePurchaseSubmitted": "Purchase submitted; verifying Premium access",
+  "accountApplePurchaseSubmitted": "Purchase submitted; verifying Explore access",
   "accountAppleRestoreSubmitted": "Purchase restoration requested",
-  "accountPremiumUnlocked": "Lifetime Premium unlocked",
-  "accountPremiumUnlockedReferral": "Redeemed: you and your inviter both unlocked Lifetime Premium",
+  "accountPremiumUnlocked": "Lifetime Explore unlocked",
+  "accountPremiumUnlockedReferral": "Redeemed: you and your inviter both unlocked Lifetime Explore",
   "accountInviteTitle": "Invite friends",
-  "accountInviteSubtitle": "When a friend binds your code and redeems a Lifetime Premium code, both of you unlock Premium forever.",
+  "accountInviteSubtitle": "When a friend binds your code and redeems a Lifetime Explore code, both of you unlock Explore forever.",
   "accountInviteMyCode": "My invite code",
   "accountInviteCopyCode": "Copy invite code",
   "accountInviteCopyLink": "Copy invite link",
@@ -5854,10 +5854,10 @@
   "accountInviteStepBindTitle": "Bind the code",
   "accountInviteStepBindBody": "Your friend enters your code in Account. Each account can bind once.",
   "accountInviteStepRedeemTitle": "Redeem a code",
-  "accountInviteStepRedeemBody": "When they redeem a Lifetime Premium code, both accounts unlock Premium immediately.",
+  "accountInviteStepRedeemBody": "When they redeem a Lifetime Explore code, both accounts unlock Explore immediately.",
   "accountInviteMyBinding": "My invite relationship",
   "accountInviteBindIntro": "If someone invited you, bind their code here to keep the reward attached to your account.",
-  "accountInviteBindingNotNeeded": "This account already has Premium, so no invite code is needed.",
+  "accountInviteBindingNotNeeded": "This account already has Explore, so no invite code is needed.",
   "readingDataExportAction": "Export reading data",
   "readingDataExportSubtitle": "Highlights, underlines, and notes",
   "readingDataExportWholeBook": "Whole book",
@@ -6250,11 +6250,11 @@
   "@accountDeleteJoined": {
     "description": "Label for the account registration date"
   },
-  "accountDeletePremiumActive": "Premium unlocked (will be removed)",
+  "accountDeletePremiumActive": "Explore unlocked (will be removed)",
   "@accountDeletePremiumActive": {
     "description": "Premium status line when premium will be removed"
   },
-  "accountDeletePremiumNone": "Premium not unlocked",
+  "accountDeletePremiumNone": "Explore not unlocked",
   "@accountDeletePremiumNone": {
     "description": "Premium status line when no premium is held"
   },
@@ -6331,7 +6331,7 @@
   "@accountDeleteTermsMfa": {
     "description": "Deletion term about two-factor authentication"
   },
-  "accountDeleteTermsPremium": "Premium access is removed, however you unlocked it — a redemption code, an invite reward, or an Apple purchase.",
+  "accountDeleteTermsPremium": "Explore access is removed, however you unlocked it — a redemption code, an invite reward, or an Apple purchase.",
   "@accountDeleteTermsPremium": {
     "description": "Deletion term about premium entitlements"
   },
@@ -6343,7 +6343,7 @@
   "@accountDeleteTermsRedemptions": {
     "description": "Deletion term about spent redemption codes"
   },
-  "accountDeleteTermsApple": "You bought lifetime Premium on the App Store. Deleting your account does not refund it and does not cancel any App Store transaction — refunds can only be requested from Apple. Your purchase receipt is unlinked from this account and kept, so you can later tap Restore purchases on a new account with the same Apple ID and get Premium back.",
+  "accountDeleteTermsApple": "You bought lifetime Explore on the App Store. Deleting your account does not refund it and does not cancel any App Store transaction — refunds can only be requested from Apple. Your purchase receipt is unlinked from this account and kept, so you can later tap Restore purchases on a new account with the same Apple ID and get Explore back.",
   "@accountDeleteTermsApple": {
     "description": "Deletion term about App Store purchases and restoring them"
   },
@@ -6500,10 +6500,10 @@
   "bookSourceNotBound": "No source linked",
   "bookSourceDownloadedUnchanged": "Downloaded chapters are up to date.",
   "premiumSyncFailed": "Membership status could not be synced. It will retry automatically; a connection failure does not revoke verified access.",
-  "premiumGrantedAccess": "You have complimentary Premium access. No additional purchase is needed.",
-  "premiumOtherChannelAccess": "You have Premium through another channel. No additional purchase is needed.",
-  "premiumAppleAccess": "You have Premium through App Store. No additional purchase is needed.",
-  "premiumExistingAccess": "You already have Premium. No additional purchase is needed.",
+  "premiumGrantedAccess": "You have complimentary Explore access. No additional purchase is needed.",
+  "premiumOtherChannelAccess": "You have Explore through another channel. No additional purchase is needed.",
+  "premiumAppleAccess": "You have Explore through App Store. No additional purchase is needed.",
+  "premiumExistingAccess": "You already have Explore. No additional purchase is needed.",
   "@premiumSyncFailed": {
     "description": "Membership synchronization or existing entitlement channel notice."
   },
@@ -6583,7 +6583,7 @@
       }
     }
   },
-  "premiumTrialExpiresAt": "Premium trial expires on {date}.",
+  "premiumTrialExpiresAt": "Explore trial expires on {date}.",
   "@premiumTrialExpiresAt": {
     "placeholders": {
       "date": {
@@ -6591,7 +6591,7 @@
       }
     }
   },
-  "premiumTrialTitle": "Premium trial",
+  "premiumTrialTitle": "Explore trial",
   "bookSourceCheckUpdates": "Check for updates",
   "@bookSourceCheckUpdates": {
     "description": "bookSourceCheckUpdates"
@@ -6673,7 +6673,7 @@
   "settingsGuestTitle": "Not signed in",
   "settingsGuestSubtitle": "Local reading does not require an account",
   "settingsWebDavConfigured": "WebDAV backup configured",
-  "settingsPremiumActive": "Premium active",
+  "settingsPremiumActive": "Explore active",
   "settingsPremiumSyncFailed": "Could not sync membership status",
   "settingsWebDavWorking": "WebDAV is working",
   "storeReaderLockedTitle": "Get Origo Read",
@@ -6694,7 +6694,7 @@
   "storeRestoreEmpty": "No restorable purchase was found. Check your store account and the linked Origo X account.",
   "basicRestoreEmpty": "No Origo Read purchase was found. Check your Origo account and store account.",
   "storeGoogleRefundTerms": "Request a refund through Google Play. A verified refund removes only the access associated with that purchase; independent entitlements remain valid.",
-  "storeReaderLegacyNotice": "Your existing basic reading access is preserved. Advanced source compatibility still requires Premium.",
+  "storeReaderLegacyNotice": "Your existing basic reading access is preserved. Advanced source compatibility still requires Explore.",
   "storePrivacyPurchaseBody": "Store verification data and an account identifier are sent to our server to verify and restore access. Google Play verification includes a purchase token and a hashed account identifier. We do not receive payment card details.",
   "@storeTrialStart": {
     "placeholders": {
@@ -6932,5 +6932,9 @@
   "storeReaderRestoring": "Restoring Basic edition purchase…",
   "@storeReaderRestoring": {
     "description": "App reader purchase status, separate from Premium."
-  }
+  },
+  "accountHaveRedemptionCode": "I have a code",
+  "accountRedemptionHint": "Redeem an Origo code for the account shown below.",
+  "accountRedemptionSuccess": "Code redeemed. Your access has been updated.",
+  "accountExploreIncludesReader": "Origo Read included"
 }

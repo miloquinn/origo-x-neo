@@ -2633,7 +2633,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      '允许书源访问本机、局域网和其他私网地址。高级版默认开启；请只使用你信任的书源。';
+      '允许书源访问本机、局域网和其他私网地址。探元默认开启；请只使用你信任的书源。';
 
   @override
   String get additionalSourcesImport => '导入更多协议书源';
@@ -2962,16 +2962,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountSignOut => '退出登录';
 
   @override
-  String get accountSupportTitle => '高级会员';
+  String get accountSupportTitle => '探元';
 
   @override
   String get accountSupportFreeSubtitle => '基础阅读功能可免费使用。';
 
   @override
-  String get accountSupportAction => '开通高级会员';
+  String get accountSupportAction => '开通探元';
 
   @override
-  String get accountSupporterBadge => '高级会员';
+  String get accountSupporterBadge => '探元';
 
   @override
   String get accountPasswordLengthHint => '至少 12 个字符';
@@ -5546,16 +5546,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountRecoveryCodesSaved => '我已保存恢复码';
 
   @override
-  String get accountPremiumLifetime => '永久高级版已解锁';
+  String get accountPremiumLifetime => '永久探元已解锁';
 
   @override
-  String get accountPremiumLifetimeSubtitle => '高级版权益已绑定到当前账号，并在支持的平台间同步。';
+  String get accountPremiumLifetimeSubtitle => '探元权益已绑定到当前账号，并在支持的平台间同步。';
 
   @override
-  String get accountRedemptionCode => '永久高级版卡密';
+  String get accountRedemptionCode => '兑换码';
 
   @override
-  String get accountRedeemPremium => '兑换并永久解锁';
+  String get accountRedeemPremium => '兑换';
 
   @override
   String get accountApplePurchase => '通过 App Store 永久解锁';
@@ -5576,22 +5576,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountApplePurchasePending => '购买正在等待 App Store 确认';
 
   @override
-  String get accountApplePurchaseSubmitted => '购买已提交，正在验证高级版权益';
+  String get accountApplePurchaseSubmitted => '购买已提交，正在验证探元权益';
 
   @override
   String get accountAppleRestoreSubmitted => '已请求恢复购买';
 
   @override
-  String get accountPremiumUnlocked => '永久高级版已解锁';
+  String get accountPremiumUnlocked => '永久探元已解锁';
 
   @override
-  String get accountPremiumUnlockedReferral => '兑换成功：你和邀请人都已解锁永久高级版';
+  String get accountPremiumUnlockedReferral => '兑换成功：你和邀请人都已解锁永久探元';
 
   @override
   String get accountInviteTitle => '邀请好友';
 
   @override
-  String get accountInviteSubtitle => '好友绑定你的邀请码并兑换永久高级版卡密后，你们两人都永久解锁。';
+  String get accountInviteSubtitle => '好友绑定你的邀请码并兑换永久探元卡密后，你们两人都永久解锁。';
 
   @override
   String get accountInviteMyCode => '我的邀请码';
@@ -5661,7 +5661,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountInviteStepRedeemTitle => '兑换卡密';
 
   @override
-  String get accountInviteStepRedeemBody => '朋友兑换永久高级版卡密后，你们两人都会立即解锁。';
+  String get accountInviteStepRedeemBody => '朋友兑换永久探元卡密后，你们两人都会立即解锁。';
 
   @override
   String get accountInviteMyBinding => '我的邀请关系';
@@ -5670,7 +5670,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountInviteBindIntro => '如果你也是被邀请来的，可以在这里绑定好友的邀请码。';
 
   @override
-  String get accountInviteBindingNotNeeded => '当前账号已解锁高级版，无需再绑定邀请码。';
+  String get accountInviteBindingNotNeeded => '当前账号已解锁探元，无需再绑定邀请码。';
 
   @override
   String get readingDataExportAction => '导出阅读数据';
@@ -6224,10 +6224,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountDeleteJoined => '注册时间';
 
   @override
-  String get accountDeletePremiumActive => '高级版已解锁（将被移除）';
+  String get accountDeletePremiumActive => '探元已解锁（将被移除）';
 
   @override
-  String get accountDeletePremiumNone => '高级版未解锁';
+  String get accountDeletePremiumNone => '探元未解锁';
 
   @override
   String get accountDeleteHasTitle => '这个账号目前拥有';
@@ -6279,7 +6279,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountDeleteTermsPremium =>
-      '高级版权益会被删除。无论通过卡密、邀请奖励还是 Apple 购买获得，都会一并失效。';
+      '探元权益会被删除。无论通过卡密、邀请奖励还是 Apple 购买获得，都会一并失效。';
 
   @override
   String get accountDeleteTermsReferrals =>
@@ -6290,7 +6290,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountDeleteTermsApple =>
-      '你在 App Store 购买过终身高级版。注销不会退款，也不会取消任何 App Store 交易——退款只能向 Apple 申请。购买凭证会与你的账号解绑并保留，因此你之后可以用同一个 Apple ID 在新账号里点击「恢复购买」，重新拿回高级版权益。';
+      '你在 App Store 购买过终身探元。注销不会退款，也不会取消任何 App Store 交易——退款只能向 Apple 申请。购买凭证会与你的账号解绑并保留，因此你之后可以用同一个 Apple ID 在新账号里点击「恢复购买」，重新拿回探元权益。';
 
   @override
   String get accountDeleteTermsLocalData =>
@@ -6491,16 +6491,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get premiumSyncFailed => '会员权益同步失败，将自动重试；连接失败不会撤销已验证的权益。';
 
   @override
-  String get premiumGrantedAccess => '你已获赠高级会员，无需重复购买。';
+  String get premiumGrantedAccess => '你已获赠探元，无需重复购买。';
 
   @override
-  String get premiumOtherChannelAccess => '你已通过其他渠道开通高级会员，无需重复购买。';
+  String get premiumOtherChannelAccess => '你已通过其他渠道开通探元，无需重复购买。';
 
   @override
-  String get premiumAppleAccess => '你已通过 App Store 开通高级会员，无需重复购买。';
+  String get premiumAppleAccess => '你已通过 App Store 开通探元，无需重复购买。';
 
   @override
-  String get premiumExistingAccess => '你已开通高级会员，无需重复购买。';
+  String get premiumExistingAccess => '你已开通探元，无需重复购买。';
 
   @override
   String get premiumSyncPending => '会员状态待同步';
@@ -6629,11 +6629,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String premiumTrialExpiresAt(String date) {
-    return '高级版体验有效至 $date。';
+    return '探元体验有效至 $date。';
   }
 
   @override
-  String get premiumTrialTitle => '高级版体验';
+  String get premiumTrialTitle => '探元体验';
 
   @override
   String get bookSourceCheckUpdates => '检查更新';
@@ -6725,7 +6725,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWebDavConfigured => 'WebDAV 备份已配置';
 
   @override
-  String get settingsPremiumActive => '高级版已开通';
+  String get settingsPremiumActive => '探元已开通';
 
   @override
   String get settingsPremiumSyncFailed => '暂时无法同步会员状态';
@@ -6803,7 +6803,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '可通过 Google Play 申请退款。退款或撤销经验证后，仅移除该笔购买对应的授权，其他独立权益继续有效。';
 
   @override
-  String get storeReaderLegacyNotice => '已为你保留原有基础阅读资格。高级书源兼容仍需要高级版。';
+  String get storeReaderLegacyNotice => '已为你保留原有基础阅读资格。高级书源兼容仍需要探元。';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7097,6 +7097,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get storeReaderRestoring => '正在恢复基础版购买…';
+
+  @override
+  String get accountHaveRedemptionCode => '我有兑换码';
+
+  @override
+  String get accountRedemptionHint => '兑换后，权益将绑定到下方 Origo 账号。';
+
+  @override
+  String get accountRedemptionSuccess => '兑换成功，权益已更新';
+
+  @override
+  String get accountExploreIncludesReader => '已包含 Origo 开卷';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -9728,7 +9740,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsPrivateBookSourceNetworkSubtitle =>
-      '允許書源存取本機、區域網路和其他私網位址。高級版預設開啟；請只使用你信任的書源。';
+      '允許書源存取本機、區域網路和其他私網位址。探元預設開啟；請只使用你信任的書源。';
 
   @override
   String get additionalSourcesImport => '匯入更多協議書源';
@@ -10057,16 +10069,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountSignOut => '登出';
 
   @override
-  String get accountSupportTitle => '高級會員';
+  String get accountSupportTitle => '探元';
 
   @override
   String get accountSupportFreeSubtitle => '基本閱讀功能可免費使用。';
 
   @override
-  String get accountSupportAction => '開通高級會員';
+  String get accountSupportAction => '開通探元';
 
   @override
-  String get accountSupporterBadge => '高級會員';
+  String get accountSupporterBadge => '探元';
 
   @override
   String get accountPasswordLengthHint => '至少 12 個字元';
@@ -12641,16 +12653,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountRecoveryCodesSaved => '我已儲存恢復碼';
 
   @override
-  String get accountPremiumLifetime => '永久高級版已解鎖';
+  String get accountPremiumLifetime => '永久探元已解鎖';
 
   @override
-  String get accountPremiumLifetimeSubtitle => '高級版權益已綁定至目前帳號，並在支援的平台間同步。';
+  String get accountPremiumLifetimeSubtitle => '探元權益已綁定至目前帳號，並在支援的平台間同步。';
 
   @override
-  String get accountRedemptionCode => '永久高級版卡密';
+  String get accountRedemptionCode => '兌換碼';
 
   @override
-  String get accountRedeemPremium => '兌換並永久解鎖';
+  String get accountRedeemPremium => '兌換';
 
   @override
   String get accountApplePurchase => '透過 App Store 永久解鎖';
@@ -12671,22 +12683,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountApplePurchasePending => '購買正在等待 App Store 確認';
 
   @override
-  String get accountApplePurchaseSubmitted => '購買已提交，正在驗證高級版權益';
+  String get accountApplePurchaseSubmitted => '購買已提交，正在驗證探元權益';
 
   @override
   String get accountAppleRestoreSubmitted => '已請求恢復購買';
 
   @override
-  String get accountPremiumUnlocked => '永久高級版已解鎖';
+  String get accountPremiumUnlocked => '永久探元已解鎖';
 
   @override
-  String get accountPremiumUnlockedReferral => '兌換成功：你和邀請人都已解鎖永久高級版';
+  String get accountPremiumUnlockedReferral => '兌換成功：你和邀請人都已解鎖永久探元';
 
   @override
   String get accountInviteTitle => '邀請好友';
 
   @override
-  String get accountInviteSubtitle => '好友綁定你的邀請碼並兌換永久高級版卡密後，你們兩人都永久解鎖。';
+  String get accountInviteSubtitle => '好友綁定你的邀請碼並兌換永久探元卡密後，你們兩人都永久解鎖。';
 
   @override
   String get accountInviteMyCode => '我的邀請碼';
@@ -12756,7 +12768,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountInviteStepRedeemTitle => '兌換卡密';
 
   @override
-  String get accountInviteStepRedeemBody => '好友兌換永久高級版卡密後，你們兩人都會立即解鎖。';
+  String get accountInviteStepRedeemBody => '好友兌換永久探元卡密後，你們兩人都會立即解鎖。';
 
   @override
   String get accountInviteMyBinding => '我的邀請關係';
@@ -12765,7 +12777,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountInviteBindIntro => '如果你也是受邀而來，可以在這裡綁定好友的邀請碼。';
 
   @override
-  String get accountInviteBindingNotNeeded => '目前帳號已解鎖高級版，無需再綁定邀請碼。';
+  String get accountInviteBindingNotNeeded => '目前帳號已解鎖探元，無需再綁定邀請碼。';
 
   @override
   String get readingDataExportAction => '匯出閱讀資料';
@@ -13319,10 +13331,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountDeleteJoined => '註冊時間';
 
   @override
-  String get accountDeletePremiumActive => '進階版已解鎖（將被移除）';
+  String get accountDeletePremiumActive => '探元已解鎖（將被移除）';
 
   @override
-  String get accountDeletePremiumNone => '進階版未解鎖';
+  String get accountDeletePremiumNone => '探元未解鎖';
 
   @override
   String get accountDeleteHasTitle => '這個帳號目前擁有';
@@ -13374,7 +13386,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get accountDeleteTermsPremium =>
-      '進階版權益會被刪除。無論透過卡密、邀請獎勵還是 Apple 購買取得，都會一併失效。';
+      '探元權益會被刪除。無論透過卡密、邀請獎勵還是 Apple 購買取得，都會一併失效。';
 
   @override
   String get accountDeleteTermsReferrals =>
@@ -13385,7 +13397,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get accountDeleteTermsApple =>
-      '你在 App Store 購買過終身進階版。註銷不會退款，也不會取消任何 App Store 交易——退款只能向 Apple 申請。購買憑證會與你的帳號解除綁定並保留，因此你之後可以用同一個 Apple ID 在新帳號裡點擊「恢復購買」，重新拿回進階版權益。';
+      '你在 App Store 購買過終身探元。註銷不會退款，也不會取消任何 App Store 交易——退款只能向 Apple 申請。購買憑證會與你的帳號解除綁定並保留，因此你之後可以用同一個 Apple ID 在新帳號裡點擊「恢復購買」，重新拿回探元權益。';
 
   @override
   String get accountDeleteTermsLocalData =>
@@ -13587,16 +13599,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get premiumSyncFailed => '會員權益同步失敗，將自動重試；連線失敗不會撤銷已驗證的權益。';
 
   @override
-  String get premiumGrantedAccess => '你已獲贈進階會員，無需重複購買。';
+  String get premiumGrantedAccess => '你已獲贈探元，無需重複購買。';
 
   @override
-  String get premiumOtherChannelAccess => '你已透過其他管道開通進階會員，無需重複購買。';
+  String get premiumOtherChannelAccess => '你已透過其他管道開通探元，無需重複購買。';
 
   @override
-  String get premiumAppleAccess => '你已透過 App Store 開通進階會員，無需重複購買。';
+  String get premiumAppleAccess => '你已透過 App Store 開通探元，無需重複購買。';
 
   @override
-  String get premiumExistingAccess => '你已開通進階會員，無需重複購買。';
+  String get premiumExistingAccess => '你已開通探元，無需重複購買。';
 
   @override
   String get premiumSyncPending => '會員狀態待同步';
@@ -13725,11 +13737,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String premiumTrialExpiresAt(String date) {
-    return '進階版體驗有效至 $date。';
+    return '探元體驗有效至 $date。';
   }
 
   @override
-  String get premiumTrialTitle => '進階版體驗';
+  String get premiumTrialTitle => '探元體驗';
 
   @override
   String get bookSourceCheckUpdates => '檢查更新';
@@ -13821,7 +13833,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsWebDavConfigured => 'WebDAV 備份已設定';
 
   @override
-  String get settingsPremiumActive => '高級版已開通';
+  String get settingsPremiumActive => '探元已開通';
 
   @override
   String get settingsPremiumSyncFailed => '暫時無法同步會員狀態';
@@ -13899,7 +13911,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '可透過 Google Play 申請退款。退款經驗證後，僅移除該筆購買對應的授權，其他獨立權益繼續有效。';
 
   @override
-  String get storeReaderLegacyNotice => '已為你保留原有基礎閱讀資格。進階書源相容仍需要進階版。';
+  String get storeReaderLegacyNotice => '已為你保留原有基礎閱讀資格。進階書源相容仍需要探元。';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -14193,4 +14205,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get storeReaderRestoring => '正在恢復基礎版購買…';
+
+  @override
+  String get accountHaveRedemptionCode => '我有兌換碼';
+
+  @override
+  String get accountRedemptionHint => '兌換後，權益將綁定至下方 Origo 帳號。';
+
+  @override
+  String get accountRedemptionSuccess => '兌換成功，權益已更新';
+
+  @override
+  String get accountExploreIncludesReader => '已包含 Origo 開卷';
 }
