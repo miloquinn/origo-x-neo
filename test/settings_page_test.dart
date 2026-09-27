@@ -543,6 +543,40 @@ void main() {
     await _disposeSettingsPage(tester);
   });
 
+  testWidgets('welcome replay returns without changing saved consent', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'userAgreementAccepted': true,
+      'agreementAcceptedVersion': '2026-07-19.2',
+      'agreementAcceptedLocale': 'zh',
+      'agreementAcceptedDate': '2026-09-28T00:00:00Z',
+      'thirdPartySourceBoundaryAccepted': true,
+    });
+    final prefs = await SharedPreferences.getInstance();
+    final before = {for (final key in prefs.getKeys()) key: prefs.get(key)};
+    await _pumpSettingsPage(tester, locale: const Locale('en'));
+    await _scrollToAboutCard(tester);
+    final entry = find.byKey(const ValueKey('settings-welcome-link'));
+    await tester.ensureVisible(entry);
+    await tester.tap(entry);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('welcomePager')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('welcomeSkip')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('agreementTermsDisclosure')), findsOneWidget);
+    expect(find.text('Done'), findsOneWidget);
+    expect(find.byKey(const Key('welcomeDecline')), findsNothing);
+    await tester.tap(find.byKey(const Key('welcomeNext')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('welcomePager')), findsNothing);
+    for (final entry in before.entries) {
+      expect(prefs.get(entry.key), entry.value);
+    }
+    expect(tester.takeException(), isNull);
+    await _disposeSettingsPage(tester);
+  });
+
   testWidgets('keeps navigation to third-party licenses available', (
     tester,
   ) async {

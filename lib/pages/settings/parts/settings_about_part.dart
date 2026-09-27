@@ -73,6 +73,12 @@ extension _SettingsAboutPart on _SettingsPageState {
             icon: Icons.history_rounded,
             onTap: _openChangelogHistory,
           ),
+          _buildAboutNavigationLink(
+            key: const ValueKey('settings-welcome-link'),
+            title: l10n.settingsWelcomeGuide,
+            icon: Icons.auto_stories_outlined,
+            onTap: _openWelcomeGuide,
+          ),
           if (!AppDistribution.suppressesExternalUpdates)
             _buildAboutNavigationLink(
               key: const ValueKey('settings-check-updates-link'),
@@ -227,6 +233,18 @@ extension _SettingsAboutPart on _SettingsPageState {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _openWelcomeGuide() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (pageContext) => ReadingWelcomePage(
+          finalContent: const AgreementSummary(),
+          completionLabel: pageContext.l10n.settingsDone,
+          onComplete: () => Navigator.of(pageContext).pop(),
         ),
       ),
     );

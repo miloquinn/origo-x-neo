@@ -2124,5 +2124,15 @@
   "accountHaveRedemptionCode": "У меня есть код",
   "accountRedemptionHint": "Активируйте код Origo для указанной ниже учётной записи.",
   "accountRedemptionSuccess": "Код активирован. Ваш доступ обновлён.",
-  "accountExploreIncludesReader": "Origo Read включён"
+  "accountExploreIncludesReader": "Origo Read включён",
+  "welcomeChapterOneTitle": "Одна книга —\nцелый новый мир.",
+  "welcomeChapterOneBody": "С этого мгновения\nпусть хорошие истории станут частью вашей жизни.",
+  "welcomeChapterTwoTitle": "Оставьте время\nдля чтения.",
+  "welcomeChapterTwoBody": "Откройте книгу и замедлитесь.\nНайдите свой ритм чтения.",
+  "welcomeChapterThreeTitle": "Ваши книги —\nотдельный мир.",
+  "welcomeChapterThreeBody": "Храните любимые истории\nна своей книжной полке, чтобы возвращаться к ним в любой момент.",
+  "welcomeSkipIntroduction": "Пропустить знакомство",
+  "welcomeStartReading": "Начать чтение",
+  "welcomeTagline": "Хорошие истории. Не спешите.",
+  "settingsWelcomeGuide": "Вводное руководство"
 }

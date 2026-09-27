@@ -7109,6 +7109,36 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountExploreIncludesReader => '已包含 Origo 开卷';
+
+  @override
+  String get welcomeChapterOneTitle => '一本书，\n一个新世界。';
+
+  @override
+  String get welcomeChapterOneBody => '从此刻开始，\n让好故事走进你的日常。';
+
+  @override
+  String get welcomeChapterTwoTitle => '把时间，\n留给阅读。';
+
+  @override
+  String get welcomeChapterTwoBody => '翻开书页，放慢一点。\n找到属于你的阅读节奏。';
+
+  @override
+  String get welcomeChapterThreeTitle => '你的书，\n自成天地。';
+
+  @override
+  String get welcomeChapterThreeBody => '收藏喜欢的故事，\n在自己的书架上，随时重逢。';
+
+  @override
+  String get welcomeSkipIntroduction => '跳过介绍';
+
+  @override
+  String get welcomeStartReading => '开始阅读';
+
+  @override
+  String get welcomeTagline => '好故事，慢慢读。';
+
+  @override
+  String get settingsWelcomeGuide => '欢迎引导';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -14217,4 +14247,34 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get accountExploreIncludesReader => '已包含 Origo 開卷';
+
+  @override
+  String get welcomeChapterOneTitle => '一本書，\n一個新世界。';
+
+  @override
+  String get welcomeChapterOneBody => '從此刻開始，\n讓好故事走進你的日常。';
+
+  @override
+  String get welcomeChapterTwoTitle => '把時間，\n留給閱讀。';
+
+  @override
+  String get welcomeChapterTwoBody => '翻開書頁，放慢一點。\n找到屬於你的閱讀節奏。';
+
+  @override
+  String get welcomeChapterThreeTitle => '你的書，\n自成天地。';
+
+  @override
+  String get welcomeChapterThreeBody => '收藏喜歡的故事，\n在自己的書架上，隨時重逢。';
+
+  @override
+  String get welcomeSkipIntroduction => '跳過介紹';
+
+  @override
+  String get welcomeStartReading => '開始閱讀';
+
+  @override
+  String get welcomeTagline => '好故事，慢慢讀。';
+
+  @override
+  String get settingsWelcomeGuide => '歡迎導覽';
 }

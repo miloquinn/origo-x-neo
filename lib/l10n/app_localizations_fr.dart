@@ -7693,4 +7693,37 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get accountExploreIncludesReader => 'Origo Read inclus';
+
+  @override
+  String get welcomeChapterOneTitle => 'Un livre,\nun monde nouveau.';
+
+  @override
+  String get welcomeChapterOneBody =>
+      'Dès maintenant,\nlaissez les belles histoires entrer dans votre quotidien.';
+
+  @override
+  String get welcomeChapterTwoTitle => 'Prenez le temps\nde lire.';
+
+  @override
+  String get welcomeChapterTwoBody =>
+      'Ouvrez le livre et ralentissez.\nTrouvez votre propre rythme de lecture.';
+
+  @override
+  String get welcomeChapterThreeTitle => 'Vos livres,\nun monde à part.';
+
+  @override
+  String get welcomeChapterThreeBody =>
+      'Gardez les histoires que vous aimez\nsur votre propre étagère pour les retrouver à tout moment.';
+
+  @override
+  String get welcomeSkipIntroduction => 'Passer l’introduction';
+
+  @override
+  String get welcomeStartReading => 'Commencer à lire';
+
+  @override
+  String get welcomeTagline => 'De belles histoires. Prenez votre temps.';
+
+  @override
+  String get settingsWelcomeGuide => 'Guide de bienvenue';
 }

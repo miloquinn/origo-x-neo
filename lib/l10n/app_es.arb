@@ -2124,5 +2124,15 @@
   "accountHaveRedemptionCode": "Tengo un código",
   "accountRedemptionHint": "Canjea un código de Origo para la cuenta que aparece abajo.",
   "accountRedemptionSuccess": "Código canjeado. Tu acceso se ha actualizado.",
-  "accountExploreIncludesReader": "Origo Read incluido"
+  "accountExploreIncludesReader": "Origo Read incluido",
+  "welcomeChapterOneTitle": "Un libro,\nun mundo nuevo.",
+  "welcomeChapterOneBody": "Desde este momento,\ndeja que las buenas historias formen parte de tu día a día.",
+  "welcomeChapterTwoTitle": "Guarda tiempo\npara leer.",
+  "welcomeChapterTwoBody": "Abre el libro y baja el ritmo.\nEncuentra tu propio ritmo de lectura.",
+  "welcomeChapterThreeTitle": "Tus libros,\nun mundo propio.",
+  "welcomeChapterThreeBody": "Guarda las historias que te gustan\nen tu propia estantería para volver a ellas cuando quieras.",
+  "welcomeSkipIntroduction": "Omitir introducción",
+  "welcomeStartReading": "Empezar a leer",
+  "welcomeTagline": "Buenas historias. Sin prisa.",
+  "settingsWelcomeGuide": "Guía de bienvenida"
 }

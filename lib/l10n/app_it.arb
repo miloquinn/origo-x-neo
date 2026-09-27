@@ -2124,5 +2124,15 @@
   "accountHaveRedemptionCode": "Ho un codice",
   "accountRedemptionHint": "Riscatta un codice Origo per l’account indicato qui sotto.",
   "accountRedemptionSuccess": "Codice riscattato. Il tuo accesso è stato aggiornato.",
-  "accountExploreIncludesReader": "Origo Read incluso"
+  "accountExploreIncludesReader": "Origo Read incluso",
+  "welcomeChapterOneTitle": "Un libro,\nun mondo nuovo.",
+  "welcomeChapterOneBody": "Da questo momento,\nlascia che le belle storie entrino nella tua quotidianità.",
+  "welcomeChapterTwoTitle": "Prenditi il tempo\nper leggere.",
+  "welcomeChapterTwoBody": "Apri il libro e rallenta.\nTrova il tuo ritmo di lettura.",
+  "welcomeChapterThreeTitle": "I tuoi libri,\nun mondo tutto loro.",
+  "welcomeChapterThreeBody": "Conserva le storie che ami\nsul tuo scaffale, pronte per essere ritrovate in ogni momento.",
+  "welcomeSkipIntroduction": "Salta l’introduzione",
+  "welcomeStartReading": "Inizia a leggere",
+  "welcomeTagline": "Belle storie. Senza fretta.",
+  "settingsWelcomeGuide": "Guida introduttiva"
 }

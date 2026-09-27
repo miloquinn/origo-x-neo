@@ -3707,5 +3707,15 @@
   "accountHaveRedemptionCode": "我有兑换码",
   "accountRedemptionHint": "兑换后，权益将绑定到下方 Origo 账号。",
   "accountRedemptionSuccess": "兑换成功，权益已更新",
-  "accountExploreIncludesReader": "已包含 Origo 开卷"
+  "accountExploreIncludesReader": "已包含 Origo 开卷",
+  "welcomeChapterOneTitle": "一本书，\n一个新世界。",
+  "welcomeChapterOneBody": "从此刻开始，\n让好故事走进你的日常。",
+  "welcomeChapterTwoTitle": "把时间，\n留给阅读。",
+  "welcomeChapterTwoBody": "翻开书页，放慢一点。\n找到属于你的阅读节奏。",
+  "welcomeChapterThreeTitle": "你的书，\n自成天地。",
+  "welcomeChapterThreeBody": "收藏喜欢的故事，\n在自己的书架上，随时重逢。",
+  "welcomeSkipIntroduction": "跳过介绍",
+  "welcomeStartReading": "开始阅读",
+  "welcomeTagline": "好故事，慢慢读。",
+  "settingsWelcomeGuide": "欢迎引导"
 }

@@ -7613,4 +7613,37 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountExploreIncludesReader => 'Origo Read включён';
+
+  @override
+  String get welcomeChapterOneTitle => 'Одна книга —\nцелый новый мир.';
+
+  @override
+  String get welcomeChapterOneBody =>
+      'С этого мгновения\nпусть хорошие истории станут частью вашей жизни.';
+
+  @override
+  String get welcomeChapterTwoTitle => 'Оставьте время\nдля чтения.';
+
+  @override
+  String get welcomeChapterTwoBody =>
+      'Откройте книгу и замедлитесь.\nНайдите свой ритм чтения.';
+
+  @override
+  String get welcomeChapterThreeTitle => 'Ваши книги —\nотдельный мир.';
+
+  @override
+  String get welcomeChapterThreeBody =>
+      'Храните любимые истории\nна своей книжной полке, чтобы возвращаться к ним в любой момент.';
+
+  @override
+  String get welcomeSkipIntroduction => 'Пропустить знакомство';
+
+  @override
+  String get welcomeStartReading => 'Начать чтение';
+
+  @override
+  String get welcomeTagline => 'Хорошие истории. Не спешите.';
+
+  @override
+  String get settingsWelcomeGuide => 'Вводное руководство';
 }

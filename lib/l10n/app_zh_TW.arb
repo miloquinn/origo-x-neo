@@ -3418,5 +3418,15 @@
   "accountHaveRedemptionCode": "我有兌換碼",
   "accountRedemptionHint": "兌換後，權益將綁定至下方 Origo 帳號。",
   "accountRedemptionSuccess": "兌換成功，權益已更新",
-  "accountExploreIncludesReader": "已包含 Origo 開卷"
+  "accountExploreIncludesReader": "已包含 Origo 開卷",
+  "welcomeChapterOneTitle": "一本書，\n一個新世界。",
+  "welcomeChapterOneBody": "從此刻開始，\n讓好故事走進你的日常。",
+  "welcomeChapterTwoTitle": "把時間，\n留給閱讀。",
+  "welcomeChapterTwoBody": "翻開書頁，放慢一點。\n找到屬於你的閱讀節奏。",
+  "welcomeChapterThreeTitle": "你的書，\n自成天地。",
+  "welcomeChapterThreeBody": "收藏喜歡的故事，\n在自己的書架上，隨時重逢。",
+  "welcomeSkipIntroduction": "跳過介紹",
+  "welcomeStartReading": "開始閱讀",
+  "welcomeTagline": "好故事，慢慢讀。",
+  "settingsWelcomeGuide": "歡迎導覽"
 }

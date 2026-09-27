@@ -26,133 +26,101 @@ void main() {
       await UserAgreementService.acceptAgreement(locale: 'en');
 
       expect(await UserAgreementService.hasUserAcceptedAgreement(), isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getString('agreementAcceptedVersion'),
+        UserAgreementService.currentAgreementVersion,
+      );
+      expect(prefs.getString('agreementAcceptedLocale'), 'en');
+      expect(prefs.getBool('thirdPartySourceBoundaryAccepted'), isTrue);
     },
   );
 
-  testWidgets('welcome flow separates terms, source, and privacy consent', (
+  testWidgets('one explicit acceptance completes the welcome and legal flow', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(430, 844);
     addTearDown(tester.view.reset);
-    var agreed = false;
+    var agreedCount = 0;
 
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: UserAgreementPage(onAgreed: () => agreed = true),
+        home: UserAgreementPage(onAgreed: () => agreedCount++),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('agreementIntroductionPage')), findsOneWidget);
-    expect(find.byKey(const Key('agreementStepDot0')), findsOneWidget);
-    expect(find.byKey(const Key('agreementStepDot1')), findsOneWidget);
-    expect(find.byKey(const Key('agreementStepDot2')), findsOneWidget);
-    expect(find.byKey(const Key('agreementStepDot3')), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-    expect(find.text('2'), findsNothing);
-    expect(find.text('3'), findsNothing);
-    expect(find.text('4'), findsNothing);
-    expect(find.byKey(const Key('agreementTermsPage')), findsNothing);
-    expect(find.byKey(const Key('agreementSourcePage')), findsNothing);
-    expect(find.byKey(const Key('agreementPrivacyPage')), findsNothing);
-    expect(find.byKey(const Key('agreementSourceBoundaryCard')), findsNothing);
+    expect(find.byKey(const Key('welcomePager')), findsOneWidget);
+    expect(find.byKey(const Key('agreementTermsDisclosure')), findsNothing);
 
-    await tester.tap(find.byKey(const Key('agreementIntroductionNextButton')));
+    await tester.tap(find.byKey(const Key('welcomeSkip')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('agreementTermsPage')), findsOneWidget);
-    expect(find.byKey(const Key('agreementSourcePage')), findsNothing);
-    expect(find.byKey(const Key('agreementSourceBoundaryCard')), findsNothing);
+    expect(find.byKey(const Key('welcomeAgreements')), findsOneWidget);
+    expect(find.byKey(const Key('agreementTermsDisclosure')), findsOneWidget);
+    expect(find.byKey(const Key('agreementSourceDisclosure')), findsOneWidget);
+    expect(find.byKey(const Key('agreementPrivacyDisclosure')), findsOneWidget);
+    expect(find.text('Agree and continue'), findsOneWidget);
+    expect(await UserAgreementService.hasUserAcceptedAgreement(), isFalse);
 
-    FilledButton termsNextButton() => tester.widget<FilledButton>(
-      find.byKey(const Key('agreementTermsNextButton')),
-    );
-
-    expect(termsNextButton().onPressed, isNull);
-
-    await tester.tap(find.byKey(const Key('agreementTermsConsent')));
+    await tester.tap(find.byKey(const Key('welcomeNext')));
+    await tester.tap(find.byKey(const Key('welcomeNext')));
     await tester.pump();
-    expect(termsNextButton().onPressed, isNotNull);
+    await tester.pump(const Duration(milliseconds: 50));
 
-    await tester.tap(find.byKey(const Key('agreementTermsNextButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('agreementSourcePage')), findsOneWidget);
-    expect(
-      find.byKey(const Key('agreementSourceBoundaryCard')),
-      findsOneWidget,
-    );
-    expect(find.textContaining('provides no source addresses'), findsOneWidget);
-
-    FilledButton sourceNextButton() => tester.widget<FilledButton>(
-      find.byKey(const Key('agreementSourceNextButton')),
-    );
-    expect(sourceNextButton().onPressed, isNull);
-
-    await tester.tap(find.byKey(const Key('agreementSourceConsent')));
-    await tester.pump();
-    expect(sourceNextButton().onPressed, isNotNull);
-
-    await tester.tap(find.byKey(const Key('agreementSourceNextButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('agreementPrivacyPage')), findsOneWidget);
-    expect(
-      find.textContaining('retained for no more than 30 days'),
-      findsWidgets,
-    );
-
-    FilledButton continueButton() => tester.widget<FilledButton>(
-      find.byKey(const Key('agreementContinueButton')),
-    );
-
-    expect(continueButton().onPressed, isNull);
-
-    await tester.tap(find.byKey(const Key('agreementPrivacyConsent')));
-    await tester.pump();
-    expect(continueButton().onPressed, isNotNull);
-
-    await tester.tap(find.byKey(const Key('agreementContinueButton')));
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(agreed, isTrue);
+    expect(agreedCount, 1);
     expect(await UserAgreementService.hasUserAcceptedAgreement(), isTrue);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('agreement flow respects reduced motion', (tester) async {
+  testWidgets('declining requires confirmation before invoking onDisagreed', (
+    tester,
+  ) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(430, 844);
     addTearDown(tester.view.reset);
+    var disagreed = false;
 
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: true),
-          child: child!,
+        home: UserAgreementPage(
+          onAgreed: () {},
+          onDisagreed: () => disagreed = true,
         ),
-        home: UserAgreementPage(onAgreed: () {}),
       ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('welcomeSkip')));
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('agreementIntroductionNextButton')));
-    await tester.pump();
+    await tester.tap(find.byKey(const Key('welcomeDecline')));
+    await tester.pumpAndSettle();
+    expect(find.text('Decline the terms?'), findsOneWidget);
+    expect(disagreed, isFalse);
 
-    expect(find.byKey(const Key('agreementTermsPage')), findsOneWidget);
-    expect(find.byKey(const Key('agreementIntroductionPage')), findsNothing);
+    await tester.tap(find.text('Go back'));
+    await tester.pumpAndSettle();
+    expect(disagreed, isFalse);
+
+    await tester.tap(find.byKey(const Key('welcomeDecline')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Exit'));
+    await tester.pumpAndSettle();
+
+    expect(disagreed, isTrue);
+    expect(await UserAgreementService.hasUserAcceptedAgreement(), isFalse);
     expect(tester.takeException(), isNull);
   });
 
   for (final locale in AppLocalizations.supportedLocales) {
-    testWidgets('agreement flow fits a narrow screen in $locale', (
+    testWidgets('welcome agreement flow fits a narrow screen in $locale', (
       tester,
     ) async {
       tester.view.devicePixelRatio = 1;
@@ -168,27 +136,12 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull, reason: 'introduction in $locale');
+      expect(tester.takeException(), isNull, reason: 'welcome in $locale');
 
-      await tester.tap(
-        find.byKey(const Key('agreementIntroductionNextButton')),
-      );
+      await tester.tap(find.byKey(const Key('welcomeSkip')));
       await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull, reason: 'terms in $locale');
-      await tester.tap(find.byKey(const Key('agreementTermsConsent')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('agreementTermsNextButton')));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('agreementSourcePage')), findsOneWidget);
-      expect(tester.takeException(), isNull, reason: 'source in $locale');
-      await tester.tap(find.byKey(const Key('agreementSourceConsent')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('agreementSourceNextButton')));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('agreementPrivacyPage')), findsOneWidget);
-      expect(tester.takeException(), isNull, reason: 'privacy in $locale');
+      expect(find.byKey(const Key('agreementTermsDisclosure')), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'agreement in $locale');
     });
   }
 }

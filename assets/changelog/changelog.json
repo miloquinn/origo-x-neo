@@ -3,6 +3,20 @@
     "entries": [
         {
             "version": "2.7.2",
+            "buildNumber": "260928002",
+            "notes": {
+                "zh": [
+                    "补齐新版欢迎引导，以连续的书本动画串联介绍与协议摘要，适配强调色、深浅主题及多语言。",
+                    "保留 Android 原生 Google 登录；官网版基础阅读免费使用，不授予账号开卷身份，探元仍按账号权益开通。"
+                ],
+                "en": [
+                    "Include the redesigned welcome journey with continuous book animation, expandable agreement summaries, theme colors and localization.",
+                    "Keep native Google sign-in on Android. Direct downloads allow free local reading without granting account Read ownership; Explore still requires an account entitlement."
+                ]
+            }
+        },
+        {
+            "version": "2.7.2",
             "buildNumber": "260928001",
             "notes": {
                 "zh": [

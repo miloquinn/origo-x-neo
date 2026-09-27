@@ -3384,5 +3384,15 @@
   "accountHaveRedemptionCode": "コードをお持ちの方",
   "accountRedemptionHint": "Origo コードを引き換えると、下記のアカウントに利用権が付与されます。",
   "accountRedemptionSuccess": "引き換えが完了し、利用権が更新されました。",
-  "accountExploreIncludesReader": "Origo Read を含む"
+  "accountExploreIncludesReader": "Origo Read を含む",
+  "welcomeChapterOneTitle": "一冊の本、\nひとつの新しい世界。",
+  "welcomeChapterOneBody": "この瞬間から、\n素敵な物語を毎日の一部に。",
+  "welcomeChapterTwoTitle": "読書のための\n時間を。",
+  "welcomeChapterTwoBody": "本を開いて、少しゆっくり。\n自分らしい読書のリズムを見つけましょう。",
+  "welcomeChapterThreeTitle": "あなたの本が、\nひとつの世界に。",
+  "welcomeChapterThreeBody": "好きな物語を自分の本棚に並べて、\nいつでも再会できます。",
+  "welcomeSkipIntroduction": "紹介をスキップ",
+  "welcomeStartReading": "読書を始める",
+  "welcomeTagline": "いい物語を、ゆっくりと。",
+  "settingsWelcomeGuide": "使い方ガイド"
 }

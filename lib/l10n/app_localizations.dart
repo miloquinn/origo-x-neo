@@ -13087,6 +13087,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Origo Read included'**
   String get accountExploreIncludesReader;
+
+  /// No description provided for @welcomeChapterOneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One book,\na whole new world.'**
+  String get welcomeChapterOneTitle;
+
+  /// No description provided for @welcomeChapterOneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'From this moment,\nlet great stories become part of your day.'**
+  String get welcomeChapterOneBody;
+
+  /// No description provided for @welcomeChapterTwoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make time\nfor reading.'**
+  String get welcomeChapterTwoTitle;
+
+  /// No description provided for @welcomeChapterTwoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the pages and slow down.\nFind your own reading rhythm.'**
+  String get welcomeChapterTwoBody;
+
+  /// No description provided for @welcomeChapterThreeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your books,\na world of their own.'**
+  String get welcomeChapterThreeTitle;
+
+  /// No description provided for @welcomeChapterThreeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the stories you love\non your own shelf, ready to meet again.'**
+  String get welcomeChapterThreeBody;
+
+  /// No description provided for @welcomeSkipIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip introduction'**
+  String get welcomeSkipIntroduction;
+
+  /// No description provided for @welcomeStartReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Start reading'**
+  String get welcomeStartReading;
+
+  /// No description provided for @welcomeTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Good stories. Take your time.'**
+  String get welcomeTagline;
+
+  /// No description provided for @settingsWelcomeGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome guide'**
+  String get settingsWelcomeGuide;
 }
 
 class _AppLocalizationsDelegate

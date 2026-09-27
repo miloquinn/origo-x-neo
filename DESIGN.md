@@ -1,5 +1,16 @@
 # Design
 
+## Welcome motion concept — 2026-09-26
+
+- Status: Integrated; 2026-09-26 用户确认采用并完成原欢迎包真机验收；2026-09-28 补入内购测试分支，自动化回归通过，本次新包真机效果待用户确认。
+- Specification: `docs/welcome-motion-concept.md`，约束正式欢迎页与独立预览。
+- Surface: `lib/pages/onboarding/reading_welcome_page.dart`; preview entry: `tool/welcome_preview.dart`。
+- Motion: 同一本书绕左书脊向读者抬起、向左展开，再合拢进入书架；可逆、可中途停留；支持减少动态效果。
+- Visual: 使用 App ColorScheme 与 TextTheme，支持强调色、深浅模式及用户字体；以几何书封为主视觉，标题 30–34px，左对齐短文案。
+- Brand mark: 欢迎页左上角和演示终点统一使用现有 AppBrandIcon / assets/images/app_icon.png，不以通用书本图标代替品牌标识。
+- Flow: 书架自然收拢为第四页顶部的小书；同一 PageController 中显示三项可展开协议摘要，全文按需打开，底部一次明确同意。跳过只跳过介绍，导航手势与方向键不代表同意。
+- Boundary: 正式 UserAgreementPage 复用同一欢迎组件和协议摘要，保留现有同意版本、持久化与错误处理；预览不写同意记录。介绍已本地化。正式启动按现有协议状态判断；关于与支持中的欢迎引导入口只回看、不修改同意记录。
+
 ## Source of truth
 
 - Status: Active

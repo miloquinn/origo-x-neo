@@ -6936,5 +6936,15 @@
   "accountHaveRedemptionCode": "I have a code",
   "accountRedemptionHint": "Redeem an Origo code for the account shown below.",
   "accountRedemptionSuccess": "Code redeemed. Your access has been updated.",
-  "accountExploreIncludesReader": "Origo Read included"
+  "accountExploreIncludesReader": "Origo Read included",
+  "welcomeChapterOneTitle": "One book,\na whole new world.",
+  "welcomeChapterOneBody": "From this moment,\nlet great stories become part of your day.",
+  "welcomeChapterTwoTitle": "Make time\nfor reading.",
+  "welcomeChapterTwoBody": "Open the pages and slow down.\nFind your own reading rhythm.",
+  "welcomeChapterThreeTitle": "Your books,\na world of their own.",
+  "welcomeChapterThreeBody": "Keep the stories you love\non your own shelf, ready to meet again.",
+  "welcomeSkipIntroduction": "Skip introduction",
+  "welcomeStartReading": "Start reading",
+  "welcomeTagline": "Good stories. Take your time.",
+  "settingsWelcomeGuide": "Welcome guide"
 }
