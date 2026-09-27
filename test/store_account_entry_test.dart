@@ -10,6 +10,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/core/app_distribution.dart';
 import 'package:xxread/widgets/settings_account_card.dart';
+import 'package:xxread/widgets/membership_offer_card.dart';
 
 final _screenshotDirectory = Platform.environment['PROFILE_SCREENSHOT_DIR'];
 final _previewFontPath = Platform.environment['PROFILE_PREVIEW_FONT'];
@@ -122,9 +123,11 @@ void main() {
       await tester.pump();
       expect(upgrade, findsNothing);
       expect(badge, findsOneWidget);
-      expect(explore, findsOneWidget);
-      expect(find.text('Origo Explore'), findsOneWidget);
-      expect(find.text('Origo Read included'), findsOneWidget);
+      expect(explore, findsNothing);
+      expect(
+        find.byKey(const ValueKey('settings-membership-offer')),
+        findsNothing,
+      );
       expect(reader, findsNothing);
 
       account.update(ownsApp: true, ownsPremium: false);
@@ -137,8 +140,36 @@ void main() {
       await tester.pump();
       expect(upgrade, findsNothing);
       expect(badge, findsOneWidget);
-      expect(explore, findsOneWidget);
+      expect(explore, findsNothing);
       expect(reader, findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final reducedMotion in [false, true]) {
+    testWidgets('paper entrance respects reduced motion: $reducedMotion', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MediaQuery(
+            data: MediaQueryData(disableAnimations: reducedMotion),
+            child: Scaffold(
+              body: MembershipOfferCard(offerRead: true, onTap: () {}),
+            ),
+          ),
+        ),
+      );
+      final art = find.byKey(const ValueKey('membership-paper-art'));
+      final first = tester.widget<CustomPaint>(art).painter!;
+      await tester.pump(const Duration(milliseconds: 500));
+      final middle = tester.widget<CustomPaint>(art).painter!;
+      expect(middle.shouldRepaint(first), !reducedMotion);
+      await tester.pumpAndSettle();
+      expect(tester.binding.transientCallbackCount, 0);
       expect(tester.takeException(), isNull);
     });
   }
@@ -148,12 +179,16 @@ void main() {
     (name: 'upgrade', read: true, explore: false, dark: false, scale: 1.0),
     (name: 'explore', read: true, explore: true, dark: false, scale: 1.0),
     (name: 'dark', read: true, explore: false, dark: true, scale: 1.0),
-    (name: 'large', read: true, explore: true, dark: false, scale: 1.6),
+    (name: 'large', read: true, explore: false, dark: false, scale: 1.6),
+    (name: 'english', read: true, explore: false, dark: false, scale: 1.6),
+    (name: 'german', read: false, explore: false, dark: false, scale: 1.0),
   ]) {
-    testWidgets('aligned compact account card ${layout.name}', (tester) async {
+    testWidgets('separate account and illustrated membership ${layout.name}', (
+      tester,
+    ) async {
       AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
       addTearDown(AppDistribution.debugReset);
-      tester.view.physicalSize = Size(layout.scale > 1 ? 320 : 390, 300);
+      tester.view.physicalSize = Size(layout.scale > 1 ? 320 : 390, 440);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final account = _Account()
@@ -164,7 +199,11 @@ void main() {
         ChangeNotifierProvider<MemberAccountController>.value(
           value: account,
           child: MaterialApp(
-            locale: const Locale('zh'),
+            locale: Locale(switch (layout.name) {
+              'english' => 'en',
+              'german' => 'de',
+              _ => 'zh',
+            }),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             theme: ThemeData(
@@ -196,21 +235,36 @@ void main() {
           ),
         ),
       );
+      if (_screenshotDirectory != null && layout.name == 'read') {
+        final path = _screenshotDirectory!;
+        await tester.runAsync(() => Directory(path).create(recursive: true));
+        for (var frame = 0; frame <= 20; frame++) {
+          if (frame > 0) await tester.pump(const Duration(milliseconds: 70));
+          await _capture(
+            tester,
+            boundaryKey,
+            '$path/opening-${frame.toString().padLeft(2, '0')}.png',
+          );
+        }
+      }
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      final name = find.byKey(const ValueKey('settings-account-name'));
-      final membership = find.byKey(
-        const ValueKey('settings-membership-title'),
-      );
-      expect(tester.getTopLeft(name).dx, tester.getTopLeft(membership).dx);
-      expect(
-        tester
-            .getSize(
-              find.byKey(const ValueKey('settings-combined-account-card')),
-            )
-            .height,
-        lessThan(layout.scale > 1 ? 240 : 200),
-      );
+      final panel = find.byKey(const ValueKey('settings-account-panel'));
+      final offer = find.byKey(const ValueKey('settings-membership-offer'));
+      expect(panel, findsOneWidget);
+      if (layout.explore) {
+        expect(offer, findsNothing);
+      } else {
+        expect(offer, findsOneWidget);
+        expect(tester.getTopLeft(panel).dx, tester.getTopLeft(offer).dx);
+        expect(tester.getSize(panel).width, tester.getSize(offer).width);
+        expect(
+          tester.getTopLeft(offer).dy - tester.getBottomLeft(panel).dy,
+          14,
+        );
+      }
+      // Entrance motion finishes; the account hub must not animate forever.
+      expect(tester.binding.transientCallbackCount, 0);
       if (_screenshotDirectory case final path?) {
         await tester.runAsync(() => Directory(path).create(recursive: true));
         await _capture(tester, boundaryKey, '$path/account-${layout.name}.png');

@@ -9,6 +9,7 @@ import '../utils/localization_extension.dart';
 import '../utils/page_style_helper.dart';
 import 'account_avatar_image.dart';
 import 'premium_card_style.dart';
+import 'membership_offer_card.dart';
 import '../pages/account/store_reader_unlock_page.dart';
 
 class SettingsAccountCard extends StatelessWidget {
@@ -48,32 +49,23 @@ class SettingsAccountCard extends StatelessWidget {
           AppDistribution.isStore &&
           !account.hasPermanentReaderAccess &&
           !explore;
-      final entryTitle = explore
-          ? l10n.premiumLifetimeTitle
-          : offerRead
-          ? l10n.storeReaderLicenseTitle
-          : l10n.accountSupportAction;
-      final entryKey = explore
-          ? 'settings-explore-entitlement'
-          : offerRead
-          ? 'settings-reader-license'
-          : 'settings-membership-entry';
-      return Container(
-        key: const ValueKey('settings-combined-account-card'),
-        decoration: BoxDecoration(
-          color: palette.card,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: palette.border),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Semantics(
+      return Column(
+        key: const ValueKey('settings-account-membership-group'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            key: const ValueKey('settings-account-panel'),
+            decoration: BoxDecoration(
+              color: palette.card,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: palette.border),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(22),
+              clipBehavior: Clip.antiAlias,
+              child: Semantics(
                 button: true,
                 label: l10n.settingsAccountOpen,
                 child: InkWell(
@@ -104,6 +96,20 @@ class SettingsAccountCard extends StatelessWidget {
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
+                              if (explore) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  l10n.accountSupporterBadge,
+                                  key: const ValueKey(
+                                    'settings-account-premium-badge',
+                                  ),
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: scheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ],
                               const SizedBox(height: 4),
                               Text(
                                 summary == null
@@ -139,90 +145,25 @@ class SettingsAccountCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: palette.border,
-                ),
-              ),
-              InkWell(
-                key: ValueKey(entryKey),
-                onTap: () => Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) => offerRead
-                        ? StoreReaderUnlockPage(account: account)
-                        : PremiumMembershipPage(
-                            account: account,
-                            focusBilling: !explore,
-                          ),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 52,
-                        child: Center(
-                          child: Icon(
-                            offerRead
-                                ? Icons.auto_stories_outlined
-                                : Icons.explore_outlined,
-                            key: explore
-                                ? const ValueKey(
-                                    'settings-account-premium-badge',
-                                  )
-                                : null,
-                            size: 25,
-                            color: scheme.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              entryTitle,
-                              key: const ValueKey('settings-membership-title'),
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                            if (explore) ...[
-                              const SizedBox(height: 3),
-                              Text(
-                                l10n.accountExploreIncludesReader,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: scheme.onSurfaceVariant),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: scheme.primary.withValues(alpha: 0.07),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 17,
-                          color: scheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          if (!explore) ...[
+            const SizedBox(height: 14),
+            MembershipOfferCard(
+              offerRead: offerRead,
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => offerRead
+                      ? StoreReaderUnlockPage(account: account)
+                      : PremiumMembershipPage(
+                          account: account,
+                          focusBilling: true,
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ],
       );
     }
 

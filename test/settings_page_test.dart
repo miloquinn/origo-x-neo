@@ -257,11 +257,34 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.byKey(const ValueKey('settings-account-membership-group')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('settings-account-panel')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('settings-membership-offer')),
+      findsOneWidget,
+    );
+    final accountPanel = tester.getRect(
+      find.byKey(const ValueKey('settings-account-panel')),
+    );
+    final membershipOffer = tester.getRect(
+      find.byKey(const ValueKey('settings-membership-offer')),
+    );
+    expect(membershipOffer.top - accountPanel.bottom, closeTo(14, 0.01));
+    expect(
+      find.byKey(const ValueKey('settings-explore-entitlement')),
+      findsNothing,
+    );
+    expect(
       find.descendant(
-        of: find.byKey(const ValueKey('settings-combined-account-card')),
+        of: find.byKey(const ValueKey('settings-account-panel')),
         matching: find.byType(Divider),
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.byKey(const ValueKey('settings-premium-card')), findsNothing);
     expect(find.text(l10n.settingsVolumeKeyTurnTitle), findsNothing);
@@ -302,9 +325,7 @@ void main() {
     await _disposeSettingsPage(tester);
   });
 
-  testWidgets('account area of the combined card opens the account page', (
-    tester,
-  ) async {
+  testWidgets('account panel opens the account page', (tester) async {
     await _pumpSettingsPage(tester, locale: const Locale('zh'));
     await tester.tap(find.byKey(const ValueKey('settings-account-card')));
     await tester.pump();
@@ -327,7 +348,7 @@ void main() {
     await _disposeSettingsPage(tester);
   });
 
-  testWidgets('combined card fits a narrow screen with large text', (
+  testWidgets('separate account and membership cards fit large text', (
     tester,
   ) async {
     await _pumpSettingsPage(
@@ -337,6 +358,14 @@ void main() {
       textScaleFactor: 2,
     );
     expect(find.byKey(const ValueKey('settings-account-card')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-account-panel')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('settings-membership-offer')),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const ValueKey('settings-membership-entry')),
       findsOneWidget,

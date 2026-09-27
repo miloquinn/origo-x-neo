@@ -158,6 +158,14 @@ void main() {
           findsNothing,
         );
         expect(
+          find.byKey(const ValueKey('settings-membership-offer')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('settings-account-panel')),
+          findsOneWidget,
+        );
+        expect(
           find.byKey(const ValueKey('settings-explore-entitlement')),
           findsNothing,
         );
@@ -190,20 +198,29 @@ void main() {
           findsNothing,
         );
         expect(
-          find.byKey(const ValueKey('settings-explore-entitlement')),
-          findsOneWidget,
+          find.byKey(const ValueKey('settings-membership-offer')),
+          findsNothing,
         );
         expect(
           find.byKey(const ValueKey('settings-account-premium-badge')),
           findsOneWidget,
         );
-        final memberCard = tester.widget<Container>(
-          find.byKey(const ValueKey('settings-combined-account-card')),
+        expect(find.text(l10n.accountSupporterBadge), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('settings-account-membership-group')),
+          findsOneWidget,
         );
-        expect((memberCard.decoration! as BoxDecoration).gradient, isNull);
+        expect(
+          find.byKey(const ValueKey('settings-account-panel')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('settings-explore-entitlement')),
+          findsNothing,
+        );
         account.setEntitlements(reader: true, explore: false);
         await tester.pump();
-        expect(find.text(l10n.accountSupportAction), findsOneWidget);
+        expect(find.text(l10n.premiumEditorialTitle), findsOneWidget);
         expect(
           find.byKey(const ValueKey('settings-membership-entry')),
           findsOneWidget,
@@ -213,8 +230,8 @@ void main() {
           findsNothing,
         );
         expect(
-          find.byKey(const ValueKey('settings-explore-entitlement')),
-          findsNothing,
+          find.byKey(const ValueKey('settings-membership-offer')),
+          findsOneWidget,
         );
         expect(
           find.byKey(const ValueKey('settings-account-premium-badge')),
