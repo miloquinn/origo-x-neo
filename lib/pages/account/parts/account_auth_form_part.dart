@@ -1,30 +1,35 @@
 part of '../account_page.dart';
 
 extension _AccountAuthForm on _AccountPageState {
-  Widget _authHeading(String title, String subtitle) => Padding(
-    padding: const EdgeInsets.only(bottom: 24),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        if (subtitle.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              height: 1.5,
+  Widget _authHeading(String title, String subtitle, {bool centered = false}) =>
+      Padding(
+        padding: EdgeInsets.only(bottom: centered ? 0 : 24),
+        child: Column(
+          crossAxisAlignment: centered
+              ? CrossAxisAlignment.stretch
+              : CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              textAlign: centered ? TextAlign.center : TextAlign.start,
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
-          ),
-        ],
-      ],
-    ),
-  );
+            if (subtitle.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: centered ? TextAlign.center : TextAlign.start,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
 
   Widget _authField(
     TextEditingController controller,
@@ -113,12 +118,30 @@ extension _AccountAuthForm on _AccountPageState {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (entry) ...[
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: AppBrandIcon(size: 46),
+              const Center(
+                child: AppBrandIcon(
+                  key: ValueKey('account-auth-brand'),
+                  size: 46,
+                ),
               ),
-              const SizedBox(height: 24),
-              _authHeading(l10n.accountSignInTitle, l10n.accountSignInSubtitle),
+              const SizedBox(height: 16),
+              _authHeading(
+                l10n.accountSignInTitle,
+                l10n.accountSignInSubtitle,
+                centered: true,
+              ),
+              SizedBox(
+                height: 24,
+                child: Center(
+                  child: _openingExternal
+                      ? const LinearProgressIndicator(
+                          key: ValueKey('account-auth-progress'),
+                          minHeight: 3,
+                          borderRadius: BorderRadius.all(Radius.circular(2)),
+                        )
+                      : null,
+                ),
+              ),
             ] else ...[
               if (_mode == _AccountMode.register)
                 Padding(
@@ -274,7 +297,7 @@ extension _AccountAuthForm on _AccountPageState {
                       (collectingEmail && !entry && _resendSeconds > 0)
                   ? null
                   : _submit,
-              child: account.loading
+              child: account.loading && !_openingExternal
                   ? const SizedBox.square(
                       dimension: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),

@@ -590,7 +590,6 @@ class _AccountPageState extends State<AccountPage> {
           child: Text(context.l10n.accountReopenAuthorization),
         ),
     ] else ...[
-      if (_openingExternal) const LinearProgressIndicator(),
       AbsorbPointer(absorbing: _openingExternal, child: _formCard(account)),
     ],
   ];

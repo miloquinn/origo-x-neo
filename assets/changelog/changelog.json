@@ -3,6 +3,20 @@
     "entries": [
         {
             "version": "2.7.2",
+            "buildNumber": "260928003",
+            "notes": {
+                "zh": [
+                    "登录入口的 App 图标、标题与说明居中显示，与返回按钮分开排列。",
+                    "登录进度条移至品牌说明下方，预留固定空间，避免加载时与图标挤压或使表单跳动。"
+                ],
+                "en": [
+                    "Center the app icon, title and description on the sign-in entry, separate from the back button.",
+                    "Place sign-in progress below the brand description in a reserved area, preventing overlap and form movement."
+                ]
+            }
+        },
+        {
+            "version": "2.7.2",
             "buildNumber": "260928002",
             "notes": {
                 "zh": [

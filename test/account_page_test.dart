@@ -217,6 +217,56 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
+  testWidgets('native Google loading preserves centered entry geometry', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final adapter = _AuthFlowAdapter(nativeGoogle: true);
+    final nativeGoogle = _DeferredNativeGoogleSignIn();
+    await _pumpAuthFlowPage(tester, adapter, googleNativeSignIn: nativeGoogle);
+    await tester.pumpAndSettle();
+
+    final brand = find.byKey(const ValueKey('account-auth-brand'));
+    final email = find.byKey(const ValueKey('account-auth-email'));
+    final progress = find.byKey(const ValueKey('account-auth-progress'));
+    final back = find.byKey(const ValueKey('floating-subpage-back'));
+    final l10n = AppLocalizations.of(tester.element(email));
+    final title = find.text(l10n.accountSignInTitle);
+    final subtitle = find.text(l10n.accountSignInSubtitle);
+    final idleBrand = tester.getRect(brand);
+    final idleEmail = tester.getRect(email);
+    expect(idleBrand.center.dx, closeTo(195, 0.5));
+    expect(idleBrand.top, greaterThan(tester.getRect(back).bottom));
+    expect(tester.widget<Text>(title).textAlign, TextAlign.center);
+    expect(tester.widget<Text>(subtitle).textAlign, TextAlign.center);
+    expect(progress, findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('account-provider-google')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 160));
+
+    expect(nativeGoogle.calls, 1);
+    expect(progress, findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    final progressRect = tester.getRect(progress);
+    expect(progressRect.top, greaterThan(tester.getRect(subtitle).bottom));
+    expect(progressRect.top, greaterThan(idleBrand.bottom));
+    expect(progressRect.bottom, lessThanOrEqualTo(idleEmail.top));
+    expect(tester.getRect(brand), idleBrand);
+    expect(tester.getRect(email), idleEmail);
+
+    nativeGoogle.result.complete(null);
+    await tester.pumpAndSettle();
+    expect(progress, findsNothing);
+    expect(tester.getRect(brand), idleBrand);
+    expect(tester.getRect(email), idleEmail);
+    expect(adapter.googleLoginAttempts, 0);
+    expect(tester.takeException(), isNull);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('iOS external login cancellation quietly stops authorization', (
     tester,
   ) async {
@@ -1312,6 +1362,20 @@ class _AuthFlowAdapter implements HttpClientAdapter {
           Headers.contentTypeHeader: ['application/json'],
         },
       );
+}
+
+class _DeferredNativeGoogleSignIn implements GoogleNativeSignInClient {
+  final result = Completer<String?>();
+  int calls = 0;
+
+  @override
+  Future<String?> authenticate(
+    GoogleNativeAuthConfig config, {
+    required TargetPlatform platform,
+  }) {
+    calls++;
+    return result.future;
+  }
 }
 
 class _FakeNativeGoogleSignIn implements GoogleNativeSignInClient {

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -12,8 +14,53 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/account/account_page.dart';
 import 'package:xxread/services/account/account.dart';
+import 'package:xxread/services/core/app_distribution.dart';
 
 void main() {
+  testWidgets('capture centered native Google login loading layout', (
+    tester,
+  ) async {
+    // Flutter test entry point outside test/.
+    // ignore: invalid_use_of_visible_for_testing_member
+    SharedPreferences.setMockInitialValues({});
+    // ignore: invalid_use_of_visible_for_testing_member
+    AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+    // ignore: invalid_use_of_visible_for_testing_member
+    addTearDown(AppDistribution.debugReset);
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.runAsync(_loadFonts);
+
+    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+      final google = _CaptureNativeGoogleSignIn();
+      final account = await _pumpAccount(
+        tester,
+        _CaptureAdapter(nativeGoogle: true),
+        themeMode: mode,
+        googleNativeSignIn: google,
+      );
+      addTearDown(account.dispose);
+      await tester.pumpAndSettle();
+      await _capture(tester, 'login-${mode.name}-idle.png');
+      await tester.tap(find.byKey(const ValueKey('account-provider-google')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 160));
+      expect(
+        find.byKey(const ValueKey('account-auth-progress')),
+        findsOneWidget,
+      );
+      await _capture(tester, 'login-${mode.name}-loading.png');
+      google.result.complete(null);
+      await tester.pumpAndSettle();
+      await _capture(tester, 'login-${mode.name}-canceled.png');
+      expect(tester.takeException(), isNull);
+    }
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('capture implemented account screens from the production page', (
     tester,
   ) async {
@@ -113,8 +160,10 @@ Future<MemberAccountController> _pumpAccount(
   HttpClientAdapter adapter, {
   ThemeMode themeMode = ThemeMode.light,
   MemberTokenStore? tokenStore,
+  GoogleNativeSignInClient? googleNativeSignIn,
 }) async {
   final controller = MemberAccountController(
+    googleNativeSignIn: googleNativeSignIn,
     api: MemberAccountApiClient(
       dio: Dio()..httpClientAdapter = adapter,
       tokenStore: tokenStore ?? _CaptureTokenStore(),
@@ -170,7 +219,9 @@ Future<void> _capture(WidgetTester tester, String filename) async {
   await tester.runAsync(() async {
     final image = await boundary.toImage(pixelRatio: 2);
     final data = await image.toByteData(format: ui.ImageByteFormat.png);
-    final file = File('docs/previews/account-redesign/$filename');
+    final file = File(
+      'build/verification-store/account-login-layout/$filename',
+    );
     await file.parent.create(recursive: true);
     await file.writeAsBytes(data!.buffer.asUint8List());
     image.dispose();
@@ -178,9 +229,10 @@ Future<void> _capture(WidgetTester tester, String filename) async {
 }
 
 class _CaptureAdapter implements HttpClientAdapter {
-  _CaptureAdapter({this.signedIn = false});
+  _CaptureAdapter({this.signedIn = false, this.nativeGoogle = false});
 
   final bool signedIn;
+  final bool nativeGoogle;
 
   @override
   void close({bool force = false}) {}
@@ -194,6 +246,11 @@ class _CaptureAdapter implements HttpClientAdapter {
     final body = switch (options.uri.path) {
       '/api/v1/auth/config' => {
         'providers': {'google': true, 'github': true, 'passkey': true},
+        if (nativeGoogle)
+          'google_native': {
+            'enabled': true,
+            'server_client_id': 'capture-server.apps.googleusercontent.com',
+          },
         'username': {'min_length': 3, 'max_length': 30},
         'password': {'min_length': 12, 'max_length': 128},
       },
@@ -274,4 +331,14 @@ class _CaptureTokenStore implements MemberTokenStore {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
   }
+}
+
+class _CaptureNativeGoogleSignIn implements GoogleNativeSignInClient {
+  final result = Completer<String?>();
+
+  @override
+  Future<String?> authenticate(
+    GoogleNativeAuthConfig config, {
+    required TargetPlatform platform,
+  }) => result.future;
 }
