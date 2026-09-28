@@ -3,6 +3,20 @@
     "entries": [
         {
             "version": "2.7.2",
+            "buildNumber": "260928004",
+            "notes": {
+                "zh": [
+                    "为探元身份徽章绘制专属藏书印：八角纹章中融入开卷和星芒，与卡片原有的书页纹理相呼应。",
+                    "保留账号权益逻辑和开卷、普通账号的原有显示。"
+                ],
+                "en": [
+                    "Give the Explore identity badge its own bookplate insignia: an open book and rising star within an eight-sided seal, matching the card engraving.",
+                    "Keep account entitlements and the existing Read and standard card states unchanged."
+                ]
+            }
+        },
+        {
+            "version": "2.7.2",
             "buildNumber": "260928003",
             "notes": {
                 "zh": [

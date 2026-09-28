@@ -192,13 +192,13 @@ class AccountIdentityCard extends StatelessWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        explore
-                                            ? Icons.explore_outlined
-                                            : Icons.auto_stories_outlined,
-                                        size: 17,
-                                        color: accent,
-                                      ),
+                                      explore
+                                          ? _ExploreInsignia(color: accent)
+                                          : Icon(
+                                              Icons.auto_stories_outlined,
+                                              size: 17,
+                                              color: accent,
+                                            ),
                                       const SizedBox(width: 7),
                                       Flexible(
                                         child: Text(
@@ -241,6 +241,80 @@ class AccountIdentityCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The Explore mark repeats the bookplate language engraved on the card.
+/// It combines an open book with a small rising star inside an eight-sided seal.
+class _ExploreInsignia extends StatelessWidget {
+  const _ExploreInsignia({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox.square(
+      key: const ValueKey('settings-account-explore-insignia'),
+      dimension: 22,
+      child: CustomPaint(painter: _ExploreInsigniaPainter(color)),
+    ),
+  );
+}
+
+class _ExploreInsigniaPainter extends CustomPainter {
+  const _ExploreInsigniaPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 24, size.height / 24);
+    final line = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 1.25;
+    final seal = Path()
+      ..moveTo(12, 1.25)
+      ..lineTo(19.6, 4.4)
+      ..lineTo(22.75, 12)
+      ..lineTo(19.6, 19.6)
+      ..lineTo(12, 22.75)
+      ..lineTo(4.4, 19.6)
+      ..lineTo(1.25, 12)
+      ..lineTo(4.4, 4.4)
+      ..close();
+    canvas.drawPath(seal, line..color = color.withValues(alpha: 0.72));
+
+    final pages = Path()
+      ..moveTo(12, 11.8)
+      ..quadraticBezierTo(8.9, 9.7, 5.75, 10.3)
+      ..lineTo(5.75, 16.8)
+      ..quadraticBezierTo(9.1, 16.2, 12, 18.5)
+      ..quadraticBezierTo(14.9, 16.2, 18.25, 16.8)
+      ..lineTo(18.25, 10.3)
+      ..quadraticBezierTo(15.1, 9.7, 12, 11.8)
+      ..lineTo(12, 18.5);
+    canvas.drawPath(pages, line..color = color);
+
+    final star = Path()
+      ..moveTo(12, 4.3)
+      ..lineTo(12.8, 6.35)
+      ..lineTo(14.8, 7.15)
+      ..lineTo(12.8, 7.95)
+      ..lineTo(12, 10)
+      ..lineTo(11.2, 7.95)
+      ..lineTo(9.2, 7.15)
+      ..lineTo(11.2, 6.35)
+      ..close();
+    canvas.drawPath(star, Paint()..color = color);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_ExploreInsigniaPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 /// Fine page contours and a bookplate seal, like an engraved collector's cover.
