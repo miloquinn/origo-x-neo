@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../utils/glass_config.dart';
@@ -6,6 +8,9 @@ import 'gradient_top_backdrop.dart';
 
 /// The single glass chrome surface shared by the home shell and pushed pages.
 class GlassTopBar extends StatelessWidget {
+  // Finish the taper inside the bar so scrolling content remains sharp.
+  static const _clearTail = 4.0;
+
   const GlassTopBar({
     super.key,
     required this.title,
@@ -42,6 +47,10 @@ class GlassTopBar extends StatelessWidget {
         false;
     final useBlur = !isMaterial3Style && !GlassEffectConfig.shouldDisableBlur;
     final height = topInset + contentHeight;
+    final peakSigma = math.min(
+      GlassEffectConfig.appBarBlur * 2,
+      math.max(0, height - 16) / 3,
+    );
     final titleStyle = TextStyle(
       fontSize: titleFontSize,
       fontWeight: titleFontWeight,
@@ -121,7 +130,12 @@ class GlassTopBar extends StatelessWidget {
         children: [
           if (useBlur)
             Positioned.fill(
-              child: GradientTopBackdrop(height: height, fallbackBands: 16),
+              child: GradientTopBackdrop(
+                height: height,
+                clearTail: _clearTail,
+                fallbackBands: 16,
+                maxSigma: peakSigma,
+              ),
             ),
           content,
         ],

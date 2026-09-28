@@ -13,11 +13,21 @@ class GradientTopBackdrop extends StatefulWidget {
     required this.height,
     this.blurEnabled = true,
     this.fallbackBands = 32,
+    this.maxSigma,
+    this.clearTail = 16.0,
   }) : assert(height >= 0),
-       assert(fallbackBands > 0);
+       assert(fallbackBands > 0),
+       assert(maxSigma == null || maxSigma >= 0),
+       assert(clearTail >= 0);
 
   final double height;
   final bool blurEnabled;
+
+  /// Optional peak radius in logical pixels.
+  final double? maxSigma;
+
+  /// Unfiltered space at the bottom; phone bars use a shorter clear tail.
+  final double clearTail;
 
   /// Short phone headers need fewer fallback filters than tablet backdrops.
   final int fallbackBands;
@@ -27,7 +37,6 @@ class GradientTopBackdrop extends StatefulWidget {
 }
 
 class _GradientTopBackdropState extends State<GradientTopBackdrop> {
-  static const _clearTail = 16.0;
   static ui.FragmentProgram? _program;
   ui.Image? _samplerSeed;
   ui.FragmentShader? _vertical;
@@ -111,9 +120,12 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
 
   @override
   Widget build(BuildContext context) {
-    final clearHeight = math.max(0.0, widget.height - _clearTail);
+    final clearHeight = math.max(0.0, widget.height - widget.clearTail);
     // Keep every downward sample inside the top region: radius is 3 sigma.
-    final sigma = math.min(GlassEffectConfig.appBarBlur * 2, clearHeight / 3);
+    final sigma = math.min(
+      widget.maxSigma ?? GlassEffectConfig.appBarBlur * 2,
+      clearHeight / 3,
+    );
     final enabled =
         widget.blurEnabled && !GlassEffectConfig.shouldDisableBlur && sigma > 0;
     Widget? filter;

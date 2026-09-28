@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:xxread/widgets/glass_top_bar.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 void main() {
@@ -65,6 +66,49 @@ void main() {
     );
     for (final y in [68, 74, 83]) {
       expect(blurred.pixel(159, y), original.pixel(159, y));
+    }
+  });
+
+  testWidgets('shared phone header clears before scrolling content', (
+    tester,
+  ) async {
+    final blurred = await _renderBackdrop(
+      tester,
+      blurEnabled: true,
+      pattern: _BackdropPattern.verticalEdge,
+      glassTopBar: true,
+    );
+    final original = await _renderBackdrop(
+      tester,
+      blurEnabled: false,
+      pattern: _BackdropPattern.verticalEdge,
+    );
+
+    expect(_edgeSpread(blurred, y: 40), greaterThan(4));
+    expect(
+      _edgeSpread(blurred, y: 40),
+      greaterThan(_edgeSpread(blurred, y: 72)),
+    );
+    for (final y in [80, 83, 84, 88, 100]) {
+      expect(blurred.pixel(159, y), original.pixel(159, y));
+    }
+  });
+
+  testWidgets('side samples do not pin a bright edge across the blur kernel', (
+    tester,
+  ) async {
+    final blurred = await _renderBackdrop(
+      tester,
+      blurEnabled: true,
+      pattern: _BackdropPattern.sidePins,
+    );
+
+    for (final x in [0, 319]) {
+      expect(
+        _luminance(blurred.pixel(x, 24)),
+        lessThan(100),
+        reason: 'The side edge should use nearby content, not repeat one row.',
+      );
     }
   });
 
@@ -366,6 +410,7 @@ const _light = Color(0xFFF8F8F8);
 enum _BackdropPattern {
   verticalEdge,
   horizontalEdge,
+  sidePins,
   checker,
   fineVerticalStripes,
   fineHorizontalStripes,
@@ -379,6 +424,7 @@ Future<_PixelBuffer> _renderBackdrop(
   double backdropHeight = _backdropHeight,
   int fallbackBands = 32,
   int verticalOffset = 0,
+  bool glassTopBar = false,
 }) async {
   final boundaryKey = GlobalKey();
   await tester.pumpWidget(
@@ -390,6 +436,7 @@ Future<_PixelBuffer> _renderBackdrop(
       backdropHeight: backdropHeight,
       fallbackBands: fallbackBands,
       verticalOffset: verticalOffset,
+      glassTopBar: glassTopBar,
     ),
   );
   await tester.pump();
@@ -533,6 +580,7 @@ class _TestScene extends StatelessWidget {
     this.backdropHeight = _backdropHeight,
     this.fallbackBands = 32,
     this.verticalOffset = 0,
+    this.glassTopBar = false,
   });
 
   final GlobalKey boundaryKey;
@@ -542,6 +590,7 @@ class _TestScene extends StatelessWidget {
   final double backdropHeight;
   final int fallbackBands;
   final int verticalOffset;
+  final bool glassTopBar;
 
   @override
   Widget build(BuildContext context) {
@@ -574,11 +623,15 @@ class _TestScene extends StatelessWidget {
                     ),
                     Align(
                       alignment: Alignment.topCenter,
-                      child: GradientTopBackdrop(
-                        height: backdropHeight,
-                        blurEnabled: blurEnabled,
-                        fallbackBands: fallbackBands,
-                      ),
+                      child: glassTopBar
+                          ? const RepaintBoundary(
+                              child: GlassTopBar(title: '', systemTopInset: 24),
+                            )
+                          : GradientTopBackdrop(
+                              height: backdropHeight,
+                              blurEnabled: blurEnabled,
+                              fallbackBands: fallbackBands,
+                            ),
                     ),
                   ],
                 ),
@@ -622,6 +675,14 @@ class _BackdropPainter extends CustomPainter {
         Rect.fromLTWH(0, size.height / 2, size.width, size.height / 2),
         paint,
       );
+      return;
+    }
+
+    if (pattern == _BackdropPattern.sidePins) {
+      canvas.drawColor(_dark, BlendMode.src);
+      paint.color = _light;
+      canvas.drawRect(Rect.fromLTWH(0, 0, 1, size.height), paint);
+      canvas.drawRect(Rect.fromLTWH(size.width - 1, 0, 1, size.height), paint);
       return;
     }
 

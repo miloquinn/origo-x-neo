@@ -35,6 +35,8 @@ void main() {
   float ratioStep = ratio * ratio;
   int radius = int(ceil(3.0 * sigma));
   bool reflectTop = uDirection.y != 0.0 && position.y < float(radius);
+  bool reflectSide = uDirection.x != 0.0 &&
+      (position.x < float(radius) || position.x > uSize.x - float(radius));
   for (int i = 1; i <= 384; i += 2) {
     if (i > radius) break;
     coefficient *= ratio;
@@ -61,6 +63,13 @@ void main() {
       before.y = abs(before.y);
       after.y = abs(after.y);
 #endif
+    }
+    // The horizontal pass should not repeat a single side column for half
+    // its kernel. Mirror the live content just as the vertical pass does at
+    // the screen top; only edge fragments enter this branch.
+    if (reflectSide) {
+      before.x = abs(before.x);
+      after.x = 1.0 - abs(1.0 - after.x);
     }
     total += (texture(uInput, before) + texture(uInput, after))
         * pairWeight;

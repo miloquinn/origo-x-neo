@@ -75,7 +75,10 @@ void main() {
       find.byType(GradientTopBackdrop),
     );
     expect(backdrop.height, 84);
+    expect(backdrop.clearTail, 4);
+    expect(backdrop.maxSigma, closeTo(68 / 3, 0.001));
     expect(backdrop.fallbackBands, 16);
+    expect(tester.getSize(find.byType(GlassTopBar)).height, 84);
   });
 
   testWidgets('book route hides and restores the floating navigation', (
