@@ -215,6 +215,7 @@
   "sourceLoginSaved": "Quellen-Anmeldesitzung aktualisiert",
   "sourceLoginCleared": "Quellen-Anmeldesitzung gelöscht",
   "sourceLoginFailed": "Quellen-Anmeldesitzung konnte nicht aktualisiert werden: {details}",
+  "sourceLoginConnectionFailed": "Der Quellenserver ist nicht erreichbar. Versuche es später erneut. Deine gespeicherten Anmeldedaten bleiben auf diesem Gerät und wurden nicht gelöscht.",
   "sourceLoginDiscoveryNotice": "„{sourceName}“ bietet eine Anmeldung für reine Kontoinhalte.",
   "sourceDebugMenuLabel": "Debuggen",
   "sourceDebugTitle": "Quellen-Debugger",

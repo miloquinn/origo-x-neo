@@ -12,7 +12,7 @@ void main() {
       const source = '\u3000\u3000第一段\n第二段';
       final layout = ReaderTextLayout.build(source, firstLineIndent: 2);
 
-      expect(layout.text, '\u3000\u3000第一段\n\u3000\u3000第二段');
+      expect(layout.text, '\u00a0\u00a0第一段\n\u00a0\u00a0第二段');
       expect(layout.sourceOffsetForDisplayOffset(0), 0);
       expect(
         layout.sourceOffsetForDisplayOffset(layout.text.length),
@@ -44,11 +44,11 @@ void main() {
 
     expect(
       layout.text,
-      '\u3000\u3000第一段\u2028'
-      '\u3000\u3000第二段\u2029'
-      '\u3000\u3000第三段\u0085'
-      '\u3000\u3000第四段\u000b'
-      '\u3000\u3000第五段',
+      '\u00a0\u00a0第一段\u2028'
+      '\u00a0\u00a0第二段\u2029'
+      '\u00a0\u00a0第三段\u0085'
+      '\u00a0\u00a0第四段\u000b'
+      '\u00a0\u00a0第五段',
     );
     expect(
       layout.sourceOffsetForDisplayOffset(layout.text.length),
@@ -62,9 +62,9 @@ void main() {
 
     expect(
       layout.text,
-      '\u3000\u3000“中文引号段落”\n'
-      '\u3000\u3000"English quote"\n'
-      '\u3000\u3000普通段落',
+      '\u00a0\u00a0“中文引号段落”\n'
+      '\u00a0\u00a0"English quote"\n'
+      '\u00a0\u00a0普通段落',
     );
     expect(
       layout.sourceOffsetForDisplayOffset(layout.text.length),
@@ -75,7 +75,7 @@ void main() {
   testWidgets('justified wrapped paragraphs retain their first-line indent', (
     tester,
   ) async {
-    const source = '“这是一个需要自动换行的长段落，用于确认两端对齐时首行缩进不会被排版引擎裁掉。”';
+    const source = '这是一个需要自动换行的长段落，用于确认两端对齐时首行缩进不会被排版引擎裁掉。';
     const style = TextStyle(fontSize: 20);
     final layout = ReaderTextLayout.build(source, firstLineIndent: 2);
     final painter = TextPainter(
@@ -90,8 +90,8 @@ void main() {
       ),
       textAlign: TextAlign.justify,
       textDirection: TextDirection.ltr,
-    )..layout(maxWidth: 180);
-    final firstVisibleOffset = layout.text.indexOf('“');
+    )..layout(maxWidth: 185);
+    final firstVisibleOffset = layout.text.indexOf('这');
     final firstGlyphBoxes = painter.getBoxesForSelection(
       TextSelection(
         baseOffset: firstVisibleOffset,
@@ -101,7 +101,7 @@ void main() {
 
     expect(painter.computeLineMetrics().length, greaterThan(1));
     expect(firstGlyphBoxes, isNotEmpty);
-    expect(firstGlyphBoxes.first.left, greaterThanOrEqualTo(39));
+    expect(firstGlyphBoxes.first.left, closeTo(40, 0.01));
     painter.dispose();
   });
 

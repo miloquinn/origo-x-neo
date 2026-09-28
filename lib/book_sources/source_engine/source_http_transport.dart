@@ -73,6 +73,21 @@ class SourceHttpTransport
   final Duration requestTimeout;
   final SourceCookieJar _cookieJar = SourceCookieJar();
 
+  Future<List<InternetAddress>> _resolveNetwork(Uri uri) async {
+    try {
+      return await _networkPolicy.resolve(uri);
+    } on SocketException {
+      throw SourceConnectionException(
+        host: uri.host,
+        reason: SourceConnectionFailureReason.dns,
+      );
+    }
+  }
+
+  Future<void> _validateNetwork(Uri uri) async {
+    await _resolveNetwork(uri);
+  }
+
   static Dio _createDio(
     BookSourceNetworkPolicy? policy,
     Duration requestTimeout,
@@ -126,7 +141,7 @@ class SourceHttpTransport
     var current = uri;
     var requestHeaders = Map<String, String>.from(headers);
     for (var redirects = 0; redirects <= 5; redirects++) {
-      await _networkPolicy.validate(current);
+      await _validateNetwork(current);
       final outgoing = Map<String, String>.from(requestHeaders);
       String? configuredCookie;
       outgoing.removeWhere((name, value) {
@@ -185,7 +200,7 @@ class SourceHttpTransport
   }
 
   @override
-  Future<void> validateInteractionUri(Uri uri) => _networkPolicy.validate(uri);
+  Future<void> validateInteractionUri(Uri uri) => _validateNetwork(uri);
 
   @override
   Future<SourceResponse> send(
@@ -209,7 +224,7 @@ class SourceHttpTransport
     }
     if (request.useWebView) {
       cancellation?.throwIfCancelled();
-      await _networkPolicy.validate(request.url);
+      await _validateNetwork(request.url);
       final browserHeaders = Map<String, String>.from(request.headers);
       String? configuredCookie;
       browserHeaders.removeWhere((name, value) {
@@ -239,7 +254,7 @@ class SourceHttpTransport
           cancellation: cancellation,
         );
         cancellation?.throwIfCancelled();
-        await _networkPolicy.validate(loaded.finalUri);
+        await _validateNetwork(loaded.finalUri);
         if (utf8.encode(loaded.body).length > maxResponseBytes) {
           throw BookSourceProtocolException(
             'Reading source response exceeds $maxResponseBytes bytes.',
@@ -269,7 +284,7 @@ class SourceHttpTransport
         cancellation: cancellation,
       );
       cancellation?.throwIfCancelled();
-      await _networkPolicy.validate(loaded.finalUri);
+      await _validateNetwork(loaded.finalUri);
       cancellation?.throwIfCancelled();
       if (utf8.encode(loaded.body).length > maxResponseBytes) {
         throw BookSourceProtocolException(
@@ -311,7 +326,7 @@ class SourceHttpTransport
     try {
       for (var redirects = 0; redirects <= maxRedirects; redirects++) {
         cancellation?.throwIfCancelled();
-        final resolvedAddresses = await _networkPolicy.resolve(current);
+        final resolvedAddresses = await _resolveNetwork(current);
         // Virtual-DNS clients reserve 198.18.0.0/15 for addresses owned by the
         // platform tunnel. Let the system client keep ownership of that route
         // after the target has passed the explicit synthetic-DNS policy.
@@ -489,7 +504,7 @@ class SourceHttpTransport
               method == SourceRequestMethod.get &&
               browserFallbacks.add(current)) {
             cancellation?.throwIfCancelled();
-            await _networkPolicy.validate(current);
+            await _validateNetwork(current);
             final browserHeaders = Map<String, String>.from(headers);
             final storedCookieHeader = request.cookieJarKey == null
                 ? _cookieJar.headerFromJar(redirectCookies, current)
@@ -520,7 +535,7 @@ class SourceHttpTransport
                 cancellation: cancellation,
               );
               cancellation?.throwIfCancelled();
-              await _networkPolicy.validate(loaded.finalUri);
+              await _validateNetwork(loaded.finalUri);
               cancellation?.throwIfCancelled();
               if (utf8.encode(loaded.body).length > maxResponseBytes) {
                 throw BookSourceProtocolException(
@@ -556,7 +571,11 @@ class SourceHttpTransport
             );
             continue;
           }
-          throw _requestFailure(current, error.response);
+          throw _requestFailure(
+            current,
+            error,
+            browserFallbackAttempted: browserFallbacks.contains(current),
+          );
         }
       }
     } finally {
@@ -570,11 +589,25 @@ class SourceHttpTransport
 
 BookSourceProtocolException _requestFailure(
   Uri uri,
-  Response<dynamic>? response,
-) {
+  DioException error, {
+  bool browserFallbackAttempted = false,
+}) {
+  final response = error.response;
   if (response?.statusCode == null) {
-    return const BookSourceProtocolException(
-      'Could not connect to this reading source.',
+    final reason = switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout => SourceConnectionFailureReason.timeout,
+      DioExceptionType.badCertificate =>
+        SourceConnectionFailureReason.certificate,
+      _ when error.error is HandshakeException || error.error is TlsException =>
+        SourceConnectionFailureReason.certificate,
+      _ => SourceConnectionFailureReason.unreachable,
+    };
+    return SourceConnectionException(
+      host: uri.host,
+      reason: reason,
+      browserFallbackAttempted: browserFallbackAttempted,
     );
   }
   String? detail;

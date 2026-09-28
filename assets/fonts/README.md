@@ -1,7 +1,23 @@
+# Reader indentation font
+
+`ReaderIndent.ttf` is original Origo X layout data under the repository's
+[AGPL license](../../LICENSE). It contains only an empty U+00A0 (no-break space)
+glyph with an advance of exactly one em. Use it only for generated reader
+indentation; it is neither a reading font nor a fallback for body text.
+
+Its ascent, descent, and line gap are zero. The indentation span must explicitly
+use `height: kTextHeightNone`, `letterSpacing: 0`, and `wordSpacing: 0`; inheriting
+a nonzero line-height multiplier with zero font metrics can produce invalid
+layout metrics. Paragraph separators must keep the body font and line height.
+
+Regenerate with `python3 tool/generate_reader_indent_font.py`, or verify the
+checked-in bytes with `python3 tool/generate_reader_indent_font.py --check`.
+The generator uses only the Python standard library and fixed metadata.
+
 # On-demand fonts
 
-The font binaries in this directory are third-party works. They are not
-relicensed under Origo X's AGPL license.
+The following on-demand fonts are third-party works. They are not relicensed
+under Origo X's AGPL license.
 
 | Flutter family | Upstream font | Purpose | License |
 | --- | --- | --- | --- |

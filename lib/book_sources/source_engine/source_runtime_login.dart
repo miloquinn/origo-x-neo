@@ -98,9 +98,10 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       SourceLoginSession session;
       try {
         session = await _store.read(id);
-      } on Object {
+      } on MissingPluginException {
         // Public reading remains available when platform secure storage is
-        // unavailable. Explicit login writes still surface storage failures.
+        // unavailable. Other read failures must surface so a later request
+        // can retry the saved session instead of caching an empty one.
         session = const SourceLoginSession();
       }
       if ((_revisions[id] ?? 0) != revision) return;

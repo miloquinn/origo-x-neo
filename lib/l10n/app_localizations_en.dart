@@ -884,6 +884,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get sourceLoginConnectionFailed =>
+      'Could not connect to the source server. Try again later. Your saved sign-in details remain on this device and were not cleared.';
+
+  @override
   String sourceLoginDiscoveryNotice(String sourceName) {
     return '“$sourceName” provides sign-in for account-only content.';
   }

@@ -42,30 +42,58 @@ void main() {
     },
   );
 
-  test('pre-rename session keys migrate to the current prefix on read', () async {
-    const sourceId = 'https://books.test/login';
-    const legacyKey = 'open_reading.source_session.$sourceId';
-    const currentKey = 'origo_x.source_session.$sourceId';
-    final stored =
-        jsonEncode(const SourceLoginSession(loginInfo: {'token': 'legacy'})
-            .toJson());
-    FlutterSecureStorage.setMockInitialValues({legacyKey: stored});
-    final store = SecureSourceLoginSessionStore();
-    final secure = const FlutterSecureStorage();
+  test(
+    'a failed session read can retry without overwriting saved login',
+    () async {
+      final saved = const SourceLoginSession(loginInfo: {'token': 'saved'});
+      final store = _TransientReadFailureStore(saved);
+      final manager = SourceRuntimeSessionManager(store, null);
+      final source = ReadingSourceConfig.fromJson(const {
+        'bookSourceName': 'Login source',
+        'bookSourceUrl': 'https://books.test',
+      });
 
-    final restored = await store.read(sourceId);
+      await expectLater(manager.ensure(source), throwsA(isA<StateError>()));
+      expect(store.readCount, 1);
+      expect(store.writeCount, 0);
+      expect(store.saved, same(saved));
 
-    expect(restored.loginInfo, {'token': 'legacy'});
-    expect(await secure.read(key: currentKey), stored);
-    expect(await secure.read(key: legacyKey), isNull);
-  });
+      await manager.ensure(source);
+      expect(store.readCount, 2);
+      expect(manager.current(source).loginInfo, {'token': 'saved'});
+      await manager.flush(source);
+      expect(store.writeCount, 0);
+      expect(store.saved, same(saved));
+    },
+  );
+
+  test(
+    'pre-rename session keys migrate to the current prefix on read',
+    () async {
+      const sourceId = 'https://books.test/login';
+      const legacyKey = 'open_reading.source_session.$sourceId';
+      const currentKey = 'origo_x.source_session.$sourceId';
+      final stored = jsonEncode(
+        const SourceLoginSession(loginInfo: {'token': 'legacy'}).toJson(),
+      );
+      FlutterSecureStorage.setMockInitialValues({legacyKey: stored});
+      final store = SecureSourceLoginSessionStore();
+      final secure = const FlutterSecureStorage();
+
+      final restored = await store.read(sourceId);
+
+      expect(restored.loginInfo, {'token': 'legacy'});
+      expect(await secure.read(key: currentKey), stored);
+      expect(await secure.read(key: legacyKey), isNull);
+    },
+  );
 
   test('clearing a session also removes the legacy pre-rename key', () async {
     const sourceId = 'https://books.test/login';
     const legacyKey = 'open_reading.source_session.$sourceId';
-    final stored =
-        jsonEncode(const SourceLoginSession(loginInfo: {'token': 'legacy'})
-            .toJson());
+    final stored = jsonEncode(
+      const SourceLoginSession(loginInfo: {'token': 'legacy'}).toJson(),
+    );
     FlutterSecureStorage.setMockInitialValues({legacyKey: stored});
     final store = SecureSourceLoginSessionStore();
     final secure = const FlutterSecureStorage();
@@ -73,21 +101,42 @@ void main() {
     await store.clear(sourceId);
 
     expect(await secure.read(key: legacyKey), isNull);
-    expect(
-      await store.read(sourceId),
-      const SourceLoginSession(),
-    );
+    expect(await store.read(sourceId), const SourceLoginSession());
   });
 }
 
 class _MissingPluginStore implements SourceLoginSessionStore {
   @override
-  Future<SourceLoginSession> read(String sourceId) async =>
-      const SourceLoginSession();
+  Future<SourceLoginSession> read(String sourceId) async {
+    throw MissingPluginException('secure storage is unavailable');
+  }
 
   @override
   Future<void> write(String sourceId, SourceLoginSession session) async {
     throw MissingPluginException('secure storage is unavailable');
+  }
+
+  @override
+  Future<void> clear(String sourceId) async {}
+}
+
+class _TransientReadFailureStore implements SourceLoginSessionStore {
+  _TransientReadFailureStore(this.saved);
+
+  SourceLoginSession saved;
+  int readCount = 0;
+  int writeCount = 0;
+
+  @override
+  Future<SourceLoginSession> read(String sourceId) async {
+    if (++readCount == 1) throw StateError('secure storage temporarily busy');
+    return saved;
+  }
+
+  @override
+  Future<void> write(String sourceId, SourceLoginSession session) async {
+    writeCount++;
+    saved = session;
   }
 
   @override

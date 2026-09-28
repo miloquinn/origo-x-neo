@@ -46,7 +46,7 @@ extension _BookSourceReaderPaginationRendering on _BookSourceReaderPageState {
           '${_readerFontProfile.cacheSignature}:'
           '${_replaceRules.rulesSignature}:'
           '$_chapterTitlePageEnabled:$chapterTitle',
-    ).cacheKey('book-source-line-v8');
+    ).cacheKey('book-source-line-v9');
     final style = _bodyTextStyle;
     final textDirection = Directionality.of(context);
     return _BookSourcePagedLayoutInput(

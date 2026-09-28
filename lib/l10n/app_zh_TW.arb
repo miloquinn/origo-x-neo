@@ -527,6 +527,7 @@
       }
     }
   },
+  "sourceLoginConnectionFailed": "無法連線書源伺服器，請稍後再試。現有登入資訊仍保留在本機，並未清除。",
   "sourceLoginDiscoveryNotice": "「{sourceName}」提供登入功能，登入後才能使用需要帳號的內容。",
   "@sourceLoginDiscoveryNotice": {
     "placeholders": {

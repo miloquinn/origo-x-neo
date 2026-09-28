@@ -14,6 +14,7 @@ import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/services/core/advanced_feature_access.dart';
 import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
+import 'package:xxread/book_sources/source_engine/source_transport.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/book_sources/book_sources_page.dart';
@@ -1270,6 +1271,35 @@ void main() {
     expect(find.text('Retry'), findsOneWidget);
   });
 
+  testWidgets('channel connection failure uses the network explanation', (
+    tester,
+  ) async {
+    final source = _source('source-a', 'Source A');
+    SharedPreferences.setMockInitialValues({
+      'origo_x_book_sources_v1': jsonEncode([source.toJson()]),
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: BookSourcesPage(client: _ConnectionFailingDiscoveryClient()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Categories'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Could not load channel'), findsOneWidget);
+    expect(
+      find.textContaining('Could not connect to the source server'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('unreachable; books.test'), findsNothing);
+  });
+
   testWidgets('an empty capable source shows an empty state', (tester) async {
     final source = _source('source-a', 'Source A');
     SharedPreferences.setMockInitialValues({
@@ -1961,6 +1991,23 @@ class _CategoryFailingDiscoveryClient extends _DiscoveryClient {
     void Function(BookSourceSearchPage)? onCached,
   }) {
     throw const BookSourceProtocolException('Channel endpoint failed.');
+  }
+}
+
+class _ConnectionFailingDiscoveryClient extends _DiscoveryClient {
+  @override
+  Future<BookSourceSearchPage> browse(
+    RegisteredBookSource source, {
+    String? category,
+    String sort = 'latest',
+    int page = 1,
+    int pageSize = 20,
+    void Function(BookSourceSearchPage)? onCached,
+  }) {
+    throw SourceConnectionException(
+      host: 'books.test',
+      reason: SourceConnectionFailureReason.unreachable,
+    );
   }
 }
 

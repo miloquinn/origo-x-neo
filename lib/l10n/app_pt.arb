@@ -215,6 +215,7 @@
   "sourceLoginSaved": "Sessão de login da fonte atualizada",
   "sourceLoginCleared": "Sessão de login da fonte limpa",
   "sourceLoginFailed": "Não foi possível atualizar a sessão de login da fonte: {details}",
+  "sourceLoginConnectionFailed": "Não foi possível conectar ao servidor da fonte. Tente novamente mais tarde. Seus dados de login salvos permanecem neste dispositivo e não foram apagados.",
   "sourceLoginDiscoveryNotice": "“{sourceName}” oferece login para conteúdo exclusivo de contas.",
   "sourceDebugMenuLabel": "Depuração",
   "sourceDebugTitle": "Depurador de fontes",

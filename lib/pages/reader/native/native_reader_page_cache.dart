@@ -227,6 +227,6 @@ extension _NativeReaderPageCache on _NativeReaderPageState {
           '$_chapterTitlePageEnabled:'
           '${_replaceRules.rulesSignature}'
           '$parsedTypographyVersion',
-    ).cacheKey('native-line-v12');
+    ).cacheKey('native-line-v13');
   }
 }

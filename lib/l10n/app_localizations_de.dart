@@ -894,6 +894,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get sourceLoginConnectionFailed =>
+      'Der Quellenserver ist nicht erreichbar. Versuche es später erneut. Deine gespeicherten Anmeldedaten bleiben auf diesem Gerät und wurden nicht gelöscht.';
+
+  @override
   String sourceLoginDiscoveryNotice(String sourceName) {
     return '„$sourceName“ bietet eine Anmeldung für reine Kontoinhalte.';
   }

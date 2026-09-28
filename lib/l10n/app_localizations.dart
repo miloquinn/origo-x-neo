@@ -1578,6 +1578,12 @@ abstract class AppLocalizations {
   /// **'Could not update the source sign-in session: {details}'**
   String sourceLoginFailed(String details);
 
+  /// No description provided for @sourceLoginConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to the source server. Try again later. Your saved sign-in details remain on this device and were not cleared.'**
+  String get sourceLoginConnectionFailed;
+
   /// No description provided for @sourceLoginDiscoveryNotice.
   ///
   /// In en, this message translates to:

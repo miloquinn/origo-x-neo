@@ -215,6 +215,7 @@
   "sourceLoginSaved": "Sesión de la fuente actualizada",
   "sourceLoginCleared": "Sesión de la fuente borrada",
   "sourceLoginFailed": "No se pudo actualizar la sesión de la fuente: {details}",
+  "sourceLoginConnectionFailed": "No se pudo conectar con el servidor de la fuente. Inténtalo de nuevo más tarde. Tus datos de inicio de sesión guardados permanecen en este dispositivo y no se borraron.",
   "sourceLoginDiscoveryNotice": "“{sourceName}” ofrece inicio de sesión para contenido exclusivo de cuentas.",
   "sourceDebugMenuLabel": "Depurar",
   "sourceDebugTitle": "Depurador de fuentes",

@@ -901,6 +901,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get sourceLoginConnectionFailed =>
+      'No se pudo conectar con el servidor de la fuente. Inténtalo de nuevo más tarde. Tus datos de inicio de sesión guardados permanecen en este dispositivo y no se borraron.';
+
+  @override
   String sourceLoginDiscoveryNotice(String sourceName) {
     return '“$sourceName” ofrece inicio de sesión para contenido exclusivo de cuentas.';
   }

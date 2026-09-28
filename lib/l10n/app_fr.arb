@@ -215,6 +215,7 @@
   "sourceLoginSaved": "Session de connexion à la source mise à jour",
   "sourceLoginCleared": "Session de connexion à la source effacée",
   "sourceLoginFailed": "Impossible de mettre à jour la session de connexion à la source : {details}",
+  "sourceLoginConnectionFailed": "Impossible de se connecter au serveur de la source. Réessayez plus tard. Vos informations de connexion enregistrées restent sur cet appareil et n’ont pas été effacées.",
   "sourceLoginDiscoveryNotice": "\"{sourceName}\" fournit une connexion pour le contenu réservé aux comptes.",
   "sourceDebugMenuLabel": "Débogage",
   "sourceDebugTitle": "Débogueur de source",

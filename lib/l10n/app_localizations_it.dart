@@ -897,6 +897,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get sourceLoginConnectionFailed =>
+      'Impossibile connettersi al server della sorgente. Riprova più tardi. I dati di accesso salvati restano su questo dispositivo e non sono stati cancellati.';
+
+  @override
   String sourceLoginDiscoveryNotice(String sourceName) {
     return '“$sourceName” offre l\'accesso per i contenuti riservati agli account.';
   }

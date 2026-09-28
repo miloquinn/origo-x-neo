@@ -215,6 +215,7 @@
   "sourceLoginSaved": "Sessione di accesso alla sorgente aggiornata",
   "sourceLoginCleared": "Sessione di accesso alla sorgente eliminata",
   "sourceLoginFailed": "Impossibile aggiornare la sessione di accesso alla sorgente: {details}",
+  "sourceLoginConnectionFailed": "Impossibile connettersi al server della sorgente. Riprova più tardi. I dati di accesso salvati restano su questo dispositivo e non sono stati cancellati.",
   "sourceLoginDiscoveryNotice": "“{sourceName}” offre l'accesso per i contenuti riservati agli account.",
   "sourceDebugMenuLabel": "Debug",
   "sourceDebugTitle": "Debugger sorgenti",
