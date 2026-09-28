@@ -5,6 +5,7 @@ import 'package:xxread/book_sources/models/registered_book_source.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/source_engine/source_browser_session.dart';
 import 'package:xxread/book_sources/source_engine/source_login_ui.dart';
+import 'package:xxread/book_sources/source_engine/source_transport.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/book_sources/source_login_page.dart';
 
@@ -136,6 +137,33 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
+  testWidgets(
+    'connection failure explains that the saved sign-in session is retained',
+    (tester) async {
+      final client = _LoginClient(
+        fields: const [SourceLoginField(name: 'email', type: 'text')],
+        loginError: SourceConnectionException(
+          host: 'reader.example.test',
+          reason: SourceConnectionFailureReason.unreachable,
+          browserFallbackAttempted: true,
+        ),
+      );
+      await _pumpPage(
+        tester,
+        source: _formSource,
+        client: client,
+        locale: const Locale('zh'),
+      );
+
+      await tester.tap(find.text('登录并保存会话'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('无法连接书源服务器，请稍后重试。已有登录信息仍保留在本机，未被清除。'), findsOneWidget);
+      expect(find.textContaining('Could not connect'), findsNothing);
+      expect(client.clearCount, 0);
+    },
+  );
+
   testWidgets('form buttons execute their configured source action', (
     tester,
   ) async {
@@ -258,6 +286,7 @@ Future<void> _pumpPage(
   Size size = const Size(430, 900),
   double textScale = 1,
   double devicePixelRatio = 1,
+  Locale? locale,
 }) async {
   tester.view.devicePixelRatio = devicePixelRatio;
   tester.view.physicalSize = size * devicePixelRatio;
@@ -272,6 +301,7 @@ Future<void> _pumpPage(
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      locale: locale,
       home: SourceLoginPage(source: source, client: client),
     ),
   );
@@ -283,11 +313,13 @@ class _LoginClient extends BookSourceClient {
     this.fields = const [],
     this.cancelLogin = false,
     this.message,
+    this.loginError,
   });
   final String? message;
 
   final List<SourceLoginField> fields;
   final bool cancelLogin;
+  final Object? loginError;
   int loginCount = 0;
   int clearCount = 0;
   Map<String, String>? lastValues;
@@ -306,6 +338,7 @@ class _LoginClient extends BookSourceClient {
   }) async {
     loginCount++;
     if (cancelLogin) throw const SourceBrowserCancelled();
+    if (loginError case final error?) throw error;
     lastValues = Map.of(values);
     lastAction = action;
     return message;

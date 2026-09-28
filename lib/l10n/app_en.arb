@@ -539,6 +539,7 @@
       }
     }
   },
+  "sourceLoginConnectionFailed": "Could not connect to the source server. Try again later. Your saved sign-in details remain on this device and were not cleared.",
   "sourceLoginDiscoveryNotice": "“{sourceName}” provides sign-in for account-only content.",
   "@sourceLoginDiscoveryNotice": {
     "placeholders": {

@@ -897,6 +897,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get sourceLoginConnectionFailed =>
+      'Não foi possível conectar ao servidor da fonte. Tente novamente mais tarde. Seus dados de login salvos permanecem neste dispositivo e não foram apagados.';
+
+  @override
   String sourceLoginDiscoveryNotice(String sourceName) {
     return '“$sourceName” oferece login para conteúdo exclusivo de contas.';
   }

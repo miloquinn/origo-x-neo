@@ -10,6 +10,7 @@ import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 import 'package:xxread/book_sources/networking/book_source_network_policy.dart';
 import 'package:xxread/book_sources/source_engine/source_request.dart';
+import 'package:xxread/book_sources/source_engine/source_transport.dart';
 import 'package:xxread/book_sources/source_engine/source_webview_loader.dart';
 
 void main() {
@@ -233,6 +234,129 @@ void main() {
         expect(browser.requests, 1);
       },
     );
+
+    test(
+      'connection failure keeps session and excludes request secrets',
+      () async {
+        final pinned = Dio()..httpClientAdapter = _ThrowingAdapter();
+        final system = Dio()..httpClientAdapter = _ThrowingAdapter();
+        final browser = _FailingWebViewLoader();
+        final transport = SourceHttpTransport(
+          dio: pinned,
+          systemDio: system,
+          webViewLoader: browser,
+          networkPolicy: BookSourceNetworkPolicy(
+            lookup: (_) async => [InternetAddress('93.184.216.34')],
+          ),
+        );
+        addTearDown(transport.close);
+        final uri = Uri.parse('https://books.test/channel?token=private-test');
+        transport.setScriptCookies('source-1', uri, 'sid=still-signed-in');
+
+        await expectLater(
+          transport.send(
+            SourceRequestTemplate.parse(
+              uri.toString(),
+              baseUri: uri,
+              cookieJarKey: 'source-1',
+            ),
+          ),
+          throwsA(
+            isA<SourceConnectionException>()
+                .having(
+                  (error) => error.reason,
+                  'reason',
+                  SourceConnectionFailureReason.unreachable,
+                )
+                .having((error) => error.host, 'host', 'books.test')
+                .having(
+                  (error) => error.browserFallbackAttempted,
+                  'browser fallback attempted',
+                  isTrue,
+                )
+                .having(
+                  (error) => error.message,
+                  'safe message',
+                  allOf(
+                    contains('sign-in session was not cleared'),
+                    isNot(contains('private-test')),
+                    isNot(contains('still-signed-in')),
+                  ),
+                ),
+          ),
+        );
+        expect(
+          transport.scriptCookieHeader('source-1', uri),
+          'sid=still-signed-in',
+        );
+        expect(browser.requests, 1);
+      },
+    );
+
+    test('connection timeout has a distinct failure reason', () async {
+      final client = Dio()..httpClientAdapter = _TimeoutAdapter();
+      final transport = SourceHttpTransport(
+        dio: client,
+        systemDio: client,
+        webViewLoader: _FailingWebViewLoader(),
+        networkPolicy: BookSourceNetworkPolicy(
+          lookup: (_) async => [InternetAddress('93.184.216.34')],
+        ),
+      );
+      addTearDown(transport.close);
+
+      await expectLater(
+        transport.send(
+          SourceRequestTemplate.parse(
+            'https://books.test/slow',
+            baseUri: Uri.parse('https://books.test'),
+          ),
+        ),
+        throwsA(
+          isA<SourceConnectionException>().having(
+            (error) => error.reason,
+            'reason',
+            SourceConnectionFailureReason.timeout,
+          ),
+        ),
+      );
+    });
+
+    test('DNS failure is classified before any request is sent', () async {
+      final adapter = _SequenceAdapter([200], body: 'unreachable');
+      final client = Dio()..httpClientAdapter = adapter;
+      final transport = SourceHttpTransport(
+        dio: client,
+        networkPolicy: BookSourceNetworkPolicy(
+          lookup: (_) async =>
+              throw const SocketException('Failed host lookup'),
+        ),
+      );
+      addTearDown(transport.close);
+
+      await expectLater(
+        transport.send(
+          SourceRequestTemplate.parse(
+            'https://books.test/channel?token=private-test',
+            baseUri: Uri.parse('https://books.test'),
+          ),
+        ),
+        throwsA(
+          isA<SourceConnectionException>()
+              .having(
+                (error) => error.reason,
+                'reason',
+                SourceConnectionFailureReason.dns,
+              )
+              .having(
+                (error) => error.message,
+                'safe message',
+                isNot(contains('private-test')),
+              ),
+        ),
+      );
+      expect(adapter.requests, 0);
+    });
 
     test('passes cancellation to an explicit WebView request', () async {
       final browser = _PendingWebViewLoader();
@@ -878,6 +1002,32 @@ class _FakeWebViewLoader implements SourceWebViewLoaderPort {
   }
 }
 
+class _FailingWebViewLoader implements SourceWebViewLoaderPort {
+  int requests = 0;
+
+  @override
+  Future<SourcePlatformBytesResult> loadBytes({
+    required Uri url,
+    required Map<String, String> headers,
+    required int maxBytes,
+    BookDownloadCancellation? cancellation,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<SourceWebViewResult> load({
+    required Uri url,
+    required String method,
+    required Map<String, String> headers,
+    String? body,
+    String? webJs,
+    String? html,
+    BookDownloadCancellation? cancellation,
+  }) async {
+    requests++;
+    throw const BookSourceProtocolException('Background browser failed.');
+  }
+}
+
 class _PendingWebViewLoader implements SourceWebViewLoaderPort {
   final Completer<void> started = Completer<void>();
   BookDownloadCancellation? cancellation;
@@ -951,6 +1101,23 @@ class _ThrowingAdapter implements HttpClientAdapter {
       requestOptions: options,
       reason: 'pinned route unavailable',
       error: const SocketException('unreachable'),
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _TimeoutAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    throw DioException(
+      requestOptions: options,
+      type: DioExceptionType.connectionTimeout,
     );
   }
 

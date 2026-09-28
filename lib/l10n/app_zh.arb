@@ -539,6 +539,7 @@
       }
     }
   },
+  "sourceLoginConnectionFailed": "无法连接书源服务器，请稍后重试。已有登录信息仍保留在本机，未被清除。",
   "sourceLoginDiscoveryNotice": "此发现页书源“{sourceName}”提供登录功能，登录后才能使用需要账号的内容。",
   "@sourceLoginDiscoveryNotice": {
     "placeholders": {

@@ -4,6 +4,7 @@ import '../../book_sources/models/registered_book_source.dart';
 import '../../book_sources/services/book_source_client.dart';
 import '../../book_sources/source_engine/source_browser_session.dart';
 import '../../book_sources/source_engine/source_login_ui.dart';
+import '../../book_sources/source_engine/source_transport.dart';
 import '../../book_sources/protocol/book_source_protocol.dart';
 import '../../utils/localization_extension.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
@@ -149,9 +150,14 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
     }
   }
 
-  String _message(Object error) => error is BookSourceProtocolException
-      ? error.message
-      : context.l10n.sourceLoginFailed('$error');
+  String _message(Object error) {
+    if (error is SourceConnectionException) {
+      return context.l10n.sourceLoginConnectionFailed;
+    }
+    return error is BookSourceProtocolException
+        ? error.message
+        : context.l10n.sourceLoginFailed('$error');
+  }
 
   @override
   Widget build(BuildContext context) {

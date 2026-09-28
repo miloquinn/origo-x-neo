@@ -856,6 +856,10 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get sourceLoginConnectionFailed =>
+      'ソースサーバーに接続できません。しばらくしてからもう一度お試しください。保存済みのログイン情報はこの端末に保持され、消去されていません。';
+
+  @override
   String sourceLoginDiscoveryNotice(String sourceName) {
     return '「$sourceName」はアカウント限定コンテンツのログインに対応しています。';
   }

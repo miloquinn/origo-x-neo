@@ -1,9 +1,29 @@
 import 'dart:typed_data';
 
+import '../protocol/book_source_protocol.dart';
 import '../services/book_download_cancellation.dart';
 import 'source_request_template.dart';
 import 'source_response.dart';
 import 'source_browser_session.dart';
+
+enum SourceConnectionFailureReason { dns, timeout, certificate, unreachable }
+
+/// A request that received no HTTP response. Authentication is unknown in
+/// this state, so callers must not offer sign-in as the implied repair.
+class SourceConnectionException extends BookSourceProtocolException {
+  SourceConnectionException({
+    required this.host,
+    required this.reason,
+    this.browserFallbackAttempted = false,
+  }) : super(
+         'Could not connect to this reading source '
+         '(${reason.name}; $host). The saved sign-in session was not cleared.',
+       );
+
+  final String host;
+  final SourceConnectionFailureReason reason;
+  final bool browserFallbackAttempted;
+}
 
 abstract interface class SourceBrowserSessionTransport {
   SourceBrowserSession browserSession(String sourceId);

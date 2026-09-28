@@ -830,6 +830,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get sourceLoginConnectionFailed =>
+      '无法连接书源服务器，请稍后重试。已有登录信息仍保留在本机，未被清除。';
+
+  @override
   String sourceLoginDiscoveryNotice(String sourceName) {
     return '此发现页书源“$sourceName”提供登录功能，登录后才能使用需要账号的内容。';
   }
@@ -7935,6 +7939,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String sourceLoginFailed(String details) {
     return '無法更新書源登入工作階段：$details';
   }
+
+  @override
+  String get sourceLoginConnectionFailed =>
+      '無法連線書源伺服器，請稍後再試。現有登入資訊仍保留在本機，並未清除。';
 
   @override
   String sourceLoginDiscoveryNotice(String sourceName) {

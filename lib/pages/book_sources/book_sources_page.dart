@@ -11,6 +11,7 @@ import 'package:xxread/book_sources/models/registered_book_source.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/book_sources/services/book_source_registry.dart';
+import 'package:xxread/book_sources/source_engine/source_transport.dart';
 import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
 import 'package:xxread/utils/localization_extension.dart';
@@ -282,13 +283,13 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
   }
 
   String _categoryErrorMessage(Object error) {
+    if (error is SourceConnectionException) {
+      return context.l10n.bookSourceConnectionFailed;
+    }
     final raw = error
         .toString()
         .replaceFirst(RegExp(r'^[^:]+Exception:\s*'), '')
         .trim();
-    if (raw.contains('Could not connect to the reading source')) {
-      return context.l10n.bookSourceConnectionFailed;
-    }
     if (raw.contains('redirected too many times') ||
         raw.contains('entered a redirect loop')) {
       return context.l10n.bookSourceRedirectFailed;

@@ -893,6 +893,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get sourceLoginConnectionFailed =>
+      'Не удалось подключиться к серверу источника. Повторите попытку позже. Сохранённые данные входа остались на этом устройстве и не были удалены.';
+
+  @override
   String sourceLoginDiscoveryNotice(String sourceName) {
     return '«$sourceName» предоставляет вход для контента, доступного только по учётной записи.';
   }
