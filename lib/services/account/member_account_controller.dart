@@ -1051,6 +1051,12 @@ class MemberAccountController extends ChangeNotifier {
     try {
       return await _pollDeviceAuthorization(authorization, generation);
     } on MemberAccountException catch (error) {
+      // A newer authentication intent rejects the old poll at the API token
+      // boundary. Cancellation owns that result, just as it owns a late
+      // successful response, so it must not escape into the next login.
+      if (_disposed || generation != _deviceAuthorizationGeneration) {
+        return false;
+      }
       if (error.code != 'network_timeout' &&
           error.code != 'network_unavailable') {
         rethrow;

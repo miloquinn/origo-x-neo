@@ -35,18 +35,23 @@ import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 import 'package:xxread/widgets/reader_shader_page_curl.dart';
 import 'package:xxread/widgets/reader_top_information_bar.dart';
 
+import 'support/book_source_progress_test_utils.dart';
+
 late ReplaceRuleService _replaceRules;
+late BookSourceProgressTestFixture _progressFixture;
 
 void main() {
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     _replaceRules = ReplaceRuleService();
+    _progressFixture = await BookSourceProgressTestFixture.create();
     GlassEffectConfig.setDisableAllGlassEffects(false);
   });
 
   tearDown(() async {
     GlassEffectConfig.setDisableAllGlassEffects(false);
     await _replaceRules.close();
+    await _progressFixture.close();
   });
 
   for (final addToShelf in [true, false]) {
@@ -80,6 +85,7 @@ void main() {
               client: client,
               shelfService: shelf,
               replaceRuleService: _replaceRules,
+              progressStore: _progressFixture.store,
               paginationCacheDao: _MemoryPaginationCacheDao(),
               initialTheme: ReaderThemes.day,
             ),
@@ -123,6 +129,7 @@ void main() {
           home: BookSourceReaderPage(
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
+            progressStore: _progressFixture.store,
             source: _testSource(),
             book: const BookSourceBook(
               id: 'book-1',
@@ -164,6 +171,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -201,6 +209,7 @@ void main() {
           home: BookSourceReaderPage(
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
+            progressStore: _progressFixture.store,
             source: _testSource(),
             book: const BookSourceBook(
               id: 'book-1',
@@ -256,6 +265,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -296,6 +306,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -381,6 +392,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: paginationCache,
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: source,
           book: book,
           client: client,
@@ -450,6 +462,7 @@ void main() {
           home: BookSourceReaderPage(
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
+            progressStore: _progressFixture.store,
             source: _testSource(),
             book: const BookSourceBook(
               id: 'book-1',
@@ -536,6 +549,7 @@ void main() {
           home: BookSourceReaderPage(
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
+            progressStore: _progressFixture.store,
             source: _testSource(),
             book: const BookSourceBook(
               id: 'book-1',
@@ -633,6 +647,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -918,6 +933,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: source,
           book: book,
           client: _FakeBookSourceClient(),
@@ -990,6 +1006,7 @@ void main() {
           home: BookSourceReaderPage(
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
+            progressStore: _progressFixture.store,
             source: _testSource(),
             book: const BookSourceBook(
               id: 'book-1',
@@ -1067,6 +1084,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -1118,6 +1136,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -1375,6 +1394,7 @@ void main() {
           home: BookSourceReaderPage(
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
+            progressStore: _progressFixture.store,
             source: _testSource(),
             book: const BookSourceBook(
               id: 'book-1',
@@ -1425,6 +1445,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -1468,6 +1489,7 @@ void main() {
           home: BookSourceReaderPage(
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
+            progressStore: _progressFixture.store,
             source: _testSource(),
             book: const BookSourceBook(
               id: 'book-1',
@@ -1856,6 +1878,7 @@ void main() {
               paginationCacheDao: _MemoryPaginationCacheDao(),
               onPaginationCacheMiss: cacheMisses.add,
               replaceRuleService: _replaceRules,
+              progressStore: _progressFixture.store,
               source: _testSource(),
               book: const BookSourceBook(
                 id: 'book-1',
@@ -2173,6 +2196,7 @@ void main() {
             home: BookSourceReaderPage(
               paginationCacheDao: _MemoryPaginationCacheDao(),
               replaceRuleService: _replaceRules,
+              progressStore: _progressFixture.store,
               source: _testSource(),
               book: const BookSourceBook(
                 id: 'book-1',
@@ -2446,6 +2470,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -2485,6 +2510,7 @@ void main() {
         home: BookSourceReaderPage(
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
+          progressStore: _progressFixture.store,
           source: _testSource(),
           book: const BookSourceBook(
             id: 'book-1',
@@ -2530,6 +2556,7 @@ void main() {
           home: BookSourceReaderPage(
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
+            progressStore: _progressFixture.store,
             source: _testSource(),
             book: const BookSourceBook(
               id: 'book-1',
@@ -2691,8 +2718,7 @@ Future<void> _openAndStartAutoPageTurn(WidgetTester tester) async {
 
 Widget _buildTabletSourceReader(
   BookSourceClient client, {
-  BookSourceReadingProgressStore progressStore =
-      const BookSourceReadingProgressStore(),
+  BookSourceReadingProgressStore? progressStore,
   PaginationCacheDao? paginationCacheDao,
   ValueChanged<int>? onPaginationCacheMiss,
 }) => MaterialApp(
@@ -2711,7 +2737,7 @@ Widget _buildTabletSourceReader(
       categories: [],
     ),
     client: client,
-    progressStore: progressStore,
+    progressStore: progressStore ?? _progressFixture.store,
   ),
 );
 
@@ -2799,6 +2825,7 @@ Widget _slideTestReader(BookSourceClient client) => MaterialApp(
   home: BookSourceReaderPage(
     paginationCacheDao: _MemoryPaginationCacheDao(),
     replaceRuleService: _replaceRules,
+    progressStore: _progressFixture.store,
     source: _testSource(),
     book: const BookSourceBook(
       id: 'book-1',

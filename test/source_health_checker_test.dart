@@ -9,6 +9,8 @@ import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 import 'package:xxread/book_sources/source_engine/scripting/source_script_contract.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test(
     'malformed availability requirements cannot certify a partial check',
     () {

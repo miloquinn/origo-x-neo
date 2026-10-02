@@ -751,12 +751,24 @@ void main() {
       );
       final anchor = _continuousPage(0, 2);
       final gesture = await tester.startGesture(const Offset(400, 500));
-      await gesture.moveBy(const Offset(0, -950));
+      await gesture.moveBy(const Offset(0, -20));
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, -700));
       await tester.pump(const Duration(seconds: 1));
       expect(_continuousPage(0, 0), findsOneWidget);
       expect(_continuousPage(0, 1), findsOneWidget);
       expect(anchor, findsOneWidget);
       final beforeCompletion = tester.getTopLeft(anchor).dy;
+      final viewport = tester.getRect(find.byType(ContinuousImageReader));
+      expect(beforeCompletion, inExclusiveRange(viewport.top, viewport.bottom));
+      expect(
+        tester.getTopLeft(_continuousPage(0, 0)).dy,
+        lessThan(viewport.top),
+      );
+      expect(
+        tester.getTopLeft(_continuousPage(0, 1)).dy,
+        lessThan(beforeCompletion),
+      );
       growingPage.complete(_tallPng);
       shrinkingPage.complete(_widePng);
       await _pumpFrames(tester, 20);
@@ -953,7 +965,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 20));
       }
       expect(source.retainedWindows.any((window) => window.last >= 4), isTrue);
-      expect(_continuousPage(1, 0), findsOneWidget);
+      expect(source.retainedWindows.last.first, 1);
 
       await tester.timedDrag(
         find.byType(ContinuousImageReader),

@@ -8,6 +8,8 @@ import 'package:xxread/book_sources/source_engine/source_runtime.dart';
 import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('SourceDebugSession', () {
     test(
       'runs the full search chain and emits ordered stage and network events',

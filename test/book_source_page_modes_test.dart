@@ -21,12 +21,20 @@ import 'package:xxread/widgets/reader_progress_footer.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
 
 import 'support/reader_cache_test_utils.dart';
+import 'support/book_source_progress_test_utils.dart';
 
 late ReplaceRuleService _replaceRules;
+late BookSourceProgressTestFixture _progress;
 
 void main() {
-  setUp(() => _replaceRules = ReplaceRuleService());
-  tearDown(() => _replaceRules.close());
+  setUp(() async {
+    _replaceRules = ReplaceRuleService();
+    _progress = await BookSourceProgressTestFixture.create();
+  });
+  tearDown(() async {
+    await _replaceRules.close();
+    await _progress.close();
+  });
 
   testWidgets('opens a source chapter in horizontal slide mode', (
     tester,
@@ -604,6 +612,7 @@ Widget _testApp({
   supportedLocales: AppLocalizations.supportedLocales,
   home: BookSourceReaderPage(
     paginationCacheDao: MemoryPaginationCacheDao(),
+    progressStore: _progress.store,
     replaceRuleService: _replaceRules,
     source: RegisteredBookSource(
       id: 'page-mode-source',

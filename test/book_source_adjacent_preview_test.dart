@@ -12,12 +12,20 @@ import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 
 import 'support/reader_cache_test_utils.dart';
+import 'support/book_source_progress_test_utils.dart';
 
 late ReplaceRuleService _replaceRules;
+late BookSourceProgressTestFixture _progress;
 
 void main() {
-  setUp(() => _replaceRules = ReplaceRuleService());
-  tearDown(() => _replaceRules.close());
+  setUp(() async {
+    _replaceRules = ReplaceRuleService();
+    _progress = await BookSourceProgressTestFixture.create();
+  });
+  tearDown(() async {
+    await _replaceRules.close();
+    await _progress.close();
+  });
 
   testWidgets('previous-chapter slide preview exposes the whole chapter', (
     tester,
@@ -42,6 +50,11 @@ void main() {
       () => client.requestedChapterIds.contains('chapter-1'),
       'previous chapter preload',
     );
+    await _pumpUntil(tester, () {
+      final reader = find.byType(PageView);
+      return reader.evaluate().isNotEmpty &&
+          (tester.widget<PageView>(reader).controller?.page ?? 0) > 2;
+    }, 'previous chapter pagination');
 
     final pageView = find.byType(PageView);
     expect(pageView, findsOneWidget);
@@ -63,6 +76,11 @@ void main() {
 
     final firstLeaf = previewAt(0);
     final lastLeaf = previewAt(leadingPageCount - 1);
+    final currentLeaf =
+        delegate.builder(tester.element(pageView), leadingPageCount)!
+            as ReaderPaperPageLeaf;
+    expect(currentLeaf.metadata.chapterTitle, '当前章');
+    expect(currentLeaf.metadata.pageNumber, 1);
     expect(lastLeaf.metadata.chapterTitle, '上一章');
     expect(lastLeaf.metadata.pageCount, greaterThan(1));
     expect(lastLeaf.metadata.pageNumber, lastLeaf.metadata.pageCount);
@@ -83,6 +101,23 @@ void main() {
       () => client.requestedChapterIds.contains('chapter-2'),
       'next chapter preload',
     );
+    await _pumpUntil(tester, () {
+      final reader = find.byType(PageView);
+      if (reader.evaluate().isEmpty) return false;
+      final delegate =
+          tester.widget<PageView>(reader).childrenDelegate
+              as SliverChildBuilderDelegate;
+      final last = delegate.builder(
+        tester.element(reader),
+        delegate.estimatedChildCount! - 1,
+      );
+      if (last is! LayoutBuilder) return false;
+      final preview = last.builder(
+        tester.element(reader),
+        const BoxConstraints.tightFor(width: 800, height: 600),
+      );
+      return preview is ReaderPaperPageLeaf && preview.metadata.pageCount > 0;
+    }, 'next chapter pagination');
 
     final pageView = find.byType(PageView);
     final pageViewWidget = tester.widget<PageView>(pageView);
@@ -125,6 +160,7 @@ Widget _buildReader(_AdjacentPreviewClient client) => MaterialApp(
   supportedLocales: AppLocalizations.supportedLocales,
   home: BookSourceReaderPage(
     paginationCacheDao: MemoryPaginationCacheDao(),
+    progressStore: _progress.store,
     replaceRuleService: _replaceRules,
     source: RegisteredBookSource(
       id: 'preview-source',

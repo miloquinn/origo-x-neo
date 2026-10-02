@@ -337,8 +337,11 @@ void main() {
     await tester.tap(find.byKey(const Key('bookSourceImportUsageNotice')));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Origo includes no sources'), findsOneWidget);
-    expect(find.textContaining('bypass sign-in, payment, DRM'), findsOneWidget);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byKey(const Key('bookSourceImportUsageNotice'))),
+    );
+    expect(find.text(l10n.bookSourcesNoOfficialSourcesNotice), findsOneWidget);
+    expect(find.text(l10n.bookSourcesResponsibilityAck), findsOneWidget);
     FilledButton connectButton() => tester.widget<FilledButton>(
       find.byKey(const Key('bookSourceConnectButton')),
     );

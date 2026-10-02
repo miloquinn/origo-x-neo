@@ -9,6 +9,8 @@ import 'package:xxread/book_sources/source_engine/source_runtime.dart';
 import 'package:xxread/book_sources/source_engine/source_script_contract.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test('resolves relative comic images from the final response URL', () async {

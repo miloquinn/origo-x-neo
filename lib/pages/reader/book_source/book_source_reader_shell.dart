@@ -163,6 +163,7 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
         }
         _ensurePagination(paginationViewport, content: content);
         _schedulePagedLayoutWarm(_chapterIndex + 1);
+        _schedulePagedLayoutWarm(_chapterIndex - 1);
         final paged = switch (_pageMode) {
           BookSourcePageMode.instantPage => _buildInstantReader(),
           BookSourcePageMode.horizontalSlide => _buildSlideReader(),

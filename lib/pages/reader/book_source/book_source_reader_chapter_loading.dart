@@ -344,7 +344,42 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
                 _pagedViewportSize == viewport &&
                 identical(_prefetchedContent[index], content),
           );
-          if (result != null && mounted) _updateReaderState(() {});
+          if (result != null && mounted) {
+            final leading = _slideLeadingPageCount(_chapterIndex);
+            final needsSlideRebase =
+                _pageMode == BookSourcePageMode.horizontalSlide &&
+                index == _chapterIndex - 1 &&
+                leading != _pageViewLeading;
+            _updateReaderState(() {
+              if (needsSlideRebase) {
+                _pageViewLeading = leading;
+                _ignoreSlidePageChanges = true;
+              }
+            });
+            if (needsSlideRebase) {
+              final controller = _pageController;
+              final chapter = _chapterIndex;
+              final serial = _chapterLoadSerial;
+              final paginationKey = _paginationKey;
+              bool isCurrent() =>
+                  mounted &&
+                  _pageMode == BookSourcePageMode.horizontalSlide &&
+                  _chapterIndex == chapter &&
+                  _chapterLoadSerial == serial &&
+                  _paginationKey == paginationKey &&
+                  _pageViewLeading == leading &&
+                  identical(_pageController, controller);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!isCurrent()) return;
+                if (controller.hasClients) {
+                  controller.jumpToPage(_pageIndex + leading);
+                }
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (isCurrent()) _ignoreSlidePageChanges = false;
+                });
+              });
+            }
+          }
           return result;
         })
         .whenComplete(() {

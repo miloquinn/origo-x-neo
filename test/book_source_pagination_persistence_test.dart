@@ -16,6 +16,8 @@ import 'package:xxread/services/books/pagination_cache_dao.dart';
 import 'package:xxread/data/migration/pagination_cache_schema_migration.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
+import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
+import 'package:xxread/data/migration/book_source_reading_progress_schema_migration.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +33,7 @@ void main() {
     );
     await database.execute('CREATE TABLE books(id INTEGER PRIMARY KEY)');
     await PaginationCacheSchemaMigration.migrate(database);
+    await BookSourceReadingProgressSchemaMigration.migrate(database);
   });
   tearDownAll(() async {
     if (database.isOpen) await database.close();
@@ -76,6 +79,9 @@ void main() {
                 categories: const [],
               ),
               replaceRuleService: rules,
+              progressStore: BookSourceReadingProgressStore(
+                database: () async => database,
+              ),
               client: client,
               paginationCacheDao: PaginationCacheDao(
                 databaseProvider: () async => database,

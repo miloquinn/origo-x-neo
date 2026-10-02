@@ -84,3 +84,5 @@ SOURCE_HTML_PATH=/absolute/光遇聚合.json flutter test --no-pub tool/source_h
 ## 2026-10-02 在线复测
 
 当前原文件搜索链路：光遇对两个查询均在搜索阶段报 `TypeError: undefined is not an object (evaluating books_data.length)`，未进入详情、目录或正文；文库搜索返回 HTTP 403。上述先前成功结果不能代表当前上游可用性。当前离线测试证明通用规则/桥接契约，真实站点恢复后仍需重新验收完整在线链路。
+
+只读上游定位：按 APP 默认搜索参数直接请求 v1–v7 七条线路，7/7 为 HTTP 502（text/plain，16 bytes，非 JSON）；同服务 HTML/JSON 配置接口为 HTTP 200。源脚本捕获所有线路的 HTTP 错误后返回空对象，继而读取缺失的 data.length，因此二次 TypeError 掩盖了上游 502。远端新版仍有相同错误处理。通用传输层正常拒绝失败响应，不应添加站点特判或把失败转换为空成功。

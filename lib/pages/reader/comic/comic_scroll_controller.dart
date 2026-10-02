@@ -35,16 +35,24 @@ class ComicScrollController extends ScrollController {
   }) {
     final pixels = hasClients ? position.pixels + _pendingCorrection : 0.0;
     var anchor = _keys.isEmpty ? null : indexAt(pixels);
-    // If the partially visible loader itself changes height, retain the next
-    // visible page rather than pushing the content already being read away.
-    if (anchor != null &&
-        hasClients &&
-        anchor + 1 < _keys.length &&
-        pixels > _offsets[anchor] &&
-        _offsets[anchor + 1] < pixels + position.viewportDimension) {
-      final newIndex = keys.indexOf(_keys[anchor]);
-      if (newIndex >= 0 && extents[newIndex] != extentOf(anchor)) {
-        anchor++;
+    // Retain the page after the last changing extent that is visible. The
+    // active anchor can sit below the viewport top, so recomputing it solely
+    // with indexAt() would lose it when several images resolve in succession.
+    if (anchor != null && hasClients) {
+      final viewportAnchor = anchor;
+      final viewportEnd = pixels + position.viewportDimension;
+      for (
+        var candidate = anchor;
+        candidate + 1 < _keys.length && _offsets[candidate] < viewportEnd;
+        candidate++
+      ) {
+        final newIndex = keys.indexOf(_keys[candidate]);
+        if (newIndex >= 0 &&
+            extents[newIndex] != extentOf(candidate) &&
+            (candidate > viewportAnchor || pixels > _offsets[candidate]) &&
+            _offsets[candidate + 1] < viewportEnd) {
+          anchor = candidate + 1;
+        }
       }
     }
     final anchorKey = anchor == null ? null : _keys[anchor];

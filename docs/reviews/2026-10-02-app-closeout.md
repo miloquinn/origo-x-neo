@@ -25,7 +25,7 @@ The local recovery ref above contains the pre-closeout working tree as a Git tre
 - Account/commerce: six isolated Flutter suites passed; account page: 20 tests passed. Discovery/settings: three isolated test invocations passed; tablet home/settings: two tests passed.
 - Store tools: 16 iOS packaging tests, 30 macOS packaging tests, 21 App Store Connect tool tests passed. Changelog/Python tests: 14 passed.
 - Full Dart format gate: 991 files, zero changes. Full analyzer: zero errors/warnings, eight existing style infos in untouched files.
-- Remote CI: pending.
+- Remote CI: [PR checks](https://github.com/miloquinn/origo-x-neo/actions/workflows/pr-checks.yml) and [platform smoke builds](https://github.com/miloquinn/origo-x-neo/actions/workflows/platform-smoke.yml). Match each run to the current main SHA before interpreting its result.
 
 ## Store state read back on 2026-10-02
 
@@ -43,5 +43,26 @@ The local recovery ref above contains the pre-closeout working tree as a Git tre
 
 ## Fresh online source readback — 2026-10-02
 
-- Guangyu: search currently fails before detail/catalog/content with `TypeError: undefined is not an object (evaluating books_data.length)`; reproduced with two queries. The earlier successful single-book result is historical evidence, not current service availability. Further upstream response diagnosis is recorded separately.
+- Guangyu: search currently fails before detail/catalog/content with `TypeError: undefined is not an object (evaluating books_data.length)`; reproduced with two queries. The earlier successful single-book result is historical evidence, not current service availability. Direct readback of all seven search lines returned HTTP 502, text/plain and 16 bytes each, while HTML/JSON configuration endpoints returned HTTP 200. The source catches each failed request and then dereferences missing data; no engine change is appropriate.
 - Wenku: search request reaches the upstream and returns HTTP 403. Offline contract coverage does not demonstrate current online reading.
+
+## Primary checkout reconciliation
+
+The original working tree was rehashed using an isolated Git index and matched the recovery snapshot exactly before reconciliation. Primary main now follows the closeout commit. Fourteen local status entries remain: DESIGN.md and design/preview/marketing assets; application and CI edits are committed. Ignored build outputs and private files were preserved.
+
+The first remote run passed all platform product builds: Android debug APK, Web release, Linux release, Windows release, macOS release and unsigned iOS release, plus response codec validation. Its newly restored acknowledgement case exposed a stale Origo-vs-Origo-X English substring; the test now reads the current localized contract and retains disabled-before-consent/enabled-after-consent assertions.
+
+## Core follow-up repair plan
+
+The complete first Core run exposed missing test platform initialization, reader/account timing fixtures and eight production file responsibility-budget violations. Reproduce failed cases alone before changing code. Initialize platform-dependent source fixtures explicitly and retain session behavior; repair deterministic reader/account fixtures; split oversized files at cohesive existing responsibility boundaries, retaining public APIs and all architecture assertions. Run each affected regression suite and the full format/analyzer gates before repeating remote CI.
+
+## Follow-up repairs and evidence
+
+- Keep secure session defaults; initialize six platform-dependent source fixtures explicitly. Source lifecycle now closes idempotently and rejects new operations after closure. Seven affected source suites: 60 tests passed in isolated processes.
+- Reject stale authorization-poll errors after cancellation or a newer authentication intent. Account cancellation, account service and account page: 96 tests passed.
+- Use the production SQLite progress schema/store through a per-test database in source reader fixtures; keep legacy progress migration and real persistence assertions. Reading modes: 16 tests passed; pagination persistence: one test passed.
+- Retry previous-chapter pagination after the viewport becomes available and rebase the leading slide pages while keeping the current page. Both adjacent-preview regressions passed; await rendered pagination instead of treating request initiation as completed preparation.
+- Keep comic scroll anchors stable across multiple visible image-extent changes. Repair touch-slop geometry and assert the actual retained chapter window, while preserving visible-position and reverse-navigation assertions. Comic reader: all 21 tests passed, including both original failures run alone.
+- Split eight oversized source files into ten cohesive parts. All original architecture assertions remain active; all files stay below the 800-line responsibility budget. Architecture: 4 tests passed; affected service/controller/script suites: 94 tests passed; three independent UI representative cases passed.
+- Native continuous auto-scroll tests explicitly configure visible chapter fractions and read rendered footer text. The original failing chapter-boundary case passed in its own process.
+- Full analyzer after the repairs: zero errors/warnings, eight existing style infos. Python/changelog/isolated-manifest verification: 14 tests passed and every isolated case remains covered. The definitive remote result must be read against the final main SHA.

@@ -7,6 +7,8 @@ import 'package:xxread/book_sources/source_engine/source_request.dart';
 import 'package:xxread/book_sources/source_engine/source_runtime.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test(

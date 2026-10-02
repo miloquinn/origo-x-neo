@@ -418,6 +418,11 @@ Future<void> _openReader(
   Size surfaceSize = const Size(480, 800),
 }) async {
   debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  final preferences = await SharedPreferences.getInstance();
+  await preferences.setString(
+    ReaderSettingsStore.chapterProgressStyleKey,
+    ReaderChapterProgressStyle.fraction.name,
+  );
   await tester.binding.setSurfaceSize(surfaceSize);
   await tester.pumpWidget(
     MaterialApp(
@@ -510,10 +515,17 @@ Future<void> _closeReader(WidgetTester tester) async {
 ({int chapter, int chapterCount, int page, int pageCount}) _pageStatus(
   WidgetTester tester,
 ) {
-  final text = tester
-      .widget<Text>(find.byKey(const ValueKey('native-reader-status')))
-      .data!;
-  final fractions = RegExp(r'(\d+)/(\d+)').allMatches(text).toList();
+  final status = find.byKey(const ValueKey('native-reader-status'));
+  final widget = tester.widget(status);
+  final text = widget is Text
+      ? widget.data!
+      : tester
+            .widgetList<Text>(
+              find.descendant(of: status, matching: find.byType(Text)),
+            )
+            .map((label) => label.data ?? '')
+            .join(' ');
+  final fractions = RegExp(r'(\d+)\s*/\s*(\d+)').allMatches(text).toList();
   expect(fractions, hasLength(2), reason: 'Unexpected reader status: $text');
   return (
     chapter: int.parse(fractions[0].group(1)!),
