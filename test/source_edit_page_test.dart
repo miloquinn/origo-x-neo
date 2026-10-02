@@ -59,7 +59,7 @@ void main() {
     expect(find.byKey(const Key('sourceEditSave')), findsOneWidget);
 
     await _enter(tester, 'sourceEdit.bookSourceName', 'Edited from menu');
-    await tester.tap(find.byKey(const Key('sourceEditSave')));
+    await _tapSave(tester);
     await _pumpUntilEditorCloses(tester);
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -95,12 +95,14 @@ void main() {
         '#article@textNodes',
       );
 
-      await tester.tap(find.byKey(const Key('sourceEditSave')));
+      await _tapSave(tester);
       await _pumpUntilEditorCloses(tester);
 
-      final reloaded = (await BookSourceRegistry(
-        storage: _MemoryRegistryStorage(storage.raw),
-      ).load()).single;
+      final reloaded = (await tester.runAsync(
+        () => BookSourceRegistry(
+          storage: _MemoryRegistryStorage(storage.raw),
+        ).load(),
+      ))!.single;
       expect(reloaded.name, 'Edited source');
       expect(reloaded.sourceConfig?['ruleSearch'], {
         'bookList': '.book',
@@ -159,7 +161,10 @@ void main() {
 
     expect(find.byType(SourceEditPage), findsNothing);
     expect(storage.raw, before);
-    expect((await registry.load()).single.name, 'Original source');
+    expect(
+      (await tester.runAsync(registry.load))!.single.name,
+      'Original source',
+    );
   });
 
   testWidgets('required source name and URL prevent saving', (tester) async {
@@ -168,7 +173,7 @@ void main() {
 
     await _enter(tester, 'sourceEdit.bookSourceUrl', '');
     await _enter(tester, 'sourceEdit.bookSourceName', '');
-    await tester.tap(find.byKey(const Key('sourceEditSave')));
+    await _tapSave(tester);
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Enter a source name'), findsOneWidget);
@@ -189,14 +194,14 @@ void main() {
     await _openEditor(tester, registry: registry);
     await _enter(tester, 'sourceEdit.bookSourceName', 'Retry source');
 
-    await tester.tap(find.byKey(const Key('sourceEditSave')));
+    await _tapSave(tester);
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Could not save the source. Try again.'), findsOneWidget);
     expect(_text(tester, 'sourceEdit.bookSourceName'), 'Retry source');
     expect(registry.updateCalls, 1);
 
-    await tester.tap(find.byKey(const Key('sourceEditSave')));
+    await _tapSave(tester);
     await _pumpUntilEditorCloses(tester);
 
     expect(registry.updateCalls, 2);
@@ -220,7 +225,7 @@ void main() {
       'https://duplicate.example',
     );
 
-    await tester.tap(find.byKey(const Key('sourceEditSave')));
+    await _tapSave(tester);
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(
@@ -289,12 +294,25 @@ Future<void> _selectTab(WidgetTester tester, String label) async {
   await tester.pump(const Duration(milliseconds: 350));
 }
 
+Future<void> _tapSave(WidgetTester tester) async {
+  // The registry keeps a process-wide mutation Future. Start persistence in
+  // the real async zone so later tests can drain it after this fake clock ends.
+  await tester.runAsync(
+    () => tester.tap(find.byKey(const Key('sourceEditSave'))),
+  );
+}
+
 Future<void> _pumpUntilEditorCloses(WidgetTester tester) async {
   for (
     var i = 0;
     i < 40 && find.byType(SourceEditPage).evaluate().isNotEmpty;
     i++
   ) {
+    // Registry mutations are serialized on a process-wide Future created
+    // outside the widget fake clock. Let that queue advance before pumping
+    // the frame that closes the editor; advancing virtual time alone cannot
+    // establish that persistence completed.
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump(const Duration(milliseconds: 50));
   }
   expect(find.byType(SourceEditPage), findsNothing);

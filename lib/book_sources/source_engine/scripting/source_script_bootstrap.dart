@@ -73,6 +73,7 @@ class SourceScriptBootstrap {
       'hasChapter': context.chapter.isNotEmpty,
       'book': context.book,
       'chapter': context.chapter,
+      'htmlBridge': context.htmlBridge,
     };
   }
 
@@ -88,7 +89,10 @@ class SourceScriptBootstrap {
     return context.source.baseUri.origin;
   }
 
-  static String build(Map<String, Object?> payload) {
+  static String build(
+    Map<String, Object?> payload, {
+    bool awaitResult = false,
+  }) {
     // A source's own defensive `try { java.ajax(...) } catch (e) {...}`
     // would otherwise silently swallow the internal marker error this
     // engine throws to request a real (async) network/interaction round
@@ -103,7 +107,7 @@ class SourceScriptBootstrap {
       guardedPayload['sharedScript'],
     );
     return '''
-(() => {
+(${awaitResult ? 'async ' : ''}() => {
   const __payload = $encoded;
   const __state = Object.assign({}, __payload.state || {});
   const __sourceValues = Object.assign({}, __payload.sourceValues || {});
@@ -206,7 +210,7 @@ class SourceScriptBootstrap {
   };
   const __host = (op, args) => sendMessage(
     '$sourceScriptHostChannel',
-    JSON.stringify({ sourceId: __payload.sourceId, op, args: args || [] })
+    JSON.stringify({ sourceId: __payload.sourceId, invocationId: __payload.invocationId, op, args: args || [] })
   );
   const __pad2 = (value) => String(value).padStart(2, '0');
   function __javaMap(value) {
@@ -693,6 +697,93 @@ class SourceScriptBootstrap {
     }
     return reply.value || { body: '', finalUrl: String(url) };
   }
+  function __htmlBridgeHandler(name, ...args) {
+    switch (String(name)) {
+      case 'CookieJar':
+      case 'refreshContent':
+      case 'refreshExplore':
+        return null;
+      case 'setHtml':
+        throw new Error('FlutterJSBridge handler setHtml is not supported.');
+      case 'log':
+      case 'text':
+      case 'showToast':
+      case 'showLongToast':
+        if (args.length) __messages.push(String(args[args.length - 1] ?? ''));
+        return true;
+      case 'getWidth': return 1080;
+      case 'getHeight': return 1920;
+      case 'buildNumber': return '0';
+      case 'version': return '0.0.0';
+      case 'getsearch': return -1;
+      case 'device': return 'unknown';
+      case 'id': return java.androidId();
+      case 'getWebViewUA': return java.getWebViewUA();
+      case 'htmlToText': return __host('htmlText', [String(args[0] ?? '')]);
+      case 'toTraditional': return __host('simplifiedToTraditional', [String(args[0] ?? '')]);
+      case 'toSimplified': return __host('traditionalToSimplified', [String(args[0] ?? '')]);
+      case 'base64encode': return __host('base64Encode', [String(args[0] ?? '')]);
+      case 'base64decode': return __host('base64Decode', [String(args[0] ?? '')]);
+      case 'cache.get': {
+        const key = String(args[0] ?? '');
+        return key === 'LoginInfo'
+          ? JSON.stringify(__loginInfo)
+          : (__host('cacheGet', [key]) ?? '');
+      }
+      case 'cache.set': {
+        const key = String(args[0] ?? '');
+        if (key === 'LoginInfo') {
+          try { __loginInfo = Object.assign({}, JSON.parse(String(args[1] ?? '{}')) || {}); }
+          catch (_) { __loginInfo = {}; }
+          return null;
+        }
+        return __host('cachePut', [key, args[1], 0]);
+      }
+      case 'cache.remove': {
+        const key = String(args[0] ?? '');
+        if (key === 'LoginInfo') {
+          __loginInfo = {};
+          return null;
+        }
+        return __host('cacheDelete', [key]);
+      }
+      case 'cookie.get': return __host('cookieGet', [String(args[0] ?? '')]);
+      case 'cookie.getCookie': return __host('cookieGetKey', [String(args[0] ?? ''), String(args[1] ?? '')]);
+      case 'cookie.set': return __host('cookieSet', [String(args[0] ?? ''), String(args[1] ?? '')]);
+      case 'cookie.setcookie': {
+        const existing = __host('cookieGet', [String(args[0] ?? '')]);
+        const next = String(args[1] ?? '') + '=' + String(args[2] ?? '');
+        return __host('cookieSet', [String(args[0] ?? ''), existing ? existing + '; ' + next : next]);
+      }
+      case 'cookie.remove': return __host('cookieRemove', [String(args[0] ?? '')]);
+      case 'http': {
+        const method = String(args[0] || 'get').toUpperCase();
+        const headers = args[3] ? JSON.parse(String(args[3])) : {};
+        if (args[5] && !Object.keys(headers).some(key => key.toLowerCase() === 'content-type')) {
+          headers['Content-Type'] = String(args[5]);
+        }
+        const response = __sourceNetwork(method, args[1], args[2] || null, headers);
+        return {
+          data: response.body || '',
+          body: response.body || '',
+          headers: response.headers || {},
+          statusCode: Number(response.statusCode || 200),
+          statusMessage: '',
+          url: response.finalUrl || String(args[1] || '')
+        };
+      }
+      case 'webview': {
+        const headers = args[4] ? JSON.parse(String(args[4])) : {};
+        return __sourceNetwork('WEBVIEW', args[0], args[3] || args[2] || null, headers, args[1]).body || '';
+      }
+      case 'getdurChapterIndex': return -1;
+      case 'getReadBook': return null;
+      case 'getLoginUser': return '';
+      case 'getsvg': return [];
+      default:
+        throw new Error('Unsupported FlutterJSBridge handler: ' + String(name));
+    }
+  }
   if (__payload.result && __payload.result.__networkResponse === true) {
     globalThis.result = __responseObject(__payload.result, __payload.result.finalUrl);
   }
@@ -702,6 +793,13 @@ class SourceScriptBootstrap {
   const __globalDescriptors = new Map(__globalNames(__globals).map(
     name => [name, Object.getOwnPropertyDescriptor(__globals, name)]
   ));
+  if (__payload.htmlBridge === true) {
+    globalThis.window = globalThis;
+    globalThis.window.addEventListener = () => null;
+    globalThis.window.flutter_inappwebview = {
+      callHandler: (name, ...args) => Promise.resolve(__htmlBridgeHandler(name, ...args))
+    };
+  }
   const __program = '(function(__exportShared){\\n' +
     (__payload.sharedScript || '') +
     '\\n' + ${jsonEncode(sharedFunctionExports)} +
@@ -723,7 +821,7 @@ class SourceScriptBootstrap {
   globalThis.Date = __ReplayDate;
   Math.random = () => __host('replayRandom', []);
   const __run = (0, eval)(__program);
-  let __value = __run((name, value) => {
+  let __value = ${awaitResult ? 'await ' : ''}__run((name, value) => {
     __globals[name] = value;
   });
   if (__value === undefined || typeof __value === 'function') __value = '';

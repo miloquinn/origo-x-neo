@@ -6,14 +6,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/book_sources/models/registered_book_source.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/book_sources/services/book_source_registry.dart';
+import 'package:xxread/book_sources/source_engine/source_login_ui.dart';
 import 'package:xxread/book_sources/source_engine/source_transport.dart';
 import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
+import 'package:xxread/services/core/app_settings_service.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/layout_helper.dart';
 import 'package:xxread/utils/page_style_helper.dart';
@@ -383,10 +386,28 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
 
   @override
   Widget build(BuildContext context) {
+    var showStandardSourceFilters = true;
+    try {
+      showStandardSourceFilters = context
+          .watch<AppSettingsNotifier>()
+          .showDiscoverSourceFilters;
+    } on ProviderNotFoundException {
+      // Standalone discovery embeds keep the default visible state.
+    }
+    if (!showStandardSourceFilters &&
+        _layoutController.layout.value == BookSourceDiscoverLayout.standard &&
+        _state.hasOrganizationFilter) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _state.hasOrganizationFilter) {
+          _pendingScrollOffset = 0;
+          unawaited(_controller.changeOrganizationScope());
+        }
+      });
+    }
     if (_usesDiscoverySidebar) {
       return NotificationListener<ScrollNotification>(
         onNotification: _handleCategoryScroll,
-        child: _buildTabletDiscovery(),
+        child: _buildTabletDiscovery(showStandardSourceFilters),
       );
     }
     final useRailNavigation =
@@ -448,7 +469,7 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
                           onManage: () => unawaited(_openSourceManagement()),
                         ),
                       ),
-                    if (!listLayout) ...[
+                    if (!listLayout && showStandardSourceFilters) ...[
                       _organizationFilters(),
                       const SizedBox(height: 12),
                     ],
@@ -640,7 +661,7 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
         .where((candidate) => candidate.id == id)
         .firstOrNull;
     if (source?.sourceProtocol != BookSourceProtocolKind.readingSource ||
-        '${source?.sourceConfig?['loginUrl'] ?? ''}'.trim().isEmpty) {
+        !sourceDeclaresLogin(source?.sourceConfig)) {
       return null;
     }
     return source;

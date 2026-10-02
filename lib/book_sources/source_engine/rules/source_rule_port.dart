@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 
 import 'package:xxread/book_sources/source_engine/scripting/source_script_contract.dart';
@@ -34,7 +35,7 @@ class SourceRuleDocument {
       }
     }
     return SourceRuleDocument._(
-      value: html_parser.parse(body),
+      value: _parseSourceRuleHtml(body),
       baseUri: baseUri,
       scriptContext: scriptContext,
       ruleState: ruleState,
@@ -88,6 +89,23 @@ class SourceRuleDocument {
     ruleState: ruleState,
     rawText: rawText,
   );
+}
+
+Document _parseSourceRuleHtml(String body) {
+  final firstTag = RegExp(
+    r'<\s*([A-Za-z][\w:.-]*)',
+  ).firstMatch(body)?.group(1)?.toLowerCase();
+  return switch (firstTag) {
+    'td' ||
+    'th' => html_parser.parse('<table><tbody><tr>$body</tr></tbody></table>'),
+    'tr' => html_parser.parse('<table><tbody>$body</tbody></table>'),
+    'tbody' ||
+    'thead' ||
+    'tfoot' ||
+    'caption' ||
+    'colgroup' => html_parser.parse('<table>$body</table>'),
+    _ => html_parser.parse(body),
+  };
 }
 
 abstract interface class SourceRuleSelectorPort {

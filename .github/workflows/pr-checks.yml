@@ -57,18 +57,18 @@ jobs:
           python3 -m unittest discover -s test -p 'test_*.py'
           python3 tool/generate_changelog.py --check
 
-      - name: Verify formatting
+      - name: Core Flutter validation / formatting
         run: dart format --output=none --set-exit-if-changed lib test tool
 
-      - name: Analyze source
+      - name: Core Flutter validation / analyze source
         # Keep existing warnings visible without making them fatal. Analyzer
         # errors still fail the job.
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      - name: Validate QuickJS source compatibility
+      - name: Core Flutter validation / QuickJS source compatibility
         run: flutter test test/source_script_engine_test.dart test/source_script_compatibility_test.dart
 
-      - name: Run tests with coverage
+      - name: Core Flutter validation / tests with coverage
         shell: bash
         run: |
           set -euo pipefail
@@ -76,7 +76,6 @@ jobs:
             find test -type f -name '*_test.dart' \
               ! -name 'webdav*_test.dart' \
               ! -name '*sync*_test.dart' \
-              ! -name 'metadata_checkpoint_test.dart' \
               ! -name 'txt_edit_reference_service_test.dart' \
               ! -name 'book_source_management_page_test.dart' \
               ! -name 'book_source_management_organization_test.dart' \
@@ -92,19 +91,75 @@ jobs:
           )
           flutter test --coverage --exclude-tags isolated-process "${test_files[@]}"
 
-      - name: Core Flutter validation and Stateful widget tests - WebDAV isolated processes
+      - name: Explain Core Flutter validation failures
+        if: ${{ failure() }}
+        run: |
+          echo '::error title=Core Flutter validation failed::Product builds and stateful widget tests run as separate jobs.'
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() && hashFiles('coverage/lcov.info') != '' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flutter-coverage-${{ github.sha }}
+          path: coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 7
+
+  stateful-widget-tests:
+    name: Stateful widget tests
+    runs-on: ubuntu-latest
+    # This job deliberately starts a fresh Flutter process for more than 150
+    # state-owning cases. Allow the isolation overhead without leaving a hung
+    # runner alive indefinitely.
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Prepare QuickJS runtime for tests
+        shell: bash
+        run: |
+          quickjs_dir="${PUB_CACHE}/hosted/pub.dev/flutter_js-0.8.7/linux/shared"
+          test -f "${quickjs_dir}/libquickjs_c_bridge_plugin.so"
+          echo "LD_LIBRARY_PATH=${quickjs_dir}:${LD_LIBRARY_PATH:-}" >> "${GITHUB_ENV}"
+
+      - name: Verify Stateful widget test manifest
+        run: python3 tool/verify_stateful_test_manifest.py
+
+      - name: Stateful widget tests / WebDAV isolated processes
         run: python3 tool/test_webdav_isolated.py
 
-      - name: Stateful widget tests (isolated processes)
+      - name: Stateful widget tests / isolated processes
         shell: bash
         run: |
           set -euo pipefail
-          flutter test test/book_source_horizontal_page_commit_test.dart
           # These widget suites own process-global preferences, controllers,
           # image codecs, and platform channels. Running one case per process
           # keeps a framework leak from looking like an application failure.
+          horizontal_tests=(
+            'horizontal source page commits only after scrolling settles'
+            'horizontal source page does not save a withdrawn turn'
+          )
+          for test_name in "${horizontal_tests[@]}"; do
+            flutter test test/book_source_horizontal_page_commit_test.dart \
+              --plain-name "$test_name"
+          done
+
           management_tests=(
+            'source menu toggles discovery filter visibility'
             'keeps native ORSP source management available'
+            'centers the title between matching glass controls'
             'all-scope review retains diagnoses for disabled sources'
             'uses one add flow regardless of the advanced toggle'
             'keeps dense source metadata readable on narrow phones'
@@ -114,12 +169,15 @@ jobs:
             'keeps source text aligned when selection mode opens'
             'shows operator-supplied rights metadata as unverified'
             'large source collections build lazily and remain searchable'
+            'a background maintenance failure is not announced as success'
+            'unsaved health evidence does not make later checks skip a source'
           )
           for test_name in "${management_tests[@]}"; do
             flutter test test/book_source_management_page_test.dart \
               --plain-name "$test_name"
           done
 
+          flutter test test/library_cover_storage_repair_test.dart
           flutter test test/book_source_maintenance_page_test.dart
 
           organization_tests=(
@@ -164,6 +222,7 @@ jobs:
             'disabled TXT title page places the heading above body text'
             'opening placeholder uses the seeded reader theme'
             'waits for reader font restoration before revealing text'
+            'applies reader system UI before revealing the first text page'
             'vertical paging preserves the dedicated TXT chapter title page'
             'horizontal TOC jump mounts the target title on the first frame and keeps the previous page ready'
             'TXT horizontal paging keeps its legacy delegate stable during a chapter turn'
@@ -175,6 +234,8 @@ jobs:
           done
 
           native_epub_tests=(
+            'only book-embedded mode preserves EPUB font'
+            'switching EPUB font updates the visible and adjacent text pages'
             'EPUB precaches adjacent horizontal images before the first turn'
             'EPUB horizontal turns warm the next pagination window before a chapter boundary'
             'EPUB horizontal paging continues past image-only front matter'
@@ -188,8 +249,11 @@ jobs:
           done
 
           native_progress_tests=(
+            'oversized heading-less TXT restores an old unsplit text anchor'
+            'oversized TXT restores a saved offset inside a split chapter'
             'EPUB horizontal reader paints the restored page on its first frame'
             'EPUB full-text search loads a later chapter and opens the matching page'
+            'EPUB full-text search opens a later page in the current chapter'
             'EPUB continuous scroll hides the chapter opening until restore completes'
             'EPUB system back persists the pending horizontal page before reopening'
           )
@@ -197,17 +261,26 @@ jobs:
             flutter test test/native_reader_initial_progress_test.dart \
               --plain-name "$test_name"
           done
+          for scroll_by_chapter in false true; do
+            for initial_offset in 0 2400 1000000; do
+              flutter test test/native_reader_initial_progress_test.dart \
+                --plain-name "EPUB scroll preserves its exact offset on background and exit (scrollByChapter=$scroll_by_chapter, initialOffset=$initial_offset)"
+            done
+          done
 
           # The image-reader case deliberately leaves a page load pending so
           # it can assert the reader shell before image decoding. Run the
           # remaining stateful source-reader cases separately to keep that
           # fixture from holding Flutter's combined test process open.
           reader_tests=(
+            'reader closes owned resources to cancel pending initialization'
+            'reader does not close borrowed resources'
             'image-only source chapters open in the paged image reader'
             'cover opening skips a brief loader and fades directly to content'
             'a genuinely slow opening never overlaps loader and content'
             'loads source chapters and navigates to the next chapter'
             'full-text search opens the prepared page containing the selected match'
+            'full-text search opens a later chapter containing the selected match'
             'automatic page turning advances source text and pauses on touch'
             'automatic page turning advances a vertical source viewport'
             'automatic page turning stops at the end of a source book'
@@ -247,6 +320,11 @@ jobs:
               --plain-name "$test_name"
           done
 
+          for add_to_shelf in true false; do
+            flutter test test/book_source_reader_page_test.dart \
+              --plain-name "exit confirmation returns after addToShelf=$add_to_shelf"
+          done
+
           for page_mode in horizontalSlide coverSlide pageCurl instantPage verticalScroll; do
             for title_enabled in true false; do
               flutter test test/book_source_reader_page_test.dart \
@@ -258,6 +336,7 @@ jobs:
           # registries. Isolate each case so a pending animation or registry
           # mutation cannot make later pumpAndSettle calls time out.
           discovery_tests=(
+            'hiding standard source filters clears an active filter'
             'favorite then create and select a group without leaving discovery'
             'list favorite keeps expanded channels and filters with an undoable removal'
             'discover scope defaults to all and filters every section'
@@ -276,18 +355,20 @@ jobs:
             'cross-source discovery uses bounded concurrency'
             'request failures are not reported as unsupported capabilities'
             'channel request failures stay visible and can be retried'
+            'channel connection failure uses the network explanation'
             'an empty capable source shows an empty state'
             'missing capabilities still show the unsupported state'
             'large category sets use a searchable lazy picker'
             'list layout lazily builds large expanded channel sets'
             'discovery shelves are built lazily along the vertical viewport'
-            'details sheet keeps its drag handle below the top safe area'
-            'switching to shelf options smoothly shrinks the existing sheet'
-            'adding online stays in the details sheet for feedback then closes'
-            'an existing shelf book uses an information state without drop'
-            'a failed online add keeps the sheet open for retry'
+            'tablet discovery uses floating chrome and responsive result grid'
+            'tablet discovery sidebar keeps scopes aligned and searches locally'
+            'tapping a discovery book pushes its details page and returns'
+            'adding online stays on the details page and disables the shelf action'
+            'an existing shelf book becomes an on-shelf page state'
+            'a failed online add stays inline and can retry'
             'local download stays inline and backgrounding returns'
-            'reading from the details sheet hands off to paper transition'
+            'reading uses paper transition and returns to details'
           )
           for test_name in "${discovery_tests[@]}"; do
             flutter test test/book_source_discovery_page_test.dart \
@@ -309,19 +390,10 @@ jobs:
               --plain-name "$test_name"
           done
 
-      - name: Explain validation failures
+      - name: Explain Stateful widget test failures
         if: ${{ failure() }}
         run: |
-          echo '::error title=Flutter validation failed::Core tests and stateful widget tests are separate steps. Check the failing step name before treating this as a build failure.'
-
-      - name: Upload coverage report
-        if: ${{ !cancelled() && hashFiles('coverage/lcov.info') != '' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: flutter-coverage-${{ github.sha }}
-          path: coverage/lcov.info
-          if-no-files-found: error
-          retention-days: 7
+          echo '::error title=Stateful widget tests failed::Core validation and product builds run as separate jobs.'
 
   response-codec:
     name: Core Flutter validation / response codec
@@ -349,7 +421,6 @@ jobs:
 
   build-smoke:
     name: Product build / ${{ matrix.name }}
-    needs: [flutter-validation, response-codec]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     continue-on-error: ${{ matrix.advisory }}
@@ -383,7 +454,7 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      - name: Build ${{ matrix.name }}
+      - name: Product build / ${{ matrix.name }}
         run: ${{ matrix.command }}
 
   dependency-review:

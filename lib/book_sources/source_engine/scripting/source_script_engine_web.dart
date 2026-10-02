@@ -5,6 +5,8 @@ import 'source_script_contract.dart';
 export 'source_script_contract.dart';
 
 class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
+  bool get isDisposed => false;
+
   @override
   Object? evaluate(String script, SourceScriptContext context) {
     throw const BookSourceProtocolException(

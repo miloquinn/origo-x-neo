@@ -626,7 +626,11 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
         ],
       );
     } else if (currentPage is SettingsPage) {
-      trailing = null;
+      trailing = _buildTopBarActionButton(
+        icon: Icons.question_mark_rounded,
+        tooltip: context.l10n.settingsSectionAboutSupport,
+        onTap: _settingsController.revealSupportSection,
+      );
     } else {
       // 其他自定义页不强行覆盖标题，避免和页面自身顶部冲突。
       return const SizedBox.shrink();

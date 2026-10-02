@@ -535,11 +535,10 @@ File _longHtmlFixture(List<File> fixtures, String name) => _htmlFixture(
 
 File _htmlFixture(List<File> fixtures, String name, String body) {
   final file =
-      File(
-        '${Directory.systemTemp.path}/origo-x-auto-page-turn-$name.html',
-      )..writeAsStringSync(
-        '<!doctype html><html lang="en"><body>$body</body></html>',
-      );
+      File('${Directory.systemTemp.path}/origo-x-auto-page-turn-$name.html')
+        ..writeAsStringSync(
+          '<!doctype html><html lang="en"><body>$body</body></html>',
+        );
   fixtures.add(file);
   return file;
 }

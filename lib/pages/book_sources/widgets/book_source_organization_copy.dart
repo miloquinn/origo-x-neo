@@ -37,6 +37,12 @@ class BookSourceOrganizationCopy {
   String get groups => _pick(en: 'Groups', zh: '分组', zhTw: '分組', ja: 'グループ');
   String get manageGroups =>
       _pick(en: 'Manage groups', zh: '管理分组', zhTw: '管理分組', ja: 'グループを管理');
+  String get showDiscoverFilters => _pick(
+    en: 'Show discovery source filters',
+    zh: '显示发现页书源筛选栏',
+    zhTw: '顯示探索頁書源篩選列',
+    ja: '発見ページのソース絞り込みを表示',
+  );
   String get noFavorites => _pick(
     en: 'No favorite sources available to browse',
     zh: '暂无可浏览的收藏书源',

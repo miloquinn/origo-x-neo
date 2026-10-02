@@ -55,6 +55,8 @@ class AppSettingsNotifier extends ChangeNotifier {
       'library_book_open_animation_v1';
   static const String _keyLibraryBookOpenAnimationPace =
       'library_book_open_animation_pace_v1';
+  static const String _keyShowDiscoverSourceFilters =
+      'show_discover_source_filters_v1';
 
   Locale? _locale;
   String _localeCode = 'system';
@@ -79,6 +81,7 @@ class AppSettingsNotifier extends ChangeNotifier {
       LibraryBookOpenAnimationPace.fast;
   final MemberAccountController? _account;
   bool _additionalSourceProtocolsEnabled = true;
+  bool _showDiscoverSourceFilters = true;
   bool _privateBookSourceNetworkEnabled = true;
   bool _powerSavingMode = false;
   bool _isInitialized = false;
@@ -140,9 +143,11 @@ class AppSettingsNotifier extends ChangeNotifier {
       _libraryBookOpenAnimation;
   LibraryBookOpenAnimationPace get libraryBookOpenAnimationPace =>
       _libraryBookOpenAnimationPace;
-  bool get advancedFeaturesUnlocked => _account?.hasAdvancedSourceAccess ?? false;
+  bool get advancedFeaturesUnlocked =>
+      _account?.hasAdvancedSourceAccess ?? false;
   bool get additionalSourceProtocolsEnabled =>
       advancedFeaturesUnlocked && _additionalSourceProtocolsEnabled;
+  bool get showDiscoverSourceFilters => _showDiscoverSourceFilters;
   bool get privateBookSourceNetworkEnabled =>
       advancedFeaturesUnlocked && _privateBookSourceNetworkEnabled;
 
@@ -421,6 +426,8 @@ class AppSettingsNotifier extends ChangeNotifier {
     };
     _additionalSourceProtocolsEnabled =
         prefs.getBool(additionalSourceProtocolsPreferenceKey) ?? true;
+    _showDiscoverSourceFilters =
+        prefs.getBool(_keyShowDiscoverSourceFilters) ?? true;
     _privateBookSourceNetworkEnabled =
         prefs.getBool(privateBookSourceNetworkPreferenceKey) ?? true;
     _syncAdvancedFeatureAccess();
@@ -718,6 +725,14 @@ class AppSettingsNotifier extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(additionalSourceProtocolsPreferenceKey, value);
+  }
+
+  Future<void> setShowDiscoverSourceFilters(bool value) async {
+    if (_showDiscoverSourceFilters == value) return;
+    _showDiscoverSourceFilters = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyShowDiscoverSourceFilters, value);
   }
 
   Future<void> setPrivateBookSourceNetworkEnabled(bool value) async {

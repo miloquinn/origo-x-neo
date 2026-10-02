@@ -13,10 +13,7 @@ void main() {
     _StateProbeState.initCount = 0;
     await tester.pumpWidget(
       const MaterialApp(
-        home: BookSourceListReveal(
-          animate: true,
-          child: _StateProbe(),
-        ),
+        home: BookSourceListReveal(animate: true, child: _StateProbe()),
       ),
     );
     expect(_StateProbeState.initCount, 1);
@@ -28,9 +25,7 @@ void main() {
     expect(_StateProbeState.initCount, 1);
   });
 
-  testWidgets('new lazy rows pop in with a one-shot entrance', (
-    tester,
-  ) async {
+  testWidgets('new lazy rows pop in with a one-shot entrance', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: BookSourceListReveal(

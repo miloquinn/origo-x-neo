@@ -48,8 +48,10 @@ env:
 
 jobs:
   linux:
-    name: Linux x64 release
-    runs-on: ubuntu-latest
+    name: Product build / Linux x64 release
+    # desktop_webview_window requires WebKitGTK 4.0, which is available on
+    # Ubuntu 22.04 but removed from the ubuntu-latest image.
+    runs-on: ubuntu-22.04
     timeout-minutes: 40
 
     steps:
@@ -60,8 +62,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            clang cmake ninja-build pkg-config libgtk-3-dev \
+            clang cmake ninja-build pkg-config libgtk-3-dev libwebkit2gtk-4.0-dev \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            libunwind-dev libsoup-3.0-dev \
             liblzma-dev libglu1-mesa libsecret-1-dev
 
       - name: Set up Flutter
@@ -77,11 +80,28 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      - name: Build Linux release
+      - name: Patch Linux WebView cookie expiry compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          plugin_source="$(
+            find "$PUB_CACHE/hosted/pub.dev" \
+              -path '*/desktop_webview_window-*/linux/webview_window.cc' \
+              -print -quit
+          )"
+          test -n "$plugin_source"
+          # Ubuntu 22.04 selects the plugin's WebKitGTK 4.0 fallback, whose
+          # soup_cookie_get_expires() returns SoupDate rather than GDateTime.
+          if grep -Fq 'g_date_time_get_seconds(' "$plugin_source"; then
+            sed -i 's/g_date_time_get_seconds(/soup_date_to_time_t(/' "$plugin_source"
+          fi
+          grep -Fq 'soup_date_to_time_t(' "$plugin_source"
+
+      - name: Product build / Linux x64 release
         run: flutter build linux --release
 
   windows:
-    name: Windows x64 release
+    name: Product build / Windows x64 release
     # pdfx's PDFium downloader is not compatible with CMake 4 on windows-latest.
     runs-on: windows-2022
     timeout-minutes: 45
@@ -110,11 +130,11 @@ jobs:
             choco install nuget.commandline -y --no-progress
           }
 
-      - name: Build Windows release
+      - name: Product build / Windows x64 release
         run: flutter build windows --release
 
   apple:
-    name: Apple release builds (unsigned)
+    name: Product build / Apple release builds (unsigned)
     runs-on: macos-15
     timeout-minutes: 55
 
@@ -138,8 +158,8 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      - name: Build macOS release
+      - name: Product build / macOS release
         run: flutter build macos --release
 
-      - name: Build iOS release without code signing
+      - name: Product build / iOS release without code signing
         run: flutter build ios --release --no-codesign

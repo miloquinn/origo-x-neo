@@ -1,5 +1,13 @@
 import 'dart:convert';
 
+import 'source_html_contract.dart';
+
+/// Both supported source formats expose their login entry declaratively.
+bool sourceDeclaresLogin(Map<String, dynamic>? config) =>
+    config != null &&
+    ('${config['loginUrl'] ?? ''}'.trim().isNotEmpty ||
+        SourceHtmlContract.parse(config['html']).supports('getloginurl'));
+
 class SourceLoginField {
   const SourceLoginField({
     required this.name,

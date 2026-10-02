@@ -363,6 +363,11 @@ class MemberAccountController extends ChangeNotifier {
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS) &&
       (_authConfig?.googleNative.enabled ?? false);
+
+  /// The app invokes Apple's native credential API only on iOS. Desktop
+  /// distributions use the server-backed browser OAuth flow.
+  bool get usesNativeAppleSignIn =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
   MemberMembershipConfig? get membershipConfig => _membershipConfig;
   MemberMembership? get membership => _membership;
 

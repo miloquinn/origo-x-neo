@@ -56,7 +56,7 @@ class SourceRuleEngine implements SourceRuleSelectorPort {
     final values = _interpolation(
       document,
     ).evaluateAlternatives(context, transformed.selector, listMode: true);
-    return values.where((value) => value != null).toList(growable: false);
+    return _transformListValues(values, transformed);
   }
 
   @override
@@ -83,7 +83,7 @@ class SourceRuleEngine implements SourceRuleSelectorPort {
     final values = await _interpolation(
       document,
     ).evaluateAlternativesAsync(context, transformed.selector, listMode: true);
-    return values.where((value) => value != null).toList(growable: false);
+    return _transformListValues(values, transformed);
   }
 
   @override
@@ -418,11 +418,10 @@ class SourceRuleEngine implements SourceRuleSelectorPort {
     if (root is Element) return <Element>[root];
     if (root is String) {
       final trimmed = root.trimLeft();
-      if (trimmed.startsWith('<!DOCTYPE') ||
-          trimmed.startsWith('<html') ||
-          trimmed.startsWith('<body') ||
-          trimmed.startsWith('<div') ||
-          trimmed.startsWith('<ul')) {
+      // Script stages can return any HTML fragment, including table rows and
+      // custom elements. Parse only strings that actually begin with markup;
+      // this keeps long plain-text chapter bodies on the scalar fast path.
+      if (_sourceHtmlMarkupStart.hasMatch(trimmed)) {
         final parsed = html_parser.parse(root);
         final element = parsed.documentElement;
         if (element != null) return <Element>[element];
@@ -443,4 +442,39 @@ class SourceRuleEngine implements SourceRuleSelectorPort {
       _ => [value],
     };
   }
+
+  List<Object?> _transformListValues(
+    List<Object?> values,
+    SourceRuleTransform transformed,
+  ) {
+    if (transformed.pattern == null) {
+      return values.where((value) => value != null).toList(growable: false);
+    }
+    try {
+      final pattern = RegExp(
+        transformed.pattern!,
+        multiLine: true,
+        dotAll: true,
+      );
+      return values
+          .where((value) => value != null)
+          .map(sourceRuleStringValue)
+          .map(
+            (value) => transformed.extractFirst
+                ? extractSourceRegex(value, pattern, transformed.replacement)
+                : replaceSourceRegex(value, pattern, transformed.replacement),
+          )
+          .where((value) => value.isNotEmpty)
+          .toList(growable: false);
+    } on FormatException {
+      throw const BookSourceProtocolException(
+        'reading source list rule contains an invalid regular expression.',
+      );
+    }
+  }
 }
+
+final _sourceHtmlMarkupStart = RegExp(
+  r'^(?:<!--[\s\S]*?-->\s*)*<(?:!doctype\b|\?xml\b|[A-Za-z][\w:.-]*(?:\s|/?>))',
+  caseSensitive: false,
+);

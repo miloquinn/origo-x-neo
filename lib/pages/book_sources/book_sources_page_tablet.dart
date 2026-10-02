@@ -29,7 +29,7 @@ extension _BookSourcesPageTablet on _BookSourcesPageState {
       ? LayoutHelper.tabletPagePadding
       : 16;
 
-  Widget _buildTabletDiscovery() {
+  Widget _buildTabletDiscovery(bool showSourceFilters) {
     final chrome = HomeMobileChromeScope.of(context);
     final source = _state.organizedDiscoverySources
         .where((source) => source.id == _state.selectedSourceId)
@@ -63,7 +63,9 @@ extension _BookSourcesPageTablet on _BookSourcesPageState {
                       sources: _state.organizedDiscoverySources,
                       selectedSourceId: _state.selectedSourceId,
                       includeAllSources: !_state.requiresScopedDiscovery,
-                      organizationFilters: _tabletOrganizationFilters(),
+                      organizationFilters: showSourceFilters
+                          ? _tabletOrganizationFilters()
+                          : null,
                       matchesQuery: BookSourcesPage.listSourceMatchesQuery,
                       onSelected: (id) {
                         _pendingScrollOffset = 0;

@@ -5,6 +5,7 @@ import 'source_concurrency_limiter.dart';
 import 'source_browser_session.dart';
 import 'source_debug.dart';
 import 'source_http_transport.dart';
+import 'source_html_runtime.dart';
 import 'source_interaction_coordinator.dart';
 import 'source_login_session.dart';
 import 'source_login_ui.dart';
@@ -68,6 +69,11 @@ class SourceRuntime {
       browser: browserClient,
       scripts: () => _scripts.evaluator,
     );
+    _html = SourceHtmlRuntime(
+      scripts: () => _scripts.evaluator,
+      contexts: _requests,
+      sessions: _sessions,
+    );
     _catalog = SourceRuntimeCatalog(
       requests: _requests,
       rules: _rules,
@@ -90,6 +96,7 @@ class SourceRuntime {
   late final SourceRuntimeRulePort _rules;
   late final SourceRuntimeRequests _requests;
   late final SourceRuntimeLogin _login;
+  late final SourceHtmlRuntime _html;
   late final SourceRuntimeCatalog _catalog;
   late final SourceRuntimeReading _reading;
   SourceDebugRecorder? _debugRecorder;
@@ -106,6 +113,7 @@ class SourceRuntime {
 
   void close({bool force = true}) {
     _state.clear();
+    _html.clear();
     _sessions.clearMemory();
     _scripts.close();
     final transport = _transport;
@@ -122,13 +130,21 @@ class SourceRuntime {
     BookDownloadCancellation? cancellation,
   }) => _trace.stage(
     'search',
-    () => _catalog.search(
-      registered,
-      query,
-      page: page,
-      pageSize: pageSize,
-      cancellation: cancellation,
-    ),
+    () => _html.handles(registered)
+        ? _html.search(
+            registered,
+            query,
+            page: page,
+            pageSize: pageSize,
+            cancellation: cancellation,
+          )
+        : _catalog.search(
+            registered,
+            query,
+            page: page,
+            pageSize: pageSize,
+            cancellation: cancellation,
+          ),
     describe: (page) => '${page.items.length} result(s)',
   );
 
@@ -162,12 +178,14 @@ class SourceRuntime {
     BookDownloadCancellation? cancellation,
   }) => _trace.stage(
     'info',
-    () => _catalog.getBook(
-      registered,
-      bookId,
-      sourceVariables: sourceVariables,
-      cancellation: cancellation,
-    ),
+    () => _html.handles(registered)
+        ? _html.getBook(registered, bookId, cancellation: cancellation)
+        : _catalog.getBook(
+            registered,
+            bookId,
+            sourceVariables: sourceVariables,
+            cancellation: cancellation,
+          ),
     describe: (book) =>
         '"${book.title}" by ${book.author.isEmpty ? 'unknown author' : book.author}',
   );
@@ -180,13 +198,20 @@ class SourceRuntime {
     BookDownloadCancellation? cancellation,
   }) => _trace.stage(
     'toc',
-    () => _reading.getChapters(
-      registered,
-      bookId,
-      sourceVariables: sourceVariables,
-      maxChapters: maxChapters,
-      cancellation: cancellation,
-    ),
+    () => _html.handles(registered)
+        ? _html.getChapters(
+            registered,
+            bookId,
+            maxChapters: maxChapters,
+            cancellation: cancellation,
+          )
+        : _reading.getChapters(
+            registered,
+            bookId,
+            sourceVariables: sourceVariables,
+            maxChapters: maxChapters,
+            cancellation: cancellation,
+          ),
     describe: (chapters) => '${chapters.length} chapter(s)',
   );
 
@@ -198,13 +223,20 @@ class SourceRuntime {
     BookDownloadCancellation? cancellation,
   }) => _trace.stage(
     'content',
-    () => _reading.getChapterContent(
-      registered,
-      bookId: bookId,
-      chapterId: chapterId,
-      sourceVariables: sourceVariables,
-      cancellation: cancellation,
-    ),
+    () => _html.handles(registered)
+        ? _html.getChapterContent(
+            registered,
+            bookId: bookId,
+            chapterId: chapterId,
+            cancellation: cancellation,
+          )
+        : _reading.getChapterContent(
+            registered,
+            bookId: bookId,
+            chapterId: chapterId,
+            sourceVariables: sourceVariables,
+            cancellation: cancellation,
+          ),
     describe: (content) => '${content.content.length} character(s)',
   );
 
@@ -222,6 +254,7 @@ class SourceRuntime {
       );
     } finally {
       _state.clearSource(source);
+      _html.clearSource(source);
     }
   }
 
@@ -231,6 +264,7 @@ class SourceRuntime {
       await _login.clearLoginSession(registered);
     } finally {
       _state.clearSource(source);
+      _html.clearSource(source);
     }
   }
 
@@ -251,6 +285,7 @@ class SourceRuntime {
       // which can also mutate cookies before throwing. Either outcome changes
       // the authentication context of remembered source responses.
       _state.clearSource(source);
+      _html.clearSource(source);
     }
   }
 }

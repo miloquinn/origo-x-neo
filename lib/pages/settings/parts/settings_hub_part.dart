@@ -39,8 +39,10 @@ extension _SettingsHubPart on _SettingsPageState {
   Widget _buildMyPageWide(AppLocalizations l10n) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _buildSettingsTopRow(l10n),
-      const SizedBox(height: 24),
+      if (NavigationContext.of(context)?.useRailNavigation ?? false) ...[
+        _buildSettingsTopRow(l10n),
+        const SizedBox(height: 24),
+      ],
       Row(
         key: const ValueKey('settings-wide-layout'),
         crossAxisAlignment: CrossAxisAlignment.start,

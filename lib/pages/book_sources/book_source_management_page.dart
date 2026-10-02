@@ -174,10 +174,10 @@ class _BookSourceManagementPageState extends State<BookSourceManagementPage> {
   @override
   Widget build(BuildContext context) {
     var additionalProtocolsEnabled = false;
+    AppSettingsNotifier? appSettings;
     try {
-      additionalProtocolsEnabled = context
-          .watch<AppSettingsNotifier>()
-          .additionalSourceProtocolsEnabled;
+      appSettings = context.watch<AppSettingsNotifier>();
+      additionalProtocolsEnabled = appSettings.additionalSourceProtocolsEnabled;
     } on ProviderNotFoundException {
       // Standalone embeds without app settings retain the default-off state.
     }
@@ -221,6 +221,21 @@ class _BookSourceManagementPageState extends State<BookSourceManagementPage> {
                 ),
               ),
             ),
+            if (appSettings != null)
+              FloatingSubpageMenuItem(
+                value: _BookSourceHeaderAction.discoveryFilters,
+                itemKey: const Key('bookSourcesDiscoverFiltersSetting'),
+                child: ListTile(
+                  leading: Icon(
+                    appSettings.showDiscoverSourceFilters
+                        ? Icons.check_box_rounded
+                        : Icons.check_box_outline_blank_rounded,
+                  ),
+                  title: Text(
+                    BookSourceOrganizationCopy.of(context).showDiscoverFilters,
+                  ),
+                ),
+              ),
             FloatingSubpageMenuItem(
               value: _BookSourceHeaderAction.maintenance,
               itemKey: const Key('bookSourcesMaintenanceButton'),
@@ -265,6 +280,12 @@ class _BookSourceManagementPageState extends State<BookSourceManagementPage> {
                 _controller.toggleSelectionMode();
               case _BookSourceHeaderAction.groups:
                 unawaited(_showGroupManager());
+              case _BookSourceHeaderAction.discoveryFilters:
+                unawaited(
+                  appSettings!.setShowDiscoverSourceFilters(
+                    !appSettings.showDiscoverSourceFilters,
+                  ),
+                );
               case _BookSourceHeaderAction.maintenance:
                 unawaited(_showMaintenanceMenu());
               case _BookSourceHeaderAction.information:
@@ -724,4 +745,11 @@ class _BookSourceManagementPageState extends State<BookSourceManagementPage> {
   }
 }
 
-enum _BookSourceHeaderAction { add, select, groups, maintenance, information }
+enum _BookSourceHeaderAction {
+  add,
+  select,
+  groups,
+  discoveryFilters,
+  maintenance,
+  information,
+}

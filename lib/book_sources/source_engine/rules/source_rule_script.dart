@@ -132,6 +132,16 @@ class SourceRuleScript {
       defaultRuleContent: context ?? document.value,
     );
     if (scripted.suffix.trim().isNotEmpty) {
+      if (_selectsEachScriptListItem(output, scripted.suffix)) {
+        return [
+          for (final item in output as Iterable)
+            ...selectors.evaluateList(
+              _outputDocument(document, item),
+              item is String ? null : item,
+              scripted.suffix,
+            ),
+        ];
+      }
       final nextDocument = _outputDocument(document, output);
       return selectors.evaluateList(
         nextDocument,
@@ -167,6 +177,19 @@ class SourceRuleScript {
       defaultRuleContent: context ?? document.value,
     );
     if (scripted.suffix.trim().isNotEmpty) {
+      if (_selectsEachScriptListItem(output, scripted.suffix)) {
+        final values = <Object?>[];
+        for (final item in output as Iterable) {
+          values.addAll(
+            await selectors.evaluateListAsync(
+              _outputDocument(document, item),
+              item is String ? null : item,
+              scripted.suffix,
+            ),
+          );
+        }
+        return values;
+      }
       final nextDocument = _outputDocument(document, output);
       return selectors.evaluateListAsync(
         nextDocument,
@@ -415,4 +438,14 @@ class SourceRuleScript {
       interactionHandler: context.interactionHandler,
     );
   }
+}
+
+bool _selectsEachScriptListItem(Object? output, String suffix) {
+  if (output is! Iterable || output is String) return false;
+  final normalized = suffix.trimLeft().toLowerCase();
+  return splitSourceScriptRule(suffix) == null &&
+      splitSourcePutRule(suffix) == null &&
+      !normalized.startsWith(r'$.') &&
+      !normalized.startsWith(r'$[') &&
+      !normalized.startsWith('@json:');
 }

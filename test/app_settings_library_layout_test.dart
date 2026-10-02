@@ -59,6 +59,18 @@ void main() {
     expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isFalse);
   });
 
+  test('discovery source filter visibility defaults on and persists', () async {
+    final settings = await _loadNotifier();
+    expect(settings.showDiscoverSourceFilters, isTrue);
+    await settings.setShowDiscoverSourceFilters(false);
+    expect(settings.showDiscoverSourceFilters, isFalse);
+    settings.dispose();
+
+    final restored = await _loadNotifier();
+    addTearDown(restored.dispose);
+    expect(restored.showDiscoverSourceFilters, isFalse);
+  });
+
   test(
     'premium protocols default on and an explicit opt-out persists',
     () async {

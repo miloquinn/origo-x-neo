@@ -9,6 +9,7 @@ import 'package:xxread/book_sources/source_engine/source_health_checker.dart';
 import 'package:xxread/book_sources/source_engine/source_request.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   test(
     'batch health checks release interleaved script engines',
     () async {

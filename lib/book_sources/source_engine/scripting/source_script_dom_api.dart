@@ -65,30 +65,13 @@ class SourceScriptDomApi {
     }
     final transform = splitSourceRuleTransform(rule);
     final scalar = content is Map ? content[transform.selector] : null;
-    final selected = scalar is String
-        ? <Object?>[scalar]
-        : _selectors.evaluateList(document, document.value, rule);
+    final selected = _selectors.evaluateList(document, document.value, rule);
     final values = selected
         .map((item) {
           if (item is String || item is num || item is bool) return '$item';
           if (item is Map || item is List) return jsonEncode(item);
           return '$item';
         })
-        .map(
-          (value) => transform.pattern == null
-              ? value
-              : transform.extractFirst
-              ? _selectors.evaluateString(
-                  SourceRuleDocument.fromValue(value, document.baseUri),
-                  null,
-                  '##${transform.pattern}##${transform.replacement}###',
-                  regexDotAll: false,
-                )
-              : _selectors.applyReplaceRule(
-                  value,
-                  '##${transform.pattern}##${transform.replacement}',
-                ),
-        )
         .expand((value) => scalar is String ? value.split('\n') : [value])
         .toList(growable: false);
     if (!isUrl) return values;

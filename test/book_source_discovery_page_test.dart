@@ -23,10 +23,85 @@ import 'package:xxread/pages/book_sources/widgets/book_source_pill.dart';
 import 'package:xxread/pages/book_sources/widgets/sourced_book_widgets.dart';
 import 'package:xxread/services/library/download_task_controller.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
+import 'package:xxread/services/core/app_settings_service.dart';
 
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('hiding standard source filters clears an active filter', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(430, 1100);
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({
+      'origo_x_book_sources_v1': jsonEncode([
+        _source('source-a', 'Source A').toJson(),
+      ]),
+    });
+    final settings = AppSettingsNotifier();
+    addTearDown(settings.dispose);
+    final layout = BookSourcesPageController();
+    addTearDown(layout.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AppSettingsNotifier>.value(
+        value: settings,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BookSourcesPage(
+              client: _DiscoveryClient(),
+              controller: layout,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('bookSourceOrganizationFavorites')),
+      findsOneWidget,
+    );
+    expect(find.text('Source A picks'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('bookSourceOrganizationFavorites')));
+    await tester.pumpAndSettle();
+    expect(find.text('Source A picks'), findsNothing);
+
+    await settings.setShowDiscoverSourceFilters(false);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('bookSourceOrganizationAll')), findsNothing);
+    expect(
+      find.byKey(const Key('bookSourceOrganizationFavorites')),
+      findsNothing,
+    );
+    expect(find.byKey(const Key('bookSourceOrganizationGroups')), findsNothing);
+    expect(find.text('Source A picks'), findsOneWidget);
+
+    await layout.setLayout(BookSourceDiscoverLayout.list);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('bookSourceOrganizationFavorites')),
+      findsOneWidget,
+    );
+
+    tester.view.physicalSize = const Size(1200, 1100);
+    await layout.setLayout(BookSourceDiscoverLayout.standard);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('bookSourceTabletSidebar')), findsOneWidget);
+    expect(
+      find.byKey(const Key('bookSourceOrganizationFavorites')),
+      findsNothing,
+    );
+    await settings.setShowDiscoverSourceFilters(true);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('bookSourceOrganizationFavorites')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('shows a fast source while another source is still pending', (

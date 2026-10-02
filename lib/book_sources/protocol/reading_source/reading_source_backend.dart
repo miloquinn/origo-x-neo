@@ -95,8 +95,9 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
   static const _cacheAuthRevisionPrefix =
       'reading_source_chapter_cache_auth_revision_v1:';
   // Bump when rule semantics change so persisted catalogs and content are
-  // reparsed. Revision 3 includes the Yiove template, Java, and catalog fixes.
-  static const _ruleEngineRevision = 3;
+  // reparsed. Revision 4 includes mixed script/selector pipelines and the
+  // embedded HTML function protocol.
+  static const _ruleEngineRevision = 4;
 
   final SourceRuntime Function() _runtime;
   final BookSourceChapterCache _chapterCache;

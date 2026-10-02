@@ -25,10 +25,14 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
     _runtime.onMessage(sourceScriptHostChannel, _host.handle);
   }
 
-  final JavascriptRuntime _runtime;
+  JavascriptRuntime _runtime;
+  static const _promiseTimeout = Duration(seconds: 30);
   final SourceScriptHostApi _host;
   Future<void> _evaluationTail = Future<void>.value();
   bool _disposed = false;
+  bool get isDisposed => _disposed;
+  var _promiseSequence = 0;
+  var _invocationSequence = 0;
 
   @override
   Object? evaluate(String script, SourceScriptContext context) {
@@ -77,13 +81,21 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
     var interactionCount = 0;
     for (var replayCount = 0; replayCount < 24; replayCount++) {
       try {
-        return _evaluateAttempt(
-          script,
-          context,
-          networkResponses,
-          interactionResponses,
-          replayValues,
-        );
+        return context.htmlBridge
+            ? await _evaluateAttemptAsync(
+                script,
+                context,
+                networkResponses,
+                interactionResponses,
+                replayValues,
+              )
+            : _evaluateAttempt(
+                script,
+                context,
+                networkResponses,
+                interactionResponses,
+                replayValues,
+              );
       } on _SourceNetworkNeeded catch (pending) {
         if (++networkCount > 12) {
           throw const BookSourceProtocolException(
@@ -147,14 +159,17 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
     Map<String, Object?>? replayValues,
   ]) {
     if (_disposed) throw StateError('The source script evaluator is disposed.');
+    final invocationId = 'source_invocation_${_invocationSequence++}';
     final state = _host.beginInvocation(
       context,
       networkResponses,
       interactionResponses,
       replayValues ?? <String, Object?>{},
+      invocationId,
     );
     try {
-      final payload = SourceScriptBootstrap.payload(script, context, state);
+      final payload = SourceScriptBootstrap.payload(script, context, state)
+        ..['invocationId'] = invocationId;
       final evaluated = _runtime.evaluate(SourceScriptBootstrap.build(payload));
       if (evaluated.isError) {
         final pending = sourceScriptNetworkRequestFromError(
@@ -173,6 +188,115 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
     } finally {
       _host.endInvocation();
     }
+  }
+
+  Future<Object?> _evaluateAttemptAsync(
+    String script,
+    SourceScriptContext context,
+    Map<String, SourceScriptNetworkResult> networkResponses,
+    Map<String, SourceScriptInteractionResult> interactionResponses,
+    Map<String, Object?> replayValues,
+  ) async {
+    if (_disposed) throw StateError('The source script evaluator is disposed.');
+    final invocationId = 'source_invocation_${_invocationSequence++}';
+    final state = _host.beginInvocation(
+      context,
+      networkResponses,
+      interactionResponses,
+      replayValues,
+      invocationId,
+    );
+    try {
+      final payload = SourceScriptBootstrap.payload(script, context, state)
+        ..['invocationId'] = invocationId;
+      final result = await _settlePromise(
+        SourceScriptBootstrap.build(payload, awaitResult: true),
+        cancellationCheck: context.cancellationCheck,
+      );
+      return _decodeEnvelope(result, context, state);
+    } finally {
+      _host.endInvocation();
+    }
+  }
+
+  Never _throwAsyncMarkerOrProtocolError(String message) {
+    final pending = sourceScriptNetworkRequestFromError(message);
+    if (pending != null) throw _SourceNetworkNeeded(pending);
+    final interaction = sourceScriptInteractionRequestFromError(message);
+    if (interaction != null) throw _SourceInteractionNeeded(interaction);
+    throw BookSourceProtocolException(
+      'Reading source JavaScript failed: $message',
+    );
+  }
+
+  Future<String> _settlePromise(
+    String expression, {
+    void Function()? cancellationCheck,
+  }) async {
+    final key = '__origo_source_promise_${_promiseSequence++}';
+    final encodedKey = jsonEncode(key);
+    final started = _runtime.evaluate('''
+(() => {
+  const key = $encodedKey;
+  globalThis[key] = { state: 'pending', value: '' };
+  Promise.resolve($expression).then(
+    value => { globalThis[key] = { state: 'fulfilled', value: String(value) }; },
+    error => { globalThis[key] = {
+      state: 'rejected',
+      value: String(error) + (error && error.stack ? '\\n' + String(error.stack) : '')
+    }; }
+  );
+  return key;
+})()
+''');
+    if (started.isError) {
+      _throwAsyncMarkerOrProtocolError(started.stringResult);
+    }
+    final deadline = Stopwatch()..start();
+    try {
+      while (deadline.elapsed < _promiseTimeout) {
+        try {
+          cancellationCheck?.call();
+        } catch (_) {
+          _replaceRuntime();
+          rethrow;
+        }
+        _runtime.executePendingJob();
+        final checked = _runtime.evaluate(
+          'JSON.stringify(globalThis[$encodedKey])',
+        );
+        if (checked.isError) {
+          _throwAsyncMarkerOrProtocolError(checked.stringResult);
+        }
+        final decoded = jsonDecode(checked.stringResult);
+        if (decoded is Map && decoded['state'] == 'fulfilled') {
+          return '${decoded['value'] ?? ''}';
+        }
+        if (decoded is Map && decoded['state'] == 'rejected') {
+          _throwAsyncMarkerOrProtocolError('${decoded['value'] ?? ''}');
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+      }
+      // A timed-out promise can still own timers and queued microtasks. The
+      // only safe boundary is to invalidate this evaluator and its JS runtime;
+      // otherwise a stale continuation could mutate a later source invocation.
+      _replaceRuntime();
+      throw const BookSourceProtocolException(
+        'Reading source JavaScript promise did not settle.',
+      );
+    } finally {
+      if (!_disposed) {
+        _runtime.evaluate('delete globalThis[$encodedKey]');
+      }
+    }
+  }
+
+  void _replaceRuntime() {
+    _runtime.dispose();
+    _runtime = Platform.isIOS || Platform.isMacOS
+        ? SourceJavaScriptCoreRuntime()
+        : getJavascriptRuntime(xhr: false);
+    _runtime.onMessage(sourceScriptHostChannel, _host.handle);
   }
 
   Object? _decodeEnvelope(

@@ -8,6 +8,7 @@ import 'package:xxread/book_sources/source_engine/scripting/source_script_engine
 import 'package:xxread/book_sources/source_engine/source_config.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late QuickJsSourceScriptEvaluator evaluator;
   late ReadingSourceConfig source;
 

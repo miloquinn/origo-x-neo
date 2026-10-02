@@ -18,7 +18,7 @@ class BookSourceTabletSidebar extends StatefulWidget {
   final List<RegisteredBookSource> sources;
   final String? selectedSourceId;
   final bool includeAllSources;
-  final Widget organizationFilters;
+  final Widget? organizationFilters;
   final bool Function(RegisteredBookSource, String) matchesQuery;
   final ValueChanged<String?> onSelected;
 
@@ -60,10 +60,11 @@ class _BookSourceTabletSidebarState extends State<BookSourceTabletSidebar> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                    child: widget.organizationFilters,
-                  ),
+                  if (widget.organizationFilters != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                      child: widget.organizationFilters!,
+                    ),
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: TextField(

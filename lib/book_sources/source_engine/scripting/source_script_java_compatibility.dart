@@ -23,12 +23,11 @@ const sourceScriptJavaCompatibility = r'''
       'encryptHex', transformation, keyValue, ivValue, data
     ])
   });
-  if (!String.prototype.getBytes) {
-    Object.defineProperty(String.prototype, 'getBytes', {
-      value: function(charset) { return Array.from(__host('strToBytes', [String(this), charset || 'UTF-8']) || []); },
-      enumerable: false
-    });
-  }
+  Object.defineProperty(String.prototype, 'getBytes', {
+    value: function(charset) { return Array.from(__host('strToBytes', [String(this), charset || 'UTF-8']) || []); },
+    enumerable: false,
+    configurable: true
+  });
   const __Base64 = {
     NO_WRAP: 2, DEFAULT: 0, NO_PADDING: 1, CRLF: 4, URL_SAFE: 8,
     decode: (value, flags) => Array.from(__host('base64DecodeBytes', [String(value), flags]) || []),

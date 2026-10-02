@@ -432,6 +432,18 @@ class SourceRuntimeLogin {
   ) async {
     final source = sourceFromRegistered(registered);
     await _sessions.ensure(source);
+    if (source.htmlContract.isSource) {
+      if (!source.htmlContract.supports('getloginurl')) return const [];
+      try {
+        final value = await _scripts().evaluateAsync(
+          source.htmlContract.invoke('getloginurl', const []),
+          _contexts.scriptContext(source).copyWith(htmlBridge: true),
+        );
+        return _restoreLoginFields(source, value);
+      } finally {
+        await _sessions.flush(source);
+      }
+    }
     final raw = source.raw['loginUi'];
     if (raw is List) return _restoreLoginFields(source, raw);
     if (raw is! String || raw.trim().isEmpty) return const [];
@@ -498,7 +510,9 @@ class SourceRuntimeLogin {
       rawLoginHeader: _sessions.current(source).rawLoginHeader,
     );
     final loginSource = '${source.raw['loginUrl'] ?? ''}';
-    final loginScript = sourceScriptBody(loginSource) ?? loginSource;
+    final loginScript = source.htmlContract.isSource
+        ? source.htmlContract.script
+        : sourceScriptBody(loginSource) ?? loginSource;
     if (loginScript.trim().isEmpty) {
       throw const BookSourceProtocolException(
         'This source does not define a login script.',
@@ -516,13 +530,19 @@ class SourceRuntimeLogin {
             "else throw new Error('This source does not define a login function.');",
     };
     final messages = <String>[];
-    await _scripts().evaluateAsync(
-      '$loginScript\n$actionScript',
-      _contexts
-          .scriptContext(source, result: loginInfo)
-          .copyWith(messageWriter: messages.add),
-    );
-    await _sessions.flush(source);
+    try {
+      await _scripts().evaluateAsync(
+        '$loginScript\n$actionScript',
+        _contexts
+            .scriptContext(source, result: loginInfo)
+            .copyWith(
+              messageWriter: messages.add,
+              htmlBridge: source.htmlContract.isSource,
+            ),
+      );
+    } finally {
+      await _sessions.flush(source);
+    }
     return messages.where((message) => message.trim().isNotEmpty).lastOrNull;
   }
 }

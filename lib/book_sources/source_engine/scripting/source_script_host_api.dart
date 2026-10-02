@@ -25,6 +25,7 @@ class SourceScriptHostApi {
   Map<String, SourceScriptNetworkResult> _networkResponses = const {};
   Map<String, SourceScriptInteractionResult> _interactionResponses = const {};
   Map<String, Object?> _replayValues = {};
+  String? _activeInvocationId;
   final Map<String, int> _replayIndices = {};
   final Random _random = Random.secure();
 
@@ -33,12 +34,14 @@ class SourceScriptHostApi {
     Map<String, SourceScriptNetworkResult> networkResponses,
     Map<String, SourceScriptInteractionResult> interactionResponses,
     Map<String, Object?> replayValues,
+    String invocationId,
   ) {
     _activeContext = context;
     _networkResponses = networkResponses;
     _interactionResponses = interactionResponses;
     _replayValues = replayValues;
     _replayIndices.clear();
+    _activeInvocationId = invocationId;
     return stateFor(context.source.stableId);
   }
 
@@ -48,6 +51,7 @@ class SourceScriptHostApi {
     _interactionResponses = const {};
     _replayValues = {};
     _replayIndices.clear();
+    _activeInvocationId = null;
   }
 
   SourceScriptState stateFor(String sourceId) =>
@@ -55,6 +59,7 @@ class SourceScriptHostApi {
 
   dynamic handle(dynamic message) {
     if (message is! Map) return null;
+    if (message['invocationId'] != _activeInvocationId) return null;
     final operation = '${message['op'] ?? ''}';
     final arguments = message['args'] is List
         ? message['args'] as List

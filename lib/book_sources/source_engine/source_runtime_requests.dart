@@ -15,6 +15,7 @@ import 'source_runtime_rules.dart';
 import 'source_runtime_state.dart';
 import 'scripting/source_script_contract.dart';
 import 'source_transport.dart';
+import 'rules/source_rule_parser.dart' show splitSourceScriptRule;
 
 abstract interface class SourceRuntimeRequestPort {
   Future<SourceResponse> request(
@@ -292,6 +293,7 @@ class SourceRuntimeRequests
       },
       interactionHandler: (request) =>
           _handleScriptInteraction(source, request, cancellation: cancellation),
+      cancellationCheck: cancellation?.throwIfCancelled,
     );
   }
 
@@ -567,14 +569,27 @@ class SourceRuntimeRequests
   }) async {
     cancellation?.throwIfCancelled();
     await _sessions.ensure(source);
-    SourceScriptContext context() => scriptContext(
+    SourceScriptContext context([Object? result]) => scriptContext(
       source,
+      result: result,
       baseUrl: source.baseUri,
       variables: variables,
       book: book,
       chapter: chapter,
       cancellation: cancellation,
     );
+    final trailingScript = splitSourceScriptRule(template);
+    if (trailingScript != null &&
+        trailingScript.selector.trim().isNotEmpty &&
+        template.toLowerCase().contains('@js:')) {
+      final input = trailingScript.selector.trim();
+      final output = _scriptText(
+        await _scripts().evaluateAsync(trailingScript.script, context(input)),
+      );
+      template = trailingScript.suffix.trim().isEmpty
+          ? output
+          : trailingScript.suffix.replaceAll('@result', output);
+    }
     final trimmed = template.trimLeft();
     final directScript = sourceScriptBody(template);
     if (directScript != null &&

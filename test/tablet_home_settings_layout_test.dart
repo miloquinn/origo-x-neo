@@ -11,6 +11,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/home_mobile_dashboard_page.dart';
+import 'package:xxread/pages/home/home_shell_page.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/account/account.dart';
@@ -147,7 +148,10 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    Future<void> pumpSettings(Size size) async {
+    Future<void> pumpSettings(
+      Size size, {
+      bool useRailNavigation = false,
+    }) async {
       tester.view.physicalSize = size;
       final theme = ThemeNotifier();
       final appSettings = AppSettingsNotifier();
@@ -172,15 +176,20 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             theme: ThemeData(useMaterial3: true),
             home: HomeMobileChromeScope(
-              metrics: const HomeMobileChromeMetrics(
+              metrics: HomeMobileChromeMetrics(
                 systemTopInset: 24,
                 systemBottomInset: 20,
-                navigationAtTop: true,
+                navigationAtTop: size.width >= 600,
               ),
-              child: SettingsPage(
-                cacheManager: _FakeCacheManager(),
-                preferencesStore: _FakePreferencesStore(),
-                aiService: MockAIService(),
+              child: NavigationContext(
+                useRailNavigation: useRailNavigation,
+                child: Material(
+                  child: SettingsPage(
+                    cacheManager: _FakeCacheManager(),
+                    preferencesStore: _FakePreferencesStore(),
+                    aiService: MockAIService(),
+                  ),
+                ),
               ),
             ),
           ),
@@ -193,6 +202,13 @@ void main() {
     await pumpSettings(const Size(1024, 900));
 
     expect(find.byKey(const ValueKey('settings-wide-layout')), findsOneWidget);
+    // The shell owns the title for floating navigation at every width.
+    expect(
+      find.text(
+        AppLocalizations.of(tester.element(find.byType(SettingsPage))).navMe,
+      ),
+      findsNothing,
+    );
     expect(
       tester
           .getCenter(find.byKey(const ValueKey('settings-primary-column')))
@@ -213,9 +229,42 @@ void main() {
 
     expect(find.byKey(const ValueKey('settings-wide-layout')), findsNothing);
     expect(
+      find.text(
+        AppLocalizations.of(tester.element(find.byType(SettingsPage))).navMe,
+      ),
+      findsNothing,
+    );
+    expect(
       find.byKey(const ValueKey('settings-single-column-layout')),
       findsOneWidget,
     );
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      debugDefaultTargetPlatformOverride = platform;
+      await pumpSettings(const Size(390, 844));
+      expect(
+        find.byKey(const ValueKey('settings-single-column-layout')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          AppLocalizations.of(tester.element(find.byType(SettingsPage))).navMe,
+        ),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    }
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    for (final width in [1024.0, 700.0]) {
+      await pumpSettings(Size(width, 900), useRailNavigation: true);
+      expect(
+        find.text(
+          AppLocalizations.of(tester.element(find.byType(SettingsPage))).navMe,
+        ),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.question_mark_rounded), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
     debugDefaultTargetPlatformOverride = null;
     expect(tester.takeException(), isNull);
   });

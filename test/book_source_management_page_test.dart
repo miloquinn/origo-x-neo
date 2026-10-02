@@ -80,6 +80,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('source menu toggles discovery filter visibility', (
+    tester,
+  ) async {
+    unmountPage(tester);
+    final settings = AppSettingsNotifier();
+    addTearDown(settings.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AppSettingsNotifier>.value(
+        value: settings,
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: BookSourceManagementPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('bookSourcesToolButton')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('bookSourcesDiscoverFiltersSetting')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const Key('bookSourcesDiscoverFiltersSetting')),
+    );
+    await tester.pumpAndSettle();
+    expect(settings.showDiscoverSourceFilters, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('centers the title between matching glass controls', (
     tester,
   ) async {
@@ -306,10 +337,7 @@ void main() {
     await tester.tap(find.byKey(const Key('bookSourceImportUsageNotice')));
     await tester.pumpAndSettle();
 
-    expect(
-      find.textContaining('Origo includes no sources'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Origo includes no sources'), findsOneWidget);
     expect(find.textContaining('bypass sign-in, payment, DRM'), findsOneWidget);
     FilledButton connectButton() => tester.widget<FilledButton>(
       find.byKey(const Key('bookSourceConnectButton')),

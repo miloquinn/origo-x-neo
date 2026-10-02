@@ -373,9 +373,7 @@ void main() {
         ..['description'] = ''.padRight(300000, 'x');
       final raw = jsonEncode([stored]);
       expect(raw.length, greaterThan(256 * 1024));
-      SharedPreferences.setMockInitialValues({
-        'origo_x_book_sources_v1': raw,
-      });
+      SharedPreferences.setMockInitialValues({'origo_x_book_sources_v1': raw});
       final storage = _MemoryBookSourceRegistryStorage();
       final registry = BookSourceRegistry(storage: storage);
 
@@ -546,9 +544,7 @@ void main() {
         _source(),
       ).toRegisteredSource();
       final raw = jsonEncode([source.toJson()]);
-      SharedPreferences.setMockInitialValues({
-        'origo_x_book_sources_v1': raw,
-      });
+      SharedPreferences.setMockInitialValues({'origo_x_book_sources_v1': raw});
       final storage = _MemoryBookSourceRegistryStorage();
       final first = BookSourceRegistry(storage: storage);
       final second = BookSourceRegistry(storage: storage);
@@ -567,17 +563,13 @@ void main() {
   test('resetForTesting re-arms process-wide storage migration', () async {
     final source = ReadingSourceConfig.fromJson(_source()).toRegisteredSource();
     final raw = jsonEncode([source.toJson()]);
-    SharedPreferences.setMockInitialValues({
-      'origo_x_book_sources_v1': raw,
-    });
+    SharedPreferences.setMockInitialValues({'origo_x_book_sources_v1': raw});
     final firstStorage = _MemoryBookSourceRegistryStorage();
     await BookSourceRegistry(storage: firstStorage).prepareStorage();
     expect(firstStorage.writeCalls, 1);
 
     await BookSourceRegistry.resetForTesting();
-    SharedPreferences.setMockInitialValues({
-      'origo_x_book_sources_v1': raw,
-    });
+    SharedPreferences.setMockInitialValues({'origo_x_book_sources_v1': raw});
     final secondStorage = _MemoryBookSourceRegistryStorage();
     await BookSourceRegistry(storage: secondStorage).prepareStorage();
 

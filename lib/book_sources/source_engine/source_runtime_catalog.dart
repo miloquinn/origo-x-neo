@@ -306,9 +306,7 @@ class SourceRuntimeCatalog {
       type: bookType(source),
       coverUrl: cover?.url,
       coverHeaders: cover?.headers ?? const {},
-      categories: splitCategories(
-        await _rules.value(contextualDocument, context, rule, 'kind'),
-      ),
+      categories: await _categoriesFromRules(contextualDocument, context, rule),
       status: nullable(
         await _rules.value(contextualDocument, context, rule, 'status'),
       ),
@@ -385,9 +383,7 @@ class SourceRuntimeCatalog {
       type: bookType(source),
       coverUrl: cover?.url,
       coverHeaders: cover?.headers ?? const {},
-      categories: splitCategories(
-        await _rules.value(contextualDocument, context, rule, 'kind'),
-      ),
+      categories: await _categoriesFromRules(contextualDocument, context, rule),
       latestChapter: nullable(
         await _rules.value(contextualDocument, context, rule, 'lastChapter'),
       ),
@@ -402,6 +398,23 @@ class SourceRuntimeCatalog {
     _state.rememberBookContext(source, book.id, bookContext);
     _state.rememberRuleState(source, book.id, document.ruleState);
     return book;
+  }
+
+  Future<List<String>> _categoriesFromRules(
+    SourceRuleDocument document,
+    Object? context,
+    Map<String, dynamic> rules,
+  ) async {
+    final rule = _rules.optionalRule(rules, 'kind');
+    if (rule.isEmpty) return const [];
+    final categories = <String>[];
+    final seen = <String>{};
+    for (final value in await _rules.list(document, context, rule)) {
+      for (final category in splitCategories('$value')) {
+        if (seen.add(category)) categories.add(category);
+      }
+    }
+    return categories;
   }
 
   Future<SourceExploreCatalog> _exploreCatalog(
@@ -609,7 +622,17 @@ void _comicSearchLog(
 }
 
 String _debugUri(Uri uri) {
-  final keys = uri.queryParametersAll.keys.toList()..sort();
+  // `Uri.queryParametersAll` always decodes as UTF-8. Compatible sources can
+  // intentionally send GBK/GB18030 query bytes, so diagnostics must inspect
+  // raw field names without decoding the request and crashing the real path.
+  final keys =
+      uri.query
+          .split('&')
+          .map((field) => field.split('=').first)
+          .where((key) => key.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
   return uri
       .replace(
         userInfo: uri.userInfo.isEmpty ? null : '<redacted>',

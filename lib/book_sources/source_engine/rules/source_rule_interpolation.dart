@@ -68,9 +68,7 @@ class SourceRuleInterpolation {
         listMode: listMode,
         inheritedMode: mode,
       );
-      if (concatenated.any(
-        (value) => sourceRuleStringValue(value).isNotEmpty,
-      )) {
+      if (_sourceAlternativeHasValue(concatenated, listMode: listMode)) {
         return concatenated;
       }
     }
@@ -124,9 +122,7 @@ class SourceRuleInterpolation {
         listMode: listMode,
         inheritedMode: mode,
       );
-      if (concatenated.any(
-        (value) => sourceRuleStringValue(value).isNotEmpty,
-      )) {
+      if (_sourceAlternativeHasValue(concatenated, listMode: listMode)) {
         return concatenated;
       }
     }
@@ -210,6 +206,13 @@ class SourceRuleInterpolation {
     return output.toString();
   }
 }
+
+bool _sourceAlternativeHasValue(
+  List<Object?> values, {
+  required bool listMode,
+}) => listMode
+    ? values.any((value) => value != null)
+    : values.any((value) => sourceRuleStringValue(value).isNotEmpty);
 
 String _sourceExplicitRuleMode(String rule) =>
     RegExp(

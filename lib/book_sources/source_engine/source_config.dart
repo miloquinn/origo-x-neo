@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 
 import '../models/registered_book_source.dart';
 import 'source_explore.dart';
+import 'source_html_contract.dart';
 
 enum SourceCompatibilityLevel { supported, partial, unsupported }
 
@@ -89,10 +90,12 @@ class ReadingSourceConfig {
   String get loginCheckJs => _string(raw['loginCheckJs']);
   bool get enabledExplore => raw['enabledExplore'] != false;
   bool get enabled => raw['enabled'] != false;
-  bool get enabledCookieJar => raw['enabledCookieJar'] == true;
+  bool get enabledCookieJar =>
+      raw['enabledCookieJar'] == true || htmlContract.isSource;
   int get lastUpdateTime => _integer(raw['lastUpdateTime']);
   int get respondTime => _integer(raw['respondTime']);
   String get concurrentRate => _string(raw['concurrentRate']);
+  SourceHtmlContract get htmlContract => SourceHtmlContract.parse(raw['html']);
 
   Uri get baseUri => _sourceBaseUri(raw)!;
 
@@ -137,16 +140,18 @@ class ReadingSourceConfig {
     return false;
   }
 
-  Set<String> get runnableCapabilities => <String>{
-    if (searchUrl.isNotEmpty && rule('ruleSearch').isNotEmpty) 'search',
-    if (rule('ruleBookInfo').isNotEmpty) 'detail',
-    if (rule('ruleToc').isNotEmpty) 'catalog',
-    if (rule('ruleContent').isNotEmpty) 'content',
-    if (exploreUrl.isNotEmpty || exploreCatalog.canBrowse) ...{
-      'categories',
-      'browse',
-    },
-  };
+  Set<String> get runnableCapabilities => htmlContract.isSource
+      ? htmlContract.capabilities
+      : <String>{
+          if (searchUrl.isNotEmpty && rule('ruleSearch').isNotEmpty) 'search',
+          if (rule('ruleBookInfo').isNotEmpty) 'detail',
+          if (rule('ruleToc').isNotEmpty) 'catalog',
+          if (rule('ruleContent').isNotEmpty) 'content',
+          if (exploreUrl.isNotEmpty || exploreCatalog.canBrowse) ...{
+            'categories',
+            'browse',
+          },
+        };
 
   RegisteredBookSource toRegisteredSource({
     String? id,
@@ -234,6 +239,19 @@ class SourceCompatibilityScanner {
       _ => null,
     };
     if (typeIssue != null) issues.add(typeIssue);
+    final htmlContract = source.htmlContract;
+    if (htmlContract.isSource) {
+      const required = {'search', 'detail', 'catalog', 'content'};
+      if (!htmlContract.capabilities.containsAll(required)) {
+        issues.add(SourceCompatibilityIssue.missingReadingRules);
+      }
+      return SourceCompatibilityReport(
+        level: issues.isEmpty
+            ? SourceCompatibilityLevel.supported
+            : SourceCompatibilityLevel.unsupported,
+        issues: Set.unmodifiable(issues),
+      );
+    }
     if (source.searchUrl.isEmpty) {
       issues.add(SourceCompatibilityIssue.missingSearch);
     }

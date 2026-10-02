@@ -9,6 +9,7 @@ import '../../../book_sources/services/book_source_client.dart';
 import '../../../book_sources/services/book_source_health_check_service.dart';
 import '../../../book_sources/services/book_source_registry.dart';
 import '../../../book_sources/source_engine/source_health_checker.dart';
+import '../../../book_sources/source_engine/source_login_ui.dart';
 
 part 'book_source_management_state.dart';
 
@@ -55,11 +56,10 @@ class BookSourceHealthProgress {
 
 List<String> bookSourceGroups(RegisteredBookSource source) => source.groups;
 
-/// Whether this source declares its own login flow (a reading-source-style
-/// `loginUrl` script), as opposed to needing no authentication at all.
+/// Whether this source declares its own login flow.
 bool sourceRequiresLogin(RegisteredBookSource source) =>
     source.sourceProtocol == BookSourceProtocolKind.readingSource &&
-    '${source.sourceConfig?['loginUrl'] ?? ''}'.trim().isNotEmpty;
+    sourceDeclaresLogin(source.sourceConfig);
 
 class BookSourceManagementController extends ChangeNotifier {
   BookSourceManagementController({

@@ -341,6 +341,60 @@ void main() {
     expect(find.textContaining('authentication unavailable'), findsOneWidget);
   });
 
+  testWidgets('direct macOS Apple login uses the browser OAuth device flow', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+    addTearDown(AppDistribution.debugReset);
+    final previousWebAuthPlatform = FlutterWebAuth2Platform.instance;
+    FlutterWebAuth2Platform.instance = FlutterWebAuth2MethodChannel();
+    addTearDown(
+      () => FlutterWebAuth2Platform.instance = previousWebAuthPlatform,
+    );
+    const channel = MethodChannel('flutter_web_auth_2');
+    var authenticateCalls = 0;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          expect(call.method, 'authenticate');
+          expect(
+            call.arguments,
+            containsPair(
+              'url',
+              'https://appleid.apple.com/auth/authorize?state=member_apple',
+            ),
+          );
+          authenticateCalls++;
+          throw PlatformException(code: 'CANCELED');
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null),
+    );
+    final adapter = _AppleExternalAuthAdapter();
+    await _pumpAuthFlowPage(tester, adapter);
+
+    final appleButton = tester.widget<InkWell>(
+      find.descendant(
+        of: find.byKey(const ValueKey('account-provider-apple')),
+        matching: find.byType(InkWell),
+      ),
+    );
+    await tester.runAsync(() async {
+      appleButton.onTap!();
+      for (var i = 0; i < 20 && authenticateCalls == 0; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+    });
+    await tester.pump();
+    debugDefaultTargetPlatformOverride = null;
+
+    expect(adapter.appleBeginRequests, 1);
+    expect(authenticateCalls, 1);
+    expect(find.byKey(const ValueKey('account-auth-error')), findsNothing);
+  });
+
   testWidgets(
     'sign-in entry keeps secondary providers out of the focused password task',
     (tester) async {
@@ -1393,6 +1447,38 @@ class _FakeNativeGoogleSignIn implements GoogleNativeSignInClient {
     calls++;
     this.platform = platform;
     return identityToken;
+  }
+}
+
+class _AppleExternalAuthAdapter extends _AuthFlowAdapter {
+  int appleBeginRequests = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return switch (options.uri.path) {
+      '/api/v1/auth/config' => _response({
+        'providers': {'apple': true},
+        'username': {'min_length': 3, 'max_length': 30},
+        'password': {'min_length': 12, 'max_length': 128},
+      }),
+      '/api/v1/auth/device/apple/begin' => () {
+        appleBeginRequests++;
+        return _response({
+          'device_code': 'apple-device-code',
+          'user_code': 'APPLE-1234',
+          'verification_uri': 'https://open.xxread.top/account',
+          'verification_uri_complete':
+              'https://appleid.apple.com/auth/authorize?state=member_apple',
+          'expires_in': 600,
+          'interval': 5,
+        });
+      }(),
+      _ => super.fetch(options, requestStream, cancelFuture),
+    };
   }
 }
 

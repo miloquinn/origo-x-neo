@@ -29,6 +29,8 @@ class SourceScriptContext {
     this.loginHeaderWriter,
     this.messageWriter,
     this.interactionHandler,
+    this.htmlBridge = false,
+    this.cancellationCheck,
   });
 
   final ReadingSourceConfig source;
@@ -65,6 +67,8 @@ class SourceScriptContext {
     SourceScriptInteractionRequest request,
   )?
   interactionHandler;
+  final bool htmlBridge;
+  final void Function()? cancellationCheck;
 
   SourceScriptContext copyWith({
     void Function(String message)? messageWriter,
@@ -75,6 +79,8 @@ class SourceScriptContext {
     Map<String, String>? variables,
     Map<String, Object?>? book,
     Map<String, Object?>? chapter,
+    bool? htmlBridge,
+    void Function()? cancellationCheck,
     void Function(Map<String, Object?> value)? bookWriter,
     void Function(Map<String, Object?> value)? chapterWriter,
   }) => SourceScriptContext(
@@ -101,6 +107,8 @@ class SourceScriptContext {
     loginInfoWriter: loginInfoWriter,
     loginHeaderWriter: loginHeaderWriter,
     interactionHandler: interactionHandler,
+    htmlBridge: htmlBridge ?? this.htmlBridge,
+    cancellationCheck: cancellationCheck ?? this.cancellationCheck,
   );
 }
 

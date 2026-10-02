@@ -159,13 +159,13 @@ SourceScriptRule? splitSourceScriptRule(String rule) {
     final remainder = rule.substring(atIndex + 4);
     final suffixStart = _scriptRuleBoundary(remainder, 0);
     return SourceScriptRule(
-      selector: rule.substring(0, atIndex),
+      selector: rule.substring(0, atIndex).trimRight(),
       script: suffixStart < 0 ? remainder : remainder.substring(0, suffixStart),
       suffix: suffixStart < 0 ? '' : remainder.substring(suffixStart),
     );
   }
   return SourceScriptRule(
-    selector: rule.substring(0, tag!.start),
+    selector: rule.substring(0, tag!.start).trimRight(),
     script: tag.group(1)!,
     suffix: rule.substring(tag.end),
   );

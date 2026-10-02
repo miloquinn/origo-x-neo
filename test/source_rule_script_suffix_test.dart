@@ -22,6 +22,25 @@ void main() {
     ]);
   });
 
+  test(
+    'script list extraction applies non-idempotent replacement once',
+    () async {
+      final evaluator = QuickJsSourceScriptEvaluator();
+      addTearDown(evaluator.dispose);
+      final context = SourceScriptContext(
+        source: ReadingSourceConfig.fromJson(const {
+          'bookSourceName': 'Script replacement regression',
+          'bookSourceUrl': 'https://books.test',
+        }),
+        result: '<a href="a">one</a>',
+      );
+      const script = r'''java.getStringList('a@href##a##aa')''';
+
+      expect(evaluator.evaluate(script, context), ['aa']);
+      expect(await evaluator.evaluateAsync(script, context), ['aa']);
+    },
+  );
+
   for (final entry in <String, String>{
     r'p@text@js:result##(\d+)##id=$1###': 'id=12',
     r'p@text@js:##(\d+)##id=$1###': 'id=12',

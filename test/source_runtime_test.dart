@@ -19,6 +19,37 @@ void main() {
   });
 
   group('SourceRequestTemplate', () {
+    test(
+      'runs a trailing request script before preserving GBK query encoding',
+      () async {
+        final transport = _FakeTransport({
+          'https://books.test/search?q=%CE%DE%D6%B0&page=1': '''
+            <div id="content"><table><tbody><tr><td>
+              <div><b><a href="/book/1" title="无职转生"></a></b></div>
+            </td></tr></tbody></table></div>
+          ''',
+        });
+        final raw = Map<String, dynamic>.from(_htmlSource().raw)
+          ..['searchUrl'] =
+              '''/search?q={{key}}&page={{page}}@js:result + ',{"charset":"gbk"}' '''
+          ..['ruleSearch'] = {
+            'bookList': '<js>result</js>@css:#content > table td > div',
+            'name': '//b/a/@title',
+            'bookUrl': '//b/a/@href',
+          };
+        final runtime = SourceRuntime(transport: transport);
+        addTearDown(runtime.close);
+
+        final page = await runtime.search(
+          ReadingSourceConfig.fromJson(raw).toRegisteredSource(enabled: true),
+          '无职',
+        );
+
+        expect(page.items.single.title, '无职转生');
+        expect(transport.requests.single.charset, 'gbk');
+      },
+    );
+
     test('expands native source header variables before requests', () async {
       final transport = _FakeTransport({
         'https://books.test/search?q=test&page=1': '''

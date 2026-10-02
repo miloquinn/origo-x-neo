@@ -53,7 +53,10 @@ void main() {
             ),
             width: 100,
             height: 150,
-            fallback: const ColoredBox(key: Key('fallback'), color: Colors.grey),
+            fallback: const ColoredBox(
+              key: Key('fallback'),
+              color: Colors.grey,
+            ),
           ),
         ),
       ),

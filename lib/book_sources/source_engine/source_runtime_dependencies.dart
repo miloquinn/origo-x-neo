@@ -73,6 +73,10 @@ class SourceRuntimeScriptOwner {
     if (_closed) {
       throw StateError('The source runtime is closed.');
     }
+    final current = _evaluator;
+    if (current is QuickJsSourceScriptEvaluator && current.isDisposed) {
+      _evaluator = null;
+    }
     return _evaluator ??= QuickJsSourceScriptEvaluator();
   }
 

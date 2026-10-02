@@ -208,9 +208,10 @@ class SourceJavaScriptCoreRuntime extends FlutterJsPlatformEmpty {
       final channel = _valueToString(context, arguments[0]);
       final payload = jsonDecode(_valueToString(context, arguments[1]));
       final callback = _channels[channel];
-      final result = callback == null
-          ? null
-          : Function.apply(callback, [payload]);
+      // This bridge is synchronous and single-argument. Invoke it directly to
+      // avoid reflective dispatch and its extra allocation inside the native
+      // JavaScriptCore callback.
+      final result = callback == null ? null : callback(payload);
       if (result is Future) {
         throw UnsupportedError('Async host callbacks are not supported.');
       }

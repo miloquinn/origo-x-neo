@@ -68,8 +68,7 @@ class _ExternalLoginMethods extends StatelessWidget {
       enabled: !account.loading,
       onTap: () {
         beforeLogin?.call();
-        if (brand == _ProviderBrand.apple &&
-            defaultTargetPlatform == TargetPlatform.iOS) {
+        if (brand == _ProviderBrand.apple && account.usesNativeAppleSignIn) {
           onLoginApple();
         } else {
           onLogin(method);
