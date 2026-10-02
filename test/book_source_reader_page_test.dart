@@ -681,7 +681,7 @@ void main() {
       description: '',
       categories: [],
     );
-    const store = BookSourceReadingProgressStore();
+    final store = _progressFixture.store;
     await store.save(
       sourceId: source.id,
       bookId: book.id,
@@ -1549,6 +1549,7 @@ void main() {
             home: BookSourceReaderPage(
               paginationCacheDao: _MemoryPaginationCacheDao(),
               replaceRuleService: _replaceRules,
+              progressStore: _progressFixture.store,
               source: _testSource(),
               book: const BookSourceBook(
                 id: 'book-1',
@@ -1693,7 +1694,7 @@ void main() {
       SharedPreferences.setMockInitialValues({
         ReaderSettingsStore.pageModeKey: BookSourcePageMode.pageCurl.name,
       });
-      const store = BookSourceReadingProgressStore();
+      final store = _progressFixture.store;
       final content = _tabletChapterText(360);
       try {
         await tester.pumpWidget(
@@ -2271,7 +2272,7 @@ void main() {
       SharedPreferences.setMockInitialValues({
         ReaderSettingsStore.pageModeKey: BookSourcePageMode.pageCurl.name,
       });
-      const store = BookSourceReadingProgressStore();
+      final store = _progressFixture.store;
       await store.save(
         sourceId: _testSource().id,
         bookId: 'book-1',
@@ -2395,7 +2396,7 @@ void main() {
       SharedPreferences.setMockInitialValues({
         ReaderSettingsStore.pageModeKey: BookSourcePageMode.pageCurl.name,
       });
-      const store = BookSourceReadingProgressStore();
+      final store = _progressFixture.store;
       await store.save(
         sourceId: _testSource().id,
         bookId: 'book-1',
@@ -3032,6 +3033,9 @@ class _DelayedThirdChapterClient extends BookSourceClient {
 }
 
 class _BlockingProgressStore extends BookSourceReadingProgressStore {
+  _BlockingProgressStore()
+    : super(database: () async => _progressFixture.database);
+
   final Completer<void> _save = Completer<void>();
   bool saveStarted = false;
 

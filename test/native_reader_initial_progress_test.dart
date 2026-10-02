@@ -31,6 +31,7 @@ import 'package:xxread/widgets/reader_navigation_sheet.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 
 import 'support/reader_cache_test_utils.dart';
+import 'support/reading_cloud_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +58,19 @@ void main() {
           const MethodChannel('plugins.flutter.io/path_provider'),
           (_) async => databaseDirectory.path,
         );
+    await prepareReadingCloudTestDatabase();
+  });
+
+  tearDownAll(() async {
+    await closeReadingCloudTestDatabase();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          null,
+        );
+    if (databaseDirectory.existsSync()) {
+      databaseDirectory.deleteSync(recursive: true);
+    }
   });
 
   testWidgets(
@@ -133,6 +147,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
         await drainReaderCache(tester);
+        await drainReadingCloudWrites(tester);
         await tester.binding.setSurfaceSize(null);
         debugDefaultTargetPlatformOverride = null;
         directory.deleteSync(recursive: true);
@@ -248,10 +263,18 @@ void main() {
         pageView.controller!.page!.round(),
         pageView.controller!.initialPage,
       );
+      // Cloud checkpoints use a real stopwatch. Ensure this regression saves
+      // a nonzero session even when TXT parsing finishes in under a second.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 1100)),
+      );
+      await tester.pump();
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
       await drainReaderCache(tester);
+      final cloudEventCount = await drainReadingCloudWrites(tester);
+      expect(cloudEventCount, greaterThan(0));
       await tester.binding.setSurfaceSize(null);
       debugDefaultTargetPlatformOverride = null;
       directory.deleteSync(recursive: true);
@@ -330,6 +353,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
         await drainReaderCache(tester);
+        await drainReadingCloudWrites(tester);
         await tester.binding.setSurfaceSize(null);
         debugDefaultTargetPlatformOverride = null;
         directory.deleteSync(recursive: true);
@@ -458,6 +482,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
         await drainReaderCache(tester);
+        await drainReadingCloudWrites(tester);
         await tester.binding.setSurfaceSize(null);
         debugDefaultTargetPlatformOverride = null;
         directory.deleteSync(recursive: true);
@@ -577,6 +602,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
         await drainReaderCache(tester);
+        await drainReadingCloudWrites(tester);
         await tester.binding.setSurfaceSize(null);
         debugDefaultTargetPlatformOverride = null;
         directory.deleteSync(recursive: true);
@@ -677,6 +703,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
         await drainReaderCache(tester);
+        await drainReadingCloudWrites(tester);
         await tester.binding.setSurfaceSize(null);
         debugDefaultTargetPlatformOverride = null;
         directory.deleteSync(recursive: true);
@@ -1091,6 +1118,7 @@ void main() {
             await tester.pumpWidget(const SizedBox.shrink());
             await tester.pump();
             await drainReaderCache(tester);
+            await drainReadingCloudWrites(tester);
             await tester.binding.setSurfaceSize(null);
             debugDefaultTargetPlatformOverride = null;
             directory.deleteSync(recursive: true);
@@ -1217,6 +1245,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
         await drainReaderCache(tester);
+        await drainReadingCloudWrites(tester);
         await tester.binding.setSurfaceSize(null);
         debugDefaultTargetPlatformOverride = null;
         directory.deleteSync(recursive: true);

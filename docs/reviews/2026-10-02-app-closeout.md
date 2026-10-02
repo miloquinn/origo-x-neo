@@ -66,3 +66,13 @@ The complete first Core run exposed missing test platform initialization, reader
 - Split eight oversized source files into ten cohesive parts. All original architecture assertions remain active; all files stay below the 800-line responsibility budget. Architecture: 4 tests passed; affected service/controller/script suites: 94 tests passed; three independent UI representative cases passed.
 - Native continuous auto-scroll tests explicitly configure visible chapter fractions and read rendered footer text. The original failing chapter-boundary case passed in its own process.
 - Full analyzer after the repairs: zero errors/warnings, eight existing style infos. Python/changelog/isolated-manifest verification: 14 tests passed and every isolated case remains covered. The definitive remote result must be read against the final main SHA.
+
+
+## Definitive remote follow-up at 769105d
+
+- [PR checks 36980980397](https://github.com/miloquinn/origo-x-neo/actions/runs/36980980397): Core Flutter validation passed, including formatting, analysis, QuickJS compatibility and coverage (2,444 tests passed; nine existing opt-in cases skipped). Response codec, Android debug and Web release jobs passed independently.
+- [Platform builds 36980980369](https://github.com/miloquinn/origo-x-neo/actions/runs/36980980369): Linux, Windows, macOS release and unsigned iOS release all passed.
+- The remaining failure was the isolated oversized-TXT restore test's teardown: an unawaited reader-disposal cloud checkpoint left a sqflite lock timer pending. The offset assertions themselves passed. Finish the test's real database writes before leaving fakeAsync; retain production recording and the pending-timer invariant.
+- The remaining source-reader cases must all use their test-owned SQLite progress store, including saved-progress setup and the deliberately blocking-save subclass. Keep real progress reads and all tablet/cross-chapter assertions.
+
+The final follow-up changes are test-only: a real database write barrier and explicit teardown for native reader cloud checkpoints, plus consistent progress-store injection in source-reader setup and blocking-save fixtures. The oversized-TXT regression deliberately records a nonzero real session and checks that a cloud event is persisted; it does not rely on parsing speed. All existing offset, page, consent and pending-timer assertions remain enabled. Changed test files passed formatting and targeted analysis; Python/changelog/isolated-manifest checks passed. Product code, dependency locks, app version and published tags are unchanged by this final fixture repair.
