@@ -927,13 +927,15 @@ void main() {
       await tester.pump(const Duration(milliseconds: 80));
       await tester.pump();
       final row = find.byKey(const Key('bookSourceListReveal-source-20'));
-      expect(
-        find.descendant(
-          of: row,
-          matching: find.byType(TweenAnimationBuilder<double>),
-        ),
-        findsOneWidget,
+      final reveal = find.descendant(
+        of: row,
+        matching: find.byType(AnimatedBuilder),
       );
+      expect(reveal, findsOneWidget);
+      final revealAnimation =
+          tester.widget<AnimatedBuilder>(reveal).animation as Animation<double>;
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(revealAnimation.value, inExclusiveRange(0, 1));
       await tester.pumpAndSettle();
       expect(controller.offset, closeTo(directoryOffset, 1));
       expect(sourceToggle, findsOneWidget);
