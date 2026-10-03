@@ -172,6 +172,35 @@ class BookSourcesState {
        loadingListChannelSources = Set.unmodifiable(loadingListChannelSources),
        listChannelErrors = Map.unmodifiable(listChannelErrors);
 
+  BookSourcesState._frozen({
+    required this.sources,
+    required this.sectionSources,
+    required this.discoverySources,
+    required this.loadingSources,
+    required this.favoritesOnly,
+    required this.selectedGroup,
+    required this.section,
+    required this.selectedSourceId,
+    required this.caches,
+    required this.selectedCategory,
+    required this.categoryBooks,
+    required this.loadingCategoryBooks,
+    required this.loadingMoreCategoryBooks,
+    required this.categoryLoadMoreFailed,
+    required this.categoryLoadError,
+    required this.categoryHasMore,
+    required this.categoryPage,
+    required this.expandedListSourceId,
+    required this.listSourceQuery,
+    required this.showListDirectory,
+    required this.listChannelsBySource,
+    required this.loadingListChannelSources,
+    required this.listChannelErrors,
+    required this.listLayout,
+    required this.largeSourceLibraryThreshold,
+    required this.listGroupsRevision,
+  });
+
   bool get hasOrganizationFilter => favoritesOnly || selectedGroup != null;
 
   bool matchesOrganization(RegisteredBookSource source) =>
@@ -299,12 +328,14 @@ class BookSourcesState {
     Map<String, Object>? listChannelErrors,
     bool? listLayout,
     int? listGroupsRevision,
-  }) => BookSourcesState(
-    sources: List.unmodifiable(sources ?? this.sources),
-    sectionSources: sectionSources ?? this.sectionSources,
-    discoverySources: List.unmodifiable(
-      discoverySources ?? this.discoverySources,
-    ),
+  }) => BookSourcesState._frozen(
+    sources: sources == null ? this.sources : List.unmodifiable(sources),
+    sectionSources: sectionSources == null
+        ? this.sectionSources
+        : _freezeListMap(sectionSources, reuseFrom: this.sectionSources),
+    discoverySources: discoverySources == null
+        ? this.discoverySources
+        : List.unmodifiable(discoverySources),
     loadingSources: loadingSources ?? this.loadingSources,
     favoritesOnly: favoritesOnly ?? this.favoritesOnly,
     selectedGroup: identical(selectedGroup, _unset)
@@ -314,11 +345,13 @@ class BookSourcesState {
     selectedSourceId: identical(selectedSourceId, _unset)
         ? this.selectedSourceId
         : selectedSourceId as String?,
-    caches: caches ?? this.caches,
+    caches: caches == null ? this.caches : Map.unmodifiable(caches),
     selectedCategory: identical(selectedCategory, _unset)
         ? this.selectedCategory
         : selectedCategory as SourcedBookCategory?,
-    categoryBooks: List.unmodifiable(categoryBooks ?? this.categoryBooks),
+    categoryBooks: categoryBooks == null
+        ? this.categoryBooks
+        : List.unmodifiable(categoryBooks),
     loadingCategoryBooks: loadingCategoryBooks ?? this.loadingCategoryBooks,
     loadingMoreCategoryBooks:
         loadingMoreCategoryBooks ?? this.loadingMoreCategoryBooks,
@@ -334,19 +367,36 @@ class BookSourcesState {
         : expandedListSourceId as String?,
     listSourceQuery: listSourceQuery ?? this.listSourceQuery,
     showListDirectory: showListDirectory ?? this.showListDirectory,
-    listChannelsBySource: listChannelsBySource ?? this.listChannelsBySource,
-    loadingListChannelSources:
-        loadingListChannelSources ?? this.loadingListChannelSources,
-    listChannelErrors: listChannelErrors ?? this.listChannelErrors,
+    listChannelsBySource: listChannelsBySource == null
+        ? this.listChannelsBySource
+        : _freezeListMap(
+            listChannelsBySource,
+            reuseFrom: this.listChannelsBySource,
+          ),
+    loadingListChannelSources: loadingListChannelSources == null
+        ? this.loadingListChannelSources
+        : Set.unmodifiable(loadingListChannelSources),
+    listChannelErrors: listChannelErrors == null
+        ? this.listChannelErrors
+        : Map.unmodifiable(listChannelErrors),
     listLayout: listLayout ?? this.listLayout,
     largeSourceLibraryThreshold: largeSourceLibraryThreshold,
     listGroupsRevision: listGroupsRevision ?? this.listGroupsRevision,
   );
 }
 
-Map<K, List<V>> _freezeListMap<K, V>(Map<K, List<V>> source) =>
-    Map<K, List<V>>.unmodifiable(
-      source.map(
-        (key, value) => MapEntry<K, List<V>>(key, List<V>.unmodifiable(value)),
-      ),
-    );
+Map<K, List<V>> _freezeListMap<K, V>(
+  Map<K, List<V>> source, {
+  Map<K, List<V>>? reuseFrom,
+}) {
+  if (identical(source, reuseFrom)) return reuseFrom!;
+  return Map<K, List<V>>.unmodifiable(
+    source.map((key, value) {
+      final reusable = reuseFrom?[key];
+      return MapEntry<K, List<V>>(
+        key,
+        identical(value, reusable) ? reusable! : List<V>.unmodifiable(value),
+      );
+    }),
+  );
+}

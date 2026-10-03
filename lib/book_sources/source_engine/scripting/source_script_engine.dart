@@ -11,16 +11,13 @@ import 'source_script_contract.dart';
 import 'source_script_host_api.dart';
 import 'source_script_state.dart';
 import 'source_javascriptcore_runtime.dart';
+import 'source_quickjs_runtime.dart';
 
 export 'source_script_contract.dart';
 
 class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
   QuickJsSourceScriptEvaluator({JavascriptRuntime? runtime})
-    : _runtime =
-          runtime ??
-          (Platform.isIOS || Platform.isMacOS
-              ? SourceJavaScriptCoreRuntime()
-              : getJavascriptRuntime(xhr: false)),
+    : _runtime = runtime ?? _createRuntime(),
       _host = SourceScriptHostApi() {
     _runtime.onMessage(sourceScriptHostChannel, _host.handle);
   }
@@ -33,6 +30,13 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
   bool get isDisposed => _disposed;
   var _promiseSequence = 0;
   var _invocationSequence = 0;
+
+  static JavascriptRuntime _createRuntime() =>
+      Platform.isIOS || Platform.isMacOS
+      ? SourceJavaScriptCoreRuntime()
+      : Platform.isAndroid
+      ? SourceQuickJsRuntime()
+      : getJavascriptRuntime(xhr: false);
 
   @override
   Object? evaluate(String script, SourceScriptContext context) {
@@ -80,6 +84,9 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
     var networkCount = 0;
     var interactionCount = 0;
     for (var replayCount = 0; replayCount < 24; replayCount++) {
+      context.cancellationCheck?.call();
+      // Give frames and touch events a turn between queued/replayed scripts.
+      await Future<void>.delayed(Duration.zero);
       try {
         return context.htmlBridge
             ? await _evaluateAttemptAsync(
@@ -159,6 +166,7 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
     Map<String, Object?>? replayValues,
   ]) {
     if (_disposed) throw StateError('The source script evaluator is disposed.');
+    context.cancellationCheck?.call();
     final invocationId = 'source_invocation_${_invocationSequence++}';
     final state = _host.beginInvocation(
       context,
@@ -185,6 +193,9 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
         );
       }
       return _decodeEnvelope(evaluated.stringResult, context, state);
+    } on SourceScriptExecutionTimeout {
+      _replaceRuntime();
+      rethrow;
     } finally {
       _host.endInvocation();
     }
@@ -198,6 +209,7 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
     Map<String, Object?> replayValues,
   ) async {
     if (_disposed) throw StateError('The source script evaluator is disposed.');
+    context.cancellationCheck?.call();
     final invocationId = 'source_invocation_${_invocationSequence++}';
     final state = _host.beginInvocation(
       context,
@@ -214,6 +226,9 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
         cancellationCheck: context.cancellationCheck,
       );
       return _decodeEnvelope(result, context, state);
+    } on SourceScriptExecutionTimeout {
+      _replaceRuntime();
+      rethrow;
     } finally {
       _host.endInvocation();
     }
@@ -293,9 +308,7 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
 
   void _replaceRuntime() {
     _runtime.dispose();
-    _runtime = Platform.isIOS || Platform.isMacOS
-        ? SourceJavaScriptCoreRuntime()
-        : getJavascriptRuntime(xhr: false);
+    _runtime = _createRuntime();
     _runtime.onMessage(sourceScriptHostChannel, _host.handle);
   }
 
