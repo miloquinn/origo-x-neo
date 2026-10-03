@@ -19,8 +19,6 @@ DIRECT_DISTRIBUTION_DART_DEFINE = f'--dart-define={DIRECT_DISTRIBUTION_ASSIGNMEN
 APPLE_DISTRIBUTION_ASSIGNMENT = f'{DISTRIBUTION_KEY}=appleStore'
 APPLE_DISTRIBUTION_DART_DEFINE = f'--dart-define={APPLE_DISTRIBUTION_ASSIGNMENT}'
 READER_LICENSE_KEY = 'ORIGO_STORE_READER_LICENSE_REQUIRED'
-READER_LICENSE_ENABLED_ASSIGNMENT = f'{READER_LICENSE_KEY}=true'
-READER_LICENSE_ENABLED_DART_DEFINE = f'--dart-define={READER_LICENSE_ENABLED_ASSIGNMENT}'
 READER_LICENSE_DISABLED_ASSIGNMENT = f'{READER_LICENSE_KEY}=false'
 READER_LICENSE_DISABLED_DART_DEFINE = f'--dart-define={READER_LICENSE_DISABLED_ASSIGNMENT}'
 
@@ -109,9 +107,10 @@ def assert_app_store_distribution(defines):
         raise DistributionError(
             f'Mac App Store builds require {APPLE_DISTRIBUTION_ASSIGNMENT}'
         )
-    if defines.get(READER_LICENSE_KEY) != 'true':
+    if defines.get(READER_LICENSE_KEY) != 'false':
         raise DistributionError(
-            'Mac App Store builds require reader licensing for independent app purchases'
+            'Mac App Store builds currently require free basic reading '
+            f'({READER_LICENSE_DISABLED_ASSIGNMENT}); StoreKit ownership remains verified'
         )
 
 

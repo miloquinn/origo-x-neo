@@ -7539,6 +7539,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get storeReaderSignInAction => 'Entrar no Origo e continuar';
 
   @override
+  String get storeReaderFreePurchaseSignInAction =>
+      'Sign in to buy an Origo Read entitlement';
+
+  @override
+  String get storeReaderCurrentlyFree =>
+      'Basic reading is currently free without signing in or purchasing. Buying Origo Read is optional and gives your Origo account a permanent Read entitlement for supported platforms.';
+
+  @override
   String get storeReaderCrossPlatformAccess =>
       'Origo Read comprado · use a mesma conta Origo nas plataformas compatíveis';
 

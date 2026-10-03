@@ -18,9 +18,9 @@ GitHub / 官网的 Developer ID 公证包默认走卡密，不能直接拿去提
 
 ## Mac App Store 构建
 
-商店 macOS 包必须用商店脚本。它会强制带上 `--dart-define=OPEN_READING_MACOS_APP_STORE=true`、`--dart-define=ORIGO_DISTRIBUTION_CHANNEL=appleStore` 和`--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=true`，构建后读取 `macos/Flutter/ephemeral/Flutter-Generated.xcconfig` 确认这些 define 已写入，然后才归档。不要手写 `flutter build macos`，也不要把官网公证包拿去上传。
+商店 macOS 包必须用商店脚本。它会强制带上 `--dart-define=OPEN_READING_MACOS_APP_STORE=true`、`--dart-define=ORIGO_DISTRIBUTION_CHANNEL=appleStore` 和`--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=false`，构建后读取 `macos/Flutter/ephemeral/Flutter-Generated.xcconfig` 确认这些 define 已写入，然后才归档。不要手写 `flutter build macos`，也不要把官网公证包拿去上传。
 
-渠道开关会强制 StoreKit 永久高级版内购、隐藏卡密和外部购买入口，并关闭官网自更新。未加新渠道 define 的旧包仍兼容 iOS StoreKit 和 macOS `_MASReceipt` 检测；新的审核和沙盒构建不能依赖兜底，必须显式声明 `appleStore`。商店构建现已开启阅读授权检查，官网构建保持关闭。真实购买、恢复和退款仍须用最终候选包在商店测试环境验收；详见独立商品实施记录。
+渠道开关会强制 StoreKit 永久高级版内购、隐藏卡密和外部购买入口，并关闭官网自更新。未加新渠道 define 的旧包仍兼容 iOS StoreKit 和 macOS `_MASReceipt` 检测；新的审核和沙盒构建不能依赖兜底，必须显式声明 `appleStore`。2026-10-03 起，所有渠道暂时免费开放基础阅读，不要求登录或开卷授权；商店仍保留可选开卷购买及账号身份，探元高级书源兼容能力继续校验权益。免费使用不授予已购身份或探元升级价资格，阅读试用入口暂时隐藏。真实购买、恢复和退款仍须用最终候选包在商店测试环境验收；详见独立商品实施记录。
 
 ```bash
 # 加载已配置的私有环境（不输出其内容）。

@@ -3,6 +3,24 @@
     "entries": [
         {
             "version": "2.7.2",
+            "buildNumber": "261003001",
+            "notes": {
+                "zh": [
+                    "基础阅读目前免费开放，无需登录或购买开卷；开卷仍可自愿购买，购买后获得账号身份。",
+                    "探元高级书源兼容能力继续按正式账号权益校验，购买、恢复和退款状态显示更清晰。",
+                    "修复在线书源和本地阅读器滚动退出后，重新打开可能回到错误位置的问题。",
+                    "改善章节切换、目录恢复、漫画分页和书源规则兼容，提升阅读稳定性。"
+                ],
+                "en": [
+                    "Basic reading is currently free without signing in or buying Origo Read. Read remains an optional purchase that grants account ownership.",
+                    "Advanced source compatibility still requires Origo Explore account entitlements, with clearer purchase, restore and refund status.",
+                    "Fix incorrect reading positions after closing and reopening scrolling local books or online-source books.",
+                    "Improve chapter transitions, table-of-contents restoration, comic pagination and source-rule compatibility for more reliable reading."
+                ]
+            }
+        },
+        {
+            "version": "2.7.2",
             "buildNumber": "260928006",
             "notes": {
                 "zh": [

@@ -238,7 +238,7 @@ jobs:
         run: |
           flutter build appbundle --release \
             --dart-define=ORIGO_DISTRIBUTION_CHANNEL=googlePlay \
-            --dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=true
+            --dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=false
 
       - name: Verify Google Play manifest boundary
         shell: bash

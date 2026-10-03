@@ -25,7 +25,7 @@ void main() {
 
   setUp(AppDistribution.debugReset);
 
-  testWidgets('Apple beta opens Explore without price or purchase actions', (
+  testWidgets('Apple sandbox keeps normal Explore purchase actions', (
     tester,
   ) async {
     await _enableAppleBeta();
@@ -36,11 +36,15 @@ void main() {
     await _pumpPage(tester, account: account);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('premium-beta-status')), findsOneWidget);
-    expect(find.byKey(const ValueKey('premium-beta-access')), findsOneWidget);
-    expect(find.byKey(const ValueKey('premium-store-price')), findsNothing);
-    expect(find.byKey(const ValueKey('account-apple-purchase')), findsNothing);
-    expect(find.byKey(const ValueKey('account-apple-restore')), findsNothing);
+    expect(AppDistribution.isAppleTestEnvironment, isTrue);
+    expect(find.byKey(const ValueKey('premium-beta-status')), findsNothing);
+    expect(find.byKey(const ValueKey('premium-beta-access')), findsNothing);
+    expect(find.byKey(const ValueKey('premium-store-price')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('account-apple-purchase')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('account-apple-restore')), findsOneWidget);
     expect(find.byKey(const ValueKey('premium-redeem-entry')), findsOneWidget);
     await _tapVisible(tester, const ValueKey('premium-redeem-entry'));
     expect(find.byType(MembershipRedemptionPage), findsOneWidget);
@@ -48,6 +52,23 @@ void main() {
       find.byKey(const ValueKey('account-redemption-code')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('verified Apple sandbox Explore entitlement remains active', (
+    tester,
+  ) async {
+    await _enableAppleBeta();
+    final store = _FakeAppleStore();
+    final account = _TestAccount(store: store, premium: true);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+
+    expect(AppDistribution.isAppleTestEnvironment, isTrue);
+    expect(find.byKey(const ValueKey('premium-active')), findsOneWidget);
+    expect(find.byKey(const ValueKey('account-apple-purchase')), findsNothing);
+    expect(find.byKey(const ValueKey('account-apple-restore')), findsOneWidget);
   });
 
   for (final ready in [true, false]) {

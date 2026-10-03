@@ -41,7 +41,7 @@ class SettingsAccountCard extends StatelessWidget {
               : AccountIdentityTier.none,
           title: summary?.effectiveName ?? l10n.settingsGuestTitle,
           subtitle: summary == null
-              ? AppDistribution.isStore
+              ? AppDistribution.readerLicenseRequired
                     ? l10n.storeReaderLicenseSubtitle
                     : l10n.settingsGuestSubtitle
               : '@${summary.username}',

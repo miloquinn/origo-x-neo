@@ -1,6 +1,13 @@
 # Account-owned cross-platform purchases
 
-Status: implementation, 2026-09-27. Supersedes the split model where new reader purchases belong only to a store account.
+Status: implementation, updated 2026-10-03. Supersedes the split model where new reader purchases belong only to a store account.
+
+Launch policy (2026-10-03): basic Read capabilities are currently free in every
+distribution, without login, purchase, or trial. Store Read purchases remain
+optional and create real account ownership. Free reading never grants a paid
+Read identity or Explore upgrade eligibility. Explore advanced-source
+compatibility continues to require verified access. Trial entry points are
+hidden while reader licensing is disabled; existing trial history is retained.
 
 ## Product contract
 
@@ -9,7 +16,7 @@ Status: implementation, 2026-09-27. Supersedes the split model where new reader 
 - Paid/granted rights belong to an Origo account across supported platforms. Store apps retain native billing. Signing into Google/Apple is not proof of the corresponding store payment identity.
 - Direct website builds keep free local reading; installation/sign-in does not issue a global paid reader grant.
 - Any active Explore/Premium right includes reading for the validity of that right. Refunds remove only the matching purchase source; independent Read rights survive an upgrade refund. New upgrade purchases require a continuing independent permanent account Read license; if Read is refunded, the upgrade remains owned but inactive until Read is restored or repurchased. Historical Premium purchases retain their original full rights. Existing device-only reader purchases require reviewed account claiming before they qualify for account upgrades.
-- TestFlight is a temporary full-feature test experience, never a Production account grant. The same binary must not remain free when distributed through App Store.
+- TestFlight provides free basic reading, never a Production account grant. Explore requires an existing verified account right; test purchases remain visible and verifiable but do not unlock capabilities, trial, account ownership, or upgrade eligibility. The sandbox signal must never grant Production Explore or paid Read ownership. Basic reading is independently free under the current launch policy.
 - Existing UI follows app accent and brightness. Product names are localized; functional descriptions explain what is included.
 
 ## Work sequence and boundaries
@@ -32,7 +39,7 @@ The SharedPreferences membership snapshot is UI history only and never grants Re
 
 ## Apple beta runtime
 
-iOS 16+ uses verified StoreKit `AppTransaction.shared.environment == sandbox` in memory, probed on each launch. This includes TestFlight and may include App Review; it is not a TestFlight-only identity. On iOS 15 only, the compatibility path accepts Apple's `Bundle.main.appStoreReceiptURL` when its filename is `sandboxReceipt` and the receipt file already exists. Apple does not guarantee that receipt is present before the first receipt refresh, so an iOS 15 TestFlight first launch may remain locked until Apple supplies it; the app does not initiate a receipt refresh during startup. Production, Xcode, missing receipt, unknown/unverified and errors do not grant beta access. There is no persisted beta flag and no production entitlement write. Store builds now require licensing by default even if a manual build omits the define. Real iOS 15 TestFlight first launch and TestFlight -> App Store installation transitions remain device verification requirements.
+iOS 16+ uses verified StoreKit `AppTransaction.shared.environment == sandbox` in memory, probed on each launch. This includes TestFlight and may include App Review; it is not a TestFlight-only identity and does not grant Explore by itself. On iOS 15 only, the compatibility path accepts Apple's `Bundle.main.appStoreReceiptURL` when its filename is `sandboxReceipt` and the receipt file already exists. Apple does not guarantee that receipt is present before the first receipt refresh, so an iOS 15 TestFlight first launch may lack the sandbox environment signal until Apple supplies it; the app does not initiate a receipt refresh during startup. Production, Xcode, missing receipt, unknown/unverified and errors do not grant beta access. There is no persisted beta flag and no production entitlement write. Store builds now default to free basic reading; release scripts explicitly set `ORIGO_STORE_READER_LICENSE_REQUIRED=false`. Enabling the reader gate later requires an explicit, separately reviewed rollout. Real iOS 15 TestFlight first launch and TestFlight -> App Store installation transitions remain device verification requirements.
 
 ## Origo code redemption (2026-09-27)
 

@@ -24,7 +24,7 @@ class AppDistribution {
   );
   static const _storeReaderLicenseRequiredDefine = bool.fromEnvironment(
     'ORIGO_STORE_READER_LICENSE_REQUIRED',
-    defaultValue: true,
+    defaultValue: false,
   );
 
   static const MethodChannel _channel = MethodChannel(_channelName);
@@ -166,8 +166,9 @@ class AppDistribution {
 
   /// Whether this store build requires a trial or permanent purchase to read.
   ///
-  /// Store builds default to paid access even if a release command omits the
-  /// define. Developer builds may explicitly disable it for unrelated tests.
+  /// Basic reading is currently free, including store builds. This switch
+  /// affects reader access only; paid ownership and Explore remain verified.
+  /// A future paid-reader rollout must explicitly enable it in its build.
   static bool get readerLicenseRequired =>
       isStore &&
       (_debugOverrideReaderLicenseRequired ??

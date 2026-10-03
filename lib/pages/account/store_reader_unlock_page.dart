@@ -122,8 +122,8 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
       final account = widget.account;
       final l10n = context.l10n;
       final colors = Theme.of(context).colorScheme;
+      final licenseRequired = AppDistribution.readerLicenseRequired;
       final permanent = account.hasPermanentReaderAccess;
-      final betaAccess = AppDistribution.isAppleTestEnvironment;
       final trial = account.hasActiveReaderTrial;
       final busy = account.readerPurchaseLoading || account.loading;
       final status = _message ?? _purchaseStatus(context, account);
@@ -180,19 +180,19 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                 height: 1.6,
               ),
             ),
-            if (betaAccess) ...[
-              const SizedBox(height: 20),
-              _summaryLine(
-                Icons.science_outlined,
-                l10n.storeBetaAccessAvailable,
-                key: const ValueKey('store-reader-beta-status'),
-              ),
-            ] else if (permanent) ...[
+            if (permanent) ...[
               const SizedBox(height: 20),
               _summaryLine(
                 Icons.verified_rounded,
                 l10n.storeReaderCrossPlatformAccess,
                 key: const ValueKey('store-reader-active'),
+              ),
+            ] else if (!licenseRequired) ...[
+              const SizedBox(height: 20),
+              _summaryLine(
+                Icons.menu_book_rounded,
+                l10n.storeReaderCurrentlyFree,
+                key: const ValueKey('store-reader-free-access'),
               ),
             ] else if (trial && account.readerTrialExpiresAt != null) ...[
               const SizedBox(height: 20),
@@ -243,19 +243,7 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (betaAccess)
-              FilledButton(
-                key: const ValueKey('store-reader-beta-access'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                onPressed: null,
-                child: Text(l10n.storeBetaAccessAvailable),
-              )
-            else if (!permanent) ...[
+            if (!permanent) ...[
               if (account.readerLifetimeProduct case final product?) ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -324,7 +312,9 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                     Flexible(
                       child: Text(
                         !account.isAuthenticated
-                            ? l10n.storeReaderSignInAction
+                            ? licenseRequired
+                                  ? l10n.storeReaderSignInAction
+                                  : l10n.storeReaderFreePurchaseSignInAction
                             : account.readerLifetimeProduct == null ||
                                   !account.storeBillingReady
                             ? l10n.accountAppleProductRetry
@@ -339,7 +329,9 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
             const SizedBox(height: 4),
             Row(
               children: [
-                if (!betaAccess && !permanent && account.canStartReaderTrial)
+                if (licenseRequired &&
+                    !permanent &&
+                    account.canStartReaderTrial)
                   Expanded(
                     child: TextButton(
                       key: const ValueKey('store-start-trial'),
@@ -355,22 +347,21 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                       ),
                     ),
                   ),
-                if (!betaAccess)
-                  Expanded(
-                    child: TextButton.icon(
-                      key: const ValueKey('store-reader-restore'),
-                      onPressed: busy
-                          ? null
-                          : () => _performAccountAction(
-                              account.restoreReaderPurchases,
-                            ),
-                      icon: const Icon(Icons.restore_rounded, size: 17),
-                      label: Text(
-                        l10n.accountAppleRestore,
-                        textAlign: TextAlign.center,
-                      ),
+                Expanded(
+                  child: TextButton.icon(
+                    key: const ValueKey('store-reader-restore'),
+                    onPressed: busy
+                        ? null
+                        : () => _performAccountAction(
+                            account.restoreReaderPurchases,
+                          ),
+                    icon: const Icon(Icons.restore_rounded, size: 17),
+                    label: Text(
+                      l10n.accountAppleRestore,
+                      textAlign: TextAlign.center,
                     ),
                   ),
+                ),
               ],
             ),
             if (status != null) ...[
@@ -560,15 +551,21 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 10),
-              Text(l10n.storeReaderBenefitBody),
+              Text(
+                AppDistribution.readerLicenseRequired
+                    ? l10n.storeReaderBenefitBody
+                    : l10n.storeReaderCurrentlyFree,
+              ),
               const SizedBox(height: 24),
               Text(l10n.storePurchaseBilling(_storeName)),
-              const SizedBox(height: 24),
-              Text(
-                l10n.storeTrialDetails(
-                  widget.account.membershipConfig?.storeTrialDays ?? 14,
+              if (AppDistribution.readerLicenseRequired) ...[
+                const SizedBox(height: 24),
+                Text(
+                  l10n.storeTrialDetails(
+                    widget.account.membershipConfig?.storeTrialDays ?? 14,
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 24),
               Text(
                 l10n.accountAppleRestore,

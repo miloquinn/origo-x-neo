@@ -6152,7 +6152,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get premiumPurchaseSuccess => 'Origo 探元已解锁';
 
   @override
-  String get premiumTestPurchaseVerified => '测试购买已验证，不会开通正式会员';
+  String get premiumTestPurchaseVerified => '测试购买已验证，不会开通探元或其他付费权益';
 
   @override
   String get premiumPurchaseRevoked => '此购买的会员权益已撤销';
@@ -7021,6 +7021,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storeReaderSignInAction => '登录 Origo 账号并继续';
 
   @override
+  String get storeReaderFreePurchaseSignInAction => '登录后购买开卷身份';
+
+  @override
+  String get storeReaderCurrentlyFree =>
+      '基础阅读目前免费开放，无需登录或购买。购买 Origo 开卷为自愿选择，购买后你的 Origo 账号将获得永久开卷身份，可在支持的平台使用。';
+
+  @override
   String get storeReaderCrossPlatformAccess =>
       'Origo 开卷已购 · 登录同一 Origo 账号可跨平台使用';
 
@@ -7086,7 +7093,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storeReaderRestoreSuccess => 'Origo 开卷购买已恢复';
 
   @override
-  String get storeReaderTestPurchaseVerified => '基础版测试购买已验证，未授予正式许可。';
+  String get storeReaderTestPurchaseVerified => '开卷测试购买已验证，不会授予开卷身份、试用或其他付费权益。';
 
   @override
   String get storeReaderPurchaseRevoked => '此基础版购买已撤销。';
@@ -13293,7 +13300,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get premiumPurchaseSuccess => 'Origo 探元已解鎖';
 
   @override
-  String get premiumTestPurchaseVerified => '測試購買已驗證，不會開通正式會員';
+  String get premiumTestPurchaseVerified => '測試購買已驗證，不會開通探元或其他付費權益';
 
   @override
   String get premiumPurchaseRevoked => '此購買的會員權益已撤銷';
@@ -14163,6 +14170,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get storeReaderSignInAction => '登入 Origo 帳號並繼續';
 
   @override
+  String get storeReaderFreePurchaseSignInAction => '登入後購買開卷身分';
+
+  @override
+  String get storeReaderCurrentlyFree =>
+      '基礎閱讀目前免費開放，無須登入或購買。購買 Origo 開卷為自願選擇，購買後你的 Origo 帳號將獲得永久開卷身分，可在支援的平台使用。';
+
+  @override
   String get storeReaderCrossPlatformAccess =>
       'Origo 開卷已購 · 登入同一 Origo 帳號可跨平台使用';
 
@@ -14228,7 +14242,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get storeReaderRestoreSuccess => 'Origo 開卷購買已恢復';
 
   @override
-  String get storeReaderTestPurchaseVerified => '基礎版測試購買已驗證，未授予正式授權。';
+  String get storeReaderTestPurchaseVerified => '開卷測試購買已驗證，不會授予開卷身分、試用或其他付費權益。';
 
   @override
   String get storeReaderPurchaseRevoked => '此基礎版購買已撤銷。';

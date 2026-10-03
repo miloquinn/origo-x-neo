@@ -41,11 +41,14 @@ void main() {
 
   setUp(() {
     AppDistribution.debugReset();
-    AppDistribution.debugOverride(channel: AppDistributionChannel.googlePlay);
+    AppDistribution.debugOverride(
+      channel: AppDistributionChannel.googlePlay,
+      readerLicenseRequired: true,
+    );
   });
   tearDown(AppDistribution.debugReset);
 
-  testWidgets('Apple beta opens features without presenting a purchase', (
+  testWidgets('Apple sandbox keeps normal optional purchase actions', (
     tester,
   ) async {
     await _enableAppleBeta();
@@ -53,21 +56,22 @@ void main() {
     addTearDown(account.dispose);
     await _pumpPage(tester, account);
 
+    expect(AppDistribution.isAppleTestEnvironment, isTrue);
     expect(
       find.byKey(const ValueKey('store-reader-beta-status')),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.byKey(const ValueKey('store-reader-beta-access')),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.byKey(const ValueKey('store-reader-lifetime-price')),
-      findsNothing,
+      findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('store-reader-purchase')), findsNothing);
+    expect(find.byKey(const ValueKey('store-reader-purchase')), findsOneWidget);
     expect(find.byKey(const ValueKey('store-start-trial')), findsNothing);
-    expect(find.byKey(const ValueKey('store-reader-restore')), findsNothing);
+    expect(find.byKey(const ValueKey('store-reader-restore')), findsOneWidget);
   });
 
   testWidgets('complete Explore offer uses the full App Store product price', (
@@ -117,6 +121,59 @@ void main() {
     expect(account.restoreCalls, 0);
     expect(account.trialCalls, 0);
   });
+
+  testWidgets(
+    'free reading keeps optional account purchase but hides trial messaging',
+    (tester) async {
+      AppDistribution.debugOverride(
+        channel: AppDistributionChannel.googlePlay,
+        readerLicenseRequired: false,
+      );
+      final account = _UnlockAccount(
+        trialExpiresAt: DateTime.now().subtract(const Duration(days: 1)),
+      );
+      addTearDown(account.dispose);
+      await _pumpPage(tester, account);
+
+      expect(
+        find.byKey(const ValueKey('store-reader-free-access')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('基础阅读目前免费开放'), findsOneWidget);
+      expect(find.byKey(const ValueKey('store-trial-status')), findsNothing);
+      expect(find.byKey(const ValueKey('store-start-trial')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('store-reader-purchase')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('store-reader-restore')),
+        findsOneWidget,
+      );
+      expect(find.text('登录后购买开卷身份'), findsOneWidget);
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('store-reader-details')),
+      );
+      await tester.tap(find.byKey(const ValueKey('store-reader-details')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('基础阅读目前免费开放'), findsWidgets);
+      expect(find.textContaining('完整本地阅读体验，一次购买长期使用'), findsNothing);
+      Navigator.of(
+        tester.element(find.byKey(const ValueKey('store-reader-details-page'))),
+      ).pop<void>();
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('store-reader-purchase')),
+      );
+      await tester.tap(find.byKey(const ValueKey('store-reader-purchase')));
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountPage), findsOneWidget);
+      expect(account.purchaseCalls, 0);
+      expect(account.trialCalls, 0);
+    },
+  );
 
   testWidgets('signed-in account can purchase restore and start a trial', (
     tester,

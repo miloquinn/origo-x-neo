@@ -207,6 +207,67 @@ void main() {
   );
 
   test(
+    'sandbox purchase completes as test verified without authorization',
+    () async {
+      final store = _FakeStore();
+      final service = _service(
+        store,
+        verify: (_, _, _) async => const StorePurchaseVerification(
+          authorized: false,
+          testPurchase: true,
+        ),
+      );
+      addTearDown(store.close);
+      addTearDown(service.dispose);
+
+      await service.initialize();
+      store.emit(_purchase(_readerId, PurchaseStatus.purchased, 'sandbox-buy'));
+      await pumpEventQueue();
+
+      expect(
+        service.phaseFor(StorePurchaseDomain.reader),
+        StorePurchasePhase.testVerified,
+      );
+      expect(service.errorFor(StorePurchaseDomain.reader), isNull);
+      expect(store.completed, hasLength(1));
+    },
+  );
+
+  for (final authorized in [false, true]) {
+    test(
+      'sandbox restore stays test verified, authorized=$authorized',
+      () async {
+        final store = _FakeStore(
+          onRestore: (value) => scheduleMicrotask(
+            () => value.emit(
+              _purchase(_premiumId, PurchaseStatus.restored, 'sandbox-restore'),
+            ),
+          ),
+          restoreIds: const {'sandbox-restore'},
+        );
+        final service = _service(
+          store,
+          verify: (_, _, _) async => StorePurchaseVerification(
+            authorized: authorized,
+            testPurchase: true,
+          ),
+        );
+        addTearDown(store.close);
+        addTearDown(service.dispose);
+
+        await service.restoreDomain(StorePurchaseDomain.premium);
+
+        expect(
+          service.phaseFor(StorePurchaseDomain.premium),
+          StorePurchasePhase.testVerified,
+        );
+        expect(service.errorFor(StorePurchaseDomain.premium), isNull);
+        expect(store.completed, hasLength(1));
+      },
+    );
+  }
+
+  test(
     'purchased update queues behind pending verification for same transaction',
     () async {
       final store = _FakeStore();

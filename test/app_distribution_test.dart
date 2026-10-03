@@ -30,7 +30,7 @@ void main() {
     expect(AppDistribution.usesStoreBilling, isTrue);
     expect(AppDistribution.isStore, isTrue);
     expect(AppDistribution.allowsExternalSupport, isFalse);
-    expect(AppDistribution.readerLicenseRequired, isTrue);
+    expect(AppDistribution.readerLicenseRequired, isFalse);
     expect(AppDistribution.suppressesExternalUpdates, isFalse);
   });
 
@@ -56,7 +56,7 @@ void main() {
     expect(AppDistribution.usesStoreBilling, isTrue);
     expect(AppDistribution.isStore, isTrue);
     expect(AppDistribution.allowsExternalSupport, isFalse);
-    expect(AppDistribution.readerLicenseRequired, isTrue);
+    expect(AppDistribution.readerLicenseRequired, isFalse);
     expect(AppDistribution.suppressesExternalUpdates, isTrue);
   });
 
@@ -67,7 +67,7 @@ void main() {
 
       expect(AppDistribution.channel, AppDistributionChannel.googlePlay);
       expect(AppDistribution.usesGoogleBilling, isTrue);
-      expect(AppDistribution.readerLicenseRequired, isTrue);
+      expect(AppDistribution.readerLicenseRequired, isFalse);
     },
     skip: _configuredDistributionChannel == 'googlePlay'
         ? false
@@ -101,7 +101,7 @@ void main() {
           });
       await AppDistribution.initialize();
       expect(AppDistribution.isAppleTestEnvironment, isTrue);
-      expect(AppDistribution.readerLicenseRequired, isTrue);
+      expect(AppDistribution.readerLicenseRequired, isFalse);
       environment = 'legacySandbox';
       await AppDistribution.initialize();
       expect(AppDistribution.isAppleTestEnvironment, isTrue);
@@ -118,7 +118,7 @@ void main() {
   );
 
   test(
-    'missing Apple bridge and platform failures never grant free access',
+    'missing Apple bridge and platform failures never grant beta access',
     () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       await AppDistribution.initialize();

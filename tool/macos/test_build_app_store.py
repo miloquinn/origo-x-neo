@@ -62,7 +62,7 @@ class BuildMacAppStoreTests(unittest.TestCase):
         assignments = (
             dist.MACOS_APP_STORE_ASSIGNMENT,
             dist.APPLE_DISTRIBUTION_ASSIGNMENT,
-            dist.READER_LICENSE_ENABLED_ASSIGNMENT,
+            dist.READER_LICENSE_DISABLED_ASSIGNMENT,
         )
         encoded = ','.join(dist.encode_dart_define(item) for item in assignments)
         xcconfig.write_text(f'DART_DEFINES={encoded}\n')
@@ -83,7 +83,7 @@ class BuildMacAppStoreTests(unittest.TestCase):
         command = build.flutter_config_command(self.args())
         self.assertIn(dist.MACOS_APP_STORE_DART_DEFINE, command)
         self.assertIn(dist.APPLE_DISTRIBUTION_DART_DEFINE, command)
-        self.assertIn(dist.READER_LICENSE_ENABLED_DART_DEFINE, command)
+        self.assertIn(dist.READER_LICENSE_DISABLED_DART_DEFINE, command)
         self.assertIn('--config-only', command)
 
     def test_macos_team_id_overrides_ios_team(self):

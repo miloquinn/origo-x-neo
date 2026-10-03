@@ -37,10 +37,16 @@ class DistributionTests(unittest.TestCase):
     def test_store_defines_require_exact_flag(self):
         with self.assertRaisesRegex(dist.DistributionError, 'must set'):
             dist.assert_app_store_distribution({})
+        with self.assertRaisesRegex(dist.DistributionError, 'free basic reading'):
+            dist.assert_app_store_distribution({
+                dist.MACOS_APP_STORE_KEY: 'true',
+                dist.DISTRIBUTION_KEY: 'appleStore',
+                dist.READER_LICENSE_KEY: 'true',
+            })
         dist.assert_app_store_distribution({
             dist.MACOS_APP_STORE_KEY: 'true',
             dist.DISTRIBUTION_KEY: 'appleStore',
-            dist.READER_LICENSE_KEY: 'true',
+            dist.READER_LICENSE_KEY: 'false',
         })
 
     def test_command_detects_store_define(self):

@@ -11369,7 +11369,7 @@ abstract class AppLocalizations {
   /// Sandbox purchase verification result
   ///
   /// In en, this message translates to:
-  /// **'Test purchase verified. Formal Premium was not activated.'**
+  /// **'Test purchase verified. Explore and other paid entitlements were not activated.'**
   String get premiumTestPurchaseVerified;
 
   /// Revoked Apple purchase result
@@ -12938,6 +12938,18 @@ abstract class AppLocalizations {
   /// **'Sign in to Origo and continue'**
   String get storeReaderSignInAction;
 
+  /// No description provided for @storeReaderFreePurchaseSignInAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to buy an Origo Read entitlement'**
+  String get storeReaderFreePurchaseSignInAction;
+
+  /// No description provided for @storeReaderCurrentlyFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic reading is currently free without signing in or purchasing. Buying Origo Read is optional and gives your Origo account a permanent Read entitlement for supported platforms.'**
+  String get storeReaderCurrentlyFree;
+
   /// No description provided for @storeReaderCrossPlatformAccess.
   ///
   /// In en, this message translates to:
@@ -13043,7 +13055,7 @@ abstract class AppLocalizations {
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'Test Basic edition purchase verified; no formal license was granted.'**
+  /// **'Test Origo Read purchase verified. No Read identity, trial or other paid entitlement was granted.'**
   String get storeReaderTestPurchaseVerified;
 
   /// App reader purchase status, separate from Premium.

@@ -61,11 +61,14 @@ configuration error. Legacy builds with no value keep the previous behavior:
 Unspecified iOS builds use StoreKit; the unsigned GitHub IPA explicitly uses direct distribution. Android and non-store desktop builds use direct distribution,
 and macOS can still detect a Mac App Store receipt.
 
-`ORIGO_STORE_READER_LICENSE_REQUIRED` is enabled (`true`) by store release
-scripts and remains `false` for direct distribution. Store products, backend
-verification and legacy migration are implemented; actual purchase, restore and
-refund flows still require final-device acceptance before publishing. Setting
-the switch for a direct build has no effect.
+As of 2026-10-03, `ORIGO_STORE_READER_LICENSE_REQUIRED=false` in all release
+scripts and is the client default: basic reading is currently free without
+login or purchase. Store channels still use native billing for optional Read
+ownership and Explore. Free use does not grant paid Read identity or an Explore
+upgrade discount; Explore access remains verified. Reader trial offers are
+hidden while this switch is off. Actual purchase, restore and refund flows
+still require final-device acceptance. Setting the switch for a direct build
+has no effect.
 
 The Android release job deliberately builds the APK and AAB separately. The
 downloadable APK is compiled as `direct`; the Play bundle is compiled as

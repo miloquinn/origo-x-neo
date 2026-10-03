@@ -361,6 +361,8 @@ class StorePurchaseService extends ChangeNotifier {
             ? StorePurchasePhase.revoked
             : session.pending
             ? StorePurchasePhase.pending
+            : session.testVerified
+            ? StorePurchasePhase.testVerified
             : StorePurchasePhase.nothingToRestore,
       );
     } catch (error) {
@@ -450,8 +452,9 @@ class StorePurchaseService extends ChangeNotifier {
               await _activeStore.completePurchase(purchase);
             }
             restoreSession
-              ?..verified |= result.authorized
-              ..revoked |= result.revoked;
+              ?..verified |= result.authorized && !result.testPurchase
+              ..revoked |= result.revoked
+              ..testVerified |= result.testPurchase;
             _setError(domain, null);
             _setPhase(
               domain,
@@ -565,6 +568,7 @@ class _RestoreSession {
   bool verified = false;
   bool revoked = false;
   bool pending = false;
+  bool testVerified = false;
   Object? error;
   void observe(String? id) {
     if (id != null && id.isNotEmpty) _arrivals.add(id);

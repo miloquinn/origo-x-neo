@@ -193,7 +193,6 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
   Widget _summary(MemberAccountController account) {
     final l10n = context.l10n;
     final premium = account.hasPremiumAccess;
-    final betaAccess = AppDistribution.isAppleTestEnvironment;
     final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -219,18 +218,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                 height: 1.55,
               ),
             ),
-            if (betaAccess) ...[
-              const SizedBox(height: 9),
-              Text(
-                l10n.storeBetaAccessAvailable,
-                key: const ValueKey('premium-beta-status'),
-                style: TextStyle(
-                  color: colors.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ] else if (premium) ...[
+            if (premium) ...[
               const SizedBox(height: 9),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -378,7 +366,6 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     final l10n = context.l10n;
     final colors = Theme.of(context).colorScheme;
     final premium = account.hasPremiumAccess;
-    final betaAccess = AppDistribution.isAppleTestEnvironment;
     final upgradeEligible = account.hasAccountReaderUpgradeEligibility;
     final busy = account.premiumPurchaseLoading || account.loading;
     final expiring = account.membership?.premiumExpiresAt != null;
@@ -389,7 +376,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_usesStoreBilling && !betaAccess) ...[
+        if (_usesStoreBilling) ...[
           if ((upgradeEligible
                   ? account.premiumLifetimeProduct
                   : account.premiumBundleProduct)
@@ -426,14 +413,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
             const SizedBox(height: 12),
           ],
         ],
-        if (betaAccess)
-          FilledButton(
-            key: const ValueKey('premium-beta-access'),
-            style: _footerButtonStyle,
-            onPressed: null,
-            child: Text(l10n.storeBetaAccessAvailable),
-          )
-        else if (!account.isAuthenticated)
+        if (!account.isAuthenticated)
           FilledButton(
             key: const ValueKey('premium-sign-in'),
             style: _footerButtonStyle,

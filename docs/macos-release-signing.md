@@ -12,7 +12,7 @@ Mac App Store 包必须走另一条脚本，见 [App Store 对接与发布](app-
 | 签名 | Developer ID + Notary | Apple Distribution |
 | `OPEN_READING_MACOS_APP_STORE` | `false` | `true` |
 | `ORIGO_DISTRIBUTION_CHANNEL` | `direct` | `appleStore` |
-| `ORIGO_STORE_READER_LICENSE_REQUIRED` | `false` | `true` |
+| `ORIGO_STORE_READER_LICENSE_REQUIRED` | `false` | `false` |
 | 探元购买 | 卡密 / 小店 | App Store 内购 |
 | 应用内更新 | 官网 / GitHub 检查更新 | 仅 App Store 更新 |
 | CI | `.github/workflows/release.yml` 的 `macos` job | 不进 GitHub Release；本地脚本归档/上传 |

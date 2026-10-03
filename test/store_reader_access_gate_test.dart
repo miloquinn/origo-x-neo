@@ -52,6 +52,32 @@ void main() {
     },
   );
 
+  for (final channel in [
+    AppDistributionChannel.appleStore,
+    AppDistributionChannel.googlePlay,
+  ]) {
+    testWidgets('free $channel reader opens without an account', (
+      tester,
+    ) async {
+      AppDistribution.debugOverride(channel: channel);
+      var readerBuilds = 0;
+      await tester.pumpWidget(
+        _TestApp(
+          child: StoreReaderAccessGate(
+            pageBuilder: (_) {
+              readerBuilds++;
+              return const Text('free-reader-content');
+            },
+          ),
+        ),
+      );
+      expect(readerBuilds, 1);
+      expect(find.text('free-reader-content'), findsOneWidget);
+      expect(find.byIcon(Icons.auto_stories_outlined), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('direct builds create reader content without an account', (
     tester,
   ) async {

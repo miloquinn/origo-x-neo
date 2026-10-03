@@ -6505,7 +6505,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumTestPurchaseVerified =>
-      'Test purchase verified. Formal Premium was not activated.';
+      'Test purchase verified. Explore and other paid entitlements were not activated.';
 
   @override
   String get premiumPurchaseRevoked =>
@@ -7450,6 +7450,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storeReaderSignInAction => 'Sign in to Origo and continue';
 
   @override
+  String get storeReaderFreePurchaseSignInAction =>
+      'Sign in to buy an Origo Read entitlement';
+
+  @override
+  String get storeReaderCurrentlyFree =>
+      'Basic reading is currently free without signing in or purchasing. Buying Origo Read is optional and gives your Origo account a permanent Read entitlement for supported platforms.';
+
+  @override
   String get storeReaderCrossPlatformAccess =>
       'Origo Read owned · use the same Origo account on supported platforms';
 
@@ -7522,7 +7530,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'Test Basic edition purchase verified; no formal license was granted.';
+      'Test Origo Read purchase verified. No Read identity, trial or other paid entitlement was granted.';
 
   @override
   String get storeReaderPurchaseRevoked =>

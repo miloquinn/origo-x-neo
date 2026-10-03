@@ -22,6 +22,12 @@ class ReleaseVersioningPolicyTest(unittest.TestCase):
         self.assertIn('--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=false', ios_job)
         self.assertNotIn('ORIGO_DISTRIBUTION_CHANNEL=appleStore', ios_job)
 
+    def test_play_retains_billing_with_free_basic_reading(self):
+        play_build = workflow_fragment('      - name: Build Google Play bundle', '      - name: Verify Google Play manifest boundary')
+        self.assertIn('--dart-define=ORIGO_DISTRIBUTION_CHANNEL=googlePlay', play_build)
+        self.assertIn('--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=false', play_build)
+        self.assertNotIn('ORIGO_STORE_READER_LICENSE_REQUIRED=true', WORKFLOW)
+
     def test_version_then_numeric_build_order(self):
         source = workflow_fragment('          SEMVER = re.compile(', '          metadata = json.loads(')
         namespace = {'re': re}

@@ -28,8 +28,6 @@ class _Account extends MemberAccountController {
   @override
   bool get hasStoreReaderEntitlement => readerEntitlement;
   @override
-  bool get hasSandboxStoreAccess => temporary;
-  @override
   bool get hasActiveReaderTrial => !permanent;
   @override
   bool get isAuthenticated => true;
@@ -81,6 +79,48 @@ void main() {
     icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();
   });
+
+  for (final channel in [
+    AppDistributionChannel.appleStore,
+    AppDistributionChannel.googlePlay,
+  ]) {
+    testWidgets('free $channel guest sees optional Read without owned badge', (
+      tester,
+    ) async {
+      AppDistribution.debugOverride(channel: channel);
+      addTearDown(AppDistribution.debugReset);
+      final account = MemberAccountController();
+      addTearDown(account.dispose);
+      await tester.pumpWidget(
+        ChangeNotifierProvider<MemberAccountController>.value(
+          value: account,
+          child: const MaterialApp(
+            locale: Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: SettingsAccountCard()),
+          ),
+        ),
+      );
+      expect(
+        find.text('Local reading does not require an account'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('settings-reader-license')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('settings-account-reader-badge')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('settings-account-premium-badge')),
+        findsNothing,
+      );
+      expect(account.hasAdvancedSourceAccess, isFalse);
+    });
+  }
 
   for (final channel in AppDistributionChannel.values) {
     testWidgets('$channel shows exactly one next membership step', (

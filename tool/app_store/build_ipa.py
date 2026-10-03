@@ -161,7 +161,7 @@ def execute(args):
     run_step('Product build: configure Flutter iOS',
              ['flutter', 'build', 'ios', '--config-only', '--release', '--no-codesign', '--no-pub',
               '--dart-define=ORIGO_DISTRIBUTION_CHANNEL=appleStore',
-              '--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=true',
+              '--dart-define=ORIGO_STORE_READER_LICENSE_REQUIRED=false',
               '--build-name', args.build_name, '--build-number', args.build_number], log)
     run_step('Product build: locked CocoaPods dependencies', ['pod', 'install', '--deployment'], log, ROOT / 'ios')
     archive = output / 'OrigoReader.xcarchive'
