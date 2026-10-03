@@ -210,14 +210,13 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
     final chapterId = _chapters[chapterIndex].id;
     final chapterCount = _chapters.length;
     final shelfBookId = _shelfBookId;
-    var progress = _scrollProgress.value;
-    if (_pageMode == BookSourcePageMode.verticalScroll) {
-      progress = _verticalPageCount <= 1
-          ? 0
-          : (_verticalPageIndex / (_verticalPageCount - 1)).clamp(0.0, 1.0);
-    } else {
-      progress = _pagedReadingProgress(_pageIndex, _pageCount);
+    // A continuous text block can span an entire chapter. Its list index is
+    // a layout detail, so persist the canonical text fraction instead.
+    if (_pageMode == BookSourcePageMode.verticalScroll &&
+        (_restorePagedPosition || _autoScrollRestoring)) {
+      return _progressSaveQueue;
     }
+    final progress = _currentReadingProgress;
     final progressSnapshot = BookSourceReadingProgress(
       chapterId: chapterId,
       chapterIndex: chapterIndex,

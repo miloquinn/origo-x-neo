@@ -268,10 +268,22 @@ jobs:
             done
           done
 
+          for scroll_by_chapter in false true; do
+            flutter test test/native_reader_initial_progress_test.dart \
+              --plain-name "EPUB exit captures the final active scroll frame (scrollByChapter=$scroll_by_chapter)"
+          done
+
           # The image-reader case deliberately leaves a page load pending so
           # it can assert the reader shell before image decoding. Run the
           # remaining stateful source-reader cases separately to keep that
           # fixture from holding Flutter's combined test process open.
+          for scroll_by_chapter in false true; do
+            for title_page in false true; do
+              flutter test test/book_source_reader_page_test.dart \
+                --plain-name "vertical source reopens at the saved text anchor (scrollByChapter=$scroll_by_chapter, titlePage=$title_page)"
+            done
+          done
+
           reader_tests=(
             'reader closes owned resources to cancel pending initialization'
             'reader does not close borrowed resources'

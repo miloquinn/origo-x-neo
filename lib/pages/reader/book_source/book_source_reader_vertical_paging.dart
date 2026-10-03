@@ -142,35 +142,34 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
   }) {
     if (!_restorePagedPosition) return;
     _autoScrollRestoring = true;
-    final restoreOffset = _restoreTextOffset;
-    final restoreCentered = _autoRestoreCentered;
+    final chapterIndex = _chapterIndex;
+    final textLength = _readableChapterText[chapterIndex]?.length ?? 0;
+    final restoreOffset =
+        _restoreTextOffset ?? (_restorePageProgress * textLength).round();
+    final restoreCentered = _autoRestoreCentered || restoreOffset > 0;
     _autoRestoreCentered = false;
-    final target = restoreOffset != null
-        ? bookSourcePageIndexForOffset(layout.pages, restoreOffset)
-        : ((layout.pages.length - 1) * _restorePageProgress).round();
+    final pageIndex = bookSourcePageIndexForOffset(layout.pages, restoreOffset);
+    final partKey = _verticalPartKey(chapterIndex, pageIndex);
     _verticalPageCount = layout.pages.length;
-    _verticalPageIndex = target.clamp(0, layout.pages.length - 1);
-    _pageIndex = _verticalPageIndex;
+    _verticalPageIndex = pageIndex;
+    _pageIndex = pageIndex;
     _restorePagedPosition = false;
     _restoreTextOffset = null;
-    final textLength = _readableChapterText[_chapterIndex]?.length ?? 0;
-    final restoredProgress = restoreOffset != null && textLength > 0
+    _verticalCanonicalOffset = restoreOffset;
+    final restoredProgress = textLength > 0
         ? (restoreOffset / textLength).clamp(0.0, 1.0)
         : _restorePageProgress;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _scrollProgress.value = restoredProgress;
       if (!wholeBook && _verticalPageScrollController.isAttached) {
-        _verticalPageScrollController.jumpTo(index: _verticalPageIndex);
+        _verticalPageScrollController.jumpTo(index: pageIndex);
       } else if (_verticalChapterScrollController.isAttached) {
-        _verticalChapterScrollController.jumpTo(index: _chapterIndex);
+        _verticalChapterScrollController.jumpTo(index: chapterIndex);
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final targetContext = _verticalPartKey(
-          _chapterIndex,
-          _verticalPageIndex,
-        ).currentContext;
+        final targetContext = partKey.currentContext;
         if (targetContext == null) {
           _updateReaderState(() => _autoScrollRestoring = false);
           return;
@@ -184,26 +183,19 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
         );
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          final sourceOffset =
-              restoreOffset ?? (restoredProgress * textLength).round();
           final caretOffset = _verticalCaretOffset(
-            _chapterIndex,
-            _verticalPageIndex,
-            layout.pages[_verticalPageIndex],
-            sourceOffset,
+            chapterIndex,
+            pageIndex,
+            layout.pages[pageIndex],
+            restoreOffset,
           );
-          final currentTarget = _verticalPartKey(
-            _chapterIndex,
-            _verticalPageIndex,
-          ).currentContext;
+          final currentTarget = partKey.currentContext;
           final scrollable = currentTarget == null
               ? null
               : Scrollable.maybeOf(currentTarget);
           _updateReaderState(() => _autoScrollRestoring = false);
           if (caretOffset != null && scrollable != null) {
-            final paragraph = readerParagraphForKey(
-              _verticalPartKey(_chapterIndex, _verticalPageIndex),
-            );
+            final paragraph = readerParagraphForKey(partKey);
             final adjustment = restoreCentered && paragraph != null
                 ? paragraph.localToGlobal(Offset(0, caretOffset)).dy -
                       MediaQuery.sizeOf(context).height / 2
@@ -222,6 +214,8 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
 
   void _onVerticalPagePositionsChanged() {
     if (!mounted ||
+        _restorePagedPosition ||
+        _autoScrollRestoring ||
         _pageMode != BookSourcePageMode.verticalScroll ||
         !_effectiveScrollByChapter) {
       return;
@@ -256,6 +250,8 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
 
   void _onVerticalChapterPositionsChanged() {
     if (!mounted ||
+        _restorePagedPosition ||
+        _autoScrollRestoring ||
         _pageMode != BookSourcePageMode.verticalScroll ||
         _effectiveScrollByChapter ||
         _chapters.isEmpty ||

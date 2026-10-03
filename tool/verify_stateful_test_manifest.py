@@ -34,6 +34,15 @@ class DynamicContract:
 DYNAMIC_CONTRACTS = {
     "test/native_reader_initial_progress_test.dart": (
         DynamicContract(
+            "EPUB exit captures the final active scroll frame "
+            "(scrollByChapter=$scrollByChapter)",
+            workflow_fragments=(
+                "for scroll_by_chapter in false true; do",
+                "EPUB exit captures the final active scroll frame "
+                "(scrollByChapter=$scroll_by_chapter)",
+            ),
+        ),
+        DynamicContract(
             "EPUB scroll preserves its exact offset on background and exit "
             "(scrollByChapter=$scrollByChapter, initialOffset=$initialOffset)",
             workflow_fragments=(
@@ -45,6 +54,16 @@ DYNAMIC_CONTRACTS = {
         ),
     ),
     "test/book_source_reader_page_test.dart": (
+        DynamicContract(
+            "vertical source reopens at the saved text anchor "
+            "(scrollByChapter=$scrollByChapter, titlePage=$titlePage)",
+            workflow_fragments=(
+                "for scroll_by_chapter in false true; do",
+                "for title_page in false true; do",
+                "vertical source reopens at the saved text anchor "
+                "(scrollByChapter=$scroll_by_chapter, titlePage=$title_page)",
+            ),
+        ),
         DynamicContract(
             "exit confirmation returns after addToShelf=$addToShelf",
             workflow_fragments=(

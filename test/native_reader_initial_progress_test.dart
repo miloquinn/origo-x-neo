@@ -1128,6 +1128,144 @@ void main() {
     }
   }
 
+  for (final scrollByChapter in [false, true]) {
+    testWidgets('EPUB exit captures the final active scroll frame '
+        '(scrollByChapter=$scrollByChapter)', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      await tester.binding.setSurfaceSize(const Size(480, 800));
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: ReaderPageMode.verticalScroll.name,
+        ReaderSettingsStore.scrollByChapterKey: scrollByChapter,
+      });
+      final directory = Directory.systemTemp.createTempSync(
+        'origo-x-epub-active-scroll-exit-',
+      );
+      final epub = File('${directory.path}/active-scroll.epub')
+        ..writeAsBytesSync(_epubFixture());
+      final bookId = (await tester.runAsync(
+        () => BookDao().insertBook(
+          Book(
+            title: 'Active scroll exit fixture',
+            filePath: epub.path,
+            format: 'epub',
+            fileModifiedTime: epub.lastModifiedSync().millisecondsSinceEpoch,
+          ),
+        ),
+      ))!;
+      final navigatorKey = GlobalKey<NavigatorState>();
+      int? expectedOffset;
+      String? expectedChapter;
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorKey: navigatorKey,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const SizedBox.shrink(),
+          ),
+        );
+        final book = (await tester.runAsync(
+          () => BookDao().getBookById(bookId),
+        ))!;
+        navigatorKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) => NativeReaderPage(
+              book: book,
+              replaceRuleService: replaceRuleService,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.runAsync(() async {
+          for (var i = 0; i < 60; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
+            if (find.byType(ScrollablePositionedList).evaluate().isNotEmpty) {
+              return;
+            }
+          }
+        });
+        await tester.pumpAndSettle();
+        final window = find.byKey(
+          const ValueKey('native-vertical-reading-window'),
+        );
+        await tester.drag(window, const Offset(0, -537));
+        await tester.pumpAndSettle();
+        final gesture = await tester.startGesture(tester.getCenter(window));
+        await gesture.moveBy(const Offset(0, -30));
+        await tester.pump();
+        // Exit after the final drag frame is painted, before the list's
+        // post-frame item-position notification publishes that frame.
+        tester.binding.addPostFrameCallback((_) {
+          final centerY =
+              MediaQuery.sizeOf(
+                tester.element(find.byType(NativeReaderPage)),
+              ).height /
+              2;
+          for (final element
+              in find.byType(ReaderAnnotatedTextPage).evaluate()) {
+            final page = element.widget as ReaderAnnotatedTextPage;
+            final paragraphFinder = find.descendant(
+              of: find.byWidget(page),
+              matching: find.byType(RichText),
+            );
+            if (paragraphFinder.evaluate().isEmpty) continue;
+            final paragraph = tester.renderObject<RenderParagraph>(
+              paragraphFinder.first,
+            );
+            final top = paragraph.localToGlobal(Offset.zero).dy;
+            if (top > centerY || top + paragraph.size.height <= centerY) {
+              continue;
+            }
+            expectedChapter = page.chapterId;
+            expectedOffset = page.page.sourceOffsetForTextOffset(
+              paragraph
+                  .getPositionForOffset(
+                    Offset(paragraph.size.width / 2, centerY - top),
+                  )
+                  .offset,
+            );
+            break;
+          }
+          tester
+              .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+              .onBack();
+        });
+        await gesture.moveBy(const Offset(0, -180));
+        await tester.pump();
+        await gesture.up();
+        await tester.runAsync(() async {
+          for (var i = 0; i < 10; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
+          }
+        });
+        await _pumpUntil(
+          tester,
+          () => find.byType(NativeReaderPage).evaluate().isEmpty,
+        );
+        expect(expectedOffset, isNotNull);
+        final saved = (await tester.runAsync(
+          () => BookDao().getBookById(bookId),
+        ))!.toCanonicalLocator()!;
+        expect(saved.chapterId, expectedChapter);
+        expect(
+          saved.textAnchor!.startOffsetUtf16,
+          expectedOffset,
+          reason: 'Exit must capture the painted frame before saving is gated.',
+        );
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        await drainReaderCache(tester);
+        await drainReadingCloudWrites(tester);
+        await tester.binding.setSurfaceSize(null);
+        debugDefaultTargetPlatformOverride = null;
+        directory.deleteSync(recursive: true);
+      }
+    });
+  }
+
   testWidgets(
     'EPUB system back persists the pending horizontal page before reopening',
     (tester) async {

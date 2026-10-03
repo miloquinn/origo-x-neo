@@ -80,6 +80,10 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
     final chapter = _visibleChapters[_chapterIndex];
     final part = _visibleContinuousParts[nextPage];
     final offset = _continuousOffsetAtViewportCenter(chapter, part, nextPage);
+    // The exit snapshot needs the captured anchor even when ordinary writes
+    // are gated; its final save remains the only permitted exit writer.
+    _anchorOffset = offset;
+    _verticalCanonicalOffset = offset;
     _saveCanonicalProgress(
       chapter,
       _ReaderPageData(text: '', startOffset: offset, endOffset: offset),
@@ -152,6 +156,8 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
       parts[nextPage],
       nextPage,
     );
+    _anchorOffset = offset;
+    _verticalCanonicalOffset = offset;
     _saveCanonicalProgress(
       _visibleChapters[nextChapter],
       _ReaderPageData(text: '', startOffset: offset, endOffset: offset),

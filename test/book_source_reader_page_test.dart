@@ -1473,6 +1473,75 @@ void main() {
     expect(body.text.style?.letterSpacing, 0.7);
   });
 
+  for (final scrollByChapter in [false, true]) {
+    for (final titlePage in [false, true]) {
+      testWidgets('vertical source reopens at the saved text anchor '
+          '(scrollByChapter=$scrollByChapter, titlePage=$titlePage)', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey:
+              BookSourcePageMode.verticalScroll.name,
+          ReaderSettingsStore.scrollByChapterKey: scrollByChapter,
+          'native_reader_txt_chapter_title_page_enabled': titlePage,
+        });
+        final text = _tabletChapterText(150);
+        final client = _ConfigurableBookSourceClient({
+          'chapter-1': text,
+          'chapter-2': text,
+        });
+        addTearDown(client.close);
+        final surface = find.byKey(
+          const ValueKey('book-source-reader-surface'),
+        );
+        await _progressFixture.store.save(
+          sourceId: _testSource().id,
+          bookId: 'book-1',
+          progress: BookSourceReadingProgress(
+            chapterId: 'chapter-2',
+            chapterIndex: 1,
+            chapterProgress: 0.25,
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        );
+        await tester.pumpWidget(_buildTabletSourceReader(client));
+        await _pumpUntilFound(tester, surface);
+        await tester.pumpAndSettle();
+        final initialAnchor = _sourceCenterAnchor(tester);
+        expect(initialAnchor.$1, 'chapter-2');
+        expect(initialAnchor.$2 / text.length, closeTo(0.25, 0.005));
+        await tester.drag(surface, const Offset(0, -1800));
+        await tester.pumpAndSettle();
+        final anchor = _sourceCenterAnchor(tester);
+        expect(anchor.$2, greaterThan(0));
+        // A partial scroll inside a single text block must survive both
+        // persistence and repeated reconstruction of the reader.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        final saved = await _progressFixture.store.load(
+          sourceId: _testSource().id,
+          bookId: 'book-1',
+        );
+        expect(saved!.chapterId, anchor.$1);
+        expect(saved.chapterProgress, greaterThan(0));
+        expect(saved.chapterProgress, lessThan(1));
+        expect((saved.chapterProgress * text.length).round(), anchor.$2);
+        for (var reopen = 0; reopen < 2; reopen++) {
+          await tester.pumpWidget(_buildTabletSourceReader(client));
+          await _pumpUntilFound(tester, surface);
+          await tester.pumpAndSettle();
+          expect(
+            _sourceAnchorY(tester, anchor.$1, anchor.$2),
+            closeTo(anchor.$3, 35),
+          );
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+        }
+      });
+    }
+  }
+
   testWidgets('vertical source text keeps its natural continuous height', (
     tester,
   ) async {
