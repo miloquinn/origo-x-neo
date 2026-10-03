@@ -6603,7 +6603,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get premiumTestPurchaseVerified =>
-      'Compra de prueba verificada. No se activó el Premium formal.';
+      'Compra de prueba verificada. Los derechos Explore de prueba están activos para esta cuenta.';
 
   @override
   String get premiumPurchaseRevoked =>
@@ -7641,7 +7641,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'Compra de prueba de la versión básica verificada; no se otorgó una licencia definitiva.';
+      'Compra de prueba verificada. Los derechos de lectura de prueba están activos para esta cuenta.';
 
   @override
   String get storeReaderPurchaseRevoked =>

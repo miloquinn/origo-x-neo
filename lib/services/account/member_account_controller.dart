@@ -104,7 +104,16 @@ class MemberAccountController extends ChangeNotifier {
           if (_user?.id != accountId || request != _accountReaderRequest) {
             throw const MemberAccountException('账号或权益已变化，请重新恢复购买');
           }
-          await _acceptReaderResult(result, accountRequest: request);
+          final readerAuthorized = result.testPurchase
+              ? _acceptSandboxReaderResult(
+                  result,
+                  accountId: accountId,
+                  kind: kind,
+                )
+              : await _acceptProductionReaderResult(
+                  result,
+                  accountRequest: request,
+                );
           var legacyPremiumAuthorized = true;
           if (kind == StoreProductKind.legacyBundle) {
             final owner = _user!.id;
@@ -120,14 +129,20 @@ class MemberAccountController extends ChangeNotifier {
               throw const MemberAccountException('账号已切换，请重新验证购买');
             }
             _checkMembershipOwner(legacyMembership, owner);
-            _membership = legacyMembership;
-            await _persistMembership();
-            legacyPremiumAuthorized = legacyMembership.hasActivePremium;
+            if (legacyMembership.testPurchase) {
+              legacyPremiumAuthorized = _acceptSandboxPremiumResult(
+                legacyMembership,
+                accountId: owner,
+                kind: StoreProductKind.premiumBundle,
+              );
+            } else {
+              _membership = legacyMembership;
+              await _persistMembership();
+              legacyPremiumAuthorized = legacyMembership.hasActivePremium;
+            }
           }
           return StorePurchaseVerification(
-            authorized:
-                (hasPermanentReaderAccess || hasActiveReaderTrial) &&
-                legacyPremiumAuthorized,
+            authorized: readerAuthorized && legacyPremiumAuthorized,
             pending: result.purchaseStatus == 'pending',
             revoked: result.purchaseStatus == 'revoked',
             testPurchase: result.testPurchase,
@@ -149,6 +164,20 @@ class MemberAccountController extends ChangeNotifier {
           throw const MemberAccountException('账号已切换，请重新验证购买');
         }
         _checkMembershipOwner(membership, accountId);
+        if (membership.testPurchase) {
+          final authorized = _acceptSandboxPremiumResult(
+            membership,
+            accountId: accountId,
+            kind: kind,
+          );
+          notifyListeners();
+          return StorePurchaseVerification(
+            authorized: authorized,
+            pending: membership.purchaseStatus == 'pending',
+            revoked: membership.purchaseStatus == 'revoked',
+            testPurchase: true,
+          );
+        }
         _resetMembershipSync();
         _membership = membership;
         await _persistMembership();
@@ -189,6 +218,10 @@ class MemberAccountController extends ChangeNotifier {
   ReaderOfflineAttestation? _accountReaderAttestation;
   String? _offlineReaderAccountId;
   int _accountReaderRequest = 0;
+  String? _sandboxAccessAccountId;
+  StoreTestAccess? _sandboxReaderAccess;
+  StoreTestAccess? _sandboxPremiumAccess;
+  StoreProductKind? _sandboxPremiumProductKind;
   final PendingDeviceAuthorizationStore _pendingAuthorizationStore;
   final AccountAuthCallbackBridge _authCallbackBridge;
   late final GoogleNativeSignInClient _googleNativeSignIn;
@@ -291,6 +324,8 @@ class MemberAccountController extends ChangeNotifier {
     final expirations = <DateTime>[
       ?value?.premiumExpiresAt,
       ?value?.storeTrial?.expiresAt,
+      ?_sandboxReaderAccess?.expiresAt,
+      ?_sandboxPremiumAccess?.expiresAt,
       ?_readerAccess?.trialExpiresAt,
       ?_accountReaderAttestation?.validUntil,
       ?_accountReaderAttestation?.trialExpiresAt,
@@ -362,7 +397,8 @@ class MemberAccountController extends ChangeNotifier {
   /// fresh server reconciliation is in flight; the summary cache alone never
   /// grants access.
   bool get hasPremiumAccess =>
-      _user != null && _membership?.hasActivePremium == true;
+      _user != null &&
+      (_membership?.hasActivePremium == true || _hasSandboxPremiumAccess);
   bool get hasActiveStoreTrial => hasActiveReaderTrial;
 
   bool get hasAdvancedSourceAccess =>
@@ -391,8 +427,10 @@ class MemberAccountController extends ChangeNotifier {
   ReaderAccessSnapshot? get readerAccess => _readerAccess;
   bool get hasPermanentReaderAccess =>
       !AppDistribution.isStore ||
-      (hasPremiumAccess && _membership!.premiumExpiresAt == null) ||
+      (_membership?.hasActivePremium == true &&
+          _membership?.premiumExpiresAt == null) ||
       _hasPermanentStoreReaderEntitlement ||
+      _hasSandboxPermanentReaderAccess ||
       (_accountReaderAttestationIsCurrent &&
           _accountReaderAttestation!.readerUnlocked &&
           _accountReaderAttestation!.permanent) ||
@@ -401,7 +439,8 @@ class MemberAccountController extends ChangeNotifier {
           _readerAttestation!.trialExpiresAt == null);
   bool get hasActiveReaderTrial =>
       AppDistribution.isStore &&
-      ((_accountReaderAttestationIsCurrent &&
+      (_hasSandboxReaderTrial ||
+          (_accountReaderAttestationIsCurrent &&
               _accountReaderAttestation!.trialExpiresAt?.isAfter(
                     DateTime.now(),
                   ) ==
@@ -411,6 +450,7 @@ class MemberAccountController extends ChangeNotifier {
                   true));
   DateTime? get readerTrialExpiresAt =>
       _accountReaderAttestation?.trialExpiresAt ??
+      (_hasSandboxReaderTrial ? _sandboxReaderAccess?.expiresAt : null) ??
       _readerAccess?.trialExpiresAt ??
       _readerAttestation?.trialExpiresAt;
   bool get canStartStoreTrial => canStartReaderTrial;
@@ -428,11 +468,7 @@ class MemberAccountController extends ChangeNotifier {
   /// Only paid/granted account rights qualify for the discounted upgrade.
   /// Direct-build free access and old device licenses do not qualify.
   bool get hasAccountReaderUpgradeEligibility =>
-      isAuthenticated &&
-      (_hasPermanentStoreReaderEntitlement ||
-          (_accountReaderAttestationIsCurrent &&
-              _accountReaderAttestation!.readerUnlocked &&
-              _accountReaderAttestation!.upgradeEligible));
+      isAuthenticated && _hasReaderUpgradeBase;
 
   bool get canPurchaseStorePremium =>
       AppDistribution.isStore &&
@@ -487,6 +523,7 @@ class MemberAccountController extends ChangeNotifier {
     _accountReaderRequest++;
     _accountReaderAttestation = null;
     _offlineReaderAccountId = null;
+    _clearSandboxAccess();
     // Legacy anonymous licenses retain their original installation semantics.
     if (_readerAccess?.channel == 'account') _readerAccess = null;
     unawaited(_queueAccountReaderCache(_readerAccessCache.clearAccount));
@@ -514,6 +551,45 @@ class MemberAccountController extends ChangeNotifier {
                   ) ==
                   true)) ||
       _readerAttestationGrantsAccess;
+
+  bool get _sandboxAccessBelongsToCurrentAccount =>
+      _user != null && _sandboxAccessAccountId == _user!.id;
+
+  bool get _hasSandboxDirectReaderLifetime =>
+      _sandboxAccessBelongsToCurrentAccount &&
+      _sandboxReaderAccess?.isReaderLifetime == true;
+
+  bool get _hasSandboxReaderTrial =>
+      _sandboxAccessBelongsToCurrentAccount &&
+      _sandboxReaderAccess?.isReaderTrial == true;
+
+  bool get _hasSandboxPremiumAccess =>
+      _sandboxAccessBelongsToCurrentAccount &&
+      _sandboxPremiumAccess?.isPremium == true &&
+      (_sandboxPremiumProductKind == StoreProductKind.premiumBundle ||
+          (_sandboxPremiumProductKind == StoreProductKind.premiumLifetime &&
+              _hasReaderUpgradeBase));
+
+  bool get _hasReaderUpgradeBase =>
+      _hasPermanentStoreReaderEntitlement ||
+      _hasSandboxDirectReaderLifetime ||
+      (_accountReaderAttestationIsCurrent &&
+          _accountReaderAttestation!.readerUnlocked &&
+          _accountReaderAttestation!.upgradeEligible);
+
+  bool get _hasSandboxBundleReaderAccess =>
+      _hasSandboxPremiumAccess &&
+      _sandboxPremiumProductKind == StoreProductKind.premiumBundle;
+
+  bool get _hasSandboxPermanentReaderAccess =>
+      _hasSandboxDirectReaderLifetime || _hasSandboxBundleReaderAccess;
+
+  void _clearSandboxAccess() {
+    _sandboxAccessAccountId = null;
+    _sandboxReaderAccess = null;
+    _sandboxPremiumAccess = null;
+    _sandboxPremiumProductKind = null;
+  }
 
   void clearError() {
     if (_error == null) return;
@@ -1207,7 +1283,11 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> restoreStorePurchases() async {
-    await restoreStorePremiumPurchases();
+    // Sandbox rights are intentionally memory-only. After an app restart the
+    // explicit restore action must reconstruct Read before choosing the
+    // matching Explore full-price or upgrade path.
+    await restoreReaderPurchases();
+    await _restoreStorePremiumPurchasesOnly();
   }
 
   Future<void> purchaseReaderLifetime() async {
@@ -1236,6 +1316,10 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> restoreStorePremiumPurchases() async {
+    await restoreStorePurchases();
+  }
+
+  Future<void> _restoreStorePremiumPurchasesOnly() async {
     if (_user == null) throw const MemberAccountException('请先登录账号');
     _configureStoreProducts();
     await _storePurchase.restoreDomain(StorePurchaseDomain.premium);
@@ -1294,6 +1378,76 @@ class MemberAccountController extends ChangeNotifier {
     final result = await _api.accountReaderStatus();
     if (_user?.id != owner || request != _accountReaderRequest) return;
     await _acceptReaderResult(result, accountRequest: request);
+  }
+
+  Future<bool> _acceptProductionReaderResult(
+    ReaderAccessResult result, {
+    required int accountRequest,
+  }) async {
+    await _acceptReaderResult(result, accountRequest: accountRequest);
+    return hasPermanentReaderAccess || hasActiveReaderTrial;
+  }
+
+  bool _acceptSandboxReaderResult(
+    ReaderAccessResult result, {
+    required String accountId,
+    required StoreProductKind kind,
+  }) {
+    if (result.purchaseStatus == 'pending') return false;
+    if (_sandboxAccessAccountId != null &&
+        _sandboxAccessAccountId != accountId) {
+      _clearSandboxAccess();
+    }
+    _sandboxAccessAccountId = accountId;
+    if (result.purchaseStatus == 'revoked') {
+      _sandboxReaderAccess = null;
+      _scheduleMembershipExpiry();
+      notifyListeners();
+      return false;
+    }
+    if (result.purchaseStatus != 'active') return false;
+    final grant = result.testAccess;
+    final authorized = switch (kind) {
+      StoreProductKind.readerLifetime => grant?.isReaderLifetime == true,
+      StoreProductKind.readerTrial => grant?.isReaderTrial == true,
+      StoreProductKind.legacyBundle =>
+        grant?.reader == true && grant?.isActive == true,
+      StoreProductKind.premiumLifetime ||
+      StoreProductKind.premiumBundle => false,
+    };
+    _sandboxReaderAccess = authorized ? grant : null;
+    _scheduleMembershipExpiry();
+    notifyListeners();
+    return authorized;
+  }
+
+  bool _acceptSandboxPremiumResult(
+    MemberMembership membership, {
+    required String accountId,
+    required StoreProductKind kind,
+  }) {
+    if (membership.purchaseStatus == 'pending') return false;
+    if (_sandboxAccessAccountId != null &&
+        _sandboxAccessAccountId != accountId) {
+      _clearSandboxAccess();
+    }
+    _sandboxAccessAccountId = accountId;
+    if (membership.purchaseStatus == 'revoked') {
+      _sandboxPremiumAccess = null;
+      _sandboxPremiumProductKind = null;
+      _scheduleMembershipExpiry();
+      return false;
+    }
+    if (membership.purchaseStatus != 'active') return false;
+    final grant = membership.testAccess;
+    final authorized =
+        (kind == StoreProductKind.premiumLifetime ||
+            kind == StoreProductKind.premiumBundle) &&
+        grant?.isPremium == true;
+    _sandboxPremiumAccess = authorized ? grant : null;
+    _sandboxPremiumProductKind = authorized ? kind : null;
+    _scheduleMembershipExpiry();
+    return authorized && _hasSandboxPremiumAccess;
   }
 
   Future<void> _acceptReaderResult(

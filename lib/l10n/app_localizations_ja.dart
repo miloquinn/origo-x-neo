@@ -6254,7 +6254,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get premiumPurchaseSuccess => 'プレミアムを有効にしました';
 
   @override
-  String get premiumTestPurchaseVerified => 'テスト購入を検証しました。正式なプレミアムは有効になりません。';
+  String get premiumTestPurchaseVerified =>
+      'テスト購入を確認しました。このアカウントのExploreテスト権利が有効です。';
 
   @override
   String get premiumPurchaseRevoked => 'この購入によるプレミアム利用権は取り消されました。';
@@ -7227,7 +7228,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'ベーシック版のテスト購入を確認しました。正式なライセンスは付与されていません。';
+      'テスト購入を確認しました。このアカウントの読書テスト権利が有効です。';
 
   @override
   String get storeReaderPurchaseRevoked => 'このベーシック版の購入は取り消されました。';

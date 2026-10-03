@@ -9,7 +9,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:provider/provider.dart';
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/pages/account/account_page.dart';
 import 'package:xxread/pages/account/membership_redemption_page.dart';
 import 'package:xxread/pages/account/premium_membership_page.dart';
 import 'package:xxread/pages/account/premium_policy_page.dart';
@@ -70,6 +72,36 @@ void main() {
     expect(find.byKey(const ValueKey('account-apple-purchase')), findsNothing);
     expect(find.byKey(const ValueKey('account-apple-restore')), findsOneWidget);
   });
+
+  testWidgets(
+    'verified sandbox Explore stays active before membership sync completes',
+    (tester) async {
+      await _enableAppleBeta();
+      final store = _FakeAppleStore();
+      final account = _SandboxPremiumAccount(store: store);
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+      await _pumpPage(tester, account: account);
+      await tester.pumpAndSettle();
+
+      expect(account.membership, isNull);
+      expect(account.hasPremiumAccess, isTrue);
+      expect(find.byKey(const ValueKey('premium-active')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('premium-active-footer')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('account-apple-purchase')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('account-apple-restore')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   for (final ready in [true, false]) {
     testWidgets('Google Play shows only native payment actions, ready=$ready', (
@@ -166,6 +198,39 @@ void main() {
     );
     expect(find.byKey(const ValueKey('account-google-purchase')), findsNothing);
     expect(find.byKey(const ValueKey('premium-redeem-entry')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('guest sign-in reloads the complete Explore product', (
+    tester,
+  ) async {
+    _usePlatform(TargetPlatform.iOS);
+    addTearDown(_resetPlatform);
+    final store = _FakeAppleStore();
+    final account = _SignInReturnAccount(store: store);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('premium-store-price')), findsNothing);
+    await _tapVisible(tester, const ValueKey('premium-sign-in'));
+    expect(find.byType(AccountPage), findsOneWidget);
+
+    account.completeSignIn();
+    Navigator.of(tester.element(find.byType(AccountPage))).pop<void>();
+    await tester.pumpAndSettle();
+
+    expect(account.initializeStoreCalls, 1);
+    expect(account.hasAccountReaderUpgradeEligibility, isFalse);
+    expect(account.premiumBundleProduct, isNotNull);
+    expect(find.text('¥58.00'), findsOneWidget);
+    expect(find.text('开卷 + 探元 · 一次购买跨平台使用'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('account-apple-purchase')),
+      findsOneWidget,
+    );
+    _resetPlatform();
     expect(tester.takeException(), isNull);
   });
   tearDown(() {
@@ -945,22 +1010,25 @@ Future<void> _pumpPage(
   Locale locale = const Locale('zh'),
 }) async {
   await tester.pumpWidget(
-    MaterialApp(
-      locale: locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      theme: _theme(Brightness.light, previewFont: previewFont),
-      darkTheme: _theme(Brightness.dark, previewFont: previewFont),
-      themeMode: themeMode,
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaler: textScaler),
-        child: child!,
-      ),
-      home: RepaintBoundary(
-        key: previewKey,
-        child: PremiumMembershipPage(
-          account: account,
-          focusBilling: focusBilling,
+    ChangeNotifierProvider<MemberAccountController>.value(
+      value: account,
+      child: MaterialApp(
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: _theme(Brightness.light, previewFont: previewFont),
+        darkTheme: _theme(Brightness.dark, previewFont: previewFont),
+        themeMode: themeMode,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
+        home: RepaintBoundary(
+          key: previewKey,
+          child: PremiumMembershipPage(
+            account: account,
+            focusBilling: focusBilling,
+          ),
         ),
       ),
     ),
@@ -1080,7 +1148,7 @@ class _TestAccount extends MemberAccountController {
   );
 
   @override
-  MemberMembership get membership => MemberMembership(
+  MemberMembership? get membership => MemberMembership(
     premium: premium,
     features: const {},
     entitlements: [
@@ -1119,6 +1187,44 @@ class _TestAccount extends MemberAccountController {
       : null;
 
   static final _createdAt = DateTime.utc(2026, 1, 1);
+}
+
+class _SandboxPremiumAccount extends _TestAccount {
+  _SandboxPremiumAccount({required super.store}) : super(premium: true);
+
+  @override
+  MemberMembership? get membership => null;
+}
+
+class _SignInReturnAccount extends _TestAccount {
+  _SignInReturnAccount({required super.store})
+    : super(authenticated: true, permanentReader: false);
+
+  bool _signedIn = false;
+  int initializeStoreCalls = 0;
+
+  @override
+  bool get initialized => true;
+
+  @override
+  bool get isAuthenticated => _signedIn;
+
+  @override
+  MemberUser? get user => _signedIn ? super.user : null;
+
+  @override
+  Future<void> initialize({bool force = false}) async {}
+
+  @override
+  Future<void> initializeStorePurchases() async {
+    initializeStoreCalls += 1;
+    await super.initializeStorePurchases();
+  }
+
+  void completeSignIn() {
+    _signedIn = true;
+    notifyListeners();
+  }
 }
 
 class _FakeAppleStore implements PurchaseStore {

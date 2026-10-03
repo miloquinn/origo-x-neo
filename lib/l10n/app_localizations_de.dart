@@ -6600,7 +6600,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get premiumTestPurchaseVerified =>
-      'Testkauf verifiziert. Das reguläre Premium wurde nicht aktiviert.';
+      'Testkauf bestätigt. Explore-Testberechtigungen sind für dieses Konto aktiv.';
 
   @override
   String get premiumPurchaseRevoked =>
@@ -7638,7 +7638,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'Testkauf der Basisversion bestätigt; keine reguläre Lizenz erteilt.';
+      'Testkauf bestätigt. Lesetestberechtigungen sind für dieses Konto aktiv.';
 
   @override
   String get storeReaderPurchaseRevoked =>

@@ -54,18 +54,19 @@ void main() {
   });
 
   test(
-    'test Read and Explore purchases verify without granting rights',
+    'sandbox Read qualifies for upgrade and grants stay independently revocable',
     () async {
       final store = _TestStore();
       addTearDown(store.close);
-      var revoked = false;
+      var readerRevoked = false;
+      var premiumRevoked = false;
       final fixture = _Fixture((request) {
-        if (request.uri.path.endsWith('/reader/google/account-purchase')) {
+        if (request.uri.path.contains('/reader/google/account-')) {
           return _json({
             ..._readerResult(request, 'locked'),
             'test_purchase': true,
-            'purchase_status': revoked ? 'revoked' : 'active',
-            'test_access': revoked
+            'purchase_status': readerRevoked ? 'revoked' : 'active',
+            'test_access': readerRevoked
                 ? null
                 : {
                     'kind': 'reader_lifetime',
@@ -75,7 +76,108 @@ void main() {
                   },
           });
         }
-        if (request.uri.path.endsWith('/premium/google/purchase')) {
+        if (request.uri.path.contains('/premium/google/')) {
+          return _json({
+            'user_id': _userId,
+            'premium': false,
+            'features': <String, bool>{},
+            'entitlements': <Object>[],
+            'test_purchase': true,
+            'purchase_status': premiumRevoked ? 'revoked' : 'active',
+            'test_access': premiumRevoked
+                ? null
+                : {
+                    'kind': 'premium_lifetime',
+                    'reader': false,
+                    'premium': true,
+                    'expires_at': null,
+                  },
+          });
+        }
+        return _routes(request, access: 'locked');
+      });
+      final account = fixture.account(store: store);
+      addTearDown(account.dispose);
+      await account.initialize();
+      await account.loginPassword('reader@example.com', 'password');
+      store.emit('origo_x_reader_lifetime', 'reader-test');
+      await pumpEventQueue(times: 30);
+      expect(account.hasPermanentReaderAccess, isTrue);
+      expect(account.hasAccountReaderUpgradeEligibility, isTrue);
+      expect(account.readerPurchasePhase, StorePurchasePhase.testVerified);
+      expect(account.hasAdvancedSourceAccess, isFalse);
+      final readPurchase = store.lastPurchase;
+      await account.purchaseReaderLifetime();
+      expect(store.lastPurchase, same(readPurchase));
+      await account.purchaseStorePremium();
+      expect(store.lastPurchase?.productDetails.id, 'origo_x_premium_lifetime');
+      store.emit('origo_x_premium_lifetime', 'premium-test');
+      await pumpEventQueue(times: 30);
+      expect(account.hasPremiumAccess, isTrue);
+      expect(account.hasAdvancedSourceAccess, isTrue);
+      expect(account.hasPermanentReaderAccess, isTrue);
+      expect(account.membership?.testPurchase, isFalse);
+      expect(account.premiumPurchasePhase, StorePurchasePhase.testVerified);
+      readerRevoked = true;
+      store.emit('origo_x_reader_lifetime', 'reader-refunded');
+      await pumpEventQueue(times: 30);
+      expect(account.hasPremiumAccess, isFalse);
+      expect(account.hasAdvancedSourceAccess, isFalse);
+      expect(account.hasPermanentReaderAccess, isFalse);
+      store.emit('origo_x_premium_lifetime', 'premium-replay-without-read');
+      await pumpEventQueue(times: 30);
+      expect(account.premiumPurchasePhase, StorePurchasePhase.failed);
+      expect(account.hasPremiumAccess, isFalse);
+      readerRevoked = false;
+      store.emit('origo_x_reader_lifetime', 'reader-restored');
+      await pumpEventQueue(times: 30);
+      expect(account.hasPremiumAccess, isTrue);
+      expect(account.hasPermanentReaderAccess, isTrue);
+      premiumRevoked = true;
+      store.emit('origo_x_premium_lifetime', 'premium-refunded');
+      await pumpEventQueue(times: 30);
+      expect(account.hasPremiumAccess, isFalse);
+      expect(account.hasPermanentReaderAccess, isTrue);
+      readerRevoked = true;
+      store.emit('origo_x_reader_lifetime', 'reader-refunded-again');
+      await pumpEventQueue(times: 30);
+      expect(account.hasPermanentReaderAccess, isFalse);
+      expect(account.hasAccountReaderUpgradeEligibility, isFalse);
+      await account.logout();
+      expect(account.hasPermanentReaderAccess, isFalse);
+      expect(account.hasAdvancedSourceAccess, isFalse);
+      final restarted = fixture.account();
+      addTearDown(restarted.dispose);
+      await restarted.initialize();
+      expect(restarted.hasPermanentReaderAccess, isFalse);
+    },
+  );
+
+  test(
+    'explicit Explore restore rebuilds sandbox Read before upgrade',
+    () async {
+      final store = _TestStore(
+        restoreProducts: const [
+          'origo_x_reader_lifetime',
+          'origo_x_premium_lifetime',
+        ],
+      );
+      addTearDown(store.close);
+      final fixture = _Fixture((request) {
+        if (request.uri.path.contains('/reader/google/account-')) {
+          return _json({
+            ..._readerResult(request, 'locked'),
+            'test_purchase': true,
+            'purchase_status': 'active',
+            'test_access': const {
+              'kind': 'reader_lifetime',
+              'reader': true,
+              'premium': false,
+              'expires_at': null,
+            },
+          });
+        }
+        if (request.uri.path.contains('/premium/google/')) {
           return _json({
             'user_id': _userId,
             'premium': false,
@@ -83,9 +185,9 @@ void main() {
             'entitlements': <Object>[],
             'test_purchase': true,
             'purchase_status': 'active',
-            'test_access': {
+            'test_access': const {
               'kind': 'premium_lifetime',
-              'reader': true,
+              'reader': false,
               'premium': true,
               'expires_at': null,
             },
@@ -97,36 +199,75 @@ void main() {
       addTearDown(account.dispose);
       await account.initialize();
       await account.loginPassword('reader@example.com', 'password');
-      store.emit('origo_x_reader_lifetime', 'reader-test');
-      await pumpEventQueue(times: 30);
-      expect(account.hasPermanentReaderAccess, isFalse);
-      expect(account.hasAccountReaderUpgradeEligibility, isFalse);
+
+      await account.restoreStorePremiumPurchases();
+
+      expect(store.restoreCalls, 2);
+      expect(account.hasPermanentReaderAccess, isTrue);
+      expect(account.hasAccountReaderUpgradeEligibility, isTrue);
+      expect(account.hasPremiumAccess, isTrue);
+      expect(account.hasAdvancedSourceAccess, isTrue);
       expect(account.readerPurchasePhase, StorePurchasePhase.testVerified);
-      expect(account.hasAdvancedSourceAccess, isFalse);
-      await account.purchaseStorePremiumBundle();
-      store.emit('origo_x_explorer_lifetime', 'premium-test');
-      await pumpEventQueue(times: 30);
-      expect(account.hasPremiumAccess, isFalse);
-      expect(account.hasAdvancedSourceAccess, isFalse);
       expect(account.premiumPurchasePhase, StorePurchasePhase.testVerified);
-      await account.logout();
-      expect(account.hasPermanentReaderAccess, isFalse);
-      expect(account.hasAdvancedSourceAccess, isFalse);
-      final restarted = fixture.account();
-      addTearDown(restarted.dispose);
-      await restarted.initialize();
-      expect(restarted.hasPermanentReaderAccess, isFalse);
-      revoked = true;
-      store.emit('origo_x_reader_lifetime', 'reader-refunded');
-      await pumpEventQueue(times: 30);
-      expect(account.hasReaderAccess, isFalse);
     },
   );
 
-  test('sandbox trial verifies without starting an account trial', () async {
+  test('sandbox grants are cleared when the Origo account changes', () async {
     final store = _TestStore();
     addTearDown(store.close);
-    var expired = false;
+    var currentUserId = _userId;
+    final fixture = _Fixture((request) {
+      if (request.uri.path == '/api/v1/auth/password/login') {
+        final email = (request.data as Map)['email'] as String;
+        currentUserId = email.startsWith('other') ? _otherUserId : _userId;
+        return _json(_session(userId: currentUserId, email: email));
+      }
+      if (request.uri.path == '/api/v1/membership') {
+        return _json({
+          'user_id': currentUserId,
+          'premium': false,
+          'features': const <String, bool>{},
+          'entitlements': const <Object>[],
+        });
+      }
+      if (request.uri.path.endsWith('/premium/google/purchase')) {
+        return _json({
+          'user_id': currentUserId,
+          'premium': false,
+          'features': <String, bool>{},
+          'entitlements': <Object>[],
+          'test_purchase': true,
+          'purchase_status': 'active',
+          'test_access': const {
+            'kind': 'premium_lifetime',
+            'reader': false,
+            'premium': true,
+            'expires_at': null,
+          },
+        });
+      }
+      return _routes(request, access: 'locked');
+    });
+    final account = fixture.account(store: store);
+    addTearDown(account.dispose);
+    await account.initialize();
+    await account.loginPassword('reader@example.com', 'password');
+    store.emit('origo_x_explorer_lifetime', 'full-for-first-account');
+    await pumpEventQueue(times: 30);
+    expect(account.hasPremiumAccess, isTrue);
+    expect(account.hasPermanentReaderAccess, isTrue);
+    expect(account.membership?.testPurchase, isFalse);
+
+    await account.loginPassword('other@example.com', 'password');
+
+    expect(account.hasPremiumAccess, isFalse);
+    expect(account.hasPermanentReaderAccess, isFalse);
+    expect(account.hasAdvancedSourceAccess, isFalse);
+  });
+
+  test('sandbox grant must match the purchased Read product', () async {
+    final store = _TestStore();
+    addTearDown(store.close);
     final fixture = _Fixture((request) {
       if (request.uri.path.endsWith('/reader/google/account-purchase')) {
         return _json({
@@ -137,7 +278,7 @@ void main() {
             'reader': true,
             'premium': false,
             'expires_at': DateTime.now()
-                .add(Duration(days: expired ? -1 : 14))
+                .add(const Duration(days: 14))
                 .toIso8601String(),
           },
         });
@@ -151,14 +292,10 @@ void main() {
     store.emit('origo_x_reader_lifetime', 'trial-test');
     await pumpEventQueue(times: 30);
     expect(account.hasReaderAccess, isFalse);
-    expect(account.readerPurchasePhase, StorePurchasePhase.testVerified);
+    expect(account.readerPurchasePhase, StorePurchasePhase.failed);
     expect(account.hasActiveReaderTrial, isFalse);
     expect(account.hasPermanentReaderAccess, isFalse);
     expect(account.canPurchaseStorePremium, isFalse);
-    expired = true;
-    store.emit('origo_x_reader_lifetime', 'trial-expired');
-    await pumpEventQueue(times: 30);
-    expect(account.hasReaderAccess, isFalse);
   });
 
   test(
@@ -286,86 +423,88 @@ void main() {
     () => _expectEmailActionRejectsSessionInvalidation(change: true),
   );
 
-  test('Apple sandbox purchases verify without unlocking Explore', () async {
-    await _enableAppleBeta();
-    final store = _TestStore();
-    addTearDown(store.close);
-    var revoked = false;
-    final fixture = _Fixture((request) {
-      if (request.uri.path.endsWith('/premium/apple/purchase')) {
-        return _json({
-          'user_id': _userId,
-          'premium': false,
-          'features': <String, bool>{},
-          'entitlements': <Object>[],
-          'test_purchase': true,
-          'purchase_status': revoked ? 'revoked' : 'active',
-          'test_access': revoked
-              ? null
-              : {
-                  'kind': 'premium_lifetime',
-                  'reader': true,
-                  'premium': true,
-                  'expires_at': null,
-                },
-        });
-      }
-      return _routes(request, access: 'locked');
-    });
-    final account = fixture.account(store: store);
-    addTearDown(account.dispose);
-    await account.initialize();
-    expect(AppDistribution.isAppleTestEnvironment, isTrue);
-    expect(account.hasReaderAccess, isTrue);
-    expect(account.hasAdvancedSourceAccess, isFalse);
-    await expectLater(
-      account.purchaseReaderLifetime(),
-      throwsA(isA<MemberAccountException>()),
-    );
-    await expectLater(
-      account.purchaseStorePremiumBundle(),
-      throwsA(isA<MemberAccountException>()),
-    );
-    expect(store.lastPurchase, isNull);
-    await account.loginPassword('reader@example.com', 'password');
-    expect(account.hasAdvancedSourceAccess, isFalse);
-    await account.purchaseReaderLifetime();
-    expect(
-      store.lastPurchase?.productDetails.id,
-      'com.niki.xxread.reader.lifetime',
-    );
-    await account.restoreReaderPurchases();
-    expect(store.restoreCalls, 1);
-    await account.purchaseStorePremiumBundle();
-    expect(
-      store.lastPurchase?.productDetails.id,
-      'com.niki.xxread.explorer.lifetime',
-    );
-    expect(account.hasAdvancedSourceAccess, isFalse);
-    store.emit('com.niki.xxread.explorer.lifetime', 'apple-test-explore');
-    await pumpEventQueue(times: 30);
-    expect(account.hasAdvancedSourceAccess, isFalse);
-    expect(account.premiumPurchasePhase, StorePurchasePhase.testVerified);
-    expect(account.hasPremiumAccess, isFalse);
-    revoked = true;
-    store.emit(
-      'com.niki.xxread.explorer.lifetime',
-      'apple-test-explore-revoked',
-    );
-    await pumpEventQueue(times: 30);
-    expect(account.hasAdvancedSourceAccess, isFalse);
-    revoked = false;
-    store.emit(
-      'com.niki.xxread.explorer.lifetime',
-      'apple-test-explore-restored',
-    );
-    await pumpEventQueue(times: 30);
-    expect(account.hasAdvancedSourceAccess, isFalse);
-    expect(account.premiumPurchasePhase, StorePurchasePhase.testVerified);
-    await account.logout();
-    expect(account.hasAdvancedSourceAccess, isFalse);
-    expect(account.hasReaderAccess, isTrue);
-  });
+  test(
+    'Apple sandbox full Explore unlocks both products for this session',
+    () async {
+      await _enableAppleBeta();
+      final store = _TestStore();
+      addTearDown(store.close);
+      var revoked = false;
+      final fixture = _Fixture((request) {
+        if (request.uri.path.endsWith('/premium/apple/purchase')) {
+          return _json({
+            'user_id': _userId,
+            'premium': false,
+            'features': <String, bool>{},
+            'entitlements': <Object>[],
+            'test_purchase': true,
+            'purchase_status': revoked ? 'revoked' : 'active',
+            'test_access': revoked
+                ? null
+                : {
+                    'kind': 'premium_lifetime',
+                    'reader': false,
+                    'premium': true,
+                    'expires_at': null,
+                  },
+          });
+        }
+        return _routes(request, access: 'locked');
+      });
+      final account = fixture.account(store: store);
+      addTearDown(account.dispose);
+      await account.initialize();
+      expect(AppDistribution.isAppleTestEnvironment, isTrue);
+      expect(account.hasReaderAccess, isTrue);
+      expect(account.hasAdvancedSourceAccess, isFalse);
+      await expectLater(
+        account.purchaseReaderLifetime(),
+        throwsA(isA<MemberAccountException>()),
+      );
+      await expectLater(
+        account.purchaseStorePremiumBundle(),
+        throwsA(isA<MemberAccountException>()),
+      );
+      expect(store.lastPurchase, isNull);
+      await account.loginPassword('reader@example.com', 'password');
+      expect(account.hasAdvancedSourceAccess, isFalse);
+      await account.purchaseStorePremiumBundle();
+      expect(
+        store.lastPurchase?.productDetails.id,
+        'com.niki.xxread.explorer.lifetime',
+      );
+      store.emit('com.niki.xxread.explorer.lifetime', 'apple-test-explore');
+      await pumpEventQueue(times: 30);
+      expect(account.hasAdvancedSourceAccess, isTrue);
+      expect(account.premiumPurchasePhase, StorePurchasePhase.testVerified);
+      expect(account.hasPremiumAccess, isTrue);
+      expect(account.hasPermanentReaderAccess, isTrue);
+      expect(account.hasAccountReaderUpgradeEligibility, isFalse);
+      final fullPurchase = store.lastPurchase;
+      await account.purchaseStorePremiumBundle();
+      expect(store.lastPurchase, same(fullPurchase));
+      revoked = true;
+      store.emit(
+        'com.niki.xxread.explorer.lifetime',
+        'apple-test-explore-revoked',
+      );
+      await pumpEventQueue(times: 30);
+      expect(account.hasAdvancedSourceAccess, isFalse);
+      expect(account.hasPermanentReaderAccess, isFalse);
+      revoked = false;
+      store.emit(
+        'com.niki.xxread.explorer.lifetime',
+        'apple-test-explore-restored',
+      );
+      await pumpEventQueue(times: 30);
+      expect(account.hasAdvancedSourceAccess, isTrue);
+      expect(account.hasPermanentReaderAccess, isTrue);
+      expect(account.premiumPurchasePhase, StorePurchasePhase.testVerified);
+      await account.logout();
+      expect(account.hasAdvancedSourceAccess, isFalse);
+      expect(account.hasReaderAccess, isTrue);
+    },
+  );
 
   test(
     'TestFlight retains formal Explore rights independent of sandbox orders',
@@ -386,7 +525,7 @@ void main() {
               'purchase_status': 'active',
               'test_access': {
                 'kind': 'premium_lifetime',
-                'reader': true,
+                'reader': false,
                 'premium': true,
                 'expires_at': null,
               },
@@ -1200,6 +1339,9 @@ class _Tokens implements MemberTokenStore {
 }
 
 class _TestStore implements PurchaseStore {
+  _TestStore({this.restoreProducts = const <String>[]});
+
+  final List<String> restoreProducts;
   PurchaseParam? lastPurchase;
   int restoreCalls = 0;
   final _stream = StreamController<List<PurchaseDetails>>.broadcast();
@@ -1251,6 +1393,26 @@ class _TestStore implements PurchaseStore {
     Set<String>? productIds,
   }) async {
     restoreCalls++;
-    return {};
+    final restored = restoreProducts
+        .where((product) => productIds?.contains(product) ?? true)
+        .toList();
+    for (final product in restored) {
+      scheduleMicrotask(
+        () => _stream.add([
+          PurchaseDetails(
+            purchaseID: 'restore-$restoreCalls-$product',
+            productID: product,
+            verificationData: PurchaseVerificationData(
+              localVerificationData: '',
+              serverVerificationData: 'restore-$restoreCalls-$product',
+              source: 'test',
+            ),
+            transactionDate: '1',
+            status: PurchaseStatus.restored,
+          ),
+        ]),
+      );
+    }
+    return restored.map((product) => 'restore-$restoreCalls-$product').toSet();
   }
 }

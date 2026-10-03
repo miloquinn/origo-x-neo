@@ -207,7 +207,7 @@ void main() {
   );
 
   test(
-    'sandbox purchase completes as test verified without authorization',
+    'sandbox purchase fails when verification contains no active grant',
     () async {
       final store = _FakeStore();
       final service = _service(
@@ -226,46 +226,39 @@ void main() {
 
       expect(
         service.phaseFor(StorePurchaseDomain.reader),
-        StorePurchasePhase.testVerified,
+        StorePurchasePhase.failed,
       );
-      expect(service.errorFor(StorePurchaseDomain.reader), isNull);
-      expect(store.completed, hasLength(1));
+      expect(service.errorFor(StorePurchaseDomain.reader), isNotNull);
+      expect(store.completed, isEmpty);
     },
   );
 
-  for (final authorized in [false, true]) {
-    test(
-      'sandbox restore stays test verified, authorized=$authorized',
-      () async {
-        final store = _FakeStore(
-          onRestore: (value) => scheduleMicrotask(
-            () => value.emit(
-              _purchase(_premiumId, PurchaseStatus.restored, 'sandbox-restore'),
-            ),
-          ),
-          restoreIds: const {'sandbox-restore'},
-        );
-        final service = _service(
-          store,
-          verify: (_, _, _) async => StorePurchaseVerification(
-            authorized: authorized,
-            testPurchase: true,
-          ),
-        );
-        addTearDown(store.close);
-        addTearDown(service.dispose);
-
-        await service.restoreDomain(StorePurchaseDomain.premium);
-
-        expect(
-          service.phaseFor(StorePurchaseDomain.premium),
-          StorePurchasePhase.testVerified,
-        );
-        expect(service.errorFor(StorePurchaseDomain.premium), isNull);
-        expect(store.completed, hasLength(1));
-      },
+  test('authorized sandbox restore finishes as test verified', () async {
+    final store = _FakeStore(
+      onRestore: (value) => scheduleMicrotask(
+        () => value.emit(
+          _purchase(_premiumId, PurchaseStatus.restored, 'sandbox-restore'),
+        ),
+      ),
+      restoreIds: const {'sandbox-restore'},
     );
-  }
+    final service = _service(
+      store,
+      verify: (_, _, _) async =>
+          const StorePurchaseVerification(authorized: true, testPurchase: true),
+    );
+    addTearDown(store.close);
+    addTearDown(service.dispose);
+
+    await service.restoreDomain(StorePurchaseDomain.premium);
+
+    expect(
+      service.phaseFor(StorePurchaseDomain.premium),
+      StorePurchasePhase.testVerified,
+    );
+    expect(service.errorFor(StorePurchaseDomain.premium), isNull);
+    expect(store.completed, hasLength(1));
+  });
 
   test(
     'purchased update queues behind pending verification for same transaction',

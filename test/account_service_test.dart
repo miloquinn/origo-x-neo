@@ -500,67 +500,72 @@ void main() {
     expect(redemptionCalls, 0);
   });
 
-  test(
-    'sandbox verification finishes StoreKit without granting access',
-    () async {
-      SharedPreferences.setMockInitialValues({});
-      final store = _AccountAppleStore();
-      final controller = MemberAccountController(
-        purchaseStore: store,
-        api: _client(
-          _RouteAdapter((options) {
-            return switch (options.uri.path) {
-              '/api/v1/membership/reader/account-status' =>
-                _accountReaderStatus(options),
-              '/api/v1/membership/config' => _json({
-                'product': 'premium',
-                'features': <String>[],
-                'apple_billing_enabled': true,
-                'premium_apple_product_id':
-                    MemberAccountController.appleProductId,
-              }),
-              '/api/v1/auth/password/login' => _json(
-                _session(
-                  access: 'access',
-                  refresh: 'refresh',
-                  userId: _memberAccountId,
-                ),
+  test('verified sandbox access stays outside the membership cache', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = _AccountAppleStore();
+    final controller = MemberAccountController(
+      purchaseStore: store,
+      api: _client(
+        _RouteAdapter((options) {
+          return switch (options.uri.path) {
+            '/api/v1/membership/reader/account-status' => _accountReaderStatus(
+              options,
+            ),
+            '/api/v1/membership/config' => _json({
+              'product': 'premium',
+              'features': <String>[],
+              'apple_billing_enabled': true,
+              'premium_apple_product_id':
+                  MemberAccountController.appleProductId,
+            }),
+            '/api/v1/auth/password/login' => _json(
+              _session(
+                access: 'access',
+                refresh: 'refresh',
+                userId: _memberAccountId,
               ),
-              '/api/v1/membership' => _json({
-                'premium': false,
-                'features': {},
-                'entitlements': [],
-              }),
-              '/api/v1/membership/referral' => _json({
-                'invite_code': 'TEST',
-                'invite_url': 'https://example.test/invite',
-              }),
-              '/api/v1/membership/premium/apple/purchase' => _json({
-                'premium': false,
-                'test_purchase': true,
-                'features': {},
-                'entitlements': [],
-              }),
-              _ => _json({}),
-            };
-          }),
-          _MemoryTokenStore(),
-        ),
-      );
-      addTearDown(controller.dispose);
-      addTearDown(store.close);
-      await controller.loginPassword('reader@example.com', 'password');
-      await controller.purchaseStorePremium();
+            ),
+            '/api/v1/membership' => _json({
+              'premium': false,
+              'features': {},
+              'entitlements': [],
+            }),
+            '/api/v1/membership/referral' => _json({
+              'invite_code': 'TEST',
+              'invite_url': 'https://example.test/invite',
+            }),
+            '/api/v1/membership/premium/apple/purchase' => _json({
+              'premium': false,
+              'test_purchase': true,
+              'purchase_status': 'active',
+              'test_access': {
+                'kind': 'premium_lifetime',
+                'reader': false,
+                'premium': true,
+                'expires_at': null,
+              },
+              'features': {},
+              'entitlements': [],
+            }),
+            _ => _json({}),
+          };
+        }),
+        _MemoryTokenStore(),
+      ),
+    );
+    addTearDown(controller.dispose);
+    addTearDown(store.close);
+    await controller.loginPassword('reader@example.com', 'password');
+    await controller.purchaseStorePremium();
 
-      store.emit();
-      await pumpEventQueue();
+    store.emit();
+    await pumpEventQueue();
 
-      expect(controller.hasPremiumAccess, isFalse);
-      expect(controller.membership?.testPurchase, isTrue);
-      expect(store.completed, 1);
-      expect(controller.storePurchase.phase, StorePurchasePhase.testVerified);
-    },
-  );
+    expect(controller.hasPremiumAccess, isTrue);
+    expect(controller.membership?.testPurchase, isFalse);
+    expect(store.completed, 1);
+    expect(controller.storePurchase.phase, StorePurchasePhase.testVerified);
+  });
 
   for (final aggregatePremium in [false, true]) {
     test(

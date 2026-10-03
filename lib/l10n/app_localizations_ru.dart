@@ -6564,7 +6564,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumTestPurchaseVerified =>
-      'Тестовая покупка подтверждена. Полноценный Premium не активирован.';
+      'Тестовая покупка подтверждена. Тестовые права Explore активны для этого аккаунта.';
 
   @override
   String get premiumPurchaseRevoked =>
@@ -7596,7 +7596,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'Тестовая покупка базовой версии подтверждена; постоянная лицензия не выдана.';
+      'Тестовая покупка подтверждена. Тестовые права чтения активны для этого аккаунта.';
 
   @override
   String get storeReaderPurchaseRevoked => 'Покупка базовой версии отозвана.';

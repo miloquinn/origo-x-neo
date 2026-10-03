@@ -6159,7 +6159,7 @@
   "@premiumPurchaseSuccess": {
     "description": "Premium unlocked"
   },
-  "premiumTestPurchaseVerified": "Test purchase verified. Explore and other paid entitlements were not activated.",
+  "premiumTestPurchaseVerified": "Test Explore purchase verified. Test entitlements are active for this account.",
   "@premiumTestPurchaseVerified": {
     "description": "Sandbox purchase verification result"
   },
@@ -6911,7 +6911,7 @@
   "@storeReaderRestoreSuccess": {
     "description": "App reader purchase status, separate from Premium."
   },
-  "storeReaderTestPurchaseVerified": "Test Origo Read purchase verified. No Read identity, trial or other paid entitlement was granted.",
+  "storeReaderTestPurchaseVerified": "Test Read purchase verified. Test entitlements are active for this account.",
   "@storeReaderTestPurchaseVerified": {
     "description": "App reader purchase status, separate from Premium."
   },

@@ -6505,7 +6505,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumTestPurchaseVerified =>
-      'Test purchase verified. Explore and other paid entitlements were not activated.';
+      'Test Explore purchase verified. Test entitlements are active for this account.';
 
   @override
   String get premiumPurchaseRevoked =>
@@ -7530,7 +7530,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeReaderTestPurchaseVerified =>
-      'Test Origo Read purchase verified. No Read identity, trial or other paid entitlement was granted.';
+      'Test Read purchase verified. Test entitlements are active for this account.';
 
   @override
   String get storeReaderPurchaseRevoked =>

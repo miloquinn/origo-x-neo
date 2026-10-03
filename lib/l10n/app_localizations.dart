@@ -11369,7 +11369,7 @@ abstract class AppLocalizations {
   /// Sandbox purchase verification result
   ///
   /// In en, this message translates to:
-  /// **'Test purchase verified. Explore and other paid entitlements were not activated.'**
+  /// **'Test Explore purchase verified. Test entitlements are active for this account.'**
   String get premiumTestPurchaseVerified;
 
   /// Revoked Apple purchase result
@@ -13055,7 +13055,7 @@ abstract class AppLocalizations {
   /// App reader purchase status, separate from Premium.
   ///
   /// In en, this message translates to:
-  /// **'Test Origo Read purchase verified. No Read identity, trial or other paid entitlement was granted.'**
+  /// **'Test Read purchase verified. Test entitlements are active for this account.'**
   String get storeReaderTestPurchaseVerified;
 
   /// App reader purchase status, separate from Premium.

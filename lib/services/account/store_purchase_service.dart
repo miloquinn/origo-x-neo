@@ -445,7 +445,7 @@ class StorePurchaseService extends ChangeNotifier {
               _setPhase(domain, StorePurchasePhase.pending);
               return true;
             }
-            if (!result.authorized && !result.revoked && !result.testPurchase) {
+            if (!result.authorized && !result.revoked) {
               throw const MemberAccountException('商店购买尚未生效，请重试');
             }
             if (purchase.pendingCompletePurchase) {
@@ -454,7 +454,7 @@ class StorePurchaseService extends ChangeNotifier {
             restoreSession
               ?..verified |= result.authorized && !result.testPurchase
               ..revoked |= result.revoked
-              ..testVerified |= result.testPurchase;
+              ..testVerified |= result.testPurchase && result.authorized;
             _setError(domain, null);
             _setPhase(
               domain,

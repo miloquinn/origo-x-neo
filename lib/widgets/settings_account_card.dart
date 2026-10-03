@@ -9,7 +9,6 @@ import '../utils/localization_extension.dart';
 import 'account_avatar_image.dart';
 import 'account_identity_card.dart';
 import 'membership_offer_card.dart';
-import '../pages/account/store_reader_unlock_page.dart';
 
 class SettingsAccountCard extends StatelessWidget {
   const SettingsAccountCard({super.key});
@@ -20,12 +19,6 @@ class SettingsAccountCard extends StatelessWidget {
     final summary = account.summary;
     final l10n = context.l10n;
     final explore = account.hasPremiumAccess;
-    // A trial or sandbox session is not an owned Read plan. Direct builds
-    // already include Read, so their next step is Explore.
-    final offerRead =
-        AppDistribution.isStore &&
-        !account.hasPermanentReaderAccess &&
-        !explore;
     return Column(
       key: const ValueKey('settings-account-membership-group'),
       mainAxisSize: MainAxisSize.min,
@@ -57,15 +50,11 @@ class SettingsAccountCard extends StatelessWidget {
         if (!explore) ...[
           const SizedBox(height: 14),
           MembershipOfferCard(
-            offerRead: offerRead,
+            offerRead: false,
             onTap: () => Navigator.of(context).push<void>(
               MaterialPageRoute(
-                builder: (_) => offerRead
-                    ? StoreReaderUnlockPage(account: account)
-                    : PremiumMembershipPage(
-                        account: account,
-                        focusBilling: true,
-                      ),
+                builder: (_) =>
+                    PremiumMembershipPage(account: account, focusBilling: true),
               ),
             ),
           ),

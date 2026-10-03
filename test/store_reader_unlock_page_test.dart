@@ -92,6 +92,27 @@ void main() {
     expect(find.text('开卷 + 探元 · 一次购买跨平台使用'), findsOneWidget);
   });
 
+  testWidgets('owned permanent Read shows the Explore upgrade price', (
+    tester,
+  ) async {
+    AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+    final account = _UnlockAccount(permanent: true, authenticated: true);
+    addTearDown(account.dispose);
+    await _pumpWidgetPage(
+      tester,
+      child: PremiumMembershipPage(account: account),
+    );
+
+    expect(account.hasAccountReaderUpgradeEligibility, isTrue);
+    expect(find.byKey(const ValueKey('premium-store-price')), findsOneWidget);
+    expect(find.text(r'$8.99'), findsOneWidget);
+    expect(find.text('已拥有开卷 · 升级探元'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('account-apple-purchase')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('guest actions open sign-in without starting store actions', (
     tester,
   ) async {
@@ -150,7 +171,7 @@ void main() {
         find.byKey(const ValueKey('store-reader-restore')),
         findsOneWidget,
       );
-      expect(find.text('登录后购买开卷身份'), findsOneWidget);
+      expect(find.text('登录后购买永久阅读权益'), findsOneWidget);
 
       await tester.ensureVisible(
         find.byKey(const ValueKey('store-reader-details')),
@@ -454,6 +475,26 @@ void main() {
           tester,
           readerBoundary,
           '$screenshotDirectory/apple-reader-unlock-1290x2796.png',
+          pixelRatio: 3,
+        );
+
+        final ownedReaderAccount = _UnlockAccount(
+          permanent: true,
+          authenticated: true,
+        );
+        addTearDown(ownedReaderAccount.dispose);
+        final ownedReaderBoundary = GlobalKey();
+        await _pumpPage(
+          tester,
+          ownedReaderAccount,
+          boundaryKey: ownedReaderBoundary,
+        );
+        await _precacheBrandIcon(tester, find.byType(StoreReaderUnlockPage));
+        expect(tester.takeException(), isNull);
+        await _capture(
+          tester,
+          ownedReaderBoundary,
+          '$screenshotDirectory/apple-reader-owned-1290x2796.png',
           pixelRatio: 3,
         );
 

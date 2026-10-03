@@ -1,9 +1,18 @@
-Origo X uses separate non-consumable products: app lifetime unlock (com.niki.xxread.reader.lifetime, US $9.99), a zero-price 14-day reading trial (com.niki.xxread.reader.trial14d), and account Premium lifetime (com.niki.xxread.premium.lifetime.v2, US $8.99). StoreKit displays localized prices. No product auto-renews.
+Origo X 2.7.2 (261003002) — In-App Purchase review steps
 
-Use App unlock in the account center for guest reading purchase, trial or restore. No Origo sign-in is required. Trial is limited to local reading and expires 14 days after the original transaction.
+Basic reading is currently free, without sign-in or a Read purchase. Origo Read remains a non-consumable permanent reading entitlement linked to the Origo account. Purchases and restoration require signing in to the Origo account that owns the transaction.
 
-Premium becomes visible only after permanent app unlock, then requires Origo sign-in. It enables more user-imported source formats and trusted private-network sources. It supplies no commercial books or source catalog and does not include app reading rights. Store apps have no external card-code redemption entry.
+Three non-consumable products are submitted with this version. StoreKit shows localized prices; none auto-renews:
+- Origo Read: com.niki.xxread.reader.lifetime (US $9.99).
+- Origo Explore Upgrade: com.niki.xxread.premium.lifetime.v2 (US $8.99), for an account owning permanent Read.
+- Origo Explore: com.niki.xxread.explorer.lifetime (US $18.99), the full Read + Explore offer for an account without permanent Read.
 
-Reader restoration uses the original Apple Account. Premium restoration additionally requires its bound Origo account. Deleting an Origo account terminates account Premium without transferring it; independent reader ownership remains restorable. Legacy purchases retain their original promised bundle through the legacy restore path.
+To find Origo Read: open My (我的), tap the account identity card to open Account (账号), then Origo Read / Origo 开卷. Sign in if prompted, then purchase. After server verification, the page shows permanent ownership and no longer offers another Read purchase. Permanent Read also enables the discounted Explore upgrade offer.
 
-Sandbox purchases are verified server-side and enable the test session only; restore after restarting. Test purchase, restore, cancellation and refund on a real test device before submission. Complete metadata does not mean review approval.
+To find Origo Explore: open My (我的), then the prominent Origo Explore / Origo 探元 entry. Sign in if prompted. An account without permanent Read sees the full $18.99 product. To review the $8.99 upgrade, first purchase or restore Origo Read using the same Origo and Apple accounts, then reopen Origo Explore. The offer changes to the upgrade automatically.
+
+Explore enables additional user-imported source format compatibility and trusted private-network sources. The app supplies no commercial books or third-party source catalog. Its advanced settings become available after a verified Explore purchase.
+
+Restore Purchases is available on the Read and Explore purchase pages. Use the original Apple Account and the bound Origo account. After restarting in the sandbox, restore Read first and Explore next to rebuild verified test-session rights.
+
+Sandbox purchase and restore results now activate the corresponding test-session rights, show ownership, prevent duplicate purchases, and allow the Read-to-Explore upgrade. Test rights remain separate from Production account entitlements and offline licenses. There are no reviewer-specific device restrictions or storefront-specific app gates; prices and product availability are supplied by StoreKit.

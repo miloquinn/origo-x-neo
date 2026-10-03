@@ -84,7 +84,7 @@ void main() {
     AppDistributionChannel.appleStore,
     AppDistributionChannel.googlePlay,
   ]) {
-    testWidgets('free $channel guest sees optional Read without owned badge', (
+    testWidgets('free $channel guest sees Explore without owned badge', (
       tester,
     ) async {
       AppDistribution.debugOverride(channel: channel);
@@ -108,6 +108,10 @@ void main() {
       );
       expect(
         find.byKey(const ValueKey('settings-reader-license')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('settings-membership-entry')),
         findsOneWidget,
       );
       expect(
@@ -153,8 +157,8 @@ void main() {
       final explore = find.byKey(
         const ValueKey('settings-explore-entitlement'),
       );
-      expect(reader, store ? findsOneWidget : findsNothing);
-      expect(upgrade, store ? findsNothing : findsOneWidget);
+      expect(reader, findsNothing);
+      expect(upgrade, findsOneWidget);
       expect(explore, findsNothing);
       // The direct build is free to use; free access is not a paid Read badge.
       expect(readerBadge, findsNothing);
@@ -166,8 +170,8 @@ void main() {
       expect(readerBadge, findsNothing);
       expect(exploreBadge, findsNothing);
       expect(explore, findsNothing);
-      expect(reader, store ? findsOneWidget : findsNothing);
-      expect(upgrade, store ? findsNothing : findsOneWidget);
+      expect(reader, findsNothing);
+      expect(upgrade, findsOneWidget);
 
       // Explore includes reading, even when no separate Read purchase exists.
       account.update(ownsApp: false, ownsPremium: true);
