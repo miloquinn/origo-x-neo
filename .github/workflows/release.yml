@@ -27,7 +27,7 @@ env:
   FLUTTER_VERSION: "3.44.4"
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
   INCLUDE_MACOS: ${{ vars.MACOS_RELEASE_ENABLED == 'true' && 'true' || 'false' }}
-  PUBLIC_RELEASE_REPOSITORY: "miloquinn/origo-x-neo"
+  PUBLIC_RELEASE_REPOSITORY: "miloquinn/origo-x"
   PUBLIC_RELEASE_TARGET: "main"
 
 jobs:
@@ -80,13 +80,27 @@ jobs:
     steps:
       - name: Check public release repository access
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$GH_REPO" != "$GITHUB_REPOSITORY" ]]; then
-            echo "::error::The built-in token can publish only to this workflow repository."
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::PUBLIC_RELEASE_TOKEN is missing from the release Environment."
+            exit 1
+          fi
+          if [[ "$GH_REPO" != "miloquinn/origo-x" ]]; then
+            echo "::error::${GH_REPO} is not the expected public release repository."
+            exit 1
+          fi
+
+          repository_json="$(gh api "repos/${GH_REPO}")"
+          if [[ "$(jq -r '.visibility' <<<"$repository_json")" != "public" ]]; then
+            echo "::error::${GH_REPO} is not public."
+            exit 1
+          fi
+          if [[ "$(jq -r '.permissions.push' <<<"$repository_json")" != "true" ]]; then
+            echo "::error::PUBLIC_RELEASE_TOKEN does not have Contents write access to ${GH_REPO}."
             exit 1
           fi
           gh api "repos/${GH_REPO}/git/ref/heads/${PUBLIC_RELEASE_TARGET}" >/dev/null
@@ -894,13 +908,17 @@ jobs:
 
       - name: Verify public release access
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$GH_REPO" != "$GITHUB_REPOSITORY" ]]; then
-            echo "::error::The built-in token can publish only to this workflow repository."
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::PUBLIC_RELEASE_TOKEN is missing from the release Environment."
+            exit 1
+          fi
+          if [[ "$GH_REPO" != "miloquinn/origo-x" ]]; then
+            echo "::error::${GH_REPO} is not the expected public release repository."
             exit 1
           fi
           gh api "repos/${GH_REPO}/git/ref/heads/${PUBLIC_RELEASE_TARGET}" >/dev/null
@@ -913,7 +931,7 @@ jobs:
 
       - name: Verify release asset immutability
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
@@ -1034,7 +1052,7 @@ jobs:
 
       - name: Prevent GitHub Latest rollback
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |
@@ -1154,7 +1172,7 @@ jobs:
 
       - name: Create or update release
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
           IOS_TESTFLIGHT_URL: ${{ vars.IOS_TESTFLIGHT_URL }}
         shell: bash
@@ -1225,7 +1243,7 @@ jobs:
 
       - name: Show published assets
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         run: gh release view "$RELEASE_TAG"
 
@@ -1414,7 +1432,7 @@ jobs:
 
       - name: Download and verify published release assets
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           GH_REPO: ${{ env.PUBLIC_RELEASE_REPOSITORY }}
         shell: bash
         run: |

@@ -16,6 +16,31 @@ def workflow_fragment(start, end):
 
 
 class ReleaseVersioningPolicyTest(unittest.TestCase):
+    def test_public_release_targets_consumer_repository_with_cross_repo_token(self):
+        self.assertIn('PUBLIC_RELEASE_REPOSITORY: "miloquinn/origo-x"', WORKFLOW)
+        self.assertNotIn('PUBLIC_RELEASE_REPOSITORY: "miloquinn/origo-x-neo"', WORKFLOW)
+
+        public_release_steps = [
+            line.strip()
+            for line in WORKFLOW.splitlines()
+            if line.strip().startswith('GH_TOKEN:')
+        ]
+        self.assertGreaterEqual(len(public_release_steps), 1)
+        self.assertEqual(
+            set(public_release_steps),
+            {'GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}'},
+        )
+
+        access_guard = workflow_fragment(
+            '      - name: Check public release repository access',
+            '  web:',
+        )
+        self.assertIn('if [[ -z "$GH_TOKEN" ]]', access_guard)
+        self.assertIn('if [[ "$GH_REPO" != "miloquinn/origo-x" ]]', access_guard)
+        self.assertIn("'.visibility'", access_guard)
+        self.assertIn("'.permissions.push'", access_guard)
+        self.assertNotIn('The built-in token can publish only', WORKFLOW)
+
     def test_unsigned_ios_is_a_free_direct_download(self):
         ios_job = WORKFLOW[WORKFLOW.index('  ios:'):WORKFLOW.index('  publish:')]
         self.assertIn('--dart-define=ORIGO_DISTRIBUTION_CHANNEL=direct', ios_job)
