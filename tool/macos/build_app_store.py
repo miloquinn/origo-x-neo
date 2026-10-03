@@ -70,8 +70,87 @@ def provisioning_profile():
     # succeed). Manual signing against an explicit profile sidesteps that renegotiation.
     # The profile must be signed with an "Apple Distribution" certificate, not the
     # legacy "3rd Party Mac Developer Application" type Xcode no longer matches by name.
-    default = 'Origo X macOS App Store (Apple Distribution)'
+    default = 'Open Reading macOS App Store (Apple Distribution)'
     return os.environ.get('MACOS_PROVISIONING_PROFILE', default).strip()
+
+
+def _pbx_quoted(value):
+    if any(character in value for character in ('\n', '\r', '\0')):
+        raise BuildError('Provisioning profile name contains an invalid character')
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+
+def _set_build_setting(settings, key, value):
+    assignment = re.compile(rf'(?m)^(?P<indent>[ \t]*){re.escape(key)}\s*=.*?;$')
+    match = assignment.search(settings)
+    if match:
+        return assignment.sub(
+            f'{match.group("indent")}{key} = {value};',
+            settings,
+            count=1,
+        )
+    indent_match = re.search(r'(?m)^([ \t]*)\S', settings)
+    indent = indent_match.group(1) if indent_match else '\t\t\t\t'
+    separator = '' if settings.endswith('\n') else '\n'
+    return f'{settings}{separator}{indent}{key} = {value};\n'
+
+
+def scope_runner_release_signing(project, profile):
+    runner_list = re.search(
+        r'(?ms)^[ \t]*[A-Za-z0-9_]+ /\* Build configuration list for '
+        r'PBXNativeTarget "Runner" \*/ = \{(?P<body>.*?)^[ \t]*\};',
+        project,
+    )
+    if runner_list is None:
+        raise BuildError('Unable to find the Runner target build configurations')
+    release = re.search(
+        r'(?m)^[ \t]*([A-Za-z0-9_]+) /\* Release \*/,?[ \t]*$',
+        runner_list.group('body'),
+    )
+    if release is None:
+        raise BuildError('Unable to find the Runner Release build configuration')
+    release_id = release.group(1)
+    configuration = re.search(
+        rf'(?ms)(^[ \t]*{re.escape(release_id)} /\* Release \*/ = \{{'
+        r'.*?^[ \t]*buildSettings = \{\n)'
+        r'(?P<settings>.*?)'
+        r'(^[ \t]*\};\n[ \t]*name = Release;\n[ \t]*\};)',
+        project,
+    )
+    if configuration is None:
+        raise BuildError('Unable to update the Runner Release build settings')
+    settings = _set_build_setting(
+        configuration.group('settings'),
+        'CODE_SIGN_STYLE',
+        'Manual',
+    )
+    settings = _set_build_setting(
+        settings,
+        'PROVISIONING_PROFILE_SPECIFIER',
+        _pbx_quoted(profile),
+    )
+    return (
+        project[:configuration.start('settings')]
+        + settings
+        + project[configuration.end('settings'):]
+    )
+
+
+def stage_archive_workspace(output, profile):
+    source = ROOT / 'macos'
+    stage = output / 'xcode-archive-workspace'
+    stage.mkdir(mode=0o700)
+    shutil.copytree(source / 'Runner.xcodeproj', stage / 'Runner.xcodeproj')
+    shutil.copytree(source / 'Runner.xcworkspace', stage / 'Runner.xcworkspace')
+    for item in source.iterdir():
+        if item.name in {'Runner.xcodeproj', 'Runner.xcworkspace'}:
+            continue
+        os.symlink(item, stage / item.name, target_is_directory=item.is_dir())
+    project_file = stage / 'Runner.xcodeproj/project.pbxproj'
+    project_file.write_text(
+        scope_runner_release_signing(project_file.read_text(), profile)
+    )
+    return stage / 'Runner.xcworkspace'
 
 
 def check_inputs(args):
@@ -199,14 +278,14 @@ def execute(args):
     run_step('Product build: configure Flutter macOS App Store', config, log)
     verify_store_defines()
     run_step('Product build: locked CocoaPods dependencies', ['pod', 'install', '--deployment'], log, ROOT / 'macos')
+    archive_workspace = stage_archive_workspace(output, provisioning_profile())
     archive = output / 'OrigoReader.xcarchive'
     run_step('Product build: signed Mac App Store archive',
-             ['xcodebuild', '-workspace', 'macos/Runner.xcworkspace', '-scheme', 'Runner',
+             ['xcodebuild', '-workspace', str(archive_workspace), '-scheme', 'Runner',
               '-configuration', 'Release', '-destination', 'generic/platform=macOS',
               '-archivePath', str(archive), *auth_arguments(),
               'CODE_SIGN_STYLE=Manual',
               'CODE_SIGN_IDENTITY=' + signing_identity(),
-              'PROVISIONING_PROFILE_SPECIFIER=' + provisioning_profile(),
               'DEVELOPMENT_TEAM=' + team_id(),
               'FLUTTER_BUILD_NAME=' + args.build_name, 'FLUTTER_BUILD_NUMBER=' + args.build_number,
               'ARCHS=' + args.archs, 'ONLY_ACTIVE_ARCH=NO',

@@ -18,6 +18,17 @@ class BuildMacAppStoreTests(unittest.TestCase):
         self.base = Path(self.temp.name)
         self.root = self.base / 'repo'
         (self.root / 'macos/Runner.xcworkspace').mkdir(parents=True)
+        (self.root / 'macos/Runner.xcodeproj').mkdir(parents=True)
+        for directory in ('Runner', 'Flutter', 'RunnerTests', 'Pods'):
+            (self.root / f'macos/{directory}').mkdir()
+        for filename in ('Podfile', 'Podfile.lock'):
+            (self.root / f'macos/{filename}').touch()
+        (self.root / 'macos/Runner.xcworkspace/contents.xcworkspacedata').write_text(
+            '<Workspace version="1.0"></Workspace>\n'
+        )
+        (self.root / 'macos/Runner.xcodeproj/project.pbxproj').write_text(
+            self.project_file()
+        )
         (self.root / 'pubspec.yaml').write_text('version: 2.6.7+260908001\n')
         self.key = self.base / 'test.p8'
         self.key.touch(mode=0o600)
@@ -43,6 +54,38 @@ class BuildMacAppStoreTests(unittest.TestCase):
             'xcode-select': '/Applications/Xcode.app/Contents/Developer',
             'xcrun': '15.4',
         }[command[0]]
+
+    @staticmethod
+    def project_file():
+        return '''
+RUNNER_RELEASE /* Release */ = {
+  isa = XCBuildConfiguration;
+  buildSettings = {
+    CODE_SIGN_STYLE = Automatic;
+    PROVISIONING_PROFILE_SPECIFIER = "";
+  };
+  name = Release;
+};
+PODS_RELEASE /* Release */ = {
+  isa = XCBuildConfiguration;
+  buildSettings = {
+    CODE_SIGN_STYLE = Automatic;
+  };
+  name = Release;
+};
+RUNNER_CONFIGS /* Build configuration list for PBXNativeTarget "Runner" */ = {
+  isa = XCConfigurationList;
+  buildConfigurations = (
+    RUNNER_RELEASE /* Release */,
+  );
+};
+PODS_CONFIGS /* Build configuration list for PBXNativeTarget "Pods-Runner" */ = {
+  isa = XCConfigurationList;
+  buildConfigurations = (
+    PODS_RELEASE /* Release */,
+  );
+};
+'''
 
     def args(self, *extra):
         result = build.parser().parse_args(['--build-number', '1', *extra])
@@ -115,6 +158,21 @@ class BuildMacAppStoreTests(unittest.TestCase):
         with self.assertRaisesRegex(build.BuildError, 'identity'):
             build.validate_archive(archive, '2.6.7', '1')
 
+    def test_runner_release_profile_does_not_reach_pods(self):
+        scoped = build.scope_runner_release_signing(
+            self.project_file(),
+            'Open Reading macOS App Store (Apple Distribution)',
+        )
+
+        runner = scoped.split('PODS_RELEASE', 1)[0]
+        pods = scoped.split('PODS_RELEASE', 1)[1]
+        self.assertIn('CODE_SIGN_STYLE = Manual;', runner)
+        self.assertIn(
+            'PROVISIONING_PROFILE_SPECIFIER = "Open Reading macOS App Store (Apple Distribution)";',
+            runner,
+        )
+        self.assertNotIn('PROVISIONING_PROFILE_SPECIFIER', pods)
+
     def test_export_and_upload_use_expected_commands(self):
         self.credentials()
         for upload, number in [(False, '1'), (True, '2')]:
@@ -145,9 +203,21 @@ class BuildMacAppStoreTests(unittest.TestCase):
             self.assertEqual(len(xcode), 2)
             self.assertIn('CODE_SIGN_IDENTITY=Apple Distribution', xcode[0])
             self.assertIn('CODE_SIGN_STYLE=Manual', xcode[0])
+            self.assertFalse(
+                any(item.startswith('PROVISIONING_PROFILE_SPECIFIER=') for item in xcode[0]),
+            )
+            archive_workspace = Path(xcode[0][xcode[0].index('-workspace') + 1])
+            self.assertNotEqual(archive_workspace, self.root / 'macos/Runner.xcworkspace')
+            staged_project = archive_workspace.parent / 'Runner.xcodeproj/project.pbxproj'
+            staged_contents = staged_project.read_text()
+            self.assertIn('CODE_SIGN_STYLE = Manual;', staged_contents)
             self.assertIn(
-                'PROVISIONING_PROFILE_SPECIFIER=Origo X macOS App Store (Apple Distribution)',
-                xcode[0],
+                'PROVISIONING_PROFILE_SPECIFIER = "Open Reading macOS App Store (Apple Distribution)";',
+                staged_contents,
+            )
+            self.assertEqual(
+                (self.root / 'macos/Runner.xcodeproj/project.pbxproj').read_text(),
+                self.project_file(),
             )
             options = plistlib.loads(
                 (build.OUT / f'2.6.7-{number}/ExportOptions.plist').read_bytes()
