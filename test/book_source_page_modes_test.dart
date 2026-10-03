@@ -140,17 +140,23 @@ void main() {
     final verticalList = tester.widget<ScrollablePositionedList>(
       find.byType(ScrollablePositionedList),
     );
-    double firstItemLeadingEdge() => verticalList
+    ItemPosition firstVisibleItem() => verticalList
         .itemPositionsNotifier!
         .itemPositions
         .value
-        .firstWhere((position) => position.index == 0)
-        .itemLeadingEdge;
-    final leadingEdgeBeforeKeyboard = firstItemLeadingEdge();
+        .reduce((left, right) => left.index < right.index ? left : right);
+    final positionBeforeKeyboard = firstVisibleItem();
     await tester.sendKeyEvent(LogicalKeyboardKey.pageDown);
     await tester.pumpAndSettle();
 
-    expect(firstItemLeadingEdge(), lessThan(leadingEdgeBeforeKeyboard));
+    final positionAfterKeyboard = firstVisibleItem();
+    expect(
+      positionAfterKeyboard.index > positionBeforeKeyboard.index ||
+          (positionAfterKeyboard.index == positionBeforeKeyboard.index &&
+              positionAfterKeyboard.itemLeadingEdge <
+                  positionBeforeKeyboard.itemLeadingEdge),
+      isTrue,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -589,7 +595,9 @@ void main() {
       );
       final status = tester.widget<ReaderProgressFooter>(statusFinder);
       expect(status.chapterLabel, contains('1/2'));
-      expect(status.pageLabel, '1 / 2');
+      // The first layout part is the chapter-title page. Initial restoration
+      // anchors the first visible text at the viewport, so its page is 2 / 2.
+      expect(status.pageLabel, '2 / 2');
     },
   );
 }
