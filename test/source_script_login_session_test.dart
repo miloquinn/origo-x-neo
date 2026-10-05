@@ -178,6 +178,90 @@ void main() {
     expect(store.value.loginInfo, isEmpty);
     expect(adapter.requests.last.headers['Authorization'], isNull);
   });
+
+  test(
+    'source variable and cookies survive restart while clearing stays authoritative',
+    () async {
+      final source = ReadingSourceConfig.fromJson({
+        ..._source.sourceConfig!,
+        'bookSourceName': 'Script settings fixture',
+        'loginUrl': 'function login() {}',
+        'header': {'X-Settings': '{{source.getVariable()}}'},
+        'searchUrl': r'''@js:
+const settings = JSON.parse(source.getVariable() || '{"server":"empty.test","source":"default"}');
+'https://' + settings.server + '/search?source=' + settings.source + ',' +
+JSON.stringify({headers: {Cookie: cookie.getCookie('https://' + settings.server)}})
+''',
+        'ruleSearch': {
+          'bookList': r'$.data',
+          'name': r'''@js:
+const settings = JSON.parse(source.getVariable() || '{"source":"default"}');
+settings.observedByRule = true;
+source.setVariable(JSON.stringify(settings));
+settings.source + ':' + result.name
+''',
+          'bookUrl': r'$.url',
+        },
+      }).toRegisteredSource(enabled: true);
+      final store = _Store();
+      final adapter = _Adapter();
+      var runtime = _runtime(store, adapter);
+      addTearDown(() => runtime.close());
+
+      await runtime.login(
+        source,
+        const {},
+        action: r'''
+source.setVariable(JSON.stringify({server: 'configured.test', source: 'selected'}));
+cookie.setCookie('https://configured.test', 'session=kept');
+''',
+      );
+      final configured = await runtime.search(source, 'book');
+      expect(configured.items.single.title, 'selected:A book');
+      expect(adapter.requests.last.uri.host, 'configured.test');
+      expect(
+        adapter.requests.last.headers['X-Settings'],
+        '{"server":"configured.test","source":"selected"}',
+      );
+      expect(jsonDecode(store.value.sourceVariable)['observedByRule'], isTrue);
+      runtime.close();
+
+      runtime = _runtime(store, adapter);
+      await runtime.saveLoginSession(
+        source,
+        loginInfo: const {'email': 'updated@example.test'},
+      );
+      final restored = await runtime.search(source, 'book');
+      expect(restored.items.single.title, 'selected:A book');
+      expect(adapter.requests.last.uri.host, 'configured.test');
+      expect(adapter.requests.last.uri.queryParameters['source'], 'selected');
+      expect(adapter.requests.last.headers['Cookie'], 'session=kept');
+      expect(
+        jsonDecode(
+          adapter.requests.last.headers['X-Settings']!,
+        )['observedByRule'],
+        isTrue,
+      );
+
+      await runtime.login(source, const {}, action: "source.setVariable('');");
+      runtime.close();
+
+      runtime = _runtime(store, adapter);
+      final cleared = await runtime.search(source, 'after clear');
+      expect(cleared.items.single.title, 'default:A book');
+      expect(adapter.requests.last.uri.host, 'empty.test');
+      expect(adapter.requests.last.uri.queryParameters['source'], 'default');
+
+      await runtime.login(
+        source,
+        const {},
+        action: "source.setVariable('stale.test');",
+      );
+      await runtime.clearLoginSession(source);
+      await runtime.search(source, 'after logout');
+      expect(adapter.requests.last.uri.host, 'empty.test');
+    },
+  );
 }
 
 final _source = ReadingSourceConfig.fromJson({

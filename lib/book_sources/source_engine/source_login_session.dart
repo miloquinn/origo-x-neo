@@ -9,6 +9,7 @@ class SourceLoginSession {
     this.loginInfo = const {},
     this.loginHeaders = const {},
     this.rawLoginHeader,
+    this.sourceVariable = '',
     this.browserSession = const SourceBrowserSession(),
   });
 
@@ -17,12 +18,14 @@ class SourceLoginSession {
   // Legado allows an opaque token here as well as a JSON header object.
   // Only loginHeaders is sent automatically; the raw value is script storage.
   final String? rawLoginHeader;
+  final String sourceVariable;
   final SourceBrowserSession browserSession;
 
   Map<String, Object?> toJson() => {
     'loginInfo': loginInfo,
     'loginHeaders': loginHeaders,
     'rawLoginHeader': rawLoginHeader,
+    'sourceVariable': sourceVariable,
     'browserSession': browserSession.toJson(),
   };
 
@@ -34,6 +37,9 @@ class SourceLoginSession {
       rawLoginHeader: value['rawLoginHeader'] is String
           ? value['rawLoginHeader'] as String
           : null,
+      sourceVariable: value['sourceVariable'] is String
+          ? value['sourceVariable'] as String
+          : '',
       browserSession: SourceBrowserSession.fromJson(value['browserSession']),
     );
   }

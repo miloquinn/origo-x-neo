@@ -103,6 +103,28 @@ void main() {
     expect(await secure.read(key: legacyKey), isNull);
     expect(await store.read(sourceId), const SourceLoginSession());
   });
+
+  test('sessions saved before source variables default to an empty value', () {
+    final session = SourceLoginSession.fromJson(const {
+      'loginInfo': {'token': 'legacy'},
+    });
+
+    expect(session.sourceVariable, '');
+  });
+
+  test('an explicitly cleared source variable survives serialization', () {
+    const session = SourceLoginSession(
+      loginInfo: {'token': 'saved'},
+      sourceVariable: '',
+    );
+
+    final restored = SourceLoginSession.fromJson(
+      jsonDecode(jsonEncode(session.toJson())),
+    );
+
+    expect(restored.sourceVariable, '');
+    expect(restored.loginInfo, {'token': 'saved'});
+  });
 }
 
 class _MissingPluginStore implements SourceLoginSessionStore {

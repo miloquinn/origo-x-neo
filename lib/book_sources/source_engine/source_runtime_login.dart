@@ -28,6 +28,7 @@ abstract interface class SourceRuntimeSessionPort {
     Map<String, String> loginHeaders, {
     String? rawLoginHeader,
   });
+  void updateVariable(ReadingSourceConfig source, String value);
   Future<void> flush(ReadingSourceConfig source);
   Future<void> clear(ReadingSourceConfig source);
   String cookieHeader(ReadingSourceConfig source, Uri uri);
@@ -127,11 +128,13 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
     Map<String, String> loginHeaders = const {},
     String? rawLoginHeader,
   }) async {
+    await ensure(source);
     final previous = current(source);
     final session = SourceLoginSession(
       loginInfo: Map.unmodifiable(loginInfo),
       loginHeaders: Map.unmodifiable(loginHeaders),
       rawLoginHeader: rawLoginHeader,
+      sourceVariable: previous.sourceVariable,
       browserSession: previous.browserSession,
     );
     _sessions[source.stableId] = session;
@@ -149,6 +152,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginInfo: Map.unmodifiable(loginInfo),
       loginHeaders: previous.loginHeaders,
       rawLoginHeader: previous.rawLoginHeader,
+      sourceVariable: previous.sourceVariable,
       browserSession: previous.browserSession,
     );
     _dirty.add(source.stableId);
@@ -169,6 +173,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginInfo: previous.loginInfo,
       loginHeaders: Map.unmodifiable(loginHeaders),
       rawLoginHeader: rawLoginHeader,
+      sourceVariable: previous.sourceVariable,
       browserSession: previous.browserSession,
     );
     final cookie = loginHeaders.entries
@@ -176,6 +181,20 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
         .map((entry) => entry.value)
         .firstOrNull;
     if (cookie != null) setCookies(source, source.baseUri, cookie);
+    _dirty.add(source.stableId);
+  }
+
+  @override
+  void updateVariable(ReadingSourceConfig source, String value) {
+    final previous = current(source);
+    if (previous.sourceVariable == value) return;
+    _sessions[source.stableId] = SourceLoginSession(
+      loginInfo: previous.loginInfo,
+      loginHeaders: previous.loginHeaders,
+      rawLoginHeader: previous.rawLoginHeader,
+      sourceVariable: value,
+      browserSession: previous.browserSession,
+    );
     _dirty.add(source.stableId);
   }
 
@@ -190,6 +209,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
         loginInfo: previous.loginInfo,
         loginHeaders: previous.loginHeaders,
         rawLoginHeader: previous.rawLoginHeader,
+        sourceVariable: previous.sourceVariable,
         browserSession: browser,
       );
       _dirty.add(source.stableId);
@@ -256,6 +276,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginInfo: previous.loginInfo,
       loginHeaders: previous.loginHeaders,
       rawLoginHeader: previous.rawLoginHeader,
+      sourceVariable: previous.sourceVariable,
       browserSession: session,
     );
     // Publish only after secure storage succeeds: a cancelled or failed login
@@ -313,6 +334,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginInfo: previous.loginInfo,
       loginHeaders: previous.loginHeaders,
       rawLoginHeader: previous.rawLoginHeader,
+      sourceVariable: previous.sourceVariable,
       browserSession: browser,
     );
     _browserTransport?.restoreBrowserSession(source.stableId, browser);

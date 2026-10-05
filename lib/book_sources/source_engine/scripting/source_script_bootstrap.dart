@@ -50,7 +50,7 @@ class SourceScriptBootstrap {
         'ruleContent': context.source.rule('ruleContent'),
       },
       'sourceLastUpdateTime': context.source.lastUpdateTime,
-      'sourceVariable': state.variable,
+      'sourceVariable': context.sourceVariableReader?.call() ?? state.variable,
       'sourceValues': state.values,
       'loginInfo': loginInfo,
       'loginHeaders': loginHeaders,

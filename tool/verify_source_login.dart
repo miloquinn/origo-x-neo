@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/book_sources/services/book_source_import_analyzer.dart';
 import 'package:xxread/book_sources/source_engine/source_config.dart';
 import 'package:xxread/book_sources/source_engine/source_http_transport.dart';
@@ -13,6 +14,11 @@ import 'package:xxread/book_sources/source_engine/source_login_session.dart';
 import 'package:xxread/book_sources/source_engine/source_runtime.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  // Explicit network probe; keep application preferences and sessions isolated.
+  // ignore: invalid_use_of_visible_for_testing_member
+  SharedPreferences.setMockInitialValues({});
+  HttpOverrides.global = null;
   test(
     'live source login and reading chain',
     () async {
@@ -42,20 +48,29 @@ void main() {
         (key, value) => MapEntry('$key', '$value'),
       );
       final store = _MemoryStore();
-      final transport = SourceHttpTransport(
-        requestTimeout: const Duration(seconds: 30),
-      );
-      final runtime = SourceRuntime(
-        transport: transport,
+      late SourceHttpTransport transport;
+      SourceRuntime createRuntime() => SourceRuntime(
+        transport: transport = SourceHttpTransport(
+          requestTimeout: const Duration(seconds: 30),
+        ),
         loginSessionStore: store,
       );
-      addTearDown(runtime.close);
+      var runtime = createRuntime();
+      addTearDown(() => runtime.close());
+      if (env['SOURCE_SETUP_ACTION'] case final String action) {
+        await runtime.login(source, values, action: action);
+      }
       await runtime.login(source, values, action: env['SOURCE_LOGIN_ACTION']);
       final origin = Uri.parse(env['SOURCE_LOGIN_ORIGIN']!);
       if (transport.scriptCookieHeader(source.id, origin).isEmpty) {
         fail('Login did not save a Cookie session.');
       }
       stdout.writeln('Login: cookie session saved (values redacted).');
+      if (env['SOURCE_RESTART_AFTER_LOGIN'] == 'true') {
+        runtime.close();
+        runtime = createRuntime();
+        stdout.writeln('Runtime recreated before search.');
+      }
       final results = await runtime.search(
         source,
         env['SOURCE_QUERY'] ?? '西游记',

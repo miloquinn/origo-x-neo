@@ -322,7 +322,12 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
       if (envelope is! Map) {
         throw const FormatException('Script result envelope is not an object.');
       }
-      state.variable = '${envelope['sourceVariable'] ?? ''}';
+      final sourceVariable = '${envelope['sourceVariable'] ?? ''}';
+      if (context.sourceVariableWriter != null) {
+        context.sourceVariableWriter!(sourceVariable);
+      } else {
+        state.variable = sourceVariable;
+      }
       if (envelope['messages'] case final List messages) {
         for (final message in messages.whereType<String>()) {
           context.messageWriter?.call(message);

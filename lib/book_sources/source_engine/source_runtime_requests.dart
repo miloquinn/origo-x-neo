@@ -275,6 +275,11 @@ class SourceRuntimeRequests
       loginInfo: loginSession.loginInfo,
       loginHeaders: loginSession.loginHeaders,
       rawLoginHeader: loginSession.rawLoginHeader,
+      sourceVariableReader: () => _sessions.current(source).sourceVariable,
+      sourceVariableWriter: (value) {
+        checkGeneration();
+        _sessions.updateVariable(source, value);
+      },
       browserLocalStorage: loginSession.browserSession.localStorage,
       localStorageWriter: (value, clearedOrigins) {
         checkGeneration();
@@ -556,7 +561,7 @@ class SourceRuntimeRequests
         )
         .replaceAllMapped(
           RegExp(r'\{\{source\.getVariable\(\).*?\}\}', dotAll: true),
-          (_) => key,
+          (_) => _sessions.current(source).sourceVariable,
         );
   }
 

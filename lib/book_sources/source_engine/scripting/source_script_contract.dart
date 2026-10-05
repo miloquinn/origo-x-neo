@@ -23,6 +23,8 @@ class SourceScriptContext {
     this.loginInfo = const {},
     this.loginHeaders = const {},
     this.rawLoginHeader,
+    this.sourceVariableReader,
+    this.sourceVariableWriter,
     this.browserLocalStorage = const {},
     this.localStorageWriter,
     this.loginInfoWriter,
@@ -53,6 +55,8 @@ class SourceScriptContext {
   final Map<String, String> loginInfo;
   final Map<String, String> loginHeaders;
   final String? rawLoginHeader;
+  final String Function()? sourceVariableReader;
+  final void Function(String value)? sourceVariableWriter;
   final void Function(String message)? messageWriter;
   final Map<String, Map<String, String>> browserLocalStorage;
   final void Function(
@@ -102,6 +106,8 @@ class SourceScriptContext {
     loginInfo: loginInfo,
     loginHeaders: loginHeaders,
     rawLoginHeader: rawLoginHeader,
+    sourceVariableReader: sourceVariableReader,
+    sourceVariableWriter: sourceVariableWriter,
     browserLocalStorage: browserLocalStorage,
     localStorageWriter: localStorageWriter,
     loginInfoWriter: loginInfoWriter,
