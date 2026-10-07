@@ -44,6 +44,9 @@ void main() {
       final source = ReadingSourceConfig.fromJson(
         raw,
       ).toRegisteredSource(enabled: true);
+      if (env['SOURCE_REGISTERED_OUTPUT'] case final String output) {
+        await File(output).writeAsString(jsonEncode(source.toJson()));
+      }
       final values = (jsonDecode(env['SOURCE_LOGIN_VALUES']!) as Map).map(
         (key, value) => MapEntry('$key', '$value'),
       );
@@ -66,6 +69,17 @@ void main() {
         fail('Login did not save a Cookie session.');
       }
       stdout.writeln('Login: cookie session saved (values redacted).');
+      if (env['SOURCE_EXPECT_LOGIN_FIELD'] case final String field) {
+        expect(
+          store._session.loginInfo[field],
+          isNotEmpty,
+          reason:
+              'Legacy cache writes must update the canonical login session.',
+        );
+        stdout.writeln(
+          'Login: requested session field persisted (value redacted).',
+        );
+      }
       if (env['SOURCE_RESTART_AFTER_LOGIN'] == 'true') {
         runtime.close();
         runtime = createRuntime();

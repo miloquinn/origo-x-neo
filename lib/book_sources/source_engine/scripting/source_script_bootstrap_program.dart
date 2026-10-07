@@ -14,6 +14,15 @@ String _buildSourceScriptProgram(
   let __loginInfo = Object.assign({}, __payload.loginInfo || {});
   let __loginHeaders = Object.assign({}, __payload.loginHeaders || {});
   let __rawLoginHeader = __payload.rawLoginHeader || '';
+  const __sourceVariableCacheKey = 'sourceVariable_' + __payload.sourceKey;
+  const __loginInfoCacheKey = 'userInfo_' + __payload.sourceKey;
+  const __loginHeaderCacheKey = 'loginHeader_' + __payload.sourceKey;
+  const __sourceValueCacheKey = (name) =>
+    'v_' + __payload.sourceKey + '_' + String(name);
+  const __expiringCacheKeys = new Set(__payload.persistentCacheExpiringKeys || []);
+  let __sourceVariableExpires = __expiringCacheKeys.has(__sourceVariableCacheKey);
+  let __loginInfoExpires = __expiringCacheKeys.has(__loginInfoCacheKey);
+  let __loginHeaderExpires = __expiringCacheKeys.has(__loginHeaderCacheKey);
   const __messages = [];
   const __browserLocalStorage = Object.assign(Object.create(null), __payload.browserLocalStorage || {});
   const __storageOrigin = __payload.storageOrigin;
@@ -37,6 +46,111 @@ String _buildSourceScriptProgram(
     get length() { return Object.keys(__storage()).length; }
   };
   let __sourceVariable = __payload.sourceVariable || '';
+  function __setLoginInfo(value) {
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        __loginInfo = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+          ? Object.assign({}, parsed) : {};
+      } catch (_) { __loginInfo = {}; }
+    } else {
+      __loginInfo = value && typeof value === 'object' && !Array.isArray(value)
+        ? Object.assign({}, value) : {};
+    }
+  }
+  function __setLoginHeader(value) {
+    __rawLoginHeader = typeof value === 'string'
+      ? value : value == null ? '' : JSON.stringify(value);
+    let parsed;
+    try { parsed = JSON.parse(__rawLoginHeader); } catch (_) {}
+    __loginHeaders = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? Object.assign({}, parsed) : {};
+  }
+  function __loginCryptoKey() {
+    return String(__host('androidId', []) || '').substring(0, 16);
+  }
+  function __encryptedLoginInfo() {
+    if (!Object.keys(__loginInfo).length) return null;
+    return __host('symmetricCrypto', [
+      'encryptBase64', 'AES', __loginCryptoKey(), '', JSON.stringify(__loginInfo)
+    ]);
+  }
+  function __readEncryptedLoginInfo(value) {
+    const decoded = __host('symmetricCrypto', [
+      'decryptString', 'AES', __loginCryptoKey(), '', String(value == null ? '' : value)
+    ]);
+    __setLoginInfo(
+      String(decoded == null ? '' : decoded).split(String.fromCharCode(0)).join('')
+    );
+  }
+  function __cachePut(name, value, seconds) {
+    const cacheKey = String(name);
+    const expires = Number(seconds || 0) > 0;
+    if (cacheKey === __sourceVariableCacheKey) {
+      __sourceVariable = value == null ? '' : String(value);
+      __sourceVariableExpires = expires;
+    } else if (cacheKey === __loginInfoCacheKey) {
+      __readEncryptedLoginInfo(value);
+      __loginInfoExpires = expires;
+    } else if (cacheKey === __loginHeaderCacheKey) {
+      __setLoginHeader(value);
+      __loginHeaderExpires = expires;
+    }
+    return __host('cachePut', [cacheKey, value, Number(seconds || 0)]);
+  }
+  function __cacheGet(name) {
+    const cacheKey = String(name);
+    const cached = __host('cacheGet', [cacheKey]);
+    if (cached != null) {
+      if (cacheKey === __sourceVariableCacheKey) {
+        __sourceVariable = String(cached);
+      } else if (cacheKey === __loginInfoCacheKey) {
+        __readEncryptedLoginInfo(cached);
+      } else if (cacheKey === __loginHeaderCacheKey) {
+        __setLoginHeader(cached);
+      }
+      return cached;
+    }
+    if (cacheKey === __sourceVariableCacheKey && __sourceVariableExpires) {
+      __sourceVariable = '';
+      __sourceVariableExpires = false;
+      return null;
+    }
+    if (cacheKey === __loginInfoCacheKey && __loginInfoExpires) {
+      __loginInfo = {};
+      __loginInfoExpires = false;
+      return null;
+    }
+    if (cacheKey === __loginHeaderCacheKey && __loginHeaderExpires) {
+      __loginHeaders = {};
+      __rawLoginHeader = '';
+      __loginHeaderExpires = false;
+      return null;
+    }
+    if (cacheKey === __sourceVariableCacheKey) {
+      return __sourceVariable === '' ? null : __sourceVariable;
+    }
+    if (cacheKey === __loginInfoCacheKey) return __encryptedLoginInfo();
+    if (cacheKey === __loginHeaderCacheKey) {
+      return __rawLoginHeader === '' ? null : __rawLoginHeader;
+    }
+    return null;
+  }
+  function __cacheDelete(name) {
+    const cacheKey = String(name);
+    if (cacheKey === __sourceVariableCacheKey) {
+      __sourceVariable = '';
+      __sourceVariableExpires = false;
+    } else if (cacheKey === __loginInfoCacheKey) {
+      __loginInfo = {};
+      __loginInfoExpires = false;
+    } else if (cacheKey === __loginHeaderCacheKey) {
+      __loginHeaders = {};
+      __rawLoginHeader = '';
+      __loginHeaderExpires = false;
+    }
+    return __host('cacheDelete', [cacheKey]);
+  }
   globalThis.result = __payload.result;
   globalThis.baseUrl = __payload.baseUrl;
   globalThis.key = (__payload.variables || {}).key || '';
@@ -58,59 +172,102 @@ String _buildSourceScriptProgram(
     header: __javaMap(__payload.sourceHeader || {}),
     key: __payload.sourceKey,
     getKey: () => __payload.sourceKey,
-    getVariable: () => __sourceVariable,
+    getVariable: () => {
+      const value = __cacheGet(__sourceVariableCacheKey);
+      return value == null ? '' : String(value);
+    },
     setVariable: (value) => {
       __sourceVariable = value == null ? '' : String(value);
+      if (__sourceVariable === '') __cacheDelete(__sourceVariableCacheKey);
+      else __cachePut(__sourceVariableCacheKey, __sourceVariable, 0);
       return value;
     },
+    putVariable: (value) => globalThis.source.setVariable(value),
     put: (name, value) => {
-      __sourceValues[String(name)] = value == null ? '' : String(value);
+      const key = String(name);
+      delete __sourceValues[key];
+      __cachePut(__sourceValueCacheKey(key), value == null ? '' : String(value), 0);
       return value;
     },
-    get: (name) => __sourceValues[String(name)] || '',
+    get: (name) => {
+      const key = String(name);
+      const value = __cacheGet(__sourceValueCacheKey(key));
+      return value == null ? (__sourceValues[key] || '') : String(value);
+    },
     getHeaderMap: () => __javaMap(__payload.sourceHeader || {}),
-    getLoginHeader: () => __rawLoginHeader,
-    getLoginHeaderMap: () => __javaMap(__loginHeaders),
+    getLoginHeader: () => {
+      __cacheGet(__loginHeaderCacheKey);
+      return __rawLoginHeader;
+    },
+    getLoginHeaderMap: () => {
+      __cacheGet(__loginHeaderCacheKey);
+      return __javaMap(__loginHeaders);
+    },
     putLoginHeader: (value) => {
-      __rawLoginHeader = typeof value === 'string' ? value : value == null ? '' : JSON.stringify(value);
-      let parsed;
-      try { parsed = JSON.parse(__rawLoginHeader); } catch (_) {}
-      __loginHeaders = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-        ? Object.assign({}, parsed) : {};
+      __setLoginHeader(value);
+      if (__rawLoginHeader === '') __cacheDelete(__loginHeaderCacheKey);
+      else __cachePut(__loginHeaderCacheKey, __rawLoginHeader, 0);
       return value;
     },
-    removeLoginHeader: () => { __loginHeaders = {}; __rawLoginHeader = ''; return null; },
+    removeLoginHeader: () => __cacheDelete(__loginHeaderCacheKey),
     getLocalStorage: (origin) => __javaMap(__storage(origin)),
-    getLoginInfo: () => JSON.stringify(__loginInfo),
-    getLoginInfoMap: () => __javaMap(__loginInfo),
+    getLoginInfo: () => {
+      __cacheGet(__loginInfoCacheKey);
+      return JSON.stringify(__loginInfo);
+    },
+    getLoginInfoMap: () => {
+      __cacheGet(__loginInfoCacheKey);
+      return __javaMap(__loginInfo);
+    },
     putLoginInfo: (value) => {
-      if (typeof value === 'string') {
-        try { __loginInfo = Object.assign({}, JSON.parse(value) || {}); }
-        catch (_) { __loginInfo = {}; }
+      __setLoginInfo(value);
+      if (Object.keys(__loginInfo).length) {
+        __cachePut(__loginInfoCacheKey, __encryptedLoginInfo(), 0);
       } else {
-        __loginInfo = Object.assign({}, value || {});
+        __cacheDelete(__loginInfoCacheKey);
       }
-      return value;
-    }
+      return true;
+    },
+    removeLoginInfo: () => { __cacheDelete(__loginInfoCacheKey); return true; }
   };
   Object.defineProperty(globalThis.source, 'variable', {
-    get: () => __sourceVariable,
-    set: (value) => { __sourceVariable = value == null ? '' : String(value); }
+    get: () => globalThis.source.getVariable(),
+    set: (value) => { globalThis.source.setVariable(value); }
   });
   globalThis.cache = {
-    put: (name, value, seconds) => __host('cachePut', [String(name), value, Number(seconds || 0)]),
-    get: (name) => __host('cacheGet', [String(name)]) ?? null,
-    delete: (name) => __host('cacheDelete', [String(name)]),
+    put: (name, value, seconds) => __cachePut(name, value, seconds),
+    get: (name) => __cacheGet(name),
+    delete: (name) => __cacheDelete(name),
     putMemory: (name, value) => __host('cachePutMemory', [String(name), value]),
     getFromMemory: (name) => __host('cacheGetMemory', [String(name)]) ?? null,
     deleteMemory: (name) => __host('cacheDeleteMemory', [String(name)]),
-    putFile: (name, value, seconds) => __host('cachePut', [String(name), value, Number(seconds || 0)]),
-    getFile: (name) => __host('cacheGet', [String(name)]) ?? null
+    putFile: (name, value, seconds) => __cachePut(name, value, seconds),
+    getFile: (name) => __cacheGet(name)
   };
   const __host = (op, args) => sendMessage(
     '$sourceScriptHostChannel',
     JSON.stringify({ sourceId: __payload.sourceId, invocationId: __payload.invocationId, op, args: args || [] })
   );
+  // Runtime-owned session fields are authoritative. Reconcile their official
+  // CacheManager aliases before source code runs so a native login-form save
+  // cannot be shadowed by an older script cache entry. Expiring aliases stay
+  // cache-owned until their absolute deadline instead of becoming durable
+  // session fields.
+  if (__payload.ownsPersistentCache === true) {
+    if (!__sourceVariableExpires) {
+      if (__sourceVariable === '') __host('cacheDelete', [__sourceVariableCacheKey]);
+      else __host('cachePut', [__sourceVariableCacheKey, __sourceVariable, 0]);
+    }
+    if (!__loginInfoExpires) {
+      const encrypted = __encryptedLoginInfo();
+      if (encrypted == null) __host('cacheDelete', [__loginInfoCacheKey]);
+      else __host('cachePut', [__loginInfoCacheKey, encrypted, 0]);
+    }
+    if (!__loginHeaderExpires) {
+      if (__rawLoginHeader === '') __host('cacheDelete', [__loginHeaderCacheKey]);
+      else __host('cachePut', [__loginHeaderCacheKey, __rawLoginHeader, 0]);
+    }
+  }
   const __pad2 = (value) => String(value).padStart(2, '0');
   function __javaMap(value) {
     const map = Object.assign({}, value || {});
@@ -361,8 +518,7 @@ String _buildSourceScriptProgram(
         ? __ruleValues[key]
         : __state['rule:' + key];
       if (ruleValue != null && String(ruleValue) !== '') return String(ruleValue);
-      const sourceValue = __sourceValues[key];
-      return sourceValue == null ? '' : String(sourceValue);
+      return globalThis.source.get(key);
     },
     getString: (rule, content, isUrl) => {
       const decodeOverload = typeof content === 'boolean' && isUrl === undefined;
@@ -728,11 +884,11 @@ String _buildSourceScriptProgram(
     value: __value,
     book: globalThis.book,
     chapter: globalThis.chapter,
-    sourceVariable: __sourceVariable,
+    sourceVariable: __sourceVariableExpires ? '' : __sourceVariable,
     sourceValues: __sourceValues,
-    loginInfo: __loginInfo,
-    loginHeaders: __loginHeaders,
-    rawLoginHeader: __rawLoginHeader,
+    loginInfo: __loginInfoExpires ? {} : __loginInfo,
+    loginHeaders: __loginHeaderExpires ? {} : __loginHeaders,
+    rawLoginHeader: __loginHeaderExpires ? '' : __rawLoginHeader,
     messages: __messages,
     browserLocalStorage: __browserLocalStorage,
     clearedStorageOrigins: Array.from(__clearedStorageOrigins),

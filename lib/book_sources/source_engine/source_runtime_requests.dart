@@ -280,6 +280,11 @@ class SourceRuntimeRequests
         checkGeneration();
         _sessions.updateVariable(source, value);
       },
+      persistentCacheReader: () => _sessions.current(source).scriptCache,
+      persistentCacheWriter: (value) {
+        checkGeneration();
+        _sessions.updateScriptCache(source, value);
+      },
       browserLocalStorage: loginSession.browserSession.localStorage,
       localStorageWriter: (value, clearedOrigins) {
         checkGeneration();

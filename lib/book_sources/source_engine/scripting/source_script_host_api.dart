@@ -42,7 +42,25 @@ class SourceScriptHostApi {
     _replayValues = replayValues;
     _replayIndices.clear();
     _activeInvocationId = invocationId;
-    return stateFor(context.source.stableId);
+    final state = stateFor(context.source.stableId);
+    final persistentCache = context.persistentCacheReader?.call();
+    if (persistentCache != null) {
+      state.cache
+        ..clear()
+        ..addAll(persistentCache);
+      final now = DateTime.now();
+      final expired = state.cache.entries
+          .where((entry) => entry.value.expiresAt?.isBefore(now) ?? false)
+          .map((entry) => entry.key)
+          .toList(growable: false);
+      if (expired.isNotEmpty) {
+        for (final key in expired) {
+          state.cache.remove(key);
+        }
+        _publishPersistentCache(state);
+      }
+    }
+    return state;
   }
 
   void endInvocation() {
@@ -164,19 +182,27 @@ class SourceScriptHostApi {
           ? null
           : DateTime.now().add(Duration(seconds: seconds.round())),
     );
+    _publishPersistentCache(state);
     return null;
   }
 
   Object? _cacheGet(List arguments) {
     final state = _activeState;
     if (state == null || arguments.isEmpty) return null;
-    return state.readCache('${arguments.first ?? ''}', DateTime.now());
+    final key = '${arguments.first ?? ''}';
+    final hadValue = state.cache.containsKey(key);
+    final value = state.readCache(key, DateTime.now());
+    if (hadValue && !state.cache.containsKey(key)) {
+      _publishPersistentCache(state);
+    }
+    return value;
   }
 
   Object? _cacheDelete(List arguments) {
     final state = _activeState;
     if (state == null || arguments.isEmpty) return null;
     state.deleteCache('${arguments.first ?? ''}');
+    _publishPersistentCache(state);
     return null;
   }
 
@@ -203,6 +229,12 @@ class SourceScriptHostApi {
   SourceScriptState? get _activeState {
     final sourceId = _activeContext?.source.stableId;
     return sourceId == null ? null : stateFor(sourceId);
+  }
+
+  void _publishPersistentCache(SourceScriptState state) {
+    _activeContext?.persistentCacheWriter?.call(
+      Map<String, SourceScriptCacheEntry>.unmodifiable(state.cache),
+    );
   }
 
   Uri? _cookieUri(String value, SourceScriptContext context) {

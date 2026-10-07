@@ -432,6 +432,8 @@ class SourceRuleScript {
       rawLoginHeader: context.rawLoginHeader,
       sourceVariableReader: context.sourceVariableReader,
       sourceVariableWriter: context.sourceVariableWriter,
+      persistentCacheReader: context.persistentCacheReader,
+      persistentCacheWriter: context.persistentCacheWriter,
       browserLocalStorage: context.browserLocalStorage,
       localStorageWriter: context.localStorageWriter,
       loginInfoWriter: context.loginInfoWriter,

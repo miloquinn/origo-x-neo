@@ -1,9 +1,6 @@
-class SourceScriptCacheEntry {
-  const SourceScriptCacheEntry({required this.value, this.expiresAt});
+import '../source_login_session.dart';
 
-  final Object? value;
-  final DateTime? expiresAt;
-}
+export '../source_login_session.dart' show SourceScriptCacheEntry;
 
 class SourceScriptState {
   String variable = '';

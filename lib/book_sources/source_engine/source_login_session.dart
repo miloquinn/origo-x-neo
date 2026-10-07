@@ -4,12 +4,36 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'source_browser_session.dart';
 
+class SourceScriptCacheEntry {
+  const SourceScriptCacheEntry({required this.value, this.expiresAt});
+
+  final Object? value;
+  final DateTime? expiresAt;
+
+  Map<String, Object?> toJson() => {
+    'value': value,
+    'expiresAt': expiresAt?.millisecondsSinceEpoch,
+  };
+
+  factory SourceScriptCacheEntry.fromJson(Object? value) {
+    if (value is! Map) return const SourceScriptCacheEntry(value: null);
+    final expiresAt = switch (value['expiresAt']) {
+      final num milliseconds => DateTime.fromMillisecondsSinceEpoch(
+        milliseconds.toInt(),
+      ),
+      _ => null,
+    };
+    return SourceScriptCacheEntry(value: value['value'], expiresAt: expiresAt);
+  }
+}
+
 class SourceLoginSession {
   const SourceLoginSession({
     this.loginInfo = const {},
     this.loginHeaders = const {},
     this.rawLoginHeader,
     this.sourceVariable = '',
+    this.scriptCache = const {},
     this.browserSession = const SourceBrowserSession(),
   });
 
@@ -19,6 +43,7 @@ class SourceLoginSession {
   // Only loginHeaders is sent automatically; the raw value is script storage.
   final String? rawLoginHeader;
   final String sourceVariable;
+  final Map<String, SourceScriptCacheEntry> scriptCache;
   final SourceBrowserSession browserSession;
 
   Map<String, Object?> toJson() => {
@@ -26,6 +51,9 @@ class SourceLoginSession {
     'loginHeaders': loginHeaders,
     'rawLoginHeader': rawLoginHeader,
     'sourceVariable': sourceVariable,
+    'scriptCache': {
+      for (final entry in scriptCache.entries) entry.key: entry.value.toJson(),
+    },
     'browserSession': browserSession.toJson(),
   };
 
@@ -40,6 +68,7 @@ class SourceLoginSession {
       sourceVariable: value['sourceVariable'] is String
           ? value['sourceVariable'] as String
           : '',
+      scriptCache: _scriptCache(value['scriptCache']),
       browserSession: SourceBrowserSession.fromJson(value['browserSession']),
     );
   }
@@ -105,5 +134,13 @@ Map<String, String> _stringMap(Object? value) {
   if (value is! Map) return const {};
   return Map.unmodifiable({
     for (final entry in value.entries) '${entry.key}': '${entry.value ?? ''}',
+  });
+}
+
+Map<String, SourceScriptCacheEntry> _scriptCache(Object? value) {
+  if (value is! Map) return const {};
+  return Map.unmodifiable({
+    for (final entry in value.entries)
+      '${entry.key}': SourceScriptCacheEntry.fromJson(entry.value),
   });
 }

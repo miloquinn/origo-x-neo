@@ -29,6 +29,10 @@ abstract interface class SourceRuntimeSessionPort {
     String? rawLoginHeader,
   });
   void updateVariable(ReadingSourceConfig source, String value);
+  void updateScriptCache(
+    ReadingSourceConfig source,
+    Map<String, SourceScriptCacheEntry> value,
+  );
   Future<void> flush(ReadingSourceConfig source);
   Future<void> clear(ReadingSourceConfig source);
   String cookieHeader(ReadingSourceConfig source, Uri uri);
@@ -135,6 +139,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginHeaders: Map.unmodifiable(loginHeaders),
       rawLoginHeader: rawLoginHeader,
       sourceVariable: previous.sourceVariable,
+      scriptCache: previous.scriptCache,
       browserSession: previous.browserSession,
     );
     _sessions[source.stableId] = session;
@@ -153,6 +158,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginHeaders: previous.loginHeaders,
       rawLoginHeader: previous.rawLoginHeader,
       sourceVariable: previous.sourceVariable,
+      scriptCache: previous.scriptCache,
       browserSession: previous.browserSession,
     );
     _dirty.add(source.stableId);
@@ -174,6 +180,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginHeaders: Map.unmodifiable(loginHeaders),
       rawLoginHeader: rawLoginHeader,
       sourceVariable: previous.sourceVariable,
+      scriptCache: previous.scriptCache,
       browserSession: previous.browserSession,
     );
     final cookie = loginHeaders.entries
@@ -193,6 +200,25 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginHeaders: previous.loginHeaders,
       rawLoginHeader: previous.rawLoginHeader,
       sourceVariable: value,
+      scriptCache: previous.scriptCache,
+      browserSession: previous.browserSession,
+    );
+    _dirty.add(source.stableId);
+  }
+
+  @override
+  void updateScriptCache(
+    ReadingSourceConfig source,
+    Map<String, SourceScriptCacheEntry> value,
+  ) {
+    final previous = current(source);
+    if (_sameScriptCache(previous.scriptCache, value)) return;
+    _sessions[source.stableId] = SourceLoginSession(
+      loginInfo: previous.loginInfo,
+      loginHeaders: previous.loginHeaders,
+      rawLoginHeader: previous.rawLoginHeader,
+      sourceVariable: previous.sourceVariable,
+      scriptCache: Map.unmodifiable(value),
       browserSession: previous.browserSession,
     );
     _dirty.add(source.stableId);
@@ -210,6 +236,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
         loginHeaders: previous.loginHeaders,
         rawLoginHeader: previous.rawLoginHeader,
         sourceVariable: previous.sourceVariable,
+        scriptCache: previous.scriptCache,
         browserSession: browser,
       );
       _dirty.add(source.stableId);
@@ -277,6 +304,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginHeaders: previous.loginHeaders,
       rawLoginHeader: previous.rawLoginHeader,
       sourceVariable: previous.sourceVariable,
+      scriptCache: previous.scriptCache,
       browserSession: session,
     );
     // Publish only after secure storage succeeds: a cancelled or failed login
@@ -335,6 +363,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       loginHeaders: previous.loginHeaders,
       rawLoginHeader: previous.rawLoginHeader,
       sourceVariable: previous.sourceVariable,
+      scriptCache: previous.scriptCache,
       browserSession: browser,
     );
     _browserTransport?.restoreBrowserSession(source.stableId, browser);
@@ -610,6 +639,24 @@ bool _sameStringMap(Map<String, String> left, Map<String, String> right) {
   if (left.length != right.length) return false;
   for (final entry in left.entries) {
     if (right[entry.key] != entry.value) return false;
+  }
+  return true;
+}
+
+bool _sameScriptCache(
+  Map<String, SourceScriptCacheEntry> left,
+  Map<String, SourceScriptCacheEntry> right,
+) {
+  if (left.length != right.length) return false;
+  for (final entry in left.entries) {
+    final other = right[entry.key];
+    if (other == null ||
+        entry.value.expiresAt?.millisecondsSinceEpoch !=
+            other.expiresAt?.millisecondsSinceEpoch) {
+      return false;
+    }
+    if (identical(entry.value.value, other.value)) continue;
+    if (jsonEncode(entry.value.value) != jsonEncode(other.value)) return false;
   }
   return true;
 }

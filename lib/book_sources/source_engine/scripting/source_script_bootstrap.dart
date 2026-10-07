@@ -17,9 +17,10 @@ class SourceScriptBootstrap {
     SourceScriptContext context,
     SourceScriptState state,
   ) {
-    final loginInfo = context.loginInfo.isEmpty
-        ? state.loginInfo
-        : context.loginInfo;
+    final ownsLoginInfo = context.loginInfoWriter != null;
+    final loginInfo = ownsLoginInfo || context.loginInfo.isNotEmpty
+        ? context.loginInfo
+        : state.loginInfo;
     final ownsSession = context.loginHeaderWriter != null;
     final loginHeaders = ownsSession || context.loginHeaders.isNotEmpty
         ? context.loginHeaders
@@ -30,6 +31,7 @@ class SourceScriptBootstrap {
             ? state.rawLoginHeader
             : null) ??
         (loginHeaders.isEmpty ? '' : jsonEncode(loginHeaders));
+    final persistentCache = context.persistentCacheReader?.call();
     return <String, Object?>{
       'script': script,
       'sourceId': context.source.stableId,
@@ -55,6 +57,12 @@ class SourceScriptBootstrap {
       'loginInfo': loginInfo,
       'loginHeaders': loginHeaders,
       'rawLoginHeader': rawLoginHeader,
+      'ownsPersistentCache': context.persistentCacheReader != null,
+      'persistentCacheExpiringKeys': [
+        if (persistentCache != null)
+          for (final entry in persistentCache.entries)
+            if (entry.value.expiresAt != null) entry.key,
+      ],
       'browserLocalStorage': context.browserLocalStorage,
       'storageOrigin': _storageOrigin(context),
       'sharedScript': context.source.jsLib,

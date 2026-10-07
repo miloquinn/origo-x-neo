@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../source_browser_session.dart';
+import '../source_login_session.dart';
 
 import 'package:xxread/book_sources/source_engine/source_config.dart';
 
@@ -25,6 +26,8 @@ class SourceScriptContext {
     this.rawLoginHeader,
     this.sourceVariableReader,
     this.sourceVariableWriter,
+    this.persistentCacheReader,
+    this.persistentCacheWriter,
     this.browserLocalStorage = const {},
     this.localStorageWriter,
     this.loginInfoWriter,
@@ -57,6 +60,9 @@ class SourceScriptContext {
   final String? rawLoginHeader;
   final String Function()? sourceVariableReader;
   final void Function(String value)? sourceVariableWriter;
+  final Map<String, SourceScriptCacheEntry> Function()? persistentCacheReader;
+  final void Function(Map<String, SourceScriptCacheEntry> value)?
+  persistentCacheWriter;
   final void Function(String message)? messageWriter;
   final Map<String, Map<String, String>> browserLocalStorage;
   final void Function(
@@ -108,6 +114,8 @@ class SourceScriptContext {
     rawLoginHeader: rawLoginHeader,
     sourceVariableReader: sourceVariableReader,
     sourceVariableWriter: sourceVariableWriter,
+    persistentCacheReader: persistentCacheReader,
+    persistentCacheWriter: persistentCacheWriter,
     browserLocalStorage: browserLocalStorage,
     localStorageWriter: localStorageWriter,
     loginInfoWriter: loginInfoWriter,
