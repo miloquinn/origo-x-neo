@@ -18,6 +18,7 @@ import 'package:xxread/pages/home/widgets/home_bounce_navigation_item.dart';
 import 'package:xxread/pages/home/widgets/home_navigation_item.dart';
 import 'package:xxread/pages/home/widgets/home_tablet_toolbar.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
+import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/services/library/download_task_controller.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
@@ -516,6 +517,53 @@ void main() {
       closeTo(tester.getBottomLeft(rhythmCard).dy, 0.1),
     );
     await capture('tablet-home-landscape');
+
+    final topNavigation = find.byType(ElasticPillNavigationBar);
+    final navigationRect = tester.getRect(topNavigation);
+    final drag = await tester.startGesture(
+      tester.getCenter(nav(HomeNavigationDestination.home)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 180));
+    expect(tester.getRect(topNavigation), navigationRect);
+    await capture('tablet-top-navigation-pressed');
+    await drag.moveTo(
+      tester.getCenter(nav(HomeNavigationDestination.discover)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 160));
+    expect(
+      tester
+          .getCenter(
+            find.byKey(const ValueKey('home-navigation-selection-lens')),
+          )
+          .dx,
+      closeTo(tester.getCenter(nav(HomeNavigationDestination.discover)).dx, 8),
+      reason: 'The top selection lens must follow the pointer before release.',
+    );
+    expect(
+      tester
+          .widget<HomeBounceNavigationItem>(nav(HomeNavigationDestination.home))
+          .isSelected,
+      isTrue,
+      reason: 'Dragging the top lens must not switch the page before release.',
+    );
+    expect(tester.getRect(topNavigation), navigationRect);
+    await capture('tablet-top-navigation-dragged');
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<HomeBounceNavigationItem>(
+            nav(HomeNavigationDestination.discover),
+          )
+          .isSelected,
+      isTrue,
+    );
+    expect(tester.getRect(topNavigation), navigationRect);
+    await tester.tap(nav(HomeNavigationDestination.home));
+    await tester.pumpAndSettle();
+
     await pumpSize(const Size(1366, 1024));
     expectPageLeftAligned('首页', continueCard);
     expect(tester.getTopLeft(continueCard).dx, 111);
