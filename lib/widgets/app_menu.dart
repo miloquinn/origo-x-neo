@@ -2,9 +2,11 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
-import '../utils/glass_config.dart';
+import 'elastic_motion.dart';
+import 'elastic_press.dart';
 import 'glass_control_surface.dart';
 
 /// Trigger appearance is independent of the shared menu surface and motion.
@@ -120,7 +122,10 @@ class _AppPopupMenuButtonState<T> extends State<AppPopupMenuButton<T>> {
     // Retain the trigger's layout and focus while the route owns its surface.
     return IgnorePointer(
       ignoring: _open,
-      child: Opacity(opacity: _open ? 0 : 1, child: trigger),
+      child: Opacity(
+        opacity: _open ? 0 : 1,
+        child: ElasticPress(enabled: widget.enabled && !_open, child: trigger),
+      ),
     );
   }
 }
@@ -183,6 +188,55 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
   final CapturedThemes themes;
   VoidCallback? selectedCallback;
 
+  static const _openDuration = Duration(milliseconds: 750);
+  static const _closeDuration = Duration(milliseconds: 400);
+  late final _grow = _spring(
+    const Duration(milliseconds: 500),
+    0.3,
+    const Duration(milliseconds: 340),
+  );
+  late final _moveX = _spring(
+    const Duration(milliseconds: 520),
+    0.2,
+    const Duration(milliseconds: 300),
+  );
+  late final _moveY = _spring(
+    const Duration(milliseconds: 340),
+    0.12,
+    const Duration(milliseconds: 440),
+  );
+  late final _content = CurvedAnimation(
+    parent: animation!,
+    curve: const Interval(0.04, 0.45, curve: Curves.easeOutCubic),
+    reverseCurve: const Interval(0.5, 1, curve: Curves.easeIn),
+  );
+
+  CurvedAnimation _spring(
+    Duration settling,
+    double bounce,
+    Duration returning,
+  ) => CurvedAnimation(
+    parent: animation!,
+    curve: ElasticSpringCurve(
+      duration: _openDuration,
+      settlingDuration: settling,
+      bounce: bounce,
+    ),
+    reverseCurve: ElasticSpringCurve(
+      duration: _closeDuration,
+      settlingDuration: returning,
+    ).flipped,
+  );
+
+  @override
+  void dispose() {
+    _grow.dispose();
+    _moveX.dispose();
+    _moveY.dispose();
+    _content.dispose();
+    super.dispose();
+  }
+
   @override
   final String barrierLabel;
   @override
@@ -190,13 +244,11 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
   @override
   Color? get barrierColor => Colors.transparent;
   @override
-  Duration get transitionDuration => media.disableAnimations
-      ? Duration.zero
-      : const Duration(milliseconds: 360);
+  Duration get transitionDuration =>
+      media.disableAnimations ? Duration.zero : _openDuration;
   @override
-  Duration get reverseTransitionDuration => media.disableAnimations
-      ? Duration.zero
-      : const Duration(milliseconds: 280);
+  Duration get reverseTransitionDuration =>
+      media.disableAnimations ? Duration.zero : _closeDuration;
 
   @override
   Widget buildPage(
@@ -242,61 +294,67 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
                 child: AnimatedBuilder(
                   animation: animation,
                   builder: (context, child) {
-                    final progress = Curves.easeInOutCubicEmphasized.transform(
-                      animation.value,
+                    final progress = _grow.value;
+                    final clipper = _MenuClipper(
+                      geometry,
+                      progress,
+                      _moveX.value,
+                      _moveY.value,
                     );
-                    final clipper = _MenuClipper(geometry, progress);
                     final scheme = Theme.of(context).colorScheme;
-                    final reveal = const Interval(
-                      0.22,
-                      0.82,
-                      curve: Curves.easeOut,
-                    ).transform(animation.value);
+                    final reveal = _content.value;
                     return CustomPaint(
                       key: const ValueKey('app-menu-morph-surface'),
-                      painter: _MenuShadow(clipper, scheme.shadow, progress),
+                      painter: _MenuSurface(
+                        clipper,
+                        (color ?? scheme.surfaceContainerLow).withValues(
+                          alpha: 1,
+                        ),
+                        scheme.shadow,
+                        progress,
+                      ),
                       foregroundPainter: _MenuBorder(
                         clipper,
                         scheme.outlineVariant,
                       ),
                       child: ClipPath(
                         clipper: clipper,
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(
-                            sigmaX: GlassControlSurface.usesGlass(context)
-                                ? GlassEffectConfig.modalBlur
-                                : 0,
-                            sigmaY: GlassControlSurface.usesGlass(context)
-                                ? GlassEffectConfig.modalBlur
-                                : 0,
-                          ),
-                          child: Material(
-                            color:
-                                color ??
-                                scheme.surfaceContainerLow.withValues(
-                                  alpha: 0.96,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              IgnorePointer(
+                                ignoring:
+                                    animation.status !=
+                                    AnimationStatus.completed,
+                                child: Opacity(
+                                  opacity: reveal,
+                                  child: _MenuContentMotion(
+                                    geometry: geometry,
+                                    progress: progress,
+                                    moveX: _moveX.value,
+                                    moveY: _moveY.value,
+                                    child: child!,
+                                  ),
                                 ),
-                            child: Stack(
-                              children: [
-                                IgnorePointer(
-                                  ignoring:
-                                      animation.status !=
-                                      AnimationStatus.completed,
-                                  child: Opacity(opacity: reveal, child: child),
-                                ),
-                                if (anchorIcon != null && progress < 1)
-                                  Positioned.fill(
-                                    child: CustomSingleChildLayout(
-                                      delegate: _AnchorIconLayout(geometry),
-                                      child: Opacity(
-                                        opacity: (1 - animation.value / 0.24)
-                                            .clamp(0.0, 1.0),
-                                        child: anchorIcon,
-                                      ),
+                              ),
+                              if (anchorIcon != null && progress < 1)
+                                Positioned.fill(
+                                  child: CustomSingleChildLayout(
+                                    delegate: _AnchorIconLayout(
+                                      geometry,
+                                      progress,
+                                      _moveX.value,
+                                      _moveY.value,
+                                    ),
+                                    child: Opacity(
+                                      opacity: 1 - reveal,
+                                      child: anchorIcon,
                                     ),
                                   ),
-                              ],
-                            ),
+                                ),
+                            ],
                           ),
                         ),
                       ),
@@ -461,14 +519,25 @@ class _MenuGeometry {
     return Offset(x.toDouble(), y.toDouble());
   }
 
-  RRect shape(Size size, double progress) {
+  Rect rect(Size size, double progress, double moveX, double moveY) {
     final origin = anchor.shift(-position(size));
-    final rect = Rect.lerp(origin, Offset.zero & size, progress)!;
-    return RRect.fromRectAndRadius(
-      rect,
-      Radius.circular(lerpDouble(radius, 22, progress)!),
+    final extent = Size.lerp(origin.size, size, progress)!;
+    return Rect.fromCenter(
+      center: Offset(
+        lerpDouble(origin.center.dx, size.width / 2, moveX)!,
+        lerpDouble(origin.center.dy, size.height / 2, moveY)!,
+      ),
+      width: math.max(0, extent.width),
+      height: math.max(0, extent.height),
     );
   }
+
+  Path shape(Size size, double progress, double moveX, double moveY) =>
+      RoundedSuperellipseBorder(
+        borderRadius: BorderRadius.circular(
+          math.max(0, lerpDouble(radius, 24, progress)!),
+        ),
+      ).getOuterPath(rect(size, progress, moveX, moveY));
 }
 
 class _MenuLayout extends SingleChildLayoutDelegate {
@@ -490,42 +559,57 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 }
 
 class _AnchorIconLayout extends SingleChildLayoutDelegate {
-  _AnchorIconLayout(this.geometry);
+  _AnchorIconLayout(this.geometry, this.progress, this.moveX, this.moveY);
   final _MenuGeometry geometry;
+  final double progress;
+  final double moveX;
+  final double moveY;
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
       BoxConstraints.tight(geometry.anchor.size);
   @override
   Offset getPositionForChild(Size size, Size childSize) =>
-      geometry.anchor.topLeft - geometry.position(size);
+      geometry.rect(size, progress, moveX, moveY).center -
+      Offset(childSize.width / 2, childSize.height / 2);
   @override
   bool shouldRelayout(covariant _AnchorIconLayout oldDelegate) => true;
 }
 
 class _MenuClipper extends CustomClipper<Path> {
-  _MenuClipper(this.geometry, this.progress);
+  _MenuClipper(this.geometry, this.progress, this.moveX, this.moveY);
   final _MenuGeometry geometry;
   final double progress;
+  final double moveX;
+  final double moveY;
   @override
-  Path getClip(Size size) => Path()..addRRect(geometry.shape(size, progress));
+  Path getClip(Size size) => geometry.shape(size, progress, moveX, moveY);
   @override
   bool shouldReclip(covariant _MenuClipper oldClipper) => true;
 }
 
-class _MenuShadow extends CustomPainter {
-  _MenuShadow(this.clipper, this.color, this.progress);
+class _MenuSurface extends CustomPainter {
+  _MenuSurface(this.clipper, this.color, this.shadow, this.progress);
   final _MenuClipper clipper;
   final Color color;
+  final Color shadow;
   final double progress;
+
   @override
-  void paint(Canvas canvas, Size size) => canvas.drawShadow(
-    clipper.getClip(size),
-    color.withValues(alpha: 0.2 * progress),
-    12 * progress,
-    true,
-  );
+  void paint(Canvas canvas, Size size) {
+    // Paint the same path as the clip, including spring overshoot outside layout.
+    // A fixed-size Material or backdrop would leave a second visible silhouette.
+    final path = clipper.getClip(size);
+    canvas.drawShadow(
+      path,
+      shadow.withValues(alpha: 0.2 * progress.clamp(0.0, 1.0)),
+      12 * progress.clamp(0.0, 1.0),
+      false,
+    );
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
   @override
-  bool shouldRepaint(covariant _MenuShadow oldDelegate) => true;
+  bool shouldRepaint(covariant _MenuSurface oldDelegate) => true;
 }
 
 class _MenuBorder extends CustomPainter {
@@ -542,4 +626,63 @@ class _MenuBorder extends CustomPainter {
   );
   @override
   bool shouldRepaint(covariant _MenuBorder oldDelegate) => true;
+}
+
+class _MenuContentMotion extends SingleChildRenderObjectWidget {
+  const _MenuContentMotion({
+    required this.geometry,
+    required this.progress,
+    required this.moveX,
+    required this.moveY,
+    required super.child,
+  });
+
+  final _MenuGeometry geometry;
+  final double progress;
+  final double moveX;
+  final double moveY;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMenuContentMotion(geometry, progress, moveX, moveY);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderMenuContentMotion renderObject,
+  ) {
+    renderObject
+      ..geometry = geometry
+      ..progress = progress
+      ..moveX = moveX
+      ..moveY = moveY
+      ..markNeedsPaint();
+  }
+}
+
+class _RenderMenuContentMotion extends RenderProxyBox {
+  _RenderMenuContentMotion(
+    this.geometry,
+    this.progress,
+    this.moveX,
+    this.moveY,
+  );
+  _MenuGeometry geometry;
+  double progress;
+  double moveX;
+  double moveY;
+
+  Matrix4 get transform {
+    final rect = geometry.rect(size, progress, moveX, moveY);
+    final scale = math.max(rect.width / size.width, rect.height / size.height);
+    return Matrix4.translationValues(rect.center.dx, rect.center.dy, 0)
+      ..scaleByDouble(scale, scale, 1, 1)
+      ..translateByDouble(-size.width / 2, -size.height / 2, 0, 1);
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (size.isEmpty) return;
+    context.pushTransform(needsCompositing, offset, transform, super.paint);
+  }
 }

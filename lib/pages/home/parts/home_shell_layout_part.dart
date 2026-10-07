@@ -456,23 +456,23 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
                               child: FloatingPillNavigationSurface(
                                 width: navWidth,
                                 height: metrics.floatingNavHeight,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                child: ElasticPillNavigationBar(
+                                  selectedIndex: visualSelectedIndex,
+                                  onSelected: _switchToTab,
                                   children: _navigationItems
                                       .asMap()
                                       .entries
                                       .map((entry) {
                                         final index = entry.key;
                                         final item = entry.value;
-                                        return Expanded(
-                                          child: HomeBounceNavigationItem(
-                                            item: item,
-                                            isSelected:
-                                                visualSelectedIndex == index,
-                                            showLabel: showNavigationLabels,
-                                            horizontal: wideTopNavigation,
-                                            onTap: () => _switchToTab(index),
-                                          ),
+                                        return HomeBounceNavigationItem(
+                                          item: item,
+                                          isSelected:
+                                              visualSelectedIndex == index,
+                                          showLabel: showNavigationLabels,
+                                          horizontal: wideTopNavigation,
+                                          showSelectionIndicator: false,
+                                          onTap: () => _switchToTab(index),
                                         );
                                       })
                                       .toList(),

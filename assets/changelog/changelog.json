@@ -3,6 +3,26 @@
     "entries": [
         {
             "version": "2.7.2",
+            "buildNumber": "261007001",
+            "notes": {
+                "zh": [
+                    "首页悬浮底栏采用更柔和的超椭圆胶囊形状，保留原有毛玻璃质感。",
+                    "新增按压膨胀、拖动拉伸与松手回弹，导航选中高光随手势流动。",
+                    "共用三点菜单从按钮自然展开，加入弹簧位移、内容渐显与收起动画。",
+                    "适配深浅主题、从右向左布局和系统减少动态效果设置。",
+                    "修复三点菜单展开时背景膨胀产生的重影，改用与动画轮廓同步的实色表面。"
+                ],
+                "en": [
+                    "The floating home navigation gains a softer superellipse capsule while retaining its frosted-glass appearance.",
+                    "Press, drag and release now produce elastic growth, stretch and rebound, with a selection highlight that follows the gesture.",
+                    "Shared overflow menus expand from their trigger with spring motion, gradual content reveal and a matching closing animation.",
+                    "Supports light and dark themes, right-to-left layouts and reduced-motion settings.",
+                    "Fix overflow-menu ghosting during expansion with an opaque surface painted along the same animated contour."
+                ]
+            }
+        },
+        {
+            "version": "2.7.2",
             "buildNumber": "261005001",
             "notes": {
                 "zh": [

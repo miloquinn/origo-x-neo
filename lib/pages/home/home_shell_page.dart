@@ -34,6 +34,7 @@ import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
 import 'package:xxread/widgets/first_home_support_overlay.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
+import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 import 'home_dashboard_page.dart';

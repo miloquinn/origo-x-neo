@@ -152,7 +152,7 @@ void main() {
     expect(_selectedIconSize(tester), 28);
   });
 
-  testWidgets('keeps press feedback inside the full tap target', (
+  testWidgets('keeps the tap target layout stable while pressed', (
     tester,
   ) async {
     var tapCount = 0;
@@ -160,18 +160,50 @@ void main() {
       _testApp(item: item, isSelected: false, onTap: () => tapCount++),
     );
 
-    expect(_pressScale(tester, label), 1);
+    final restingRect = tester.getRect(
+      find.byKey(ValueKey('home-nav-press-$label')),
+    );
     final gesture = await tester.startGesture(
       tester.getCenter(find.byType(HomeBounceNavigationItem)),
     );
     await tester.pump(const Duration(milliseconds: 120));
     await tester.pump(const Duration(milliseconds: 120));
-    expect(_pressScale(tester, label), lessThan(1));
+    expect(
+      tester.getRect(find.byKey(ValueKey('home-nav-press-$label'))),
+      restingRect,
+    );
 
     await gesture.up();
     await tester.pumpAndSettle();
-    expect(_pressScale(tester, label), closeTo(1, 0.001));
+    expect(
+      tester.getRect(find.byKey(ValueKey('home-nav-press-$label'))),
+      restingRect,
+    );
     expect(tapCount, 1);
+  });
+
+  testWidgets('reduced motion settles selection and labels immediately', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _testApp(
+        item: item,
+        isSelected: false,
+        showLabel: false,
+        disableAnimations: true,
+      ),
+    );
+    await tester.pumpWidget(
+      _testApp(
+        item: item,
+        isSelected: true,
+        showLabel: true,
+        disableAnimations: true,
+      ),
+    );
+
+    expect(_selectedIconOpacity(tester, label), 1);
+    expect(_labelOpacity(tester, label), 1);
   });
 
   testWidgets('keeps visible unselected labels bold and high contrast', (
@@ -286,13 +318,6 @@ double _unselectedIconOpacity(WidgetTester tester, String label) {
       .opacity;
 }
 
-double _pressScale(WidgetTester tester, String label) {
-  return tester
-      .widget<Transform>(find.byKey(ValueKey('home-nav-press-$label')))
-      .transform
-      .entry(0, 0);
-}
-
 double _labelOpacity(WidgetTester tester, String label) {
   return tester
       .widget<Opacity>(find.byKey(ValueKey('home-nav-label-$label')))
@@ -359,18 +384,22 @@ Widget _testApp({
   double itemWidth = 80,
   double itemHeight = 48,
   VoidCallback? onTap,
+  bool disableAnimations = false,
 }) {
   return MaterialApp(
     home: Scaffold(
-      body: Center(
-        child: SizedBox(
-          width: itemWidth,
-          height: itemHeight,
-          child: HomeBounceNavigationItem(
-            item: item,
-            isSelected: isSelected,
-            showLabel: showLabel,
-            onTap: onTap ?? () {},
+      body: MediaQuery(
+        data: MediaQueryData(disableAnimations: disableAnimations),
+        child: Center(
+          child: SizedBox(
+            width: itemWidth,
+            height: itemHeight,
+            child: HomeBounceNavigationItem(
+              item: item,
+              isSelected: isSelected,
+              showLabel: showLabel,
+              onTap: onTap ?? () {},
+            ),
           ),
         ),
       ),

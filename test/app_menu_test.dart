@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/widgets/app_menu.dart';
@@ -27,6 +30,7 @@ void main() {
     Alignment alignment = Alignment.topRight,
     ThemeMode themeMode = ThemeMode.light,
     String? initialValue,
+    Color? menuColor,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -44,12 +48,15 @@ void main() {
         themeMode: themeMode,
         theme: ThemeData.light(),
         darkTheme: ThemeData.dark(),
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            disableAnimations: disableAnimations,
-            textScaler: TextScaler.linear(textScale),
+        builder: (context, child) => RepaintBoundary(
+          key: const ValueKey('menu-test-boundary'),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              disableAnimations: disableAnimations,
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: child!,
           ),
-          child: child!,
         ),
         home: Scaffold(
           body: Align(
@@ -61,6 +68,7 @@ void main() {
               onSelected: onSelected,
               onCanceled: onCanceled,
               initialValue: initialValue,
+              color: menuColor,
               itemBuilder: (_) =>
                   items ??
                   const [
@@ -127,6 +135,81 @@ void main() {
     final end = currentClip(tester).getBounds();
     expect(end, Offset.zero & menuSize);
   });
+
+  for (final themeMode in [ThemeMode.light, ThemeMode.dark]) {
+    testWidgets(
+      'menu has one opaque surface through ${themeMode.name} overshoot',
+      (tester) async {
+        const surfaceColor = Color(0xff357a38);
+        await pumpMenu(
+          tester,
+          themeMode: themeMode,
+          menuColor: surfaceColor.withValues(alpha: 0.4),
+          items: const [
+            PopupMenuItem(value: 'edit', child: SizedBox(height: 48)),
+            PopupMenuItem(value: 'remove', child: SizedBox(height: 48)),
+          ],
+        );
+        await tester.tap(find.byKey(const ValueKey('menu-anchor')));
+        await tester.pump();
+        final size = tester.getSize(morphSurface());
+        Offset? sample;
+        for (var frame = 0; frame < 30; frame++) {
+          await tester.pump(const Duration(milliseconds: 20));
+          final path = currentClip(tester);
+          final bounds = path.getBounds();
+          if (bounds.left < -4) {
+            sample = Offset(bounds.left + 2, bounds.center.dy);
+          } else if (bounds.right > size.width + 4) {
+            sample = Offset(bounds.right - 2, bounds.center.dy);
+          }
+          if (sample != null && path.contains(sample)) break;
+          sample = null;
+        }
+        expect(
+          sample,
+          isNotNull,
+          reason: 'Sample the elastic edge outside layout.',
+        );
+        final pixel = tester.getTopLeft(morphSurface()) + sample!;
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(const ValueKey('menu-test-boundary')),
+        );
+        await tester.runAsync(() async {
+          final image = await boundary.toImage();
+          final bytes = await image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          );
+          final offset =
+              (pixel.dy.floor() * image.width + pixel.dx.floor()) * 4;
+          expect(bytes!.buffer.asUint8List(offset, 4), [
+            0x35,
+            0x7a,
+            0x38,
+            0xff,
+          ]);
+          image.dispose();
+        });
+        expect(
+          find.descendant(
+            of: morphSurface(),
+            matching: find.byType(BackdropFilter),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: morphSurface(),
+            matching: find.byType(ImageFiltered),
+          ),
+          findsNothing,
+        );
+        await tester.pumpAndSettle();
+        await tester.tapAt(const Offset(20, 400));
+        await tester.pumpAndSettle();
+      },
+    );
+  }
 
   testWidgets('reverse morph finishes before selection callbacks run', (
     tester,
@@ -363,11 +446,17 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     final beforeDismiss = currentClip(tester).getBounds();
+    final contentFinder = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == '_MenuContentMotion',
+    );
+    final dynamic content = tester.renderObject(contentFinder);
+    final contentBeforeDismiss = List<double>.of(content.transform.storage);
 
     await tester.tapAt(const Offset(20, 400));
     await tester.pump();
     final reverseStart = currentClip(tester).getBounds();
     expect(reverseStart, beforeDismiss);
+    expect(content.transform.storage, contentBeforeDismiss);
     await tester.pump(const Duration(milliseconds: 40));
     final reversing = currentClip(tester).getBounds();
     expect(reversing.width, lessThan(beforeDismiss.width));
@@ -377,5 +466,34 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('menu-anchor')));
     await tester.pumpAndSettle();
     expect(morphSurface(), findsOneWidget);
+  });
+
+  testWidgets('menu size and movement follow independent spring axes', (
+    tester,
+  ) async {
+    await pumpMenu(tester);
+    await tester.tap(find.byKey(const ValueKey('menu-anchor')));
+    await tester.pump();
+    final origin = currentClip(tester).getBounds();
+    final size = tester.getSize(morphSurface());
+    await tester.pump(const Duration(milliseconds: 100));
+    final moving = currentClip(tester).getBounds();
+    final sizeProgress =
+        (moving.width - origin.width) / (size.width - origin.width);
+    final xProgress =
+        (moving.center.dx - origin.center.dx) /
+        (size.width / 2 - origin.center.dx);
+    final yProgress =
+        (moving.center.dy - origin.center.dy) /
+        (size.height / 2 - origin.center.dy);
+    expect((xProgress - yProgress).abs(), greaterThan(0.05));
+    expect((sizeProgress - yProgress).abs(), greaterThan(0.05));
+    final content = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == '_MenuContentMotion',
+    );
+    final reveal = find.ancestor(of: content, matching: find.byType(Opacity));
+    expect(tester.widget<Opacity>(reveal).opacity, inExclusiveRange(0.0, 1.0));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Opacity>(reveal).opacity, 1);
   });
 }
