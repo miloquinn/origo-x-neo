@@ -11,6 +11,7 @@ import 'package:xxread/services/books/book_services.dart';
 import 'package:xxread/services/reading/reading_stats_dao.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/app_menu.dart';
+import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
@@ -470,16 +471,17 @@ class _DetailedStatsPageState extends State<DetailedStatsPage>
         height: dimensions.height,
         child: AnimatedBuilder(
           animation: _tabController,
-          builder: (context, _) => Row(
+          builder: (context, _) => ElasticPillNavigationBar(
+            selectedIndex: _tabController.index,
+            onSelected: _handleTabTap,
             children: [
               for (var index = 0; index < items.length; index++)
-                Expanded(
-                  child: FloatingPillNavigationButton(
-                    item: items[index],
-                    isSelected: _tabController.index == index,
-                    showLabel: true,
-                    onTap: () => _handleTabTap(index),
-                  ),
+                FloatingPillNavigationButton(
+                  item: items[index],
+                  isSelected: _tabController.index == index,
+                  showLabel: true,
+                  showSelectionIndicator: false,
+                  onTap: () => _handleTabTap(index),
                 ),
             ],
           ),
