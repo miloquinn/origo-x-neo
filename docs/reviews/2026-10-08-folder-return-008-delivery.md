@@ -9,7 +9,7 @@
 - iOS：Release 构建与严格签名验证通过；SloanePro / iPhone 16 Pro（`00008140-001979421E93001C`）原位安装 `com.niki.xxread / 2.7.3 / 261008008`，核对安装版本、激活启动和进程 16238 的可执行路径。AOT SHA-256：`499d1d04c0f35a675e20e6e9c9b393a98963ae9907520e042d312720ecab1787`。收据在 `build/device-ios/folder-return-20261008/` 与 `device-acceptance/`。
 - Android：OPPO PKT110 原位安装同版本，安装前旧包与 007 收据哈希一致，安装后 APK 回读 SHA-256 与交付包一致：`f7b171908aa5ec7619591bc347c3586c168cf16cc689155df0af4679d7726581`。首次安装时间、数据目录保持不变，进程 9483 与 ResumedActivity 核对。AOT SHA-256：`44dc1662e31008bcce0f0f40f24e12097408f15d56796a2d4d48f73a67301af0`。符号与 AOT Build ID `b718850982e802e31ab8064216f9528b` 一致，独立保存在 `build/validation/folder-return-20261008/symbols/`，不覆盖 007。收据在 `build/device-android/folder-return-20261008/`。
 
-渠道为开发者直接签名 Release，独立于 TestFlight、App Store 与公开 Android 发版。Android 使用设备原有开发签名，以保留数据；运行代码仍是优化后的非 debuggable Release。两端 latest-unified 指向 008。Sloane 本机与 Windows main 同步，保留四张用户 JPEG 和 Windows 未跟踪文件。
+渠道为开发者直接签名 Release，独立于 TestFlight、App Store 与公开 Android 发版。Android 使用设备原有开发签名，以保留数据；运行代码仍是优化后的非 debuggable Release。两端 latest-unified 指向 008。Sloane 本机与 GitHub main 已同步；Windows 已 fast-forward 到产品提交 `2399fdb7`，包含 008 全部运行代码。同步最后交付文档时 `milo-pc.local` 无法解析，备用 Tailscale peer 也离线，因此最新文档暂未同步到 Windows；设备安装不受影响。保留四张用户 JPEG 和 Windows 未跟踪文件。
 
 ## 物理点击边界
 
