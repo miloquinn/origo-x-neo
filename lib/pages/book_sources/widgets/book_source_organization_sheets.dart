@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../book_sources/models/registered_book_source.dart';
 import '../../../book_sources/services/book_source_registry.dart';
+import '../../../widgets/pill_search_field.dart';
 import '../../../widgets/side_toast.dart';
 import 'book_source_organization_copy.dart';
 
@@ -268,23 +269,15 @@ class _BookSourceGroupEditorState extends State<_BookSourceGroupEditor> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: TextField(
-              key: const Key('bookSourceGroupSearch'),
+            child: PillSearchField(
+              textFieldKey: const Key('bookSourceGroupSearch'),
               controller: _search,
+              hintText: copy.searchGroups,
               onChanged: (value) => setState(() => _query = value),
-              decoration: InputDecoration(
-                hintText: copy.searchGroups,
-                prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () => setState(() {
-                          _search.clear();
-                          _query = '';
-                        }),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-              ),
+              onClear: () => setState(() {
+                _search.clear();
+                _query = '';
+              }),
             ),
           ),
           Expanded(
@@ -581,14 +574,11 @@ class _BookSourceGroupPickerState extends State<_BookSourceGroupPicker> {
           _SheetHeader(title: copy.groups),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: TextField(
-              key: const Key('bookSourceGroupPickerSearch'),
+            child: PillSearchField(
+              textFieldKey: const Key('bookSourceGroupPickerSearch'),
               controller: _search,
+              hintText: copy.searchGroups,
               onChanged: (value) => setState(() => _query = value),
-              decoration: InputDecoration(
-                hintText: copy.searchGroups,
-                prefixIcon: const Icon(Icons.search_rounded),
-              ),
             ),
           ),
           Expanded(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../book_sources/models/registered_book_source.dart';
 import '../../../utils/localization_extension.dart';
+import '../../../widgets/pill_search_field.dart';
 
 /// Source navigation owns its search and scroll, independently of book results.
 class BookSourceTabletSidebar extends StatefulWidget {
@@ -67,29 +68,14 @@ class _BookSourceTabletSidebarState extends State<BookSourceTabletSidebar> {
                     ),
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: TextField(
-                      key: const Key('bookSourceTabletSourceSearch'),
+                    child: PillSearchField(
+                      textFieldKey: const Key('bookSourceTabletSourceSearch'),
                       controller: _search,
+                      hintText: context.l10n.bookSourcesManagementSearchHint,
                       onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        hintText: context.l10n.bookSourcesManagementSearchHint,
-                        hintMaxLines: 1,
-                        isDense: true,
-                        filled: true,
-                        fillColor: scheme.surface.withValues(alpha: 0.7),
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                        suffixIcon: _search.text.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: context.l10n.bookSourcesClearSearch,
-                                onPressed: () => setState(_search.clear),
-                                icon: const Icon(Icons.close_rounded, size: 18),
-                              ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                      onClear: () => setState(_search.clear),
+                      clearTooltip: context.l10n.bookSourcesClearSearch,
+                      fillColor: scheme.surface.withValues(alpha: 0.7),
                     ),
                   ),
                   Padding(

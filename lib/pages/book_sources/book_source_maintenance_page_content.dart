@@ -263,33 +263,15 @@ extension _BookSourceMaintenancePageContent on _BookSourceMaintenancePageState {
             ],
           ),
           const SizedBox(height: 4),
-          TextField(
-            key: const Key('maintenanceResultSearch'),
+          PillSearchField(
+            textFieldKey: const Key('maintenanceResultSearch'),
             controller: _search,
-            decoration: InputDecoration(
-              hintText: l10n.bookSourcesMaintenanceReviewSearch,
-              prefixIcon: const Icon(Icons.search_rounded, size: 20),
-              isDense: true,
-              filled: true,
-              fillColor: Theme.of(
-                context,
-              ).colorScheme.surfaceContainerLow.withValues(alpha: 0.6),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 12,
-                horizontal: 12,
-              ),
-              suffixIcon: _search.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: l10n.bookSourcesClearSelection,
-                      onPressed: _search.clear,
-                      icon: const Icon(Icons.close_rounded, size: 18),
-                    ),
-            ),
+            hintText: l10n.bookSourcesMaintenanceReviewSearch,
+            onClear: _search.clear,
+            clearTooltip: l10n.bookSourcesClearSelection,
+            fillColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerLow.withValues(alpha: 0.6),
           ),
           const SizedBox(height: 10),
           _filterBar(wide: wide),

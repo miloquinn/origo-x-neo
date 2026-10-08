@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:xxread/utils/reader_themes.dart';
+import 'pill_search_field.dart';
 
 class ReaderSearchDocument {
   const ReaderSearchDocument({
@@ -212,32 +213,25 @@ class _ReaderSearchSheetState extends State<_ReaderSearchSheet> {
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
                 Expanded(
-                  child: TextField(
-                    key: const ValueKey('reader-full-text-search-field'),
+                  child: PillSearchField(
+                    textFieldKey: const ValueKey(
+                      'reader-full-text-search-field',
+                    ),
                     controller: _controller,
                     autofocus: true,
                     onChanged: _onChanged,
-                    textInputAction: TextInputAction.search,
-                    decoration: InputDecoration(
-                      hintText: '搜索本书内容',
-                      prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: _controller.text.isEmpty
-                          ? null
-                          : IconButton(
-                              onPressed: () {
-                                _controller.clear();
-                                _onChanged('');
-                                setState(() {});
-                              },
-                              icon: const Icon(Icons.close_rounded),
-                            ),
-                      filled: true,
-                      fillColor: palette.controlFill,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+                    hintText: '搜索本书内容',
+                    fillColor: palette.controlFill,
+                    foregroundColor: palette.text,
+                    hintColor: palette.secondaryText,
+                    accentColor: palette.accent,
+                    borderColor: palette.border,
+                    brightness: palette.brightness,
+                    onClear: () {
+                      _controller.clear();
+                      _onChanged('');
+                      setState(() {});
+                    },
                   ),
                 ),
               ],

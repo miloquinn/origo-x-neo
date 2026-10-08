@@ -5,6 +5,7 @@ import 'package:xxread/pages/book_sources/controllers/book_sources_controller.da
 import 'package:xxread/pages/book_sources/widgets/book_source_list_reveal.dart';
 import 'package:xxread/pages/book_sources/widgets/sourced_book_cards.dart';
 import 'package:xxread/utils/layout_helper.dart';
+import 'package:xxread/widgets/pill_search_field.dart';
 
 import 'book_source_pill.dart';
 import '../../../utils/page_style_helper.dart';
@@ -77,7 +78,6 @@ class BookSourceListDirectory extends StatelessWidget {
                     controller: searchController,
                     groups: groups,
                     filteredGroups: filteredGroups,
-                    query: state.listSourceQuery,
                     hint: searchHint,
                     clearTooltip: clearSearchTooltip,
                     onChanged: onQueryChanged,
@@ -238,7 +238,6 @@ class _SearchField extends StatelessWidget {
   final TextEditingController controller;
   final List<BookSourceListChannels> groups;
   final List<BookSourceListChannels> filteredGroups;
-  final String query;
   final String hint;
   final String clearTooltip;
   final ValueChanged<String> onChanged;
@@ -249,7 +248,6 @@ class _SearchField extends StatelessWidget {
     required this.controller,
     required this.groups,
     required this.filteredGroups,
-    required this.query,
     required this.hint,
     required this.clearTooltip,
     required this.onChanged,
@@ -260,58 +258,29 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return TextField(
-      key: const Key('bookSourceListSourceSearch'),
+    return PillSearchField(
+      textFieldKey: const Key('bookSourceListSourceSearch'),
       controller: controller,
-      textInputAction: TextInputAction.search,
+      hintText: hint,
+      leadingIcon: Icons.manage_search_rounded,
       onChanged: onChanged,
       onSubmitted: (_) => onSubmitted(),
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: const Icon(Icons.manage_search_rounded),
-        suffixIconConstraints: const BoxConstraints(minHeight: 48),
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${filteredGroups.length}/${groups.length}',
-              key: const Key('bookSourceListSearchCount'),
-              style: TextStyle(
-                color: scheme.onSurfaceVariant,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (query.isNotEmpty)
-              IconButton(
-                key: const Key('bookSourceListSourceSearchClear'),
-                tooltip: clearTooltip,
-                onPressed: onClear,
-                icon: const Icon(Icons.close_rounded, size: 20),
-              )
-            else
-              const SizedBox(width: 16),
-          ],
-        ),
-        filled: true,
-        fillColor: scheme.surfaceContainerLow,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(999),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(999),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(999),
-          borderSide: BorderSide(color: scheme.primary, width: 1.5),
+      onClear: onClear,
+      clearButtonKey: const Key('bookSourceListSourceSearchClear'),
+      clearTooltip: clearTooltip,
+      trailing: Padding(
+        padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
+        child: Text(
+          '${filteredGroups.length}/${groups.length}',
+          key: const Key('bookSourceListSearchCount'),
+          style: TextStyle(
+            color: scheme.onSurfaceVariant,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
+      fillColor: scheme.surfaceContainerLow,
     );
   }
 }

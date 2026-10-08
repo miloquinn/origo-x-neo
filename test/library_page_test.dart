@@ -162,6 +162,18 @@ void main() {
     expect(find.text('Alpha Reader'), findsWidgets);
     expect(find.text('Beta Library'), findsNothing);
 
+    // Clear before a replacement query's 120ms debounce completes.
+    await tester.enterText(find.byType(TextField), 'bob');
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      isEmpty,
+    );
+    expect(find.text('Alpha Reader'), findsWidgets);
+    expect(find.text('Beta Library'), findsWidgets);
+
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../book_sources/models/registered_book_source.dart';
 import '../../../utils/localization_extension.dart';
 import '../../../widgets/floating_subpage_scaffold.dart';
+import '../../../widgets/pill_search_field.dart';
 import '../controllers/book_source_management_controller.dart';
 import 'book_source_management_source_card.dart';
 import 'book_source_organization_copy.dart';
@@ -277,28 +278,14 @@ class _HeaderAndFilters extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          key: const Key('bookSourceManagementSearchField'),
+        PillSearchField(
+          textFieldKey: const Key('bookSourceManagementSearchField'),
           controller: searchController,
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            hintText: context.l10n.bookSourcesManagementSearchHint,
-            prefixIcon: const Icon(Icons.search_rounded),
-            suffixIcon: state.query.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: context.l10n.bookSourcesClearSearch,
-                    onPressed: onClearQuery,
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-            filled: true,
-            fillColor: scheme.surfaceContainerLow,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(24),
-              borderSide: BorderSide.none,
-            ),
-          ),
+          hintText: context.l10n.bookSourcesManagementSearchHint,
           onChanged: onQueryChanged,
+          onClear: onClearQuery,
+          clearTooltip: context.l10n.bookSourcesClearSearch,
+          fillColor: scheme.surfaceContainerLow,
         ),
         const SizedBox(height: 10),
         SizedBox(

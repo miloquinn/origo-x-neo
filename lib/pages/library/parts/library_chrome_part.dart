@@ -303,44 +303,20 @@ extension _LibraryPageChrome on _LibraryPageState {
             ? LayoutHelper.tabletPagePadding
             : 16,
       ),
-      child: Container(
-        height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: _panelDecoration(
-          radius: 14,
-          stronger: true,
-          color: _isMaterial3Style ? scheme.surfaceContainerLow : palette.card,
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.search_rounded, size: 18, color: palette.textMuted),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocus,
-                onChanged: _onSearchChanged,
-                decoration: InputDecoration(
-                  hintText: context.l10n.librarySearchHint,
-                  border: InputBorder.none,
-                  isDense: true,
-                ),
-              ),
-            ),
-            if (_searchQuery.isNotEmpty)
-              InkWell(
-                onTap: () {
-                  _searchController.clear();
-                  _updateState(() => _searchQuery = '');
-                },
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 18,
-                  color: palette.textMuted,
-                ),
-              ),
-          ],
-        ),
+      child: PillSearchField(
+        controller: _searchController,
+        focusNode: _searchFocus,
+        hintText: context.l10n.librarySearchHint,
+        onChanged: _onSearchChanged,
+        fillColor: _isMaterial3Style
+            ? scheme.surfaceContainerLow
+            : palette.card,
+        hintColor: palette.textMuted,
+        onClear: () {
+          _searchController.clear();
+          _searchDebounce?.cancel();
+          _updateState(() => _searchQuery = '');
+        },
       ),
     );
   }

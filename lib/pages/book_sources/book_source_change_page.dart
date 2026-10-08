@@ -9,6 +9,7 @@ import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/pill_search_field.dart';
 
 import 'widgets/sourced_book_cards.dart';
 
@@ -634,13 +635,10 @@ class _ChapterSelectionSheetState extends State<_ChapterSelectionSheet> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: TextField(
+                    child: PillSearchField(
                       controller: _queryController,
+                      hintText: context.l10n.bookSourceChangeChooseChapter,
                       onChanged: _filter,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.bookSourceChangeChooseChapter,
-                        prefixIcon: const Icon(Icons.search_rounded),
-                      ),
                     ),
                   ),
                   Expanded(

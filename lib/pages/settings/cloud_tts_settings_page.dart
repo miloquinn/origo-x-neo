@@ -8,6 +8,7 @@ import '../../services/reader_aloud_session.dart';
 import '../../services/reader_aloud_service.dart';
 import '../../utils/page_style_helper.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/pill_search_field.dart';
 
 String cloudTtsCopy(BuildContext context, String zh, String en, String ja) =>
     switch (Localizations.localeOf(context).languageCode) {
@@ -698,11 +699,8 @@ class _TtsChoicePageState extends State<_TtsChoicePage> {
     body: ListView(
       padding: floatingSubpagePadding(context),
       children: [
-        TextField(
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search),
-            hintText: cloudTtsCopy(context, '搜索', 'Search', '検索'),
-          ),
+        PillSearchField(
+          hintText: cloudTtsCopy(context, '搜索', 'Search', '検索'),
           onChanged: (v) => setState(() => _query = v.toLowerCase()),
         ),
         const SizedBox(height: 12),

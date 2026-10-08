@@ -9,6 +9,7 @@ import '../../book_sources/source_engine/source_health_checker.dart';
 import '../../utils/localization_extension.dart';
 import '../../widgets/app_menu.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/pill_search_field.dart';
 import 'controllers/book_source_management_controller.dart';
 import 'widgets/book_source_management_source_card.dart';
 import 'widgets/book_source_pill.dart';

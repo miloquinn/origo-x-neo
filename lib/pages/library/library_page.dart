@@ -50,6 +50,7 @@ import 'package:xxread/widgets/generated_book_cover.dart';
 import 'package:xxread/widgets/scrolling_text.dart';
 import 'package:xxread/widgets/side_toast.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/pill_search_field.dart';
 import 'package:xxread/widgets/source_cover_image.dart';
 
 import 'import_book/import_book_page.dart';
@@ -256,49 +257,6 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
       libraryAnimation: selected,
       animationPace: settings.libraryBookOpenAnimationPace,
       animation: animation,
-    );
-  }
-
-  BoxDecoration _panelDecoration({
-    double radius = 16,
-    bool stronger = false,
-    bool addShadow = false,
-    double borderAlpha = 0.12,
-    Color? color,
-  }) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final palette = PageStyleHelper.palette(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final isMaterial3Style = _isMaterial3Style;
-    return BoxDecoration(
-      color:
-          color ??
-          (isMaterial3Style
-              ? (stronger
-                    ? scheme.surfaceContainer
-                    : scheme.surfaceContainerLow)
-              : (stronger ? palette.cardStrong : palette.card)),
-      borderRadius: BorderRadius.circular(radius),
-      border: Border.all(
-        color: scheme.outline.withValues(
-          alpha: isMaterial3Style ? 0.22 : borderAlpha,
-        ),
-        width: 0.9,
-      ),
-      boxShadow: addShadow
-          ? [
-              BoxShadow(
-                color: scheme.shadow.withValues(
-                  alpha: isMaterial3Style
-                      ? (isDark ? 0.16 : 0.07)
-                      : (isDark ? 0.24 : 0.09),
-                ),
-                blurRadius: isMaterial3Style ? 12 : 16,
-                offset: Offset(0, isMaterial3Style ? 6 : 8),
-              ),
-            ]
-          : null,
     );
   }
 

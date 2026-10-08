@@ -10,6 +10,7 @@ import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'app_menu.dart';
 import 'origo_x_icons.dart';
+import 'pill_search_field.dart';
 
 class ReaderNavigationChapter {
   const ReaderNavigationChapter({
@@ -619,41 +620,19 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
           child: Row(
             children: [
               Expanded(
-                child: TextField(
+                child: PillSearchField(
                   controller: _searchController,
                   onChanged: (value) => setState(() {
                     _query = value;
                     _visibleCache = null;
                   }),
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: context.l10n.readerSearchChapters,
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      size: 21,
-                      color: widget.palette.secondaryText,
-                    ),
-                    filled: true,
-                    fillColor: widget.palette.controlBar.withValues(
-                      alpha: 0.72,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 13,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(
-                        color: widget.palette.border.withValues(alpha: 0.72),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(
-                        color: widget.palette.accent.withValues(alpha: 0.75),
-                      ),
-                    ),
-                  ),
+                  hintText: context.l10n.readerSearchChapters,
+                  fillColor: widget.palette.controlBar,
+                  foregroundColor: widget.palette.text,
+                  hintColor: widget.palette.secondaryText,
+                  accentColor: widget.palette.accent,
+                  borderColor: widget.palette.border,
+                  brightness: widget.palette.brightness,
                 ),
               ),
               const SizedBox(width: 8),

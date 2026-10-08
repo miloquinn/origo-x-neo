@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../utils/page_style_helper.dart';
 import '../../../services/backup/backup_selection.dart';
 import '../../../services/backup/webdav_backup_controller.dart';
+import '../../../widgets/pill_search_field.dart';
 import 'backup_copy.dart';
 
 class BackupSelectionPanel extends StatelessWidget {
@@ -360,32 +361,18 @@ class _BookPickerState extends State<_BookPicker> {
                             ),
                           ),
                         SizedBox(height: compact ? 0 : 14),
-                        TextField(
+                        PillSearchField(
                           controller: search,
-                          decoration: InputDecoration(
-                            hintText: zh ? '搜索书名' : 'Search books',
-                            prefixIcon: const Icon(Icons.search_rounded),
-                            suffixIcon: query.isEmpty
-                                ? null
-                                : IconButton(
-                                    tooltip: zh ? '清除搜索' : 'Clear search',
-                                    onPressed: () {
-                                      search.clear();
-                                      setState(() => query = '');
-                                    },
-                                    icon: const Icon(Icons.close_rounded),
-                                  ),
-                            filled: true,
-                            fillColor: fieldSurface,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                            ),
-                          ),
+                          hintText: zh ? '搜索书名' : 'Search books',
+                          clearTooltip: zh ? '清除搜索' : 'Clear search',
+                          fillColor: fieldSurface,
+                          hintColor: palette.textMuted,
+                          borderColor: palette.border,
                           onChanged: (value) => setState(() => query = value),
+                          onClear: () {
+                            search.clear();
+                            setState(() => query = '');
+                          },
                         ),
                         const SizedBox(height: 10),
                         Row(

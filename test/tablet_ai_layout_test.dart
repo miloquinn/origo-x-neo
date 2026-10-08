@@ -9,6 +9,10 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 
 class _ConfiguredAiService implements ConfigurableAIService {
+  const _ConfiguredAiService({this.answer = 'answer'});
+
+  final String answer;
+
   @override
   Future<AIProviderSettings> loadSettings([AIProviderType? provider]) async =>
       AIProviderSettings.defaults(
@@ -23,7 +27,7 @@ class _ConfiguredAiService implements ConfigurableAIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
-  }) async => 'answer';
+  }) async => answer;
 
   @override
   Future<String> askSelection({
@@ -45,6 +49,7 @@ Widget _tabletApp({
   required AiPageController controller,
   bool keyboardVisible = false,
   double textScale = 1,
+  String aiAnswer = 'answer',
 }) {
   const size = Size(1024, 1366);
   final mediaQuery = MediaQueryData(
@@ -71,7 +76,7 @@ Widget _tabletApp({
             child: AiPage(
               historyStore: store,
               controller: controller,
-              aiService: _ConfiguredAiService(),
+              aiService: _ConfiguredAiService(answer: aiAnswer),
             ),
           ),
         ),
@@ -138,6 +143,66 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
   }
+
+  testWidgets('multiline composer keeps controls centered above the keyboard', (
+    tester,
+  ) async {
+    configureTabletSurface(tester);
+    final store = AiChatHistoryStore();
+    addTearDown(store.dispose);
+    final controller = AiPageController();
+    final longAnswer = [
+      '## 本章线索分析',
+      for (var index = 1; index <= 30; index++)
+        '- **线索 $index**：这一段回答用于验证真实 Markdown 对话在输入胶囊增高后仍然完整露出。',
+    ].join('\n\n');
+    await tester.pumpWidget(
+      _tabletApp(
+        store: store,
+        controller: controller,
+        keyboardVisible: true,
+        textScale: 1.7,
+        aiAnswer: longAnswer,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final input = find.byKey(const ValueKey('ai-page-input'));
+    final initialHeight = tester.getSize(input).height;
+
+    await tester.enterText(input, '先分析这一章的关键线索。');
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pumpAndSettle();
+    final lastAnswer = find.byKey(const ValueKey('release-notes-markdown'));
+    expect(lastAnswer, findsOneWidget);
+
+    await tester.enterText(input, '请说明这一章的线索。\n再帮我总结人物关系。');
+    await tester.pumpAndSettle();
+    final conversation = find.byType(ListView);
+    final conversationScrollable = find.descendant(
+      of: conversation,
+      matching: find.byType(Scrollable),
+    );
+    final scrollPosition = tester
+        .state<ScrollableState>(conversationScrollable)
+        .position;
+    expect(scrollPosition.maxScrollExtent, greaterThan(0));
+    scrollPosition.jumpTo(scrollPosition.maxScrollExtent);
+    await tester.pumpAndSettle();
+
+    final inputRect = tester.getRect(input);
+    final plusRect = tester.getRect(find.byKey(const ValueKey('ai-page-plus')));
+    final sendRect = tester.getRect(find.byKey(const ValueKey('ai-page-send')));
+    final overlayRect = tester.getRect(
+      find.byKey(const ValueKey('ai-page-overlay')),
+    );
+    final lastAnswerRect = tester.getRect(lastAnswer);
+    expect(inputRect.height, greaterThan(initialHeight));
+    expect(inputRect.center.dy, closeTo(plusRect.center.dy, 1));
+    expect(inputRect.center.dy, closeTo(sendRect.center.dy, 1));
+    expect(inputRect.bottom, lessThanOrEqualTo(1366 - 320));
+    expect(lastAnswerRect.bottom, lessThanOrEqualTo(overlayRect.top - 8));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'tablet AI content respects the top navigation and reading width',

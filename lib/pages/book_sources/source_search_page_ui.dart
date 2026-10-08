@@ -35,54 +35,18 @@ extension _SourceSearchPageUi on _SourceSearchPageState {
 
   Widget _buildQueryField(List<RegisteredBookSource> enabledSources) {
     final canSearch = enabledSources.isNotEmpty;
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(top: 14),
-      child: Container(
-        padding: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(
-            color: scheme.outline.withValues(alpha: 0.22),
-            width: 0.9,
-          ),
-        ),
-        child: TextField(
-          key: const Key('bookSourceQueryControl'),
-          controller: _queryController,
-          focusNode: _queryFocus,
-          enabled: canSearch,
-          textInputAction: TextInputAction.search,
-          onSubmitted: (_) => _search(),
-          style: const TextStyle(fontSize: 16),
-          decoration: InputDecoration(
-            hintText: context.l10n.bookSourcesSearchHint,
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 16),
-            prefixIcon: Icon(
-              Icons.search_rounded,
-              size: 20,
-              color: scheme.onSurfaceVariant,
-            ),
-            prefixIconConstraints: const BoxConstraints(
-              minWidth: 48,
-              minHeight: 0,
-            ),
-            suffixIcon: _queryController.text.isEmpty
-                ? null
-                : IconButton(
-                    key: const Key('bookSourceSearchClearButton'),
-                    tooltip: MaterialLocalizations.of(
-                      context,
-                    ).deleteButtonTooltip,
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: _clearSearch,
-                  ),
-          ),
-          onChanged: (_) => _mutate(() {}),
-        ),
+      child: PillSearchField(
+        textFieldKey: const Key('bookSourceQueryControl'),
+        controller: _queryController,
+        focusNode: _queryFocus,
+        hintText: context.l10n.bookSourcesSearchHint,
+        enabled: canSearch,
+        onSubmitted: (_) => _search(),
+        onChanged: (_) => _mutate(() {}),
+        onClear: _clearSearch,
+        clearButtonKey: const Key('bookSourceSearchClearButton'),
       ),
     );
   }

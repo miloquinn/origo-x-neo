@@ -10,6 +10,7 @@ import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/services/reader/replace_rule_execution.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/pill_search_field.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
 Future<ReplaceRule?> showReplaceRuleEditor(
@@ -394,11 +395,16 @@ class _ReplaceRulesPageState extends State<ReplaceRulesPage> {
       tools: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _ReplaceRulesSearchField(
+          PillSearchField(
+            textFieldKey: const ValueKey('replaceRulesSearchField'),
             controller: _searchController,
-            query: _query,
             hintText: l10n.replaceRulesSearchHint,
+            clearTooltip: MaterialLocalizations.of(context).clearButtonTooltip,
             onChanged: (value) => setState(() => _query = value),
+            onClear: () {
+              _searchController.clear();
+              setState(() => _query = '');
+            },
           ),
           if (_groups.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -729,70 +735,6 @@ class _ReplaceRulesPageState extends State<ReplaceRulesPage> {
 enum _ReplaceRulesMenuAction { import, export, paste, select }
 
 enum _ReplaceRuleAction { copy, top, bottom }
-
-class _ReplaceRulesSearchField extends StatelessWidget {
-  const _ReplaceRulesSearchField({
-    required this.controller,
-    required this.query,
-    required this.hintText,
-    required this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final String query;
-  final String hintText;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 48,
-      child: TextField(
-        key: const ValueKey('replaceRulesSearchField'),
-        controller: controller,
-        onChanged: onChanged,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: hintText,
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: scheme.onSurfaceVariant.withValues(alpha: 0.78),
-          ),
-          suffixIcon: query.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
-                  onPressed: () {
-                    controller.clear();
-                    onChanged('');
-                  },
-                  icon: const Icon(Icons.close_rounded),
-                ),
-          filled: true,
-          fillColor: scheme.surfaceContainerLow.withValues(alpha: 0.72),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: scheme.outlineVariant.withValues(alpha: 0.46),
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: scheme.outlineVariant.withValues(alpha: 0.46),
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: scheme.primary, width: 1.2),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _EmptyRules extends StatelessWidget {
   const _EmptyRules({required this.title, this.body, this.onCreate});

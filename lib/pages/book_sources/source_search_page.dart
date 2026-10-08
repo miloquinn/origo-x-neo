@@ -11,6 +11,7 @@ import 'package:xxread/book_sources/services/book_source_search_settings.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/pill_search_field.dart';
 
 import 'widgets/source_search_settings_sheet.dart';
 import 'models/book_search_relevance.dart';

@@ -2,7 +2,6 @@
 // 技术要点：壳层内嵌聊天、选书注入知识库与笔记上下文、AiChatHistoryStore 落盘。
 
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:xxread/models/book.dart';
@@ -17,12 +16,12 @@ import 'package:xxread/services/ai/ai_request_coordinator.dart';
 import 'package:xxread/services/ai/global_ai_reading_service.dart';
 import 'package:xxread/services/books/book_dao.dart';
 import 'package:xxread/services/books/book_note_dao.dart';
-import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/layout_helper.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_style_helper.dart';
-import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/release_notes_markdown.dart';
+import 'package:xxread/widgets/pill_input_surface.dart';
+import 'package:xxread/widgets/measured_size.dart';
 
 class _AiChatEntry {
   _AiChatEntry({required this.role, required this.text, String? content})
@@ -655,7 +654,7 @@ class _AiPageState extends State<AiPage> {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        child: _MeasuredSize(
+                        child: MeasuredSize(
                           onChanged: _updateOverlayHeight,
                           child: Column(
                             key: const ValueKey('ai-page-overlay'),
@@ -770,129 +769,68 @@ class _AiPageState extends State<AiPage> {
   Widget _buildFloatingInputBar(BuildContext context) {
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
-    final isMaterial3Style =
-        Theme.of(
-          context,
-        ).extension<UiStyleThemeExtension>()?.isMaterial3Style ??
-        false;
-    final blurEnabled =
-        !isMaterial3Style && !GlassEffectConfig.shouldDisableBlur;
-    final bar = Container(
-      decoration: BoxDecoration(
-        color: isMaterial3Style
-            ? scheme.surfaceContainerHigh
-            : GlassEffectConfig.chromeSurfaceColor(context),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: scheme.outline.withValues(
-            alpha: isMaterial3Style ? 0.18 : 0.12,
-          ),
-          width: 0.6,
+    return PillInputSurface(
+      fillColor: scheme.surfaceContainerHigh,
+      shadows: [
+        BoxShadow(
+          color: scheme.shadow.withValues(alpha: 0.16),
+          blurRadius: 22,
+          offset: const Offset(0, 9),
         ),
-      ),
-      padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
-      // 全部元素垂直居中：加号、输入文字与发送键保持同一水平线；
-      // 多行输入时整条同步增高，仍居中。
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          IconButton(
-            key: const ValueKey('ai-page-plus'),
-            tooltip: l10n.aiChatSelectBook,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 40, height: 40),
-            onPressed: _sending ? null : () => unawaited(_showPlusMenu()),
-            icon: const Icon(Icons.add_circle_outline, size: 22),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: TextField(
-              key: const ValueKey('ai-page-input'),
-              controller: _inputController,
-              enabled: _configured,
-              minLines: 1,
-              maxLines: 4,
-              textAlignVertical: TextAlignVertical.center,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => unawaited(_handleSend()),
-              style: const TextStyle(fontSize: 15, height: 1.4),
-              decoration: InputDecoration(
-                hintText: l10n.readerAiInputHint,
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 10,
+      ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+        // 全部元素垂直居中：加号、输入文字与发送键保持同一水平线；
+        // 多行输入时整条同步增高，仍居中。
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            IconButton(
+              key: const ValueKey('ai-page-plus'),
+              tooltip: l10n.aiChatSelectBook,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+              onPressed: _sending ? null : () => unawaited(_showPlusMenu()),
+              icon: const Icon(Icons.add_circle_outline, size: 22),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                key: const ValueKey('ai-page-input'),
+                controller: _inputController,
+                enabled: _configured,
+                minLines: 1,
+                maxLines: 4,
+                textAlignVertical: TextAlignVertical.center,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => unawaited(_handleSend()),
+                style: const TextStyle(fontSize: 15, height: 1.4),
+                decoration: InputDecoration(
+                  hintText: l10n.readerAiInputHint,
+                  isDense: true,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 4),
-          IconButton.filled(
-            key: const ValueKey('ai-page-send'),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 40, height: 40),
-            onPressed: _configured && !_sending
-                ? () => unawaited(_handleSend())
-                : null,
-            tooltip: l10n.readerAiSendButton,
-            icon: const Icon(Icons.arrow_upward_rounded, size: 20),
-          ),
-        ],
+            const SizedBox(width: 4),
+            IconButton.filled(
+              key: const ValueKey('ai-page-send'),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+              onPressed: _configured && !_sending
+                  ? () => unawaited(_handleSend())
+                  : null,
+              tooltip: l10n.readerAiSendButton,
+              icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+            ),
+          ],
+        ),
       ),
     );
-
-    // 与悬浮导航栏同参数的玻璃模糊；阴影放在裁剪层外侧避免被裁掉。
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.16),
-            blurRadius: 22,
-            offset: const Offset(0, 9),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: blurEnabled
-            ? BackdropFilter(
-                filter: ui.ImageFilter.blur(
-                  sigmaX: GlassEffectConfig.navigationBarBlur,
-                  sigmaY: GlassEffectConfig.navigationBarBlur,
-                ),
-                child: bar,
-              )
-            : bar,
-      ),
-    );
-  }
-}
-
-class _MeasuredSize extends StatefulWidget {
-  const _MeasuredSize({required this.onChanged, required this.child});
-
-  final ValueChanged<Size> onChanged;
-  final Widget child;
-
-  @override
-  State<_MeasuredSize> createState() => _MeasuredSizeState();
-}
-
-class _MeasuredSizeState extends State<_MeasuredSize> {
-  Size? _lastSize;
-
-  @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final size = context.size;
-      if (size == null || size == _lastSize) return;
-      _lastSize = size;
-      widget.onChanged(size);
-    });
-    return widget.child;
   }
 }
 

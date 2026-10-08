@@ -100,20 +100,17 @@ extension _BookSourceChangePageContent on _BookSourceChangePageState {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          key: const Key('bookSourceChangeQuery'),
+        PillSearchField(
+          textFieldKey: const Key('bookSourceChangeQuery'),
           controller: _queryController,
-          textInputAction: TextInputAction.search,
+          hintText: context.l10n.bookSourceChangeSearchLabel,
+          leadingIcon: Icons.manage_search_rounded,
           onSubmitted: (_) => _startSearch(),
-          decoration: InputDecoration(
-            labelText: context.l10n.bookSourceChangeSearchLabel,
-            prefixIcon: const Icon(Icons.manage_search_rounded),
-            suffixIcon: IconButton(
-              tooltip: context.l10n.bookSourceChangeSearchAgain,
-              onPressed: _preparing ? null : _startSearch,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+          showClearButton: false,
+          trailing: IconButton(
+            tooltip: context.l10n.bookSourceChangeSearchAgain,
+            onPressed: _preparing ? null : _startSearch,
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ),
         const SizedBox(height: 10),

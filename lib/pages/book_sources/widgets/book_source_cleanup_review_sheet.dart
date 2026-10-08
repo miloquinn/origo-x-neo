@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../book_sources/models/registered_book_source.dart';
 import '../../../book_sources/services/book_source_maintenance_assessment.dart';
 import '../../../utils/localization_extension.dart';
+import '../../../widgets/pill_search_field.dart';
 import 'book_source_management_source_card.dart';
 import 'book_source_pill.dart';
 
@@ -183,27 +184,12 @@ class _BookSourceCleanupReviewSheetState
                             ),
                           ),
                           const SizedBox(height: 16),
-                          TextField(
-                            key: const Key('maintenanceResultSearch'),
+                          PillSearchField(
+                            textFieldKey: const Key('maintenanceResultSearch'),
                             controller: _search,
-                            decoration: InputDecoration(
-                              hintText: l10n.bookSourcesMaintenanceReviewSearch,
-                              prefixIcon: const Icon(Icons.search_rounded),
-                              isDense: true,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              suffixIcon: _search.text.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      tooltip: l10n.bookSourcesClearSelection,
-                                      onPressed: _search.clear,
-                                      icon: const Icon(
-                                        Icons.close_rounded,
-                                        size: 18,
-                                      ),
-                                    ),
-                            ),
+                            hintText: l10n.bookSourcesMaintenanceReviewSearch,
+                            onClear: _search.clear,
+                            clearTooltip: l10n.bookSourcesClearSelection,
                           ),
                           const SizedBox(height: 12),
                           Wrap(

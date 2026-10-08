@@ -3,7 +3,6 @@
 
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,10 +13,11 @@ import '../reader_core/ai/ai_error_translator.dart';
 import '../reader_core/ai/ai_service.dart';
 import '../services/ai/ai_chat_history_store.dart';
 import '../services/ai/ai_request_coordinator.dart';
-import '../utils/glass_config.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'release_notes_markdown.dart';
+import 'pill_input_surface.dart';
+import 'measured_size.dart';
 import 'side_toast.dart';
 
 /// Selection context that seeds the conversation when the panel is opened
@@ -152,6 +152,7 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
   String? _error;
   String? _sessionId;
   DateTime? _sessionCreatedAt;
+  double _overlayHeight = 52;
 
   @override
   void initState() {
@@ -304,6 +305,15 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
     });
   }
 
+  void _updateOverlayHeight(Size size) {
+    if ((size.height - _overlayHeight).abs() < 0.5) return;
+    final keepPinnedToBottom =
+        !_scrollController.hasClients ||
+        _scrollController.position.extentAfter < 24;
+    setState(() => _overlayHeight = size.height);
+    if (keepPinnedToBottom) _scrollToBottomSoon();
+  }
+
   /// 键盘收起时为系统手势区高度，弹出时键盘已顶起面板、无需再让位。
   double get _gestureInset {
     final media = MediaQuery.of(context);
@@ -353,28 +363,32 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
                   left: 0,
                   right: 0,
                   bottom: 12 + _gestureInset,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_error != null) ...[
-                        // 悬浮态下垫一层实色，避免下方文字透进半透明错误条。
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: palette.surface,
-                            borderRadius: BorderRadius.circular(14),
+                  child: MeasuredSize(
+                    onChanged: _updateOverlayHeight,
+                    child: Column(
+                      key: const ValueKey('reader-ai-overlay'),
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_error != null) ...[
+                          // 悬浮态下垫一层实色，避免下方文字透进半透明错误条。
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: palette.surface,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: _ReaderAiNotice(
+                              palette: palette,
+                              icon: Icons.error_outline_rounded,
+                              text: _error!,
+                              isError: true,
+                            ),
                           ),
-                          child: _ReaderAiNotice(
-                            palette: palette,
-                            icon: Icons.error_outline_rounded,
-                            text: _error!,
-                            isError: true,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
+                          const SizedBox(height: 6),
+                        ],
+                        _buildInputRow(context),
                       ],
-                      _buildInputRow(context),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -405,12 +419,12 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
     }
     return ListView(
       controller: _scrollController,
-      // 底部预留悬浮胶囊（约 52px + 抬高量）与错误条的高度。
+      // 按实际输入和错误条高度避让，支持多行输入和大字号。
       padding: EdgeInsets.fromLTRB(
         0,
         6,
         0,
-        72 + _gestureInset + (_error != null ? 64 : 0),
+        _overlayHeight + 20 + _gestureInset,
       ),
       children: [
         for (final entry in _entries)
@@ -448,82 +462,70 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
     final l10n = context.l10n;
     final palette = widget.palette;
     final canSend = _configured && !_sending;
-    final blurEnabled = !GlassEffectConfig.shouldDisableBlur;
-    final bar = Container(
-      decoration: BoxDecoration(
-        color: palette.surface.withValues(alpha: blurEnabled ? 0.72 : 1.0),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: palette.border, width: 0.8),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 5, 5, 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: TextField(
-              key: const ValueKey('reader-ai-input'),
-              controller: _inputController,
-              enabled: _configured,
-              minLines: 1,
-              maxLines: 4,
-              textAlignVertical: TextAlignVertical.center,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => unawaited(_handleSend()),
-              style: TextStyle(color: palette.text, fontSize: 14, height: 1.4),
-              cursorColor: palette.accent,
-              decoration: InputDecoration(
-                hintText: l10n.readerAiInputHint,
-                hintStyle: TextStyle(
-                  color: palette.secondaryText.withValues(alpha: 0.8),
+    return PillInputSurface(
+      fillColor: palette.surface,
+      borderColor: palette.border,
+      brightness: palette.brightness,
+      shadows: [
+        BoxShadow(
+          color: palette.shadow.withValues(
+            alpha: palette.brightness == Brightness.dark ? 0.4 : 0.18,
+          ),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+        ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 5, 5, 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: TextField(
+                key: const ValueKey('reader-ai-input'),
+                controller: _inputController,
+                enabled: _configured,
+                minLines: 1,
+                maxLines: 4,
+                textAlignVertical: TextAlignVertical.center,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => unawaited(_handleSend()),
+                style: TextStyle(
+                  color: palette.text,
+                  fontSize: 14,
+                  height: 1.4,
                 ),
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                cursorColor: palette.accent,
+                decoration: InputDecoration(
+                  hintText: l10n.readerAiInputHint,
+                  hintStyle: TextStyle(
+                    color: palette.secondaryText.withValues(alpha: 0.8),
+                  ),
+                  isDense: true,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          IconButton.filled(
-            key: const ValueKey('reader-ai-send'),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 40, height: 40),
-            onPressed: canSend ? () => unawaited(_handleSend()) : null,
-            tooltip: l10n.readerAiSendButton,
-            icon: const Icon(Icons.arrow_upward_rounded, size: 20),
-            style: IconButton.styleFrom(
-              backgroundColor: palette.accent,
-              foregroundColor: palette.onAccent,
-              disabledBackgroundColor: palette.accent.withValues(alpha: 0.32),
-              disabledForegroundColor: palette.onAccent.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: palette.shadow.withValues(
-              alpha: palette.brightness == Brightness.dark ? 0.4 : 0.18,
-            ),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: blurEnabled
-            ? BackdropFilter(
-                filter: ui.ImageFilter.blur(
-                  sigmaX: GlassEffectConfig.navigationBarBlur,
-                  sigmaY: GlassEffectConfig.navigationBarBlur,
+            const SizedBox(width: 8),
+            IconButton.filled(
+              key: const ValueKey('reader-ai-send'),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+              onPressed: canSend ? () => unawaited(_handleSend()) : null,
+              tooltip: l10n.readerAiSendButton,
+              icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+              style: IconButton.styleFrom(
+                backgroundColor: palette.accent,
+                foregroundColor: palette.onAccent,
+                disabledBackgroundColor: palette.accent.withValues(alpha: 0.32),
+                disabledForegroundColor: palette.onAccent.withValues(
+                  alpha: 0.6,
                 ),
-                child: bar,
-              )
-            : bar,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

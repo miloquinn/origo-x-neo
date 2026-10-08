@@ -1,0 +1,150 @@
+{
+  "shaderSupported": true,
+  "captureCount": 18,
+  "captures": [
+    {
+      "name": "liquid-light-opacity-0",
+      "path": "liquid-light-opacity-0.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "liquid-light-opacity-0.5",
+      "path": "liquid-light-opacity-0.5.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "liquid-light-opacity-1",
+      "path": "liquid-light-opacity-1.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "liquid-dark-opacity-0",
+      "path": "liquid-dark-opacity-0.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "liquid-dark-opacity-0.5",
+      "path": "liquid-dark-opacity-0.5.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "liquid-dark-opacity-1",
+      "path": "liquid-dark-opacity-1.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "frosted-light",
+      "path": "frosted-light.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "frosted-dark",
+      "path": "frosted-dark.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "glass-off-light",
+      "path": "glass-off-light.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "liquid-light-narrow-320-text-2",
+      "path": "liquid-light-narrow-320-text-2.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "liquid-light-rtl",
+      "path": "liquid-light-rtl.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "liquid-reader-dark-palette-light-app",
+      "path": "liquid-reader-dark-palette-light-app.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "ai-global-liquid-light-empty",
+      "path": "ai-global-liquid-light-empty.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "ai-global-liquid-light-narrow-320-text-2-multiline",
+      "path": "ai-global-liquid-light-narrow-320-text-2-multiline.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "ai-global-liquid-dark-filled",
+      "path": "ai-global-liquid-dark-filled.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "ai-global-frosted-light-filled",
+      "path": "ai-global-frosted-light-filled.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "ai-reader-liquid-dark-palette-light-app-filled",
+      "path": "ai-reader-liquid-dark-palette-light-app-filled.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    },
+    {
+      "name": "ai-reader-glass-off-dark-palette-light-app-filled",
+      "path": "ai-reader-glass-off-dark-palette-light-app-filled.png",
+      "width": 1320,
+      "height": 2868,
+      "pixelRatio": 3.0,
+      "shaderSupported": true
+    }
+  ]
+}

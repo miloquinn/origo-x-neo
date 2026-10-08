@@ -5,7 +5,11 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/utils/glass_config.dart';
+import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/reader_ai_panel.dart';
+import 'package:xxread/widgets/pill_input_surface.dart';
+import 'package:xxread/widgets/release_notes_markdown.dart';
 
 class _FakeAiService implements ConfigurableAIService {
   _FakeAiService({required this.configured, this.answer = 'AI 的回答'});
@@ -64,6 +68,80 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues(const {});
+  });
+
+  testWidgets('multiline dark-reader input grows and sends in each material', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    addTearDown(() {
+      GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+      GlassEffectConfig.setDisableAllGlassEffects(false);
+    });
+    for (final mode in ['frosted', 'liquid', 'off']) {
+      GlassEffectConfig.setGlassStyle(
+        mode == 'liquid' ? GlassStyle.liquid : GlassStyle.frosted,
+      );
+      GlassEffectConfig.setDisableAllGlassEffects(mode == 'off');
+      final service = _FakeAiService(
+        configured: true,
+        answer: List.filled(16, '这一段表达了人物面对抉择时的犹豫。').join('\n\n'),
+      );
+      final store = AiChatHistoryStore();
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: ReaderAiPanel(
+              palette: ReaderThemes.night,
+              meta: meta,
+              pageText: '当前页正文',
+              aiService: service,
+              historyStore: store,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final input = find.byKey(const ValueKey('reader-ai-input'));
+      await tester.enterText(input, 'Hi');
+      await tester.pumpAndSettle();
+      final height = tester.getSize(input).height;
+      const question = '请解释这一段。\n再说明作者的表达。';
+      await tester.enterText(input, question);
+      await tester.pumpAndSettle();
+      expect(tester.getSize(input).height, greaterThan(height));
+      expect(
+        tester.widget<TextField>(input).style?.color,
+        ReaderThemes.night.text,
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.send);
+      await tester.pumpAndSettle();
+      expect(service.lastHistory?.last.content, question);
+      expect(tester.widget<TextField>(input).controller?.text, isEmpty);
+      await tester.enterText(input, question);
+      await tester.pumpAndSettle();
+      final list = tester.widget<ListView>(find.byType(ListView));
+      list.controller!.jumpTo(list.controller!.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(find.byType(ReleaseNotesMarkdown)).bottom,
+        lessThanOrEqualTo(tester.getRect(find.byType(PillInputSurface)).top),
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      store.dispose();
+    }
   });
 
   testWidgets('sends a typed question and renders the answer', (tester) async {

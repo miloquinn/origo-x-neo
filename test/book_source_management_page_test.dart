@@ -521,7 +521,8 @@ void main() {
 
     await tester.tap(find.byType(AppPopupMenuButton<String>));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    // The shared menu opens over 750ms; tap only after its hit target settles.
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('Operator and rights'));
     await tester.pumpAndSettle();

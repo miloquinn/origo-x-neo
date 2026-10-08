@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../utils/localization_extension.dart';
+import '../../../widgets/pill_search_field.dart';
 
 class BookSourceGroupPicker extends StatefulWidget {
   const BookSourceGroupPicker({
@@ -41,13 +42,9 @@ class _BookSourceGroupPickerState extends State<BookSourceGroupPicker> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              key: const Key('bookSourceGroupSearchField'),
-              decoration: InputDecoration(
-                hintText: context.l10n.bookSourcesSearchGroups,
-                prefixIcon: const Icon(Icons.search_rounded),
-                border: const OutlineInputBorder(),
-              ),
+            child: PillSearchField(
+              textFieldKey: const Key('bookSourceGroupSearchField'),
+              hintText: context.l10n.bookSourcesSearchGroups,
               onChanged: (value) => setState(() => _query = value),
             ),
           ),

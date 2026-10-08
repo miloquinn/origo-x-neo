@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:xxread/pages/book_sources/controllers/book_sources_controller.dart';
+import 'package:xxread/widgets/pill_search_field.dart';
 
 class BookSourceCategoryPicker extends StatefulWidget {
   final List<SourcedBookCategory> categories;
@@ -81,42 +82,16 @@ class _BookSourceCategoryPickerState extends State<BookSourceCategoryPicker> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: TextField(
-              key: const Key('bookSourceCategorySearchField'),
+            child: PillSearchField(
+              textFieldKey: const Key('bookSourceCategorySearchField'),
               controller: _searchController,
-              textInputAction: TextInputAction.search,
+              hintText: widget.searchLabel,
               onChanged: (value) => setState(() => _query = value),
-              decoration: InputDecoration(
-                hintText: widget.searchLabel,
-                prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                        icon: const Icon(Icons.clear_rounded),
-                      ),
-                filled: true,
-                fillColor: scheme.surfaceContainerLow,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide(color: scheme.primary, width: 1.5),
-                ),
-              ),
+              onClear: () {
+                _searchController.clear();
+                setState(() => _query = '');
+              },
+              fillColor: scheme.surfaceContainerLow,
             ),
           ),
           const Divider(height: 1),
