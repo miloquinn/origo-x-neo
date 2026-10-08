@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import Darwin
 
 final class AuthCallbackBridge {
   static let shared = AuthCallbackBridge()
@@ -168,6 +169,18 @@ final class AuthCallbackBridge {
       }
     }
 
+    let diagnosticsChannel = FlutterMethodChannel(
+      name: "com.niki.xxread/diagnostics",
+      binaryMessenger: messenger
+    )
+    diagnosticsChannel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
+      guard call.method == "getResourceSnapshot" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      result(self.diagnosticsSnapshot())
+    }
+
     let frameRateChannel = FlutterMethodChannel(
       name: "com.niki.xxread/fullscreen",
       binaryMessenger: messenger
@@ -214,6 +227,79 @@ final class AuthCallbackBridge {
     super.applicationDidBecomeActive(application)
     applyReaderImmersiveIfPossible()
     IncomingBookInbox.shared.consumeSharedExtensionInboxIfConfigured()
+  }
+
+  private func diagnosticsSnapshot() -> [String: Any] {
+    UIDevice.current.isBatteryMonitoringEnabled = true
+    let level = UIDevice.current.batteryLevel
+    let batteryState = UIDevice.current.batteryState
+    let charging = batteryState == .charging || batteryState == .full
+
+    var vmInfo = task_vm_info_data_t()
+    var vmCount = mach_msg_type_number_t(
+      MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size
+    )
+    let vmResult = withUnsafeMutablePointer(to: &vmInfo) { pointer in
+      pointer.withMemoryRebound(to: integer_t.self, capacity: Int(vmCount)) {
+        task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &vmCount)
+      }
+    }
+
+    var usage = rusage()
+    let usageResult = getrusage(RUSAGE_SELF, &usage)
+    let cpuMilliseconds: Int64? = usageResult == 0
+      ? Int64(usage.ru_utime.tv_sec + usage.ru_stime.tv_sec) * 1_000
+        + Int64(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec) / 1_000
+      : nil
+
+    let appPowerSaving = UserDefaults.standard.bool(
+      forKey: "flutter.power_saving_mode_v1"
+    )
+    let refreshRate = ProcessInfo.processInfo.isLowPowerModeEnabled || appPowerSaving
+      ? 60
+      : UIScreen.main.maximumFramesPerSecond
+
+    let memoryValue: Any = vmResult == KERN_SUCCESS
+      ? NSNumber(value: Int64(vmInfo.phys_footprint))
+      : NSNull()
+    let cpuValue: Any = cpuMilliseconds.map { NSNumber(value: $0) } ?? NSNull()
+    let batteryValue: Any = level >= 0
+      ? NSNumber(value: Int((level * 100).rounded()))
+      : NSNull()
+    let chargingValue: Any = batteryState == .unknown
+      ? NSNull()
+      : NSNumber(value: charging)
+
+    return [
+      "memory_bytes": memoryValue,
+      "cpu_time_ms": cpuValue,
+      "battery_level": batteryValue,
+      "charging": chargingValue,
+      "thermal_state": diagnosticsThermalState(),
+      "device_model": diagnosticsDeviceModel(),
+      "os_version": UIDevice.current.systemVersion,
+      "display_refresh_rate_hz": Double(refreshRate),
+    ]
+  }
+
+  private func diagnosticsThermalState() -> String {
+    switch ProcessInfo.processInfo.thermalState {
+    case .nominal: return "nominal"
+    case .fair: return "fair"
+    case .serious: return "serious"
+    case .critical: return "critical"
+    @unknown default: return "unknown"
+    }
+  }
+
+  private func diagnosticsDeviceModel() -> String {
+    var systemInfo = utsname()
+    uname(&systemInfo)
+    return withUnsafePointer(to: &systemInfo.machine) { pointer in
+      pointer.withMemoryRebound(to: CChar.self, capacity: 1) {
+        String(cString: $0)
+      }
+    }
   }
 
   override func application(

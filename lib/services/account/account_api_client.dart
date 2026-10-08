@@ -77,6 +77,7 @@ class MemberAccountApiClient {
 
   static const authRoot = '/api/v1/auth';
   static const membershipRoot = '/api/v1/membership';
+  static const supportRoot = '/api/v1/support';
 
   final Dio _dio;
   final MemberTokenStore _tokenStore;
@@ -172,6 +173,28 @@ class MemberAccountApiClient {
     // upload must not refresh and overwrite credentials after an account switch.
     retryAuthentication: false,
   );
+
+  Future<Map<String, dynamic>> submitFeedback(Map<String, dynamic> feedback) =>
+      _jsonRequest('POST', '$supportRoot/feedback', data: feedback);
+
+  Future<List<String>> uploadDiagnostics(
+    List<Map<String, dynamic>> reports, {
+    required String expectedUserId,
+  }) async {
+    if (reports.isEmpty) return const [];
+    final json = await _jsonRequest(
+      'POST',
+      '$supportRoot/diagnostics',
+      data: {'expected_user_id': expectedUserId, 'reports': reports},
+    );
+    final accepted = json['accepted'];
+    if (accepted is! List) {
+      throw const MemberAccountException('服务器返回了无法识别的数据');
+    }
+    return List<String>.unmodifiable(
+      accepted.whereType<String>().where((id) => id.isNotEmpty),
+    );
+  }
 
   Future<MemberSession> restoreSession() async {
     final networkGeneration = _captureNetworkGeneration();

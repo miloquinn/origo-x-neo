@@ -54,6 +54,7 @@ import 'services/tts_service.dart';
 import 'services/reader_aloud_service.dart';
 import 'services/reader_aloud_session.dart';
 import 'services/account/account.dart';
+import 'services/diagnostics/diagnostics_controller.dart';
 import 'package:path_provider/path_provider.dart';
 import 'utils/localization_extension.dart';
 import 'utils/font_catalog_helper.dart';
@@ -123,6 +124,19 @@ void main(List<String> arguments) async {
           ),
           provider.ChangeNotifierProvider(
             create: (_) => MemberAccountController(networkAllowed: false),
+          ),
+          provider.ChangeNotifierProvider(
+            lazy: false,
+            create: (context) {
+              final account = provider.Provider.of<MemberAccountController>(
+                context,
+                listen: false,
+              );
+              final diagnostics = DiagnosticsController(account: account)
+                ..setNetworkAllowed(account.networkAllowed);
+              unawaited(diagnostics.initialize());
+              return diagnostics;
+            },
           ),
           provider.ChangeNotifierProvider(
             lazy: false,
@@ -414,6 +428,10 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
       context,
       listen: false,
     ).setNetworkAllowed(false);
+    provider.Provider.of<DiagnosticsController>(
+      context,
+      listen: false,
+    ).setNetworkAllowed(false);
     provider.Provider.of<ReadingCloudController>(
       context,
       listen: false,
@@ -436,6 +454,10 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
       listen: false,
     );
     account.setNetworkAllowed(true);
+    provider.Provider.of<DiagnosticsController>(
+      context,
+      listen: false,
+    ).setNetworkAllowed(true);
     cloud.setNetworkAllowed(true);
     await account.synchronize();
     if (!mounted || _hasAcceptedAgreement != true || !cloud.networkAllowed) {
@@ -550,6 +572,10 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     });
     _legalNavigationObserver.required = true;
     provider.Provider.of<MemberAccountController>(
+      context,
+      listen: false,
+    ).setNetworkAllowed(false);
+    provider.Provider.of<DiagnosticsController>(
       context,
       listen: false,
     ).setNetworkAllowed(false);

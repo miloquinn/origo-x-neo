@@ -15,8 +15,7 @@ extension _SettingsLayoutPart on _SettingsPageState {
         const Spacer(),
         InkWell(
           borderRadius: BorderRadius.circular(22),
-          onTap: () =>
-              showSideToast(context, context.l10n.settingsHelpPlaceholder),
+          onTap: _openFeedback,
           child: Container(
             width: 44,
             height: 44,
@@ -317,20 +316,35 @@ extension _SettingsLayoutPart on _SettingsPageState {
   }
 
   Widget _buildSupportSettingsSection(AppLocalizations l10n) {
-    // Store builds do not expose QR-code or website payment entry points.
-    if (!AppDistribution.allowsExternalSupport) {
-      return const SizedBox.shrink();
-    }
+    final copy = FeedbackCopy.of(context);
+    final diagnostics = context.watch<DiagnosticsController?>();
     return _buildSectionCard(
       title: l10n.settingsSectionAboutSupport,
       icon: Icons.volunteer_activism_outlined,
       children: [
-        DeveloperSupportCard(
-          onWechatTap: () =>
-              _showDonationDialog(DeveloperDonationMethod.wechat),
-          onAlipayTap: () =>
-              _showDonationDialog(DeveloperDonationMethod.alipay),
+        _buildSwitchSetting(
+          key: const ValueKey('settings-diagnostics-enabled'),
+          title: copy.improvePerformance,
+          subtitle: diagnostics?.supported == true
+              ? copy.improvePerformanceBody
+              : copy.diagnosticsUnavailable,
+          value: diagnostics?.enabled ?? false,
+          onChanged: (value) {
+            if (diagnostics != null) {
+              unawaited(diagnostics.setEnabled(value));
+            }
+          },
+          icon: Icons.monitor_heart_outlined,
+          enabled: diagnostics?.supported ?? false,
+          persistPageSettings: false,
         ),
+        if (AppDistribution.allowsExternalSupport)
+          DeveloperSupportCard(
+            onWechatTap: () =>
+                _showDonationDialog(DeveloperDonationMethod.wechat),
+            onAlipayTap: () =>
+                _showDonationDialog(DeveloperDonationMethod.alipay),
+          ),
       ],
     );
   }

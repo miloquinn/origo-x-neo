@@ -3,7 +3,7 @@
   "bundles": {
     "zh-CN": {
       "schemaVersion": 1,
-      "bundleVersion": "2026-10-08.1",
+      "bundleVersion": "2026-10-08.2",
       "locale": "zh-CN",
       "documents": [
         {
@@ -94,14 +94,12 @@
           "locale": "zh-CN",
           "title": "隐私政策",
           "summary": "说明开元阅读 App 与官网如何处理个人信息，以及本地阅读、账号和可选联网功能之间的数据边界。",
-          "revision": "2026-10-08.1",
-          "consentVersion": "2026-10-08.1",
+          "revision": "2026-10-08.2",
+          "consentVersion": "2026-10-08.2",
           "effectiveDate": "2026-10-08",
           "updatedAt": "2026-10-08",
           "changeSummary": [
-            "统一隐私政策版本与生效日期。",
-            "保留本地阅读、账号、风控、购买、可选联网功能及保留期限的现行说明。",
-            "补充账号阅读统计、Huawei 登录、中国大陆生产服务和注销后交易终态归属说明。"
+            "新增主动反馈和默认关闭的 Android/iOS 性能诊断，说明上传字段、账号关联、保留期限与关闭方式。"
           ],
           "canonicalUrl": "https://open.xxread.top/privacy",
           "requiresAcceptance": true,
@@ -164,6 +162,16 @@
               ]
             },
             {
+              "id": "feedback-diagnostics",
+              "title": "反馈与可选性能诊断",
+              "paragraphs": [
+                "你登录后主动提交反馈时，我们会接收问题分类、你填写的说明、App 版本和平台，并与当前账号关联。请不要填写密码、验证码、令牌、书籍正文或不必要的个人信息。反馈不会自动附带截图、书籍内容或完整运行日志。",
+                "Android 和 iOS 的“帮助改善性能”默认关闭，只有你主动开启后才进行轻量采集。指标包括平台、系统及设备型号、App 版本、前台时长、帧耗时和慢帧计数、进程内存与 CPU 时间、电量变化和设备热状态；能力因系统而异，不可用的指标不作零值处理。不会为此读取书名、正文、书源地址、密钥或其他 App 的使用记录。",
+                "诊断在本机汇总；已登录且已接受当前协议时，摘要通过 HTTPS 批量上传到我们的账号服务，与当前账号关联，不发送给广告分析服务。反馈页的“附带性能摘要”由你单独选择。估算掉电率表示连续未接电使用期间的整机电量变化，受屏幕、系统和其他后台活动影响，不等于 App 独占的精确耗电。",
+                "你可在反馈页随时关闭性能诊断，停止后续采集和上传，并清除本机待上传摘要。退出或切换账号会清除旧账号的待上传摘要。已发送资料不会因关闭开关或退出账号自动撤回；反馈和附件按 90 天、自动上传摘要按 30 天定期清理，账号注销会删除对应记录。备份副本可能在备份轮换后才消除。"
+              ]
+            },
+            {
               "id": "website",
               "title": "官网、运行记录与本地存储",
               "paragraphs": [
@@ -178,7 +186,7 @@
               "paragraphs": [
                 "我们为提供你请求的功能、维护账号和购买权益、保护服务安全、处理支持请求及改进下载服务而处理数据。对于需要你授权的可选功能，由你决定是否开启；在适用法律要求的其他情形，我们会另行取得相应授权。",
                 "我们不出售个人信息，不将阅读内容用于广告画像，也不将数据提供给数据经纪商或用于跨公司广告追踪。必要的数据会由承载服务的云基础设施、你选择的身份或支付平台及你主动连接的外部服务处理。发生法定义务、安全事件或争议时，我们可能在必要范围内保留或提供相关记录。",
-                "我们没有在 App 中集成用于自动上传阅读行为的广告或通用分析 SDK。本机调试记录不会因此自动发送给我们；你主动分享的诊断或支持材料可能包含书名、路径或截图，请先检查并遮盖敏感内容。系统平台自行收集的诊断信息受其设置和政策约束。"
+                "我们没有在 App 中集成用于自动上传阅读行为的广告或通用分析 SDK。本机完整调试记录不会自动发送给我们；上述可选性能诊断仅上传列明的摘要。你另外主动分享的支持材料可能包含书名、路径或截图，请先检查并遮盖敏感内容。系统平台自行收集的诊断信息受其设置和政策约束。"
               ]
             },
             {
@@ -188,7 +196,7 @@
                 "本地内容通常保留到你删除、清理应用数据或卸载为止；系统备份、你导出的文件和 WebDAV 副本需要分别管理。账号数据在提供账号服务期间保留；购买和安全记录按履行交易、处理争议、防止欺诈及适用法律所必需的期限保留。我们不会把退出登录视为删除账号。",
                 "下载明细中的 IP、IP 哈希、浏览器信息和地区数据按 180 天期限定期清理，累计下载数量可以继续保留。网站访问日志按大小轮换，最长保留 30 天。邮箱验证码记录在请求两天后清理；过期会话和临时登录挑战另有短期清理机制。账号主体、交易和安全审计记录目前没有统一的自动删除期限。",
                 "数据删除请求会按数据类别处理。必须继续保留的部分会限制用途；备份副本可能在备份轮换后才消除。不同数据的保留周期并不相同，我们不承诺所有数据均在固定天数内自动删除。",
-                "你在 App 或官网自助注销账号时，账号主体、登录方式、会话、双重验证配置、会员权益、邀请关系和云端阅读统计会被删除。已兑换卡密保持已使用状态；账号绑定的开卷与探元购买会终止为不可重新认领的记录，并保留不可变的原账号归属，用于防止把同一交易换号重绑。注销还会留下一条不含邮箱明文的最小记录。",
+                "你在 App 或官网自助注销账号时，账号主体、登录方式、会话、双重验证配置、会员权益、邀请关系、云端阅读统计、反馈和性能诊断会被删除。已兑换卡密保持已使用状态；账号绑定的开卷与探元购买会终止为不可重新认领的记录，并保留不可变的原账号归属，用于防止把同一交易换号重绑。注销还会留下一条不含邮箱明文的最小记录。",
                 "我们采用 HTTPS、认证控制和访问限制等措施保护在线数据。你自行提供的第三方服务地址及共享文件是否安全，取决于该服务和你的配置。没有任何网络或存储措施能够保证绝对安全。",
                 "WebDAV 同步目前不提供应用层端到端加密；同步数据在你选择的服务端以可读取的数据或文件保存。HTTPS 保护传输过程，不代表服务端无法读取内容。"
               ]
@@ -372,14 +380,12 @@
           "locale": "zh-CN",
           "title": "隐私声明与用户选择",
           "summary": "管理本机内容、账号和第三方副本。退出登录、删除本地内容与删除服务器数据，是不同的操作。",
-          "revision": "2026-10-08.1",
-          "consentVersion": "2026-10-08.1",
+          "revision": "2026-10-08.2",
+          "consentVersion": "2026-10-08.2",
           "effectiveDate": "2026-10-08",
           "updatedAt": "2026-10-08",
           "changeSummary": [
-            "统一隐私选择说明的版本、日期与入口。",
-            "保留本地、账号、WebDAV、AI、权限和网站数据的现有控制方式。",
-            "明确账号注销会删除云端阅读统计，账号绑定购买不能换号恢复。"
+            "新增主动反馈和默认关闭的 Android/iOS 性能诊断，说明上传字段、账号关联、保留期限与关闭方式。"
           ],
           "canonicalUrl": "https://open.xxread.top/privacy-choices",
           "requiresAcceptance": false,
@@ -390,6 +396,14 @@
               "paragraphs": [
                 "你可以在 App 对应的书架、书籍、笔记和设置界面管理或删除内容，并使用已提供的导出、备份功能保留自己的副本。操作前请确认是否还需要书籍文件、书签或批注。",
                 "卸载或清理 App 数据可能清除本机资料，但不会清除你导出的文件、系统备份、iCloud 文件或 WebDAV 远端副本。也不要把删除本地书架条目理解为删除所有原始文件。"
+              ]
+            },
+            {
+              "id": "feedback-diagnostics",
+              "title": "管理反馈与性能诊断",
+              "paragraphs": [
+                "Android/iOS 设置中的“问题反馈”提供反馈提交及“帮助改善性能”开关。该开关默认关闭，不影响正常阅读；开启仅表示同意采集本页面列明的性能摘要，不授予读取阅读内容或其他 App 数据的权限。反馈附件也由你单独选择。",
+                "关闭开关会停止新采集和上传并清除本机待上传摘要；退出或切换账号清除旧账号待上传摘要。关闭不会撤回已经发送的反馈或诊断。自动摘要保留 30 天，反馈及附件保留 90 天，过期记录定期清理；注销账号删除对应在线记录。如需提前处理已发送资料，可通过 App 反馈或下方渠道提出隐私请求。"
               ]
             },
             {
@@ -539,7 +553,7 @@
     },
     "en": {
       "schemaVersion": 1,
-      "bundleVersion": "2026-10-08.1",
+      "bundleVersion": "2026-10-08.2",
       "locale": "en",
       "documents": [
         {
@@ -630,14 +644,12 @@
           "locale": "en",
           "title": "Privacy Policy",
           "summary": "How Origo X and its website handle personal information across local reading, account services and optional online features.",
-          "revision": "2026-10-08.1",
-          "consentVersion": "2026-10-08.1",
+          "revision": "2026-10-08.2",
+          "consentVersion": "2026-10-08.2",
           "effectiveDate": "2026-10-08",
           "updatedAt": "2026-10-08",
           "changeSummary": [
-            "Unifies the policy version and effective date.",
-            "Preserves current disclosures for local reading, accounts, risk controls, purchases, optional online features and retention.",
-            "Adds account reading statistics, Huawei sign-in, mainland-China production services and terminal purchase ownership after account deletion."
+            "Adds user-submitted feedback and optional Android/iOS performance diagnostics, including fields, account association, retention and controls."
           ],
           "canonicalUrl": "https://open.xxread.top/privacy",
           "requiresAcceptance": true,
@@ -700,6 +712,16 @@
               ]
             },
             {
+              "id": "feedback-diagnostics",
+              "title": "Feedback and optional performance diagnostics",
+              "paragraphs": [
+                "When you submit feedback while signed in, we receive the category, description you enter, app version and platform, associated with your account. Do not include passwords, verification codes, tokens, book text or unnecessary personal information. Feedback does not automatically attach screenshots, books or full logs.",
+                "Help improve performance is off by default on Android and iOS. Lightweight collection starts only when you enable it. Metrics include platform, OS and device model, app version, foreground duration, frame timing and slow-frame counts, process memory and CPU time, battery changes and thermal state. Availability varies by system; unavailable values are not treated as zero. This feature does not read book names or text, source URLs, keys or usage records of other apps.",
+                "Diagnostics are summarized locally. While signed in and after accepting the current agreement, summaries are uploaded in batches over HTTPS to our account service and associated with your account, not an advertising analytics service. Attaching a performance summary to feedback is a separate choice. Estimated battery drain measures whole-device battery change during continuous unplugged use and includes display, system and other background activity; it is not exact app-only energy use.",
+                "You may disable diagnostics from the feedback page at any time to stop future collection and uploads and clear local pending summaries. Signing out or switching accounts clears the old account’s pending summaries. Disabling or signing out does not retract records already sent. Feedback and its attachments expire after 90 days; automatically uploaded summaries expire after 30 days and are cleaned periodically. Account deletion removes associated records. Backup copies may remain until backup rotation."
+              ]
+            },
+            {
               "id": "website",
               "title": "Website, operational records and storage",
               "paragraphs": [
@@ -714,7 +736,7 @@
               "paragraphs": [
                 "We process data to provide requested features, maintain accounts and purchase entitlements, protect the service, respond to support requests and improve download services. You decide whether to enable optional features requiring your authorization. We seek additional authorization where applicable law requires it.",
                 "We do not sell personal information, use reading content to build advertising profiles, or provide data to brokers or for cross-company advertising tracking. Necessary information is processed by our cloud infrastructure, your chosen identity or payment platforms and external services you connect. We may retain or disclose relevant records where necessary for legal obligations, security incidents or disputes.",
-                "The app does not integrate advertising or general analytics SDKs that automatically upload reading activity. Local debug records are not automatically sent to us. Diagnostic or support material you choose to share may contain book names, file paths or screenshots; review and redact it first. Platform diagnostics collected by the operating system are governed by its settings and policies."
+                "The app does not integrate advertising or general analytics SDKs that automatically upload reading activity. Full local debug records are not automatically sent to us; optional performance diagnostics upload only the summaries described above. Other support material you choose to share may contain book names, paths or screenshots; review and redact it first. Platform diagnostics are governed by operating-system settings and policies."
               ]
             },
             {
@@ -724,7 +746,7 @@
                 "Local content generally remains until you delete it, clear app data or uninstall. System backups, exports and WebDAV copies must be managed separately. Account information is retained while we provide account services. Purchase and security records are retained as necessary for transactions, disputes, fraud prevention and applicable legal requirements. Signing out is not account deletion.",
                 "IP addresses, IP hashes, browser information and region data in download event details are periodically cleared under a 180-day retention period; cumulative download counts may remain. Website access logs rotate by size and are kept for up to 30 days. Email verification records are cleared two days after the request; expired sessions and temporary sign-in challenges have separate short-term cleanup rules. Core account, transaction and security audit records currently have no single automatic deletion period.",
                 "Deletion requests are handled by data category. Any records that must remain are restricted to the necessary purposes. Backup copies may remain until backup rotation. Retention periods differ; we do not promise that all records are automatically erased after a fixed number of days.",
-                "When you delete your account yourself in the app or on the website, the account record, sign-in methods, sessions, two-factor setup, membership access, referral links and cloud reading statistics are deleted. Redeemed codes remain spent. Account-bound Reader and Explorer purchases become terminal records that cannot be claimed again, while immutable original account ownership remains to prevent moving the same transaction to another account. A minimal deletion record remains without the plaintext email address.",
+                "When you delete your account yourself in the app or on the website, the account record, sign-in methods, sessions, two-factor setup, membership access, referral links, cloud reading statistics, feedback and performance diagnostics are deleted. Redeemed codes remain spent. Account-bound Reader and Explorer purchases become terminal records that cannot be claimed again, while immutable original account ownership remains to prevent moving the same transaction to another account. A minimal deletion record remains without the plaintext email address.",
                 "We use HTTPS, authentication controls and access restrictions to protect online data. The security of third-party addresses and shared files depends on the service and your configuration. No network or storage measure can guarantee absolute security.",
                 "WebDAV sync currently has no app-level end-to-end encryption. Synced data is stored as readable data or files on your selected service. HTTPS protects data in transit; it does not prevent the service from reading it."
               ]
@@ -908,14 +930,12 @@
           "locale": "en",
           "title": "Privacy Notice & Choices",
           "summary": "Manage local content, your account and third-party copies. Signing out, deleting local files and deleting server data are separate actions.",
-          "revision": "2026-10-08.1",
-          "consentVersion": "2026-10-08.1",
+          "revision": "2026-10-08.2",
+          "consentVersion": "2026-10-08.2",
           "effectiveDate": "2026-10-08",
           "updatedAt": "2026-10-08",
           "changeSummary": [
-            "Unifies the version, dates and entry point for privacy choices.",
-            "Preserves existing controls for local data, accounts, WebDAV, AI, permissions and website data.",
-            "Clarifies that account deletion removes cloud reading statistics and account-bound purchases cannot be restored to another account."
+            "Adds user-submitted feedback and optional Android/iOS performance diagnostics, including fields, account association, retention and controls."
           ],
           "canonicalUrl": "https://open.xxread.top/privacy-choices",
           "requiresAcceptance": false,
@@ -926,6 +946,14 @@
               "paragraphs": [
                 "Use the relevant library, book, note and settings screens to manage or delete content, and the available export and backup features to keep a copy. Check whether you still need book files, bookmarks or annotations before deleting them.",
                 "Uninstalling or clearing app data may remove local information, but does not erase exported files, system backups, iCloud files or WebDAV copies. Removing a library entry does not necessarily delete every original file."
+              ]
+            },
+            {
+              "id": "feedback-diagnostics",
+              "title": "Manage feedback and performance diagnostics",
+              "paragraphs": [
+                "Problem feedback in Android/iOS settings provides feedback submission and the Help improve performance switch. It is off by default and does not affect reading. Enabling it authorizes only the stated performance summaries, not reading content or other apps’ data. Feedback attachments are a separate choice.",
+                "Disabling clears local pending summaries and stops new collection and uploads. Signing out or switching accounts clears the previous account’s pending summaries. Disabling does not retract records already sent. Automatic summaries are kept for 30 days; feedback and attachments for 90 days, with expired records cleaned periodically. Account deletion removes associated online records. Use app feedback or the contact below for an earlier privacy request."
               ]
             },
             {

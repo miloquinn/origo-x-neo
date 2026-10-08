@@ -10,6 +10,7 @@ import 'package:xxread/models/legal_document.dart';
 import 'package:xxread/pages/legal/user_agreement_page.dart';
 import 'package:xxread/services/account/member_account_controller.dart';
 import 'package:xxread/services/core/core_services.dart';
+import 'package:xxread/services/diagnostics/diagnostics_controller.dart';
 import 'package:xxread/services/legal/legal_document_repository.dart';
 import 'package:xxread/services/reading/reading_cloud_controller.dart';
 
@@ -30,6 +31,7 @@ void main() {
       expect(fixture.cloud.initializeCalls, 0);
       expect(fixture.cloud.networkAllowed, isFalse);
       expect(fixture.account.networkAllowed, isFalse);
+      expect(fixture.diagnostics.networkAllowed, isFalse);
 
       fixture.repository.complete(
         LegalCatalogSnapshot(
@@ -43,6 +45,7 @@ void main() {
       expect(fixture.cloud.initializeCalls, 0);
       expect(fixture.cloud.networkAllowed, isFalse);
       expect(fixture.account.networkAllowed, isFalse);
+      expect(fixture.diagnostics.networkAllowed, isFalse);
       expect(find.byKey(const Key('welcomeAgreements')), findsOneWidget);
       await fixture.dispose(tester);
     },
@@ -64,6 +67,7 @@ void main() {
     expect(fixture.cloud.initializeCalls, 1);
     expect(fixture.cloud.networkAllowed, isTrue);
     expect(fixture.account.networkAllowed, isTrue);
+    expect(fixture.diagnostics.networkAllowed, isTrue);
     await fixture.dispose(tester);
   });
 
@@ -86,6 +90,7 @@ void main() {
     expect(fixture.cloud.initializeCalls, 1);
     expect(fixture.cloud.networkAllowed, isTrue);
     expect(fixture.account.networkAllowed, isTrue);
+    expect(fixture.diagnostics.networkAllowed, isTrue);
     await fixture.dispose(tester);
   });
 
@@ -106,6 +111,7 @@ void main() {
     expect(fixture.cloud.initializeCalls, 1);
     expect(fixture.cloud.networkAllowed, isTrue);
     expect(fixture.account.networkAllowed, isTrue);
+    expect(fixture.diagnostics.networkAllowed, isTrue);
     await fixture.dispose(tester);
   });
 }
@@ -116,6 +122,7 @@ Future<_Fixture> _mountAcceptedApp(WidgetTester tester) async {
   final repository = _ControlledLegalRepository(accepted);
   final account = _CountingAccount();
   final cloud = _CountingCloud(account);
+  final diagnostics = _CountingDiagnostics(account);
   final theme = ThemeNotifier();
   final settings = AppSettingsNotifier(account: account);
 
@@ -129,6 +136,9 @@ Future<_Fixture> _mountAcceptedApp(WidgetTester tester) async {
         provider.ChangeNotifierProvider<ReadingCloudController>.value(
           value: cloud,
         ),
+        provider.ChangeNotifierProvider<DiagnosticsController>.value(
+          value: diagnostics,
+        ),
         provider.ChangeNotifierProvider<AppSettingsNotifier>.value(
           value: settings,
         ),
@@ -141,6 +151,7 @@ Future<_Fixture> _mountAcceptedApp(WidgetTester tester) async {
     repository: repository,
     account: account,
     cloud: cloud,
+    diagnostics: diagnostics,
     theme: theme,
     settings: settings,
   );
@@ -212,6 +223,7 @@ class _Fixture {
     required this.repository,
     required this.account,
     required this.cloud,
+    required this.diagnostics,
     required this.theme,
     required this.settings,
   });
@@ -219,6 +231,7 @@ class _Fixture {
   final _ControlledLegalRepository repository;
   final _CountingAccount account;
   final _CountingCloud cloud;
+  final _CountingDiagnostics diagnostics;
   final ThemeNotifier theme;
   final AppSettingsNotifier settings;
 
@@ -228,6 +241,19 @@ class _Fixture {
     settings.dispose();
     theme.dispose();
     cloud.dispose();
+    diagnostics.dispose();
     account.dispose();
+  }
+}
+
+class _CountingDiagnostics extends DiagnosticsController {
+  _CountingDiagnostics(MemberAccountController account)
+    : super(account: account);
+
+  bool networkAllowed = false;
+
+  @override
+  void setNetworkAllowed(bool allowed) {
+    networkAllowed = allowed;
   }
 }

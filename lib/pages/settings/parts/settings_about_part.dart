@@ -62,6 +62,12 @@ extension _SettingsAboutPart on _SettingsPageState {
           _buildAboutLine(l10n.settingsVersionLabel, _appVersion),
           const SizedBox(height: 4),
           _buildAboutNavigationLink(
+            key: const ValueKey('settings-feedback-link'),
+            title: FeedbackCopy.of(context).title,
+            icon: Icons.forum_outlined,
+            onTap: _openFeedback,
+          ),
+          _buildAboutNavigationLink(
             key: const ValueKey('settings-legal-documents-link'),
             title: LegalCopy.of(context).hubTitle,
             icon: Icons.policy_outlined,
@@ -264,6 +270,12 @@ extension _SettingsAboutPart on _SettingsPageState {
         ),
       ),
     );
+  }
+
+  void _openFeedback() {
+    Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute(builder: (_) => const FeedbackPage()));
   }
 
   void _openChangelogHistory() {

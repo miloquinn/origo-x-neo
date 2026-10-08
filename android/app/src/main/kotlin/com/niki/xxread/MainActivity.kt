@@ -15,12 +15,17 @@ import android.util.Log
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.os.Build
+import android.os.Debug
+import android.os.PowerManager
+import android.os.Process
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.niki.xxread/fullscreen"
     private val READER_KEYS_CHANNEL = "com.niki.xxread/reader_keys"
     private val READER_STATUS_CHANNEL = "com.niki.xxread/reader_status"
     private val ACCOUNT_AUTH_CHANNEL = "com.niki.xxread/account_auth"
+    private val DIAGNOSTICS_CHANNEL = "com.niki.xxread/diagnostics"
     private var readerKeysChannel: MethodChannel? = null
     private var accountAuthChannel: MethodChannel? = null
     private var pendingAuthCallback: String? = null
@@ -101,6 +106,16 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getBatteryStatus" -> result.success(readBatteryStatus())
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            DIAGNOSTICS_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getResourceSnapshot" -> result.success(readDiagnosticsSnapshot())
                 else -> result.notImplemented()
             }
         }
@@ -403,6 +418,51 @@ class MainActivity : FlutterActivity() {
         return mapOf(
             "level" to ((level * 100f) / scale).toInt().coerceIn(0, 100),
             "charging" to charging,
+        )
+    }
+
+    private fun readDiagnosticsSnapshot(): Map<String, Any?> {
+        val memoryInfo = Debug.MemoryInfo()
+        Debug.getMemoryInfo(memoryInfo)
+        val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val level = battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = battery?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val plugged = battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        val batteryLevel = if (level >= 0 && scale > 0) {
+            ((level * 100f) / scale).toInt().coerceIn(0, 100)
+        } else {
+            null
+        }
+        val thermalState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val powerManager = getSystemService(PowerManager::class.java)
+            when (powerManager?.currentThermalStatus) {
+                PowerManager.THERMAL_STATUS_NONE -> "nominal"
+                PowerManager.THERMAL_STATUS_LIGHT -> "fair"
+                PowerManager.THERMAL_STATUS_MODERATE,
+                PowerManager.THERMAL_STATUS_SEVERE -> "serious"
+                PowerManager.THERMAL_STATUS_CRITICAL,
+                PowerManager.THERMAL_STATUS_EMERGENCY,
+                PowerManager.THERMAL_STATUS_SHUTDOWN -> "critical"
+                else -> "unknown"
+            }
+        } else {
+            "unknown"
+        }
+        val refreshRate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            display?.refreshRate
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.refreshRate
+        }
+        return mapOf(
+            "memory_bytes" to memoryInfo.totalPss.toLong() * 1024L,
+            "cpu_time_ms" to Process.getElapsedCpuTime(),
+            "battery_level" to batteryLevel,
+            "charging" to if (battery == null) null else plugged != 0,
+            "thermal_state" to thermalState,
+            "device_model" to Build.MODEL,
+            "os_version" to Build.VERSION.RELEASE,
+            "display_refresh_rate_hz" to refreshRate?.toDouble(),
         )
     }
 }

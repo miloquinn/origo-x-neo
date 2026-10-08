@@ -178,6 +178,8 @@ jobs:
           done
 
           flutter test test/library_cover_storage_repair_test.dart
+          flutter test test/diagnostics_controller_test.dart
+          flutter test test/support_feedback_page_test.dart
           flutter test test/library_shelf_folders_test.dart
           flutter test test/library_shelf_motion_test.dart
           flutter test test/library_shelf_card_test.dart
