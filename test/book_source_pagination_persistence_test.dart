@@ -19,6 +19,8 @@ import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
 import 'package:xxread/data/migration/book_source_reading_progress_schema_migration.dart';
 
+import 'support/no_shelf_book_source_service.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late Directory directory;
@@ -83,6 +85,7 @@ void main() {
                 database: () async => database,
               ),
               client: client,
+              shelfService: NoShelfBookSourceService(client),
               paginationCacheDao: PaginationCacheDao(
                 databaseProvider: () async => database,
               ),

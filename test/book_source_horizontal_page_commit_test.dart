@@ -13,6 +13,8 @@ import 'package:xxread/pages/reader/book_source/book_source_reader_page.dart';
 import 'package:xxread/services/books/pagination_cache_dao.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
 
+import 'support/no_shelf_book_source_service.dart';
+
 void main() {
   testWidgets('horizontal source page commits only after scrolling settles', (
     tester,
@@ -42,6 +44,7 @@ void main() {
           source: _source,
           book: _book,
           client: client,
+          shelfService: NoShelfBookSourceService(client),
           progressStore: progressStore,
         ),
       ),
@@ -102,6 +105,7 @@ void main() {
           source: _source,
           book: _book,
           client: client,
+          shelfService: NoShelfBookSourceService(client),
           progressStore: progressStore,
         ),
       ),
