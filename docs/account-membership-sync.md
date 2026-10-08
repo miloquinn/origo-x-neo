@@ -19,6 +19,7 @@
 ## 维护入口与回归
 
 - `lib/services/account/member_account_controller.dart`：本地恢复、显示 getter、并行启动、被动同步节流和过期通知。
+- `lib/services/account/store_purchase_service.dart`：`listenForTransactions` 只恢复交易监听；`initialize` 负责商品价格加载。商店连接可用性不得决定账号是否有效。
 - `lib/services/account/membership_cache.dart` / `account_summary_cache.dart`：会员快照与身份摘要存储，沿用现有格式以兼容已安装版本。
 - `lib/widgets/settings_account_card.dart`、`lib/pages/account/account_page.dart`、`premium_membership_page.dart`：显示快照，有身份时不显示启动同步转圈；商店加载提示只对应实际商店操作。
 - `test/account_service_test.dart`：阻塞网络时的首屏、配置独立性、实时覆盖、账号隔离、失败保留、被动请求次数及严格授权。
