@@ -832,7 +832,13 @@ class MemberReferral {
     required this.inviteUrl,
     required this.invitedCount,
     required this.rewardedCount,
+    required this.activeCount,
+    required this.paidCount,
     required this.recentInvites,
+    required this.rewards,
+    this.enrolled = false,
+    this.canEnroll = false,
+    this.campaign,
     this.inviter,
   });
 
@@ -845,6 +851,18 @@ class MemberReferral {
       inviter: inviter.isEmpty ? null : MemberReferralInviter.fromJson(inviter),
       invitedCount: stats['invited'] as int? ?? 0,
       rewardedCount: stats['rewarded'] as int? ?? 0,
+      activeCount: stats['active'] as int? ?? 0,
+      paidCount: stats['paid'] as int? ?? 0,
+      enrolled: json['enrolled'] == true,
+      canEnroll: json['can_enroll'] == true,
+      campaign: _map(json['campaign']).isEmpty
+          ? null
+          : MemberReferralCampaign.fromJson(_map(json['campaign'])),
+      rewards: List<MemberReferralReward>.unmodifiable(
+        (json['rewards'] as List? ?? const []).whereType<Map>().map(
+          (item) => MemberReferralReward.fromJson(item.cast<String, dynamic>()),
+        ),
+      ),
       recentInvites: List<MemberReferralInvite>.unmodifiable(
         (json['recent_invites'] as List? ?? const []).whereType<Map>().map(
           (item) => MemberReferralInvite.fromJson(item.cast<String, dynamic>()),
@@ -858,7 +876,131 @@ class MemberReferral {
   final MemberReferralInviter? inviter;
   final int invitedCount;
   final int rewardedCount;
+  final int activeCount;
+  final int paidCount;
+  final MemberReferralCampaign? campaign;
+  final List<MemberReferralReward> rewards;
+  final bool enrolled;
+  final bool canEnroll;
   final List<MemberReferralInvite> recentInvites;
+}
+
+class MemberReferralCampaign {
+  const MemberReferralCampaign({
+    required this.id,
+    required this.revision,
+    required this.enabled,
+    required this.state,
+    required this.title,
+    required this.description,
+    required this.activeDays,
+    required this.minDailySeconds,
+    required this.bindWindowDays,
+    required this.tiers,
+    required this.rules,
+    required this.paymentChannels,
+    this.startsAt,
+    this.endsAt,
+  });
+
+  factory MemberReferralCampaign.fromJson(Map<String, dynamic> json) =>
+      MemberReferralCampaign(
+        id: json['id'] as String,
+        revision: json['revision'] as int,
+        enabled: json['enabled'] as bool,
+        state: json['state'] as String,
+        title: json['title'] as String,
+        description: json['description'] as String,
+        startsAt: _optionalDate(json['starts_at']),
+        endsAt: _optionalDate(json['ends_at']),
+        activeDays: json['active_days'] as int,
+        minDailySeconds: json['min_daily_seconds'] as int,
+        bindWindowDays: json['bind_window_days'] as int,
+        tiers: List<MemberReferralTier>.unmodifiable(
+          (json['tiers'] as List).whereType<Map>().map(
+            (item) => MemberReferralTier.fromJson(item.cast<String, dynamic>()),
+          ),
+        ),
+        rules: List<String>.unmodifiable(
+          (json['rules'] as List? ?? const []).whereType<String>(),
+        ),
+        paymentChannels: Map<String, String>.unmodifiable(
+          _map(
+            json['payment_channels'],
+          ).map((key, value) => MapEntry(key, value as String)),
+        ),
+      );
+
+  final String id;
+  final int revision;
+  final bool enabled;
+  final String state;
+  final String title;
+  final String description;
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+  final int activeDays;
+  final int minDailySeconds;
+  final int bindWindowDays;
+  final List<MemberReferralTier> tiers;
+  final List<String> rules;
+  final Map<String, String> paymentChannels;
+}
+
+class MemberReferralTier {
+  const MemberReferralTier({
+    required this.id,
+    required this.metric,
+    required this.target,
+    required this.rewardDays,
+    required this.enabled,
+  });
+
+  factory MemberReferralTier.fromJson(Map<String, dynamic> json) =>
+      MemberReferralTier(
+        id: json['id'] as String,
+        metric: json['metric'] as String,
+        target: json['target'] as int,
+        rewardDays: json['reward_days'] as int?,
+        enabled: json['enabled'] as bool,
+      );
+
+  final String id;
+  final String metric;
+  final int target;
+  final int? rewardDays;
+  final bool enabled;
+}
+
+class MemberReferralReward {
+  const MemberReferralReward({
+    required this.tierId,
+    required this.metric,
+    required this.target,
+    required this.rewardDays,
+    required this.grantedAt,
+    this.expiresAt,
+    this.revokedAt,
+  });
+
+  factory MemberReferralReward.fromJson(Map<String, dynamic> json) =>
+      MemberReferralReward(
+        tierId: json['tier_id'] as String,
+        metric: json['metric'] as String,
+        target: json['target'] as int,
+        rewardDays: json['reward_days'] as int?,
+        grantedAt: DateTime.parse(json['granted_at'] as String),
+        expiresAt: _optionalDate(json['expires_at']),
+        revokedAt: _optionalDate(json['revoked_at']),
+      );
+
+  final String tierId;
+  final String metric;
+  final int target;
+  final int? rewardDays;
+  final DateTime grantedAt;
+  final DateTime? expiresAt;
+  final DateTime? revokedAt;
 }
 
 class MemberReferralInvite {

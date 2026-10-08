@@ -1206,6 +1206,473 @@ void main() {
   });
 
   testWidgets(
+    'invitation page reloads remote targets and rules on foreground',
+    (tester) async {
+      final adapter = _CampaignAdapter();
+      final controller = await _openReferralPage(tester, adapter);
+      addTearDown(controller.dispose);
+      expect(adapter.referralRequests, 2);
+      expect(find.text('服务端邀请活动'), findsOneWidget);
+      expect(find.text('2 / 7'), findsOneWidget);
+      expect(find.text('1 / 4'), findsOneWidget);
+      adapter.campaign = _referralCampaign(state: 'paused', target: 11);
+      await tester.runAsync(() async {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await pumpEventQueue();
+      });
+      await tester.pumpAndSettle();
+      expect(find.textContaining('账号操作'), findsNothing);
+      expect(adapter.referralRequests, 3);
+      expect(find.text('活动已暂停'), findsOneWidget);
+      expect(find.text('2 / 11'), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('account-invite-rules')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('account-invite-rules')));
+      await tester.pumpAndSettle();
+      expect(find.text('服务端有效用户规则'), findsOneWidget);
+      expect(find.text('服务端付费用户规则'), findsOneWidget);
+      adapter.campaign = {
+        ..._referralCampaign(),
+        'rules': ['远程修改后的规则'],
+      };
+      await tester.runAsync(() async {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await pumpEventQueue();
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('远程修改后的规则'), findsOneWidget);
+      expect(find.text('服务端有效用户规则'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'failed campaign refresh hides cached promises until explicit retry',
+    (tester) async {
+      final adapter = _CampaignAdapter();
+      final controller = await _openReferralPage(tester, adapter);
+      addTearDown(controller.dispose);
+      adapter.failReferral = true;
+      await tester.runAsync(() async {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await pumpEventQueue();
+      });
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('account-invite-ticket')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('account-invite-retry')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('你们两人'), findsNothing);
+      adapter.failReferral = false;
+      adapter.campaign = _referralCampaign(state: 'ended', target: 9);
+      await tester.tap(find.byKey(const ValueKey('account-invite-retry')));
+      await tester.pumpAndSettle();
+      expect(find.text('活动已结束'), findsOneWidget);
+      expect(find.text('2 / 9'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'rewards display revocation and historical binding can explicitly enroll',
+    (tester) async {
+      final adapter = _CampaignAdapter()
+        ..enrolled = false
+        ..canEnroll = true
+        ..inviter = {'code': 'OR-FRIEND', 'name': 'Friend', 'status': 'bound'}
+        ..rewards = [
+          {
+            'tier_id': 'active-main',
+            'metric': 'active',
+            'target': 7,
+            'reward_days': 120,
+            'granted_at': '2026-10-07T00:00:00Z',
+            'expires_at': '2027-01-07T00:00:00Z',
+            'revoked_at': '2026-10-08T00:00:00Z',
+          },
+          {
+            'tier_id': 'paid-main',
+            'metric': 'paid',
+            'target': 4,
+            'reward_days': null,
+            'granted_at': '2026-10-09T00:00:00Z',
+            'expires_at': null,
+          },
+        ];
+      final controller = await _openReferralPage(tester, adapter);
+      addTearDown(controller.dispose);
+      expect(
+        find.byKey(const ValueKey('account-invite-tier-revoked-active-main')),
+        findsOneWidget,
+      );
+      expect(find.text('已获得永久探元'), findsOneWidget);
+      expect(find.text('奖励记录'), findsNothing);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('account-invite-records')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('account-invite-records')));
+      await tester.pumpAndSettle();
+      expect(find.text('已撤回'), findsOneWidget);
+      expect(find.text('奖励记录'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('account-invite-binding')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('account-invite-binding')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('account-join-invite-campaign')),
+        findsOneWidget,
+      );
+      await tester.runAsync(() async {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await pumpEventQueue();
+      });
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('account-join-invite-campaign')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('account-join-invite-campaign')),
+      );
+      await tester.pumpAndSettle();
+      expect(adapter.boundData, {
+        'code': 'OR-FRIEND',
+        'expected_user_id': '6e29be31-ffeb-4699-bf69-8b37afe15504',
+      });
+      expect(
+        find.byKey(const ValueKey('account-join-invite-campaign')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('ineligible historical binding cannot enroll in a campaign', (
+    tester,
+  ) async {
+    final adapter = _CampaignAdapter()
+      ..enrolled = false
+      ..canEnroll = false
+      ..inviter = {'code': 'OR-FRIEND', 'name': 'Friend', 'status': 'bound'};
+    final controller = await _openReferralPage(tester, adapter);
+    addTearDown(controller.dispose);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('account-invite-binding')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('account-invite-binding')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('account-join-invite-campaign')),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('account-bind-invite')), findsNothing);
+  });
+
+  testWidgets(
+    'initial campaign displays three remote tiers and hides disabled lifetime tier',
+    (tester) async {
+      final adapter = _CampaignAdapter()
+        ..campaign = _initialReferralCampaign()
+        ..stats = {'invited': 3, 'rewarded': 1, 'active': 2, 'paid': 0}
+        ..rewards = [_tierReward('active-entry', target: 2, days: 30)];
+      final controller = await _openReferralPage(tester, adapter);
+      addTearDown(controller.dispose);
+      final entry = find.byKey(
+        const ValueKey('account-invite-tier-active-entry'),
+      );
+      final main = find.byKey(
+        const ValueKey('account-invite-tier-active-main'),
+      );
+      final paid = find.byKey(
+        const ValueKey('account-invite-tier-paid-lifetime'),
+      );
+      expect(
+        find.descendant(of: entry, matching: find.text('2 位')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: main, matching: find.text('5 位')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: paid, matching: find.text('2 位')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('account-invite-tier-received-active-entry')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: main, matching: find.text('90 天')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('account-invite-tier-active-lifetime')),
+        findsNothing,
+      );
+      expect(adapter.publicCampaignRequests, 0);
+      expect(
+        controller.referral?.campaign?.tiers.where((tier) => tier.enabled),
+        hasLength(3),
+      );
+    },
+  );
+
+  testWidgets('active tier rewards are tracked by tier ID and revocation', (
+    tester,
+  ) async {
+    final adapter = _CampaignAdapter()
+      ..campaign = _initialReferralCampaign()
+      ..stats = {'invited': 5, 'rewarded': 2, 'active': 5, 'paid': 0}
+      ..rewards = [
+        _tierReward('active-entry', target: 2, days: 30),
+        _tierReward('active-main', target: 5, days: 90, revoked: true),
+      ];
+    final controller = await _openReferralPage(tester, adapter);
+    addTearDown(controller.dispose);
+    final main = find.byKey(const ValueKey('account-invite-tier-active-main'));
+    expect(
+      find.byKey(const ValueKey('account-invite-tier-received-active-entry')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: main, matching: find.text('90 天')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('account-invite-tier-received-active-main')),
+      findsNothing,
+    );
+    expect(find.text('已撤回'), findsOneWidget);
+    adapter.rewards[1] = _tierReward('active-main', target: 5, days: 90);
+    await tester.runAsync(() async {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await pumpEventQueue();
+    });
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('account-invite-tier-received-active-main')),
+      findsOneWidget,
+    );
+    expect(find.text('累计 120 天探元'), findsNothing);
+    expect(find.text('已撤回'), findsNothing);
+  });
+
+  testWidgets(
+    'participating profile keeps locked rules when public revision changes',
+    (tester) async {
+      final adapter = _CampaignAdapter()
+        ..campaign = _initialReferralCampaign()
+        ..publicCampaign = {
+          ..._initialReferralCampaign(),
+          'revision': 99,
+          'title': '新公开活动',
+          'rules': ['不适用于已参加用户的新规则'],
+        };
+      final controller = await _openReferralPage(tester, adapter);
+      addTearDown(controller.dispose);
+      expect(controller.referral?.campaign?.revision, 2);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('account-invite-rules')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('account-invite-rules')));
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await pumpEventQueue();
+      });
+      await tester.pumpAndSettle();
+      expect(
+        find.text('达到 5 位有效新用户累计赠送 90 天，已领 30 天时补发 60 天。'),
+        findsOneWidget,
+      );
+      expect(find.text('不适用于已参加用户的新规则'), findsNothing);
+      expect(controller.referral?.campaign?.revision, 2);
+      expect(adapter.publicCampaignRequests, 0);
+    },
+  );
+
+  testWidgets(
+    'invite overview keeps history on the next page and copies the share link',
+    (tester) async {
+      Object? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') copied = call.arguments;
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      final adapter = _CampaignAdapter()
+        ..campaign = _initialReferralCampaign()
+        ..rewards = [_tierReward('active-entry', target: 2, days: 30)];
+      final controller = await _openReferralPage(tester, adapter);
+      addTearDown(controller.dispose);
+      expect(find.byType(LinearProgressIndicator), findsNWidgets(2));
+      expect(find.text('奖励记录'), findsNothing);
+      expect(
+        find.text(adapter.campaign['description'] as String),
+        findsNothing,
+      );
+      final share = find.byKey(const ValueKey('account-share-invite'));
+      expect(tester.getSize(share).height, greaterThanOrEqualTo(44));
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('account-copy-invite-code')))
+            .height,
+        greaterThanOrEqualTo(44),
+      );
+      await tester.tap(share);
+      await tester.pumpAndSettle();
+      expect(copied, {'text': 'https://example.test/invite/OR-MY-CODE'});
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('account-invite-records')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('account-invite-records')));
+      await tester.pumpAndSettle();
+      expect(find.text('奖励记录'), findsOneWidget);
+      expect(find.text('累计 30 天探元'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'large text progress remains scrollable and provides valid semantic percentages',
+    (tester) async {
+      addTearDown(tester.view.reset);
+      final semantics = tester.ensureSemantics();
+      for (final size in [
+        const Size(320, 568),
+        const Size(390, 844),
+        const Size(1024, 768),
+      ]) {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = size;
+        final adapter = _CampaignAdapter()
+          ..campaign = _initialReferralCampaign();
+        final controller = await _openReferralPage(
+          tester,
+          adapter,
+          textScale: 2,
+        );
+        expect(tester.takeException(), isNull, reason: '$size overview');
+        final indicators = tester
+            .widgetList<LinearProgressIndicator>(
+              find.byType(LinearProgressIndicator),
+            )
+            .toList();
+        expect(indicators, hasLength(2));
+        expect(indicators.first.semanticsLabel, '有效新用户 2 / 5');
+        expect(indicators.first.semanticsValue, '40%');
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('account-invite-rules')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('account-invite-rules')));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('达到 5 位有效新用户累计赠送 90 天，已领 30 天时补发 60 天。'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull, reason: '$size rules');
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        controller.dispose();
+      }
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'permanent campaign completion requires its own non-revoked reward',
+    (tester) async {
+      final adapter = _CampaignAdapter()
+        ..campaign = _initialReferralCampaign()
+        ..stats = {'invited': 5, 'rewarded': 0, 'active': 5, 'paid': 2};
+      final controller = await _openReferralPage(tester, adapter);
+      addTearDown(controller.dispose);
+      expect(find.text('已获得永久探元'), findsNothing);
+      final paid = find.byKey(const ValueKey('account-invite-track-paid'));
+      expect(
+        find.descendant(of: paid, matching: find.text('已达标')),
+        findsOneWidget,
+      );
+      adapter.rewards = [_tierReward('paid-lifetime', target: 2)];
+      await tester.runAsync(() async {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await pumpEventQueue();
+      });
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: paid, matching: find.text('已获得永久探元')),
+        findsOneWidget,
+      );
+      adapter.rewards = [
+        _tierReward('paid-lifetime', target: 2, revoked: true),
+      ];
+      await tester.runAsync(() async {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await pumpEventQueue();
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('已获得永久探元'), findsNothing);
+      expect(
+        find.descendant(of: paid, matching: find.text('已撤回')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'offline account center still shows sign-in controls and a retry',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
@@ -1249,6 +1716,133 @@ void main() {
       );
     },
   );
+}
+
+Future<MemberAccountController> _openReferralPage(
+  WidgetTester tester,
+  _CampaignAdapter adapter, {
+  double textScale = 1,
+}) async {
+  const webAuthChannel = MethodChannel('flutter_web_auth_2');
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    webAuthChannel,
+    (call) async {
+      expect(call.method, 'cleanUpDanglingCalls');
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      webAuthChannel,
+      null,
+    ),
+  );
+  final controller = MemberAccountController(
+    api: _PageApiClient(
+      dio: Dio()..httpClientAdapter = adapter,
+      tokenStore: _PageTokenStore()..mfaPending = false,
+    ),
+    readerAccessCache: _MemoryReaderAccessCache(),
+  );
+  await tester.runAsync(controller.initialize);
+  await tester.pumpWidget(
+    ChangeNotifierProvider.value(
+      value: controller,
+      child: MaterialApp(
+        locale: const Locale('zh'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale),
+            disableAnimations: true,
+          ),
+          child: child!,
+        ),
+        home: const AccountPage(),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(const ValueKey('account-referral')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('account-referral')));
+  await tester.pumpAndSettle();
+  return controller;
+}
+
+class _CampaignAdapter extends _SignedInAdapter {
+  Map<String, dynamic> campaign = _referralCampaign();
+  Map<String, dynamic> publicCampaign = _referralCampaign();
+  Map<String, dynamic> stats = {
+    'invited': 3,
+    'rewarded': 1,
+    'active': 2,
+    'paid': 1,
+  };
+  int publicCampaignRequests = 0;
+  bool failReferral = false;
+  bool enrolled = true;
+  bool canEnroll = false;
+  Map<String, dynamic>? inviter;
+  List<Map<String, dynamic>> rewards = [];
+  int referralRequests = 0;
+  Object? boundData;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    final path = options.uri.path;
+    if (path == '/api/v1/membership/referral/campaign') {
+      publicCampaignRequests++;
+      return ResponseBody.fromString(
+        jsonEncode(publicCampaign),
+        200,
+        headers: {
+          Headers.contentTypeHeader: ['application/json'],
+        },
+      );
+    }
+    if (path != '/api/v1/membership/referral' &&
+        path != '/api/v1/membership/referral/bind') {
+      return super.fetch(options, requestStream, cancelFuture);
+    }
+    expect(options.headers['X-Origo-Referral-Version'], '2');
+    referralRequests++;
+    if (failReferral) {
+      return ResponseBody.fromString(
+        jsonEncode({'detail': '活动服务暂不可用'}),
+        503,
+        headers: {
+          Headers.contentTypeHeader: ['application/json'],
+        },
+      );
+    }
+    if (path.endsWith('/bind')) {
+      boundData = options.data;
+      enrolled = true;
+      canEnroll = false;
+    }
+    return ResponseBody.fromString(
+      jsonEncode({
+        'invite_code': 'OR-MY-CODE',
+        'invite_url': 'https://example.test/invite/OR-MY-CODE',
+        'campaign': campaign,
+        'stats': stats,
+        'inviter': inviter,
+        'enrolled': enrolled,
+        'can_enroll': canEnroll,
+        'rewards': rewards,
+      }),
+      200,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+  }
 }
 
 class _AccountAdapter implements HttpClientAdapter {
@@ -1401,7 +1995,10 @@ class _AuthFlowAdapter implements HttpClientAdapter {
       return _response({
         'invite_code': 'OR-MY-CODE',
         'invite_url': 'https://open.xxread.top/account?invite=OR-MY-CODE',
-        'stats': {'invited': 0, 'rewarded': 0},
+        'stats': {'invited': 0, 'rewarded': 0, 'active': 0, 'paid': 0},
+        'campaign': _referralCampaign(),
+        'enrolled': false,
+        'can_enroll': true,
         'inviter': null,
       });
     }
@@ -1599,6 +2196,97 @@ class _PendingMfaAdapter implements HttpClientAdapter {
   }
 }
 
+Map<String, dynamic> _referralCampaign({
+  String state = 'active',
+  int target = 7,
+}) => {
+  'id': 'campaign-v2',
+  'revision': 2,
+  'enabled': state == 'active',
+  'state': state,
+  'title': '服务端邀请活动',
+  'description': '最新服务端规则，达标后发奖。',
+  'active_days': 3,
+  'min_daily_seconds': 60,
+  'bind_window_days': 7,
+  'tiers': [
+    {
+      'id': 'active-main',
+      'metric': 'active',
+      'target': target,
+      'reward_days': 120,
+      'enabled': true,
+    },
+    {
+      'id': 'paid-main',
+      'metric': 'paid',
+      'target': 4,
+      'reward_days': null,
+      'enabled': true,
+    },
+  ],
+  'rules': ['服务端有效用户规则', '服务端付费用户规则'],
+  'payment_channels': {
+    'apple': 'automatic',
+    'ldxp': 'verified_order',
+    'google_play': 'manual_review',
+  },
+};
+
+Map<String, dynamic> _initialReferralCampaign() => {
+  ..._referralCampaign(),
+  'tiers': [
+    {
+      'id': 'active-entry',
+      'metric': 'active',
+      'target': 2,
+      'reward_days': 30,
+      'enabled': true,
+    },
+    {
+      'id': 'active-main',
+      'metric': 'active',
+      'target': 5,
+      'reward_days': 90,
+      'enabled': true,
+    },
+    {
+      'id': 'active-lifetime',
+      'metric': 'active',
+      'target': 12,
+      'reward_days': null,
+      'enabled': false,
+    },
+    {
+      'id': 'paid-lifetime',
+      'metric': 'paid',
+      'target': 2,
+      'reward_days': null,
+      'enabled': true,
+    },
+  ],
+  'rules': [
+    '达到 2 位有效新用户赠送 30 天。',
+    '达到 5 位有效新用户累计赠送 90 天，已领 30 天时补发 60 天。',
+    '达到 2 位首次付费好友赠送永久探元。',
+  ],
+};
+
+Map<String, dynamic> _tierReward(
+  String id, {
+  required int target,
+  int? days,
+  bool revoked = false,
+}) => {
+  'tier_id': id,
+  'metric': id.startsWith('paid') ? 'paid' : 'active',
+  'target': target,
+  'reward_days': days,
+  'granted_at': '2026-10-07T00:00:00Z',
+  'expires_at': days == null ? null : '2027-01-07T00:00:00Z',
+  'revoked_at': revoked ? '2026-10-08T00:00:00Z' : null,
+};
+
 class _SignedInAdapter implements HttpClientAdapter {
   _SignedInAdapter({this.premium = false});
 
@@ -1672,7 +2360,10 @@ class _SignedInAdapter implements HttpClientAdapter {
       '/api/v1/membership/referral' => {
         'invite_code': 'OR-MY-CODE',
         'invite_url': 'https://open.xxread.top/account?invite=OR-MY-CODE',
-        'stats': {'invited': 3, 'rewarded': 1},
+        'stats': {'invited': 3, 'rewarded': 1, 'active': 2, 'paid': 1},
+        'campaign': _referralCampaign(),
+        'enrolled': true,
+        'can_enroll': false,
         'inviter': null,
       },
       '/api/v1/auth/security/mfa/status' => {

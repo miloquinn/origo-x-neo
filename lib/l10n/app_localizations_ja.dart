@@ -5674,15 +5674,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountPremiumUnlocked => '永久Exploreを解除しました';
 
   @override
-  String get accountPremiumUnlockedReferral =>
-      '引き換え完了：あなたと招待者の両方が永久Exploreを解除しました';
-
-  @override
   String get accountInviteTitle => '友達を招待';
-
-  @override
-  String get accountInviteSubtitle =>
-      '友達があなたの招待コードを紐づけ、永久Exploreコードを引き換えると、2 人とも永久に解除されます。';
 
   @override
   String get accountInviteMyCode => '自分の招待コード';
@@ -5694,32 +5686,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountInviteCopyLink => '招待リンクをコピー';
 
   @override
-  String get accountInviteShareAction => '招待リンクをコピーして共有';
+  String get accountInviteShareAction => '招待リンクをコピー';
 
   @override
   String get accountInviteCopied => '招待情報をコピーしました';
 
   @override
-  String accountInviteStats(int invited, int rewarded) {
-    return '招待 $invited 人 · 成功 $rewarded 人';
-  }
-
-  @override
   String get accountInviteStatsInvited => '紐づけ人数';
-
-  @override
-  String get accountInviteStatsRewarded => '解除成功';
 
   @override
   String accountInviterBound(String name) {
     return '招待者：$name';
   }
-
-  @override
-  String get accountInviteRewarded => '招待成立';
-
-  @override
-  String get accountInviteWaiting => 'コードの引き換え待ち';
 
   @override
   String get accountInviteBindLabel => '友達の招待コード';
@@ -5737,35 +5715,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountInviteHowItWorks => '招待の流れ';
 
   @override
-  String get accountInviteStepShareTitle => 'リンクを共有';
-
-  @override
-  String get accountInviteStepShareBody =>
-      'リンクまたはコードを友達へ送り、開いてアカウントを作成してもらいます。';
-
-  @override
-  String get accountInviteStepBindTitle => 'コードを紐づける';
-
-  @override
-  String get accountInviteStepBindBody =>
-      '友達がアカウント画面でコードを入力します。各アカウント 1 回のみです。';
-
-  @override
-  String get accountInviteStepRedeemTitle => 'コードを引き換える';
-
-  @override
-  String get accountInviteStepRedeemBody =>
-      '友達が永久Exploreコードを引き換えると、両方のアカウントがすぐ解除されます。';
-
-  @override
   String get accountInviteMyBinding => '自分の招待関係';
 
   @override
   String get accountInviteBindIntro => 'あなたも招待された場合は、ここで友達のコードを紐づけられます。';
-
-  @override
-  String get accountInviteBindingNotNeeded =>
-      'このアカウントはExplore解除済みのため、招待コードは不要です。';
 
   @override
   String get readingDataExportAction => '読書データを書き出す';
@@ -7285,4 +7238,91 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsWelcomeGuide => '使い方ガイド';
+
+  @override
+  String get accountInviteUnavailable => '現在の招待キャンペーンを読み込めませんでした。再試行してください。';
+
+  @override
+  String get accountInviteActiveProgress => '有効な新規ユーザー';
+
+  @override
+  String get accountInvitePaidProgress => '初回購入した友だち';
+
+  @override
+  String get accountInviteRewards => '報酬履歴';
+
+  @override
+  String get accountInvitePaidReward => '購入招待の報酬';
+
+  @override
+  String get accountInviteActiveReward => 'アクティブ招待の報酬';
+
+  @override
+  String get accountInviteRewardPermanent => '永久';
+
+  @override
+  String accountInviteRewardUntil(String date) {
+    return '$date まで有効';
+  }
+
+  @override
+  String accountInviteBoundCount(int count) {
+    return '$count 人が紐付け済み';
+  }
+
+  @override
+  String get accountInviteHistoricalReward => '過去の報酬';
+
+  @override
+  String get accountInviteCampaignActive => 'キャンペーン開催中';
+
+  @override
+  String get accountInviteCampaignUpcoming => 'キャンペーン開始前';
+
+  @override
+  String get accountInviteCampaignEnded => 'キャンペーン終了';
+
+  @override
+  String get accountInviteCampaignPaused => 'キャンペーン停止中';
+
+  @override
+  String get accountInviteRewardRevoked => '取り消し済み';
+
+  @override
+  String get accountInviteJoinCampaign => '現在のキャンペーンに参加';
+
+  @override
+  String accountInviteCumulativeRewardDays(int days) {
+    return '探元を累計 $days 日';
+  }
+
+  @override
+  String get accountInviteRewardReceived => '受領済み';
+
+  @override
+  String accountInviteRemaining(int count) {
+    return 'あと $count 人';
+  }
+
+  @override
+  String get accountInviteNextReward => '次の報酬';
+
+  @override
+  String get accountInviteTargetMet => '目標達成';
+
+  @override
+  String get accountInvitePermanentEarned => '永久探元を獲得済み';
+
+  @override
+  String accountInviteRewardDays(int days) {
+    return '$days 日';
+  }
+
+  @override
+  String accountInvitePeople(int count) {
+    return '$count 人';
+  }
+
+  @override
+  String get accountInviteRecordsTitle => '招待履歴';
 }

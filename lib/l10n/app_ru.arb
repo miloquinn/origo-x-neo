@@ -1664,34 +1664,21 @@
   "accountApplePurchaseSubmitted": "Покупка отправлена; идёт проверка доступа Explore",
   "accountAppleRestoreSubmitted": "Запрошено восстановление покупки",
   "accountPremiumUnlocked": "Пожизненный Explore открыт",
-  "accountPremiumUnlockedReferral": "Активировано: вы и пригласивший открыли пожизненный Explore",
   "accountInviteTitle": "Приглашайте друзей",
-  "accountInviteSubtitle": "Когда друг привяжет ваш код и активирует код пожизненного Explore, вы оба навсегда получите Explore.",
   "accountInviteMyCode": "Мой код приглашения",
   "accountInviteCopyCode": "Скопировать код приглашения",
   "accountInviteCopyLink": "Скопировать ссылку-приглашение",
-  "accountInviteShareAction": "Скопировать ссылку-приглашение, чтобы поделиться",
+  "accountInviteShareAction": "Скопировать ссылку",
   "accountInviteCopied": "Данные приглашения скопированы",
-  "accountInviteStats": "Приглашено: {invited} · успешно: {rewarded}",
   "accountInviteStatsInvited": "Коды привязаны",
-  "accountInviteStatsRewarded": "Награды открыты",
   "accountInviterBound": "Приглашён пользователем {name}",
-  "accountInviteRewarded": "Приглашение завершено",
-  "accountInviteWaiting": "Ожидание активации кода",
   "accountInviteBindLabel": "Код приглашения друга",
   "accountInviteBindHint": "Учётная запись может привязать код один раз и не сможет изменить его позже",
   "accountInviteBindAction": "Привязать код приглашения",
   "accountInviteBound": "Код приглашения привязан",
   "accountInviteHowItWorks": "Как это работает",
-  "accountInviteStepShareTitle": "Поделитесь ссылкой",
-  "accountInviteStepShareBody": "Отправьте другу ссылку или код. Он откроет её и создаст учётную запись.",
-  "accountInviteStepBindTitle": "Привяжите код",
-  "accountInviteStepBindBody": "Ваш друг вводит ваш код в разделе «Учётная запись». Каждая учётная запись может привязать код один раз.",
-  "accountInviteStepRedeemTitle": "Активируйте код",
-  "accountInviteStepRedeemBody": "Когда друг активирует код пожизненного Explore, обе учётные записи сразу получат Explore.",
   "accountInviteMyBinding": "Моя связь по приглашению",
   "accountInviteBindIntro": "Если вас пригласили, привяжите код приглашающего здесь, чтобы награда осталась за вашей учётной записью.",
-  "accountInviteBindingNotNeeded": "У этой учётной записи уже есть Explore, поэтому код приглашения не нужен.",
   "readingDataExportAction": "Экспортировать данные чтения",
   "readingDataExportSubtitle": "Выделения, подчёркивания и заметки",
   "readingDataExportWholeBook": "Вся книга",
@@ -2135,5 +2122,72 @@
   "welcomeSkipIntroduction": "Пропустить знакомство",
   "welcomeStartReading": "Начать чтение",
   "welcomeTagline": "Хорошие истории. Не спешите.",
-  "settingsWelcomeGuide": "Вводное руководство"
+  "settingsWelcomeGuide": "Вводное руководство",
+  "accountInviteUnavailable": "Не удалось загрузить текущую акцию приглашений. Повторите попытку.",
+  "accountInviteActiveProgress": "Активные новые пользователи",
+  "accountInvitePaidProgress": "Друзья с первой покупкой",
+  "accountInviteRewards": "История наград",
+  "accountInvitePaidReward": "Награда за покупку приглашённого",
+  "accountInviteActiveReward": "Награда за активных приглашённых",
+  "accountInviteRewardPermanent": "Бессрочно",
+  "accountInviteRewardUntil": "Действует до {date}",
+  "accountInviteBoundCount": "Привязано людей: {count}",
+  "accountInviteHistoricalReward": "Прошлая награда",
+  "accountInviteCampaignActive": "Акция действует",
+  "accountInviteCampaignUpcoming": "Акция ещё не началась",
+  "accountInviteCampaignEnded": "Акция завершена",
+  "accountInviteCampaignPaused": "Акция приостановлена",
+  "accountInviteRewardRevoked": "Отозвана",
+  "accountInviteJoinCampaign": "Участвовать в текущей акции",
+  "@accountInviteRewardUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountInviteBoundCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountInviteCumulativeRewardDays": "Всего {days} дней Explore",
+  "@accountInviteCumulativeRewardDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "accountInviteRewardReceived": "Получена",
+  "accountInviteRemaining": "Осталось {count}",
+  "accountInviteNextReward": "Следующая награда",
+  "accountInviteTargetMet": "Цель достигнута",
+  "accountInvitePermanentEarned": "Бессрочный Explore получен",
+  "accountInviteRewardDays": "{days} дней",
+  "accountInvitePeople": "{count} человек",
+  "accountInviteRecordsTitle": "История приглашений",
+  "@accountInviteRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountInviteRewardDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountInvitePeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

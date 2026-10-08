@@ -2832,34 +2832,21 @@
   "accountRedemptionCode": "兌換碼",
   "accountRedeemPremium": "兌換",
   "accountPremiumUnlocked": "永久探元已解鎖",
-  "accountPremiumUnlockedReferral": "兌換成功：你和邀請人都已解鎖永久探元",
   "accountInviteTitle": "邀請好友",
-  "accountInviteSubtitle": "好友綁定你的邀請碼並兌換永久探元卡密後，你們兩人都永久解鎖。",
   "accountInviteMyCode": "我的邀請碼",
   "accountInviteCopyCode": "複製邀請碼",
   "accountInviteCopyLink": "複製邀請連結",
-  "accountInviteShareAction": "複製邀請連結並分享",
+  "accountInviteShareAction": "複製邀請連結",
   "accountInviteCopied": "邀請資訊已複製",
-  "accountInviteStats": "已邀請 {invited} 人 · 已成功 {rewarded} 人",
   "accountInviteStatsInvited": "已綁定人數",
-  "accountInviteStatsRewarded": "已成功解鎖",
   "accountInviterBound": "已綁定邀請人：{name}",
-  "accountInviteRewarded": "邀請已成功",
-  "accountInviteWaiting": "等待兌換卡密",
   "accountInviteBindLabel": "好友邀請碼",
   "accountInviteBindHint": "每個帳號只能綁定一次，綁定後不能更換",
   "accountInviteBindAction": "確認綁定",
   "accountInviteBound": "邀請碼已綁定",
   "accountInviteHowItWorks": "邀請流程",
-  "accountInviteStepShareTitle": "分享連結",
-  "accountInviteStepShareBody": "把連結或邀請碼傳給好友，好友開啟後註冊帳號。",
-  "accountInviteStepBindTitle": "綁定邀請碼",
-  "accountInviteStepBindBody": "好友在個人中心輸入你的邀請碼；每個帳號只能綁定一次。",
-  "accountInviteStepRedeemTitle": "兌換卡密",
-  "accountInviteStepRedeemBody": "好友兌換永久探元卡密後，你們兩人都會立即解鎖。",
   "accountInviteMyBinding": "我的邀請關係",
   "accountInviteBindIntro": "如果你也是受邀而來，可以在這裡綁定好友的邀請碼。",
-  "accountInviteBindingNotNeeded": "目前帳號已解鎖探元，無需再綁定邀請碼。",
   "readingDataExportAction": "匯出閱讀資料",
   "readingDataExportSubtitle": "螢光標記、底線與筆記",
   "readingDataExportWholeBook": "整本書",
@@ -3431,5 +3418,72 @@
   "welcomeSkipIntroduction": "跳過介紹",
   "welcomeStartReading": "開始閱讀",
   "welcomeTagline": "好故事，慢慢讀。",
-  "settingsWelcomeGuide": "歡迎導覽"
+  "settingsWelcomeGuide": "歡迎導覽",
+  "accountInviteUnavailable": "目前邀請活動載入失敗，請重試。",
+  "accountInviteActiveProgress": "有效新使用者",
+  "accountInvitePaidProgress": "首次付費好友",
+  "accountInviteRewards": "獎勵紀錄",
+  "accountInvitePaidReward": "付費邀請獎勵",
+  "accountInviteActiveReward": "活躍邀請獎勵",
+  "accountInviteRewardPermanent": "永久",
+  "accountInviteRewardUntil": "有效至 {date}",
+  "accountInviteBoundCount": "已綁定 {count} 人",
+  "accountInviteHistoricalReward": "歷史獎勵",
+  "accountInviteCampaignActive": "活動進行中",
+  "accountInviteCampaignUpcoming": "活動尚未開始",
+  "accountInviteCampaignEnded": "活動已結束",
+  "accountInviteCampaignPaused": "活動已暫停",
+  "accountInviteRewardRevoked": "已撤回",
+  "accountInviteJoinCampaign": "參加目前活動",
+  "@accountInviteRewardUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountInviteBoundCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountInviteCumulativeRewardDays": "累計 {days} 天探元",
+  "@accountInviteCumulativeRewardDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "accountInviteRewardReceived": "已領取",
+  "accountInviteRemaining": "還差 {count} 位",
+  "accountInviteNextReward": "下一獎勵",
+  "accountInviteTargetMet": "已達標",
+  "accountInvitePermanentEarned": "已獲得永久探元",
+  "accountInviteRewardDays": "{days} 天",
+  "accountInvitePeople": "{count} 位",
+  "accountInviteRecordsTitle": "邀請紀錄",
+  "@accountInviteRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountInviteRewardDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountInvitePeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
@@ -610,17 +611,39 @@ class MemberAccountApiClient {
   );
 
   Future<MemberReferral> referral() async => MemberReferral.fromJson(
-    await _jsonRequest('GET', '$membershipRoot/referral'),
+    await _jsonRequest(
+      'GET',
+      '$membershipRoot/referral',
+      headers: _referralHeaders,
+    ),
   );
 
-  Future<MemberReferral> bindReferral(String code) async =>
-      MemberReferral.fromJson(
+  Future<MemberReferralCampaign> referralCampaign() async =>
+      MemberReferralCampaign.fromJson(
         await _jsonRequest(
-          'POST',
-          '$membershipRoot/referral/bind',
-          data: {'code': code.trim()},
+          'GET',
+          '$membershipRoot/referral/campaign',
+          authenticated: false,
+          headers: _referralHeaders,
         ),
       );
+
+  Future<MemberReferral> bindReferral(
+    String code, {
+    required String expectedUserId,
+  }) async => MemberReferral.fromJson(
+    await _jsonRequest(
+      'POST',
+      '$membershipRoot/referral/bind',
+      data: {'code': code.trim(), 'expected_user_id': expectedUserId},
+      headers: _referralHeaders,
+    ),
+  );
+
+  Map<String, String> get _referralHeaders => {
+    'X-Origo-Referral-Version': '2',
+    'Accept-Language': ui.PlatformDispatcher.instance.locale.toLanguageTag(),
+  };
 
   Future<MemberMembership> submitApplePurchase({
     required String productId,

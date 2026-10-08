@@ -231,6 +231,7 @@ class MemberAccountController extends ChangeNotifier {
   Timer? _membershipRetry;
   bool _membershipSyncFailed = false;
   int _membershipRequest = 0;
+  int _referralRequest = 0;
   bool _disposed = false;
   void _notifyStorePurchase() {
     if (!_disposed) notifyListeners();
@@ -1558,9 +1559,14 @@ class MemberAccountController extends ChangeNotifier {
 
   Future<void> _refreshReferralAfterRedemption(MemberUser owner) async {
     if (_disposed || !identical(_user, owner)) return;
+    final request = ++_referralRequest;
     try {
       final referral = await _api.referral();
-      if (_disposed || !identical(_user, owner)) return;
+      if (_disposed ||
+          !identical(_user, owner) ||
+          request != _referralRequest) {
+        return;
+      }
       _referral = referral;
       notifyListeners();
     } catch (_) {
@@ -1571,7 +1577,16 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> bindReferral(String code) => _run(() async {
-    _referral = await _api.bindReferral(code);
+    final owner = _user;
+    if (owner == null) {
+      throw const MemberAccountException('请先登录 Origo 账号');
+    }
+    final request = ++_referralRequest;
+    final referral = await _api.bindReferral(code, expectedUserId: owner.id);
+    if (_disposed || !identical(_user, owner) || request != _referralRequest) {
+      throw const MemberAccountException('账号已切换，请重试');
+    }
+    _referral = referral;
   });
 
   Future<MemberAccountDeletionPreview> accountDeletionPreview() =>
@@ -1664,6 +1679,7 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   int _beginAuthenticationIntent() {
+    _referralRequest++;
     _api.invalidatePendingAuthentication();
     return ++_authenticationGeneration;
   }
@@ -1703,6 +1719,8 @@ class MemberAccountController extends ChangeNotifier {
       _resetMembershipSync();
       _membership = null;
       _summary = null;
+      _referralRequest++;
+      _referral = null;
     }
     _pendingSession = null;
     _user = session.user;
@@ -1816,7 +1834,26 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> _loadReferralValue() async {
-    _referral = await _api.referral();
+    final owner = _user;
+    if (owner == null) return;
+    final request = ++_referralRequest;
+    late final MemberReferral referral;
+    try {
+      // The authenticated profile includes this inviter's locked campaign rules.
+      // Public campaign revisions only apply to participants without that lock.
+      referral = await _api.referral();
+    } catch (_) {
+      if (!_disposed &&
+          identical(_user, owner) &&
+          request == _referralRequest) {
+        _referral = null;
+      }
+      rethrow;
+    }
+    if (_disposed || !identical(_user, owner) || request != _referralRequest) {
+      return;
+    }
+    _referral = referral;
   }
 
   Future<void> _loadAccountValues() async {

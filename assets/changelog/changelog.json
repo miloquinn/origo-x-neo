@@ -2,6 +2,24 @@
     "schemaVersion": 1,
     "entries": [
         {
+            "version": "2.7.3",
+            "buildNumber": "261008001",
+            "notes": {
+                "zh": [
+                    "改善书源请求、目录刷新与缓存兼容，减少章节失效后重复重试的问题。",
+                    "修复跨章节朗读、跳转和滚动定位的状态衔接，提升连续阅读稳定性。",
+                    "完善阅读净化和替换规则，并优化购买页面及账号权益状态显示。",
+                    "保留免费基础阅读、探元购买和恢复流程，改善平板导航与菜单呈现。"
+                ],
+                "en": [
+                    "Improve source requests, catalog refresh and cache compatibility to reduce repeated retries after chapter failures.",
+                    "Fix state transitions during cross-chapter narration, navigation and scroll restoration for more reliable reading.",
+                    "Refine text cleanup and replacement rules, purchase layouts and account entitlement display.",
+                    "Preserve free basic reading and Explore purchase and restore flows, with refined tablet navigation and menus."
+                ]
+            }
+        },
+        {
             "version": "2.7.2",
             "buildNumber": "261007002",
             "notes": {

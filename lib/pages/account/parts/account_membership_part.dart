@@ -105,23 +105,90 @@ class _AccountActionsCard extends StatelessWidget {
   }
 }
 
-class _AccountReferralPage extends StatelessWidget {
+class _AccountReferralPage extends StatefulWidget {
   const _AccountReferralPage();
 
   @override
+  State<_AccountReferralPage> createState() => _AccountReferralPageState();
+}
+
+class _AccountReferralPageState extends State<_AccountReferralPage>
+    with WidgetsBindingObserver {
+  bool _refreshing = true;
+  String? _error;
+  int _refreshRequest = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_refresh());
+  }
+
+  Future<void> _refresh() async {
+    if (!mounted) return;
+    final request = ++_refreshRequest;
+    setState(() {
+      _refreshing = true;
+      _error = null;
+    });
+    try {
+      await context.read<MemberAccountController>().loadReferral();
+    } catch (error) {
+      if (mounted && request == _refreshRequest) {
+        setState(() => _error = error.toString());
+      }
+    } finally {
+      if (mounted && request == _refreshRequest) {
+        setState(() => _refreshing = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) => Consumer<MemberAccountController>(
-    builder: (context, account, child) => FloatingSubpageScaffold(
-      title: context.l10n.accountInviteTitle,
-      body: ListView(
-        padding: floatingSubpagePadding(context, bottom: 40),
-        children: [
-          if (account.referral != null)
-            _ReferralCard(account: account)
-          else
-            _SectionCard(child: Text(context.l10n.accountInviteSubtitle)),
-        ],
-      ),
-    ),
+    builder: (context, account, child) {
+      final campaign = account.referral?.campaign;
+      return FloatingSubpageScaffold(
+        title: context.l10n.accountInviteTitle,
+        body: ListView(
+          padding: floatingSubpagePadding(context, bottom: 40),
+          children: [
+            if (_refreshing)
+              const Center(child: CircularProgressIndicator())
+            else if (_error != null || campaign == null)
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(_error ?? context.l10n.accountInviteUnavailable),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      key: const ValueKey('account-invite-retry'),
+                      onPressed: _refreshing ? null : _refresh,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(context.l10n.retry),
+                    ),
+                  ],
+                ),
+              )
+            else
+              _ReferralCard(account: account, campaign: campaign),
+          ],
+        ),
+      );
+    },
   );
 }
 
@@ -187,291 +254,389 @@ class _AccountActionTile extends StatelessWidget {
 }
 
 class _ReferralCard extends StatefulWidget {
-  const _ReferralCard({required this.account});
+  const _ReferralCard({required this.account, required this.campaign});
 
   final MemberAccountController account;
+  final MemberReferralCampaign campaign;
 
   @override
   State<_ReferralCard> createState() => _ReferralCardState();
 }
 
 class _ReferralCardState extends State<_ReferralCard> {
-  final _inviteCode = TextEditingController();
-
-  @override
-  void dispose() {
-    _inviteCode.dispose();
-    super.dispose();
-  }
-
   Future<void> _copy(String value) async {
     await Clipboard.setData(ClipboardData(text: value));
     if (mounted) showSideToast(context, context.l10n.accountInviteCopied);
-  }
-
-  Future<void> _bind() async {
-    try {
-      await widget.account.bindReferral(_inviteCode.text);
-      _inviteCode.clear();
-      if (mounted) showSideToast(context, context.l10n.accountInviteBound);
-    } catch (error) {
-      if (mounted) {
-        showSideToast(context, error.toString(), kind: SideToastKind.error);
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final referral = widget.account.referral;
     if (referral == null) return const SizedBox.shrink();
-    final inviter = referral.inviter;
+    final campaign = widget.campaign;
     final colors = Theme.of(context).colorScheme;
-    return _SectionCard(
-      title: context.l10n.accountInviteTitle,
-      icon: Icons.group_add_rounded,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            context.l10n.accountInviteSubtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-              height: 1.45,
-            ),
+    final groups = <String, List<MemberReferralTier>>{};
+    for (final tier in campaign.tiers.where((tier) => tier.enabled)) {
+      groups.putIfAbsent(tier.metric, () => []).add(tier);
+    }
+    final tracks = groups.entries
+        .map(
+          (entry) => _ReferralProgressTrack(
+            key: ValueKey('account-invite-track-${entry.key}'),
+            metric: entry.key,
+            tiers: entry.value,
+            referral: referral,
           ),
-          const SizedBox(height: 16),
-          Container(
-            key: const ValueKey('account-invite-ticket'),
-            padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
-            decoration: BoxDecoration(
-              color: colors.tertiaryContainer.withValues(alpha: 0.52),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: colors.tertiary.withValues(alpha: 0.2)),
+        )
+        .toList(growable: false);
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              campaign.title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 8),
+            _CampaignStateBadge(state: campaign.state),
+            const SizedBox(height: 18),
+            _SectionCard(
+              key: const ValueKey('account-invite-ticket'),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final code = Row(
                     children: [
-                      Text(
-                        context.l10n.accountInviteMyCode,
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: colors.onTertiaryContainer.withValues(
-                                alpha: 0.7,
-                              ),
-                              fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.l10n.accountInviteMyCode,
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(color: colors.onSurfaceVariant),
                             ),
+                            const SizedBox(height: 3),
+                            SelectableText(
+                              referral.inviteCode,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontFamily: 'monospace',
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      SelectableText(
-                        referral.inviteCode,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: colors.onTertiaryContainer,
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2,
-                            ),
+                      IconButton.filledTonal(
+                        key: const ValueKey('account-copy-invite-code'),
+                        tooltip: context.l10n.accountInviteCopyCode,
+                        constraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
+                        onPressed: () => _copy(referral.inviteCode),
+                        icon: const Icon(Icons.copy_rounded),
                       ),
                     ],
+                  );
+                  final share = FilledButton.icon(
+                    key: const ValueKey('account-share-invite'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(44, 48),
+                    ),
+                    onPressed: () => _copy(referral.inviteUrl.toString()),
+                    icon: const Icon(Icons.ios_share_rounded, size: 20),
+                    label: Text(context.l10n.accountInviteShareAction),
+                  );
+                  if (constraints.maxWidth >= 600 &&
+                      MediaQuery.textScalerOf(context).scale(14) <= 20) {
+                    return Row(
+                      children: [
+                        Expanded(child: code),
+                        const SizedBox(width: 24),
+                        share,
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [code, const SizedBox(height: 12), share],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth >= 720 && tracks.length == 2) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: tracks.first),
+                        const SizedBox(width: 16),
+                        Expanded(child: tracks.last),
+                      ],
+                    ),
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final track in tracks) ...[
+                      track,
+                      const SizedBox(height: 14),
+                    ],
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 2),
+            _SectionCard(
+              child: Column(
+                children: [
+                  _AccountActionTile(
+                    key: const ValueKey('account-invite-records'),
+                    icon: Icons.receipt_long_outlined,
+                    title: context.l10n.accountInviteRecordsTitle,
+                    onTap: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            _AccountInviteRecordsPage(account: widget.account),
+                      ),
+                    ),
                   ),
-                ),
-                IconButton.filledTonal(
-                  key: const ValueKey('account-copy-invite-code'),
-                  tooltip: context.l10n.accountInviteCopyCode,
-                  onPressed: () => _copy(referral.inviteCode),
-                  icon: const Icon(Icons.copy_rounded),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            key: const ValueKey('account-share-invite'),
-            onPressed: () => _copy(referral.inviteUrl.toString()),
-            icon: const Icon(Icons.ios_share_rounded),
-            label: Text(context.l10n.accountInviteShareAction),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _InviteStat(
-                  value: referral.invitedCount,
-                  label: context.l10n.accountInviteStatsInvited,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _InviteStat(
-                  value: referral.rewardedCount,
-                  label: context.l10n.accountInviteStatsRewarded,
-                  highlighted: referral.rewardedCount > 0,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          const Divider(height: 1),
-          _AccountActionTile(
-            key: const ValueKey('account-invite-records'),
-            icon: Icons.receipt_long_outlined,
-            title: context.l10n.accountInviteStatsInvited,
-            subtitle: context.l10n.accountInviteStats(
-              referral.invitedCount,
-              referral.rewardedCount,
-            ),
-            onTap: () => Navigator.of(context).push<void>(
-              MaterialPageRoute(
-                builder: (_) => _AccountInviteRecordsPage(referral: referral),
+                  const Divider(height: 1),
+                  _AccountActionTile(
+                    key: const ValueKey('account-invite-rules'),
+                    icon: Icons.rule_rounded,
+                    title: context.l10n.accountInviteHowItWorks,
+                    onTap: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            _AccountInviteRulesPage(account: widget.account),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  _AccountActionTile(
+                    key: const ValueKey('account-invite-binding'),
+                    icon: Icons.person_add_alt_1_rounded,
+                    title: context.l10n.accountInviteMyBinding,
+                    onTap: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            _AccountInviteBindingPage(account: widget.account),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const Divider(height: 1),
-          _AccountActionTile(
-            key: const ValueKey('account-invite-rules'),
-            icon: Icons.rule_rounded,
-            title: context.l10n.accountInviteHowItWorks,
-            subtitle: context.l10n.accountInviteStepShareBody,
-            onTap: () => Navigator.of(context).push<void>(
-              MaterialPageRoute(
-                builder: (_) => const _AccountInviteRulesPage(),
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          _AccountActionTile(
-            key: const ValueKey('account-invite-binding'),
-            icon: Icons.person_add_alt_1_rounded,
-            title: context.l10n.accountInviteMyBinding,
-            subtitle: inviter == null
-                ? context.l10n.accountInviteBindIntro
-                : context.l10n.accountInviterBound(inviter.name),
-            onTap: () => Navigator.of(context).push<void>(
-              MaterialPageRoute(
-                builder: (_) => _AccountInviteBindingPage(
-                  account: widget.account,
-                  controller: _inviteCode,
-                  onBind: _bind,
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _AccountInviteRecordsPage extends StatelessWidget {
-  const _AccountInviteRecordsPage({required this.referral});
-
-  final MemberReferral referral;
+  const _AccountInviteRecordsPage({required this.account});
+  final MemberAccountController account;
 
   @override
-  Widget build(BuildContext context) => FloatingSubpageScaffold(
-    title: context.l10n.accountInviteStatsInvited,
-    body: ListView(
-      padding: floatingSubpagePadding(context, bottom: 40),
-      children: [
-        _SectionCard(
-          child: referral.recentInvites.isEmpty
-              ? Text(
-                  context.l10n.accountInviteStats(
-                    referral.invitedCount,
-                    referral.rewardedCount,
-                  ),
-                )
-              : Column(
-                  children: referral.recentInvites
-                      .map(
-                        (item) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: CircleAvatar(
-                            radius: 17,
-                            child: Text(
-                              item.name.characters.first.toUpperCase(),
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: account,
+    builder: (context, _) {
+      final referral = account.referral;
+      return FloatingSubpageScaffold(
+        title: context.l10n.accountInviteRecordsTitle,
+        body: ListView(
+          padding: floatingSubpagePadding(context, bottom: 40),
+          children: [
+            if (referral == null)
+              _SectionCard(child: Text(context.l10n.accountInviteUnavailable))
+            else ...[
+              if (referral.rewards.isNotEmpty) ...[
+                _SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        context.l10n.accountInviteRewards,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 14),
+                      for (final (index, reward)
+                          in referral.rewards.indexed) ...[
+                        if (index > 0) const Divider(height: 28),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              reward.metric == 'paid'
+                                  ? context.l10n.accountInvitePaidReward
+                                  : context.l10n.accountInviteActiveReward,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
                             ),
-                          ),
-                          title: Text(item.name),
-                          subtitle: Text(
-                            MaterialLocalizations.of(
-                              context,
-                            ).formatCompactDate(item.boundAt),
-                          ),
-                          trailing: Text(
-                            item.status == 'rewarded'
-                                ? context.l10n.accountInviteRewarded
-                                : context.l10n.accountInviteWaiting,
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: item.status == 'rewarded'
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w700,
+                            Text(
+                              reward.revokedAt != null
+                                  ? context.l10n.accountInviteRewardRevoked
+                                  : context.l10n.accountInviteRewardReceived,
+                              style: TextStyle(
+                                color: reward.revokedAt != null
+                                    ? Theme.of(context).colorScheme.error
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          reward.rewardDays == null
+                              ? context.l10n.accountInviteRewardPermanent
+                              : context.l10n.accountInviteCumulativeRewardDays(
+                                  reward.rewardDays!,
                                 ),
+                        ),
+                        Text(
+                          MaterialLocalizations.of(
+                            context,
+                          ).formatCompactDate(reward.grantedAt.toLocal()),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        if (reward.expiresAt != null)
+                          Text(
+                            context.l10n.accountInviteRewardUntil(
+                              MaterialLocalizations.of(
+                                context,
+                              ).formatCompactDate(reward.expiresAt!.toLocal()),
+                            ),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      context.l10n.accountInviteBoundCount(
+                        referral.invitedCount,
+                      ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    for (final item in referral.recentInvites)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          radius: 17,
+                          child: Text(
+                            item.name.isEmpty
+                                ? '?'
+                                : item.name.characters.first.toUpperCase(),
                           ),
                         ),
-                      )
-                      .toList(growable: false),
+                        title: Text(item.name),
+                        subtitle: Text(
+                          '${MaterialLocalizations.of(context).formatCompactDate(item.boundAt.toLocal())} · ${item.status == 'rewarded' ? context.l10n.accountInviteHistoricalReward : context.l10n.accountInviteBound}',
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+            ],
+          ],
         ),
-      ],
-    ),
+      );
+    },
   );
 }
 
 class _AccountInviteRulesPage extends StatelessWidget {
-  const _AccountInviteRulesPage();
+  const _AccountInviteRulesPage({required this.account});
+
+  final MemberAccountController account;
 
   @override
-  Widget build(BuildContext context) => FloatingSubpageScaffold(
-    title: context.l10n.accountInviteHowItWorks,
-    body: ListView(
-      padding: floatingSubpagePadding(context, bottom: 40),
-      children: [
-        _SectionCard(
-          child: Column(
-            children: [
-              _InviteStep(
-                number: 1,
-                title: context.l10n.accountInviteStepShareTitle,
-                body: context.l10n.accountInviteStepShareBody,
-              ),
-              _InviteStep(
-                number: 2,
-                title: context.l10n.accountInviteStepBindTitle,
-                body: context.l10n.accountInviteStepBindBody,
-              ),
-              _InviteStep(
-                number: 3,
-                title: context.l10n.accountInviteStepRedeemTitle,
-                body: context.l10n.accountInviteStepRedeemBody,
-                last: true,
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: account,
+    builder: (context, _) {
+      final campaign = account.referral?.campaign;
+      return FloatingSubpageScaffold(
+        title: context.l10n.accountInviteHowItWorks,
+        body: ListView(
+          padding: floatingSubpagePadding(context, bottom: 40),
+          children: [
+            _SectionCard(
+              child: campaign == null
+                  ? Text(context.l10n.accountInviteUnavailable)
+                  : Column(
+                      children: campaign.rules.indexed
+                          .map(
+                            (entry) => _InviteStep(
+                              number: entry.$1 + 1,
+                              title: entry.$2,
+                              last: entry.$1 == campaign.rules.length - 1,
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+            ),
+          ],
         ),
-      ],
-    ),
+      );
+    },
   );
 }
 
-class _AccountInviteBindingPage extends StatelessWidget {
-  const _AccountInviteBindingPage({
-    required this.account,
-    required this.controller,
-    required this.onBind,
-  });
+class _AccountInviteBindingPage extends StatefulWidget {
+  const _AccountInviteBindingPage({required this.account});
 
   final MemberAccountController account;
-  final TextEditingController controller;
-  final Future<void> Function() onBind;
+
+  @override
+  State<_AccountInviteBindingPage> createState() =>
+      _AccountInviteBindingPageState();
+}
+
+class _AccountInviteBindingPageState extends State<_AccountInviteBindingPage> {
+  final controller = TextEditingController();
+  MemberAccountController get account => widget.account;
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> onBind() async {
+    try {
+      await account.bindReferral(controller.text);
+      if (!mounted) return;
+      controller.clear();
+      showSideToast(context, context.l10n.accountInviteBound);
+    } catch (error) {
+      if (mounted) {
+        showSideToast(context, error.toString(), kind: SideToastKind.error);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -485,55 +650,70 @@ class _AccountInviteBindingPage extends StatelessWidget {
           padding: floatingSubpagePadding(context, bottom: 40),
           children: [
             _SectionCard(
-              child: inviter != null
-                  ? Container(
-                      key: const ValueKey('account-inviter-bound'),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerHighest.withValues(
-                          alpha: 0.58,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            inviter.status == 'rewarded'
-                                ? Icons.verified_rounded
-                                : Icons.hourglass_top_rounded,
-                            color: inviter.status == 'rewarded'
-                                ? colors.primary
-                                : colors.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  context.l10n.accountInviterBound(
-                                    inviter.name,
-                                  ),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '${inviter.code} · ${inviter.status == 'rewarded' ? context.l10n.accountInviteRewarded : context.l10n.accountInviteWaiting}',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: colors.onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
+              child: account.referral?.campaign == null
+                  ? Text(context.l10n.accountInviteUnavailable)
+                  : inviter != null
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          key: const ValueKey('account-inviter-bound'),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceContainerHighest.withValues(
+                              alpha: 0.58,
                             ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.link_rounded, color: colors.primary),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.l10n.accountInviterBound(
+                                        inviter.name,
+                                      ),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${inviter.code} · ${context.l10n.accountInviteBound}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: colors.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (account.referral?.canEnroll == true &&
+                            account.referral?.enrolled == false &&
+                            account.referral?.campaign?.state == 'active') ...[
+                          const SizedBox(height: 14),
+                          FilledButton(
+                            key: const ValueKey('account-join-invite-campaign'),
+                            onPressed: account.loading
+                                ? null
+                                : () {
+                                    controller.text = inviter.code;
+                                    onBind();
+                                  },
+                            child: Text(context.l10n.accountInviteJoinCampaign),
                           ),
                         ],
-                      ),
+                      ],
                     )
-                  : account.membership?.premium == true
-                  ? Text(context.l10n.accountInviteBindingNotNeeded)
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -560,7 +740,12 @@ class _AccountInviteBindingPage extends StatelessWidget {
                         const SizedBox(height: 14),
                         FilledButton(
                           key: const ValueKey('account-bind-invite'),
-                          onPressed: account.loading ? null : onBind,
+                          onPressed:
+                              account.loading ||
+                                  account.referral?.canEnroll != true ||
+                                  account.referral?.campaign?.state != 'active'
+                              ? null
+                              : onBind,
                           child: Text(context.l10n.accountInviteBindAction),
                         ),
                       ],
@@ -573,47 +758,252 @@ class _AccountInviteBindingPage extends StatelessWidget {
   );
 }
 
-class _InviteStat extends StatelessWidget {
-  const _InviteStat({
-    required this.value,
-    required this.label,
-    this.highlighted = false,
+class _ReferralProgressTrack extends StatelessWidget {
+  const _ReferralProgressTrack({
+    super.key,
+    required this.metric,
+    required this.tiers,
+    required this.referral,
   });
+  final String metric;
+  final List<MemberReferralTier> tiers;
+  final MemberReferral referral;
 
-  final int value;
-  final String label;
-  final bool highlighted;
+  bool _received(MemberReferralTier tier) => referral.rewards.any(
+    (reward) => reward.tierId == tier.id && reward.revokedAt == null,
+  );
+  bool _revoked(MemberReferralTier tier) =>
+      !_received(tier) &&
+      referral.rewards.any(
+        (reward) => reward.tierId == tier.id && reward.revokedAt != null,
+      );
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: highlighted
-            ? colors.primaryContainer.withValues(alpha: 0.62)
-            : colors.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
+    final ordered = [...tiers]..sort((a, b) => a.target.compareTo(b.target));
+    final value = metric == 'paid' ? referral.paidCount : referral.activeCount;
+    final next = ordered
+        .where(
+          (tier) => !referral.rewards.any((reward) => reward.tierId == tier.id),
+        )
+        .firstOrNull;
+    final target = (next ?? ordered.last).target;
+    final permanentEarned = ordered.any(
+      (tier) => tier.rewardDays == null && _received(tier),
+    );
+    final label = metric == 'paid'
+        ? context.l10n.accountInvitePaidProgress
+        : context.l10n.accountInviteActiveProgress;
+    final nextReward = next?.rewardDays == null
+        ? context.l10n.accountInviteRewardPermanent
+        : context.l10n.accountInviteCumulativeRewardDays(next!.rewardDays!);
+    final status = permanentEarned
+        ? context.l10n.accountInvitePermanentEarned
+        : next == null
+        ? _received(ordered.last)
+              ? context.l10n.accountInviteRewardReceived
+              : context.l10n.accountInviteRewardRevoked
+        : value >= target
+        ? context.l10n.accountInviteTargetMet
+        : context.l10n.accountInviteRemaining(target - value);
+    return _SectionCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            '$value',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: highlighted ? colors.primary : colors.onSurface,
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            children: [
+              Icon(
+                metric == 'paid'
+                    ? Icons.workspace_premium_outlined
+                    : Icons.people_outline_rounded,
+                color: colors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                '$value / $target',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  height: 1.05,
+                ),
+              ),
+              Text(
+                status,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: colors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          if (next != null && !permanentEarned) ...[
+            const SizedBox(height: 7),
+            Text(
+              '${context.l10n.accountInviteNextReward} · $nextReward',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
+          ],
+          const SizedBox(height: 14),
+          LinearProgressIndicator(
+            value: ordered.last.target <= 0
+                ? 0
+                : (value / ordered.last.target).clamp(0, 1).toDouble(),
+            borderRadius: BorderRadius.circular(99),
+            minHeight: 7,
+            backgroundColor: colors.surfaceContainerHighest,
+            semanticsLabel: '$label $value / ${ordered.last.target}',
+            semanticsValue:
+                '${ordered.last.target <= 0 ? 0 : (100 * value / ordered.last.target).clamp(0, 100).round()}%',
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final large = MediaQuery.textScalerOf(context).scale(12) > 18;
+              final width = large
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth / ordered.length)
+                        .clamp(96.0, constraints.maxWidth)
+                        .toDouble();
+              return Wrap(
+                spacing: 0,
+                runSpacing: 10,
+                children: [
+                  for (final tier in ordered)
+                    SizedBox(
+                      key: ValueKey('account-invite-tier-${tier.id}'),
+                      width: width,
+                      child: Semantics(
+                        label:
+                            '${context.l10n.accountInvitePeople(tier.target)}，${tier.rewardDays == null ? context.l10n.accountInviteRewardPermanent : context.l10n.accountInviteCumulativeRewardDays(tier.rewardDays!)}，${_received(tier)
+                                ? context.l10n.accountInviteRewardReceived
+                                : _revoked(tier)
+                                ? context.l10n.accountInviteRewardRevoked
+                                : context.l10n.accountInviteRemaining((tier.target - value).clamp(0, tier.target))}',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  _received(tier)
+                                      ? Icons.check_circle_rounded
+                                      : _revoked(tier)
+                                      ? Icons.undo_rounded
+                                      : value >= tier.target
+                                      ? Icons.check_circle_outline_rounded
+                                      : Icons.radio_button_unchecked_rounded,
+                                  key: ValueKey(
+                                    'account-invite-tier-${_received(tier)
+                                        ? 'received'
+                                        : _revoked(tier)
+                                        ? 'revoked'
+                                        : 'pending'}-${tier.id}',
+                                  ),
+                                  size: 17,
+                                  color: _received(tier)
+                                      ? colors.primary
+                                      : colors.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    context.l10n.accountInvitePeople(
+                                      tier.target,
+                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              tier.rewardDays == null
+                                  ? context.l10n.accountInviteRewardPermanent
+                                  : context.l10n.accountInviteRewardDays(
+                                      tier.rewardDays!,
+                                    ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: colors.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CampaignStateBadge extends StatelessWidget {
+  const _CampaignStateBadge({required this.state});
+
+  final String state;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final (label, icon, active) = switch (state) {
+      'active' => (
+        context.l10n.accountInviteCampaignActive,
+        Icons.play_circle_outline_rounded,
+        true,
+      ),
+      'upcoming' => (
+        context.l10n.accountInviteCampaignUpcoming,
+        Icons.schedule_rounded,
+        false,
+      ),
+      'ended' => (
+        context.l10n.accountInviteCampaignEnded,
+        Icons.event_busy_rounded,
+        false,
+      ),
+      _ => (
+        context.l10n.accountInviteCampaignPaused,
+        Icons.pause_circle_outline_rounded,
+        false,
+      ),
+    };
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: active ? colors.primary : colors.outline),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: active ? colors.primary : colors.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -622,13 +1012,11 @@ class _InviteStep extends StatelessWidget {
   const _InviteStep({
     required this.number,
     required this.title,
-    required this.body,
     this.last = false,
   });
 
   final int number;
   final String title;
-  final String body;
   final bool last;
 
   @override
@@ -678,14 +1066,6 @@ class _InviteStep extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    body,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                      height: 1.4,
-                    ),
                   ),
                 ],
               ),

@@ -5945,15 +5945,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get accountPremiumUnlocked => 'Пожизненный Explore открыт';
 
   @override
-  String get accountPremiumUnlockedReferral =>
-      'Активировано: вы и пригласивший открыли пожизненный Explore';
-
-  @override
   String get accountInviteTitle => 'Приглашайте друзей';
-
-  @override
-  String get accountInviteSubtitle =>
-      'Когда друг привяжет ваш код и активирует код пожизненного Explore, вы оба навсегда получите Explore.';
 
   @override
   String get accountInviteMyCode => 'Мой код приглашения';
@@ -5965,33 +5957,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get accountInviteCopyLink => 'Скопировать ссылку-приглашение';
 
   @override
-  String get accountInviteShareAction =>
-      'Скопировать ссылку-приглашение, чтобы поделиться';
+  String get accountInviteShareAction => 'Скопировать ссылку';
 
   @override
   String get accountInviteCopied => 'Данные приглашения скопированы';
 
   @override
-  String accountInviteStats(int invited, int rewarded) {
-    return 'Приглашено: $invited · успешно: $rewarded';
-  }
-
-  @override
   String get accountInviteStatsInvited => 'Коды привязаны';
-
-  @override
-  String get accountInviteStatsRewarded => 'Награды открыты';
 
   @override
   String accountInviterBound(String name) {
     return 'Приглашён пользователем $name';
   }
-
-  @override
-  String get accountInviteRewarded => 'Приглашение завершено';
-
-  @override
-  String get accountInviteWaiting => 'Ожидание активации кода';
 
   @override
   String get accountInviteBindLabel => 'Код приглашения друга';
@@ -6010,36 +5987,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get accountInviteHowItWorks => 'Как это работает';
 
   @override
-  String get accountInviteStepShareTitle => 'Поделитесь ссылкой';
-
-  @override
-  String get accountInviteStepShareBody =>
-      'Отправьте другу ссылку или код. Он откроет её и создаст учётную запись.';
-
-  @override
-  String get accountInviteStepBindTitle => 'Привяжите код';
-
-  @override
-  String get accountInviteStepBindBody =>
-      'Ваш друг вводит ваш код в разделе «Учётная запись». Каждая учётная запись может привязать код один раз.';
-
-  @override
-  String get accountInviteStepRedeemTitle => 'Активируйте код';
-
-  @override
-  String get accountInviteStepRedeemBody =>
-      'Когда друг активирует код пожизненного Explore, обе учётные записи сразу получат Explore.';
-
-  @override
   String get accountInviteMyBinding => 'Моя связь по приглашению';
 
   @override
   String get accountInviteBindIntro =>
       'Если вас пригласили, привяжите код приглашающего здесь, чтобы награда осталась за вашей учётной записью.';
-
-  @override
-  String get accountInviteBindingNotNeeded =>
-      'У этой учётной записи уже есть Explore, поэтому код приглашения не нужен.';
 
   @override
   String get readingDataExportAction => 'Экспортировать данные чтения';
@@ -7658,4 +7610,92 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsWelcomeGuide => 'Вводное руководство';
+
+  @override
+  String get accountInviteUnavailable =>
+      'Не удалось загрузить текущую акцию приглашений. Повторите попытку.';
+
+  @override
+  String get accountInviteActiveProgress => 'Активные новые пользователи';
+
+  @override
+  String get accountInvitePaidProgress => 'Друзья с первой покупкой';
+
+  @override
+  String get accountInviteRewards => 'История наград';
+
+  @override
+  String get accountInvitePaidReward => 'Награда за покупку приглашённого';
+
+  @override
+  String get accountInviteActiveReward => 'Награда за активных приглашённых';
+
+  @override
+  String get accountInviteRewardPermanent => 'Бессрочно';
+
+  @override
+  String accountInviteRewardUntil(String date) {
+    return 'Действует до $date';
+  }
+
+  @override
+  String accountInviteBoundCount(int count) {
+    return 'Привязано людей: $count';
+  }
+
+  @override
+  String get accountInviteHistoricalReward => 'Прошлая награда';
+
+  @override
+  String get accountInviteCampaignActive => 'Акция действует';
+
+  @override
+  String get accountInviteCampaignUpcoming => 'Акция ещё не началась';
+
+  @override
+  String get accountInviteCampaignEnded => 'Акция завершена';
+
+  @override
+  String get accountInviteCampaignPaused => 'Акция приостановлена';
+
+  @override
+  String get accountInviteRewardRevoked => 'Отозвана';
+
+  @override
+  String get accountInviteJoinCampaign => 'Участвовать в текущей акции';
+
+  @override
+  String accountInviteCumulativeRewardDays(int days) {
+    return 'Всего $days дней Explore';
+  }
+
+  @override
+  String get accountInviteRewardReceived => 'Получена';
+
+  @override
+  String accountInviteRemaining(int count) {
+    return 'Осталось $count';
+  }
+
+  @override
+  String get accountInviteNextReward => 'Следующая награда';
+
+  @override
+  String get accountInviteTargetMet => 'Цель достигнута';
+
+  @override
+  String get accountInvitePermanentEarned => 'Бессрочный Explore получен';
+
+  @override
+  String accountInviteRewardDays(int days) {
+    return '$days дней';
+  }
+
+  @override
+  String accountInvitePeople(int count) {
+    return '$count человек';
+  }
+
+  @override
+  String get accountInviteRecordsTitle => 'История приглашений';
 }

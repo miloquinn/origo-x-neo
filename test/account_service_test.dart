@@ -309,6 +309,7 @@ void main() {
                 return _json({
                   'invite_code': code,
                   'invite_url': 'https://example.test/invite/$code',
+                  'campaign': _serviceReferralCampaign(revision: referralCount),
                 });
               case '/api/v1/membership/redeem':
                 return _json({
@@ -334,15 +335,18 @@ void main() {
       await controller.loginPassword('a@example.com', 'password');
       expect(controller.user?.id, _memberAccountId);
       expect(controller.referral?.inviteCode, 'FRESH-A');
+      expect(controller.referral?.campaign?.revision, 4);
 
       lateReferral.complete(
         _json({
           'invite_code': 'STALE-A',
           'invite_url': 'https://example.test/invite/stale',
+          'campaign': _serviceReferralCampaign(revision: 99),
         }),
       );
       await pumpEventQueue();
       expect(controller.referral?.inviteCode, 'FRESH-A');
+      expect(controller.referral?.campaign?.revision, 4);
     },
   );
 
@@ -1783,9 +1787,13 @@ void main() {
     var bound = false;
     final adapter = _RouteAdapter((options) {
       expect(options.headers['Authorization'], 'Bearer access-1');
+      expect(options.headers['X-Origo-Referral-Version'], '2');
       if (options.uri.path == '/api/v1/membership/referral/bind') {
         expect(options.method, 'POST');
-        expect(options.data, {'code': 'ORFRIEND1'});
+        expect(options.data, {
+          'code': 'ORFRIEND1',
+          'expected_user_id': _memberAccountId,
+        });
         bound = true;
       }
       return _json({
@@ -1808,7 +1816,10 @@ void main() {
     final client = _client(adapter, storage);
 
     final before = await client.referral();
-    final after = await client.bindReferral('ORFRIEND1');
+    final after = await client.bindReferral(
+      'ORFRIEND1',
+      expectedUserId: _memberAccountId,
+    );
 
     expect(before.inviteCode, 'ORMYCODE1');
     expect(before.inviteUrl.host, 'open.xxread.top');
@@ -1817,6 +1828,202 @@ void main() {
     expect(after.inviter?.code, 'ORFRIEND1');
     expect(after.inviter?.status, 'bound');
   });
+
+  test(
+    'public invitation campaign parses revision, channels and remote thresholds',
+    () async {
+      final client = _client(
+        _RouteAdapter((options) {
+          expect(options.uri.path, '/api/v1/membership/referral/campaign');
+          expect(options.headers['Authorization'], isNull);
+          expect(options.headers['X-Origo-Referral-Version'], '2');
+          return _json({
+            'id': 'campaign-v2',
+            'revision': 9,
+            'enabled': false,
+            'state': 'paused',
+            'title': 'Remote title',
+            'description': 'Remote rules',
+            'starts_at': '2026-10-07T00:00:00Z',
+            'ends_at': null,
+            'active_days': 4,
+            'min_daily_seconds': 90,
+            'bind_window_days': 6,
+            'tiers': [
+              {
+                'id': 'active-main',
+                'metric': 'active',
+                'target': 8,
+                'reward_days': 120,
+                'enabled': true,
+              },
+              {
+                'id': 'paid-main',
+                'metric': 'paid',
+                'target': 4,
+                'reward_days': null,
+                'enabled': true,
+              },
+            ],
+            'rules': [
+              'Read across four days',
+              'Only verified first payments count',
+            ],
+            'payment_channels': {
+              'apple': 'automatic',
+              'ldxp': 'verified_order',
+              'google_play': 'manual_review',
+            },
+          });
+        }),
+        _MemoryTokenStore(),
+      );
+      final campaign = await client.referralCampaign();
+      expect(campaign.revision, 9);
+      expect(campaign.tiers.first.target, 8);
+      expect(campaign.tiers.first.rewardDays, 120);
+      expect(campaign.tiers.last.target, 4);
+      expect(campaign.state, 'paused');
+      expect(campaign.paymentChannels['google_play'], 'manual_review');
+      expect(campaign.startsAt, DateTime.utc(2026, 10, 7));
+      expect(campaign.rules, hasLength(2));
+    },
+  );
+
+  test(
+    'first campaign parses three enabled cumulative tiers and optional disabled lifetime tier',
+    () {
+      final campaign = MemberReferralCampaign.fromJson(
+        _serviceReferralCampaign(),
+      );
+      expect(campaign.tiers.map((tier) => tier.id), [
+        'active-entry',
+        'active-main',
+        'active-lifetime',
+        'paid-lifetime',
+      ]);
+      expect(campaign.tiers.where((tier) => tier.enabled), hasLength(3));
+      expect(campaign.tiers[0].target, 2);
+      expect(campaign.tiers[0].rewardDays, 30);
+      expect(campaign.tiers[1].target, 5);
+      expect(campaign.tiers[1].rewardDays, 90);
+      expect(campaign.tiers[2].enabled, isFalse);
+      expect(campaign.tiers[2].rewardDays, isNull);
+      expect(campaign.tiers[3].target, 2);
+      expect(campaign.tiers[3].metric, 'paid');
+      expect(campaign.tiers[3].rewardDays, isNull);
+    },
+  );
+
+  test(
+    'invitation profile distinguishes revoked rewards and server enrollment',
+    () {
+      final referral = MemberReferral.fromJson({
+        'invite_code': 'OR-CODE',
+        'invite_url': 'https://example.test/invite',
+        'enrolled': false,
+        'can_enroll': true,
+        'stats': {'invited': 8, 'active': 5, 'paid': 3},
+        'rewards': [
+          {
+            'tier_id': 'active-main',
+            'metric': 'active',
+            'target': 8,
+            'reward_days': 120,
+            'granted_at': '2026-10-07T00:00:00Z',
+            'expires_at': '2027-01-07T00:00:00Z',
+            'revoked_at': '2026-10-08T00:00:00Z',
+          },
+          {
+            'tier_id': 'paid-main',
+            'metric': 'paid',
+            'target': 4,
+            'reward_days': null,
+            'granted_at': '2026-10-07T00:00:00Z',
+            'expires_at': null,
+            'revoked_at': null,
+          },
+        ],
+      });
+      expect(referral.enrolled, isFalse);
+      expect(referral.canEnroll, isTrue);
+      expect(referral.activeCount, 5);
+      expect(referral.paidCount, 3);
+      expect(referral.rewards.first.revokedAt, DateTime.utc(2026, 10, 8));
+      expect(referral.rewards.last.expiresAt, isNull);
+      expect(referral.rewards.last.revokedAt, isNull);
+    },
+  );
+
+  for (final operation in ['load', 'bind']) {
+    test(
+      'late invitation $operation cannot mutate a disposed account',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final started = Completer<void>();
+        final response = Completer<ResponseBody>();
+        var pauseReferral = false;
+        final client = _client(
+          _AsyncRouteAdapter((options) async {
+            switch (options.uri.path) {
+              case '/api/v1/auth/password/login':
+                return _json(
+                  _session(
+                    access: 'access-a',
+                    refresh: 'refresh-a',
+                    userId: _memberAccountId,
+                  ),
+                );
+              case '/api/v1/membership':
+                return _json({
+                  'premium': false,
+                  'features': {},
+                  'entitlements': [],
+                });
+              case '/api/v1/membership/referral':
+              case '/api/v1/membership/referral/bind':
+                if (pauseReferral) {
+                  if (operation == 'bind') {
+                    expect(options.data, {
+                      'code': 'OR-FRIEND',
+                      'expected_user_id': _memberAccountId,
+                    });
+                  }
+                  started.complete();
+                  return response.future;
+                }
+                return _json({
+                  'invite_code': 'CURRENT',
+                  'invite_url': 'https://example.test/invite',
+                });
+              default:
+                return _json({});
+            }
+          }),
+          _MemoryTokenStore(),
+        );
+        final controller = MemberAccountController(api: client);
+        await controller.loginPassword('a@example.com', 'password');
+        pauseReferral = true;
+        final pending = operation == 'bind'
+            ? controller.bindReferral('OR-FRIEND')
+            : controller.loadReferral();
+        final expectation = operation == 'bind'
+            ? expectLater(pending, throwsA(isA<MemberAccountException>()))
+            : expectLater(pending, completes);
+        await started.future;
+        controller.dispose();
+        response.complete(
+          _json({
+            'invite_code': 'STALE',
+            'invite_url': 'https://example.test/stale',
+          }),
+        );
+        await expectation;
+        expect(controller.referral?.inviteCode, 'CURRENT');
+      },
+    );
+  }
 
   test('device authorization reports pending then completes login', () async {
     final storage = _MemoryTokenStore();
@@ -3115,3 +3322,55 @@ ResponseBody _accountReaderStatus(RequestOptions request) {
     },
   });
 }
+
+Map<String, dynamic> _serviceReferralCampaign({int revision = 2}) => {
+  'id': 'campaign-v2',
+  'revision': revision,
+  'enabled': true,
+  'state': 'active',
+  'title': 'Referral campaign',
+  'description': 'Cumulative rewards',
+  'active_days': 3,
+  'min_daily_seconds': 60,
+  'bind_window_days': 7,
+  'tiers': [
+    {
+      'id': 'active-entry',
+      'metric': 'active',
+      'target': 2,
+      'reward_days': 30,
+      'enabled': true,
+    },
+    {
+      'id': 'active-main',
+      'metric': 'active',
+      'target': 5,
+      'reward_days': 90,
+      'enabled': true,
+    },
+    {
+      'id': 'active-lifetime',
+      'metric': 'active',
+      'target': 12,
+      'reward_days': null,
+      'enabled': false,
+    },
+    {
+      'id': 'paid-lifetime',
+      'metric': 'paid',
+      'target': 2,
+      'reward_days': null,
+      'enabled': true,
+    },
+  ],
+  'rules': [
+    'Two active friends: 30 days',
+    'Five active friends: cumulative 90 days',
+    'Two paid friends: lifetime',
+  ],
+  'payment_channels': {
+    'apple': 'automatic',
+    'ldxp': 'verified_order',
+    'google_play': 'manual_review',
+  },
+};

@@ -10310,23 +10310,11 @@ abstract class AppLocalizations {
   /// **'Lifetime Explore unlocked'**
   String get accountPremiumUnlocked;
 
-  /// No description provided for @accountPremiumUnlockedReferral.
-  ///
-  /// In en, this message translates to:
-  /// **'Redeemed: you and your inviter both unlocked Lifetime Explore'**
-  String get accountPremiumUnlockedReferral;
-
   /// No description provided for @accountInviteTitle.
   ///
   /// In en, this message translates to:
   /// **'Invite friends'**
   String get accountInviteTitle;
-
-  /// No description provided for @accountInviteSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'When a friend binds your code and redeems a Lifetime Explore code, both of you unlock Explore forever.'**
-  String get accountInviteSubtitle;
 
   /// No description provided for @accountInviteMyCode.
   ///
@@ -10349,7 +10337,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountInviteShareAction.
   ///
   /// In en, this message translates to:
-  /// **'Copy invite link to share'**
+  /// **'Copy invite link'**
   String get accountInviteShareAction;
 
   /// No description provided for @accountInviteCopied.
@@ -10358,41 +10346,17 @@ abstract class AppLocalizations {
   /// **'Invite details copied'**
   String get accountInviteCopied;
 
-  /// No description provided for @accountInviteStats.
-  ///
-  /// In en, this message translates to:
-  /// **'{invited} invited · {rewarded} successful'**
-  String accountInviteStats(int invited, int rewarded);
-
   /// No description provided for @accountInviteStatsInvited.
   ///
   /// In en, this message translates to:
   /// **'Codes bound'**
   String get accountInviteStatsInvited;
 
-  /// No description provided for @accountInviteStatsRewarded.
-  ///
-  /// In en, this message translates to:
-  /// **'Rewards unlocked'**
-  String get accountInviteStatsRewarded;
-
   /// No description provided for @accountInviterBound.
   ///
   /// In en, this message translates to:
   /// **'Invited by {name}'**
   String accountInviterBound(String name);
-
-  /// No description provided for @accountInviteRewarded.
-  ///
-  /// In en, this message translates to:
-  /// **'Invite completed'**
-  String get accountInviteRewarded;
-
-  /// No description provided for @accountInviteWaiting.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for code redemption'**
-  String get accountInviteWaiting;
 
   /// No description provided for @accountInviteBindLabel.
   ///
@@ -10424,42 +10388,6 @@ abstract class AppLocalizations {
   /// **'How it works'**
   String get accountInviteHowItWorks;
 
-  /// No description provided for @accountInviteStepShareTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Share the link'**
-  String get accountInviteStepShareTitle;
-
-  /// No description provided for @accountInviteStepShareBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Send the link or code to a friend. They open it and create an account.'**
-  String get accountInviteStepShareBody;
-
-  /// No description provided for @accountInviteStepBindTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Bind the code'**
-  String get accountInviteStepBindTitle;
-
-  /// No description provided for @accountInviteStepBindBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Your friend enters your code in Account. Each account can bind once.'**
-  String get accountInviteStepBindBody;
-
-  /// No description provided for @accountInviteStepRedeemTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Redeem a code'**
-  String get accountInviteStepRedeemTitle;
-
-  /// No description provided for @accountInviteStepRedeemBody.
-  ///
-  /// In en, this message translates to:
-  /// **'When they redeem a Lifetime Explore code, both accounts unlock Explore immediately.'**
-  String get accountInviteStepRedeemBody;
-
   /// No description provided for @accountInviteMyBinding.
   ///
   /// In en, this message translates to:
@@ -10471,12 +10399,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If someone invited you, bind their code here to keep the reward attached to your account.'**
   String get accountInviteBindIntro;
-
-  /// No description provided for @accountInviteBindingNotNeeded.
-  ///
-  /// In en, this message translates to:
-  /// **'This account already has Explore, so no invite code is needed.'**
-  String get accountInviteBindingNotNeeded;
 
   /// No description provided for @readingDataExportAction.
   ///
@@ -13165,6 +13087,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome guide'**
   String get settingsWelcomeGuide;
+
+  /// No description provided for @accountInviteUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the current invitation campaign. Try again.'**
+  String get accountInviteUnavailable;
+
+  /// No description provided for @accountInviteActiveProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Active new users'**
+  String get accountInviteActiveProgress;
+
+  /// No description provided for @accountInvitePaidProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'First-time paid friends'**
+  String get accountInvitePaidProgress;
+
+  /// No description provided for @accountInviteRewards.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward history'**
+  String get accountInviteRewards;
+
+  /// No description provided for @accountInvitePaidReward.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase invitation reward'**
+  String get accountInvitePaidReward;
+
+  /// No description provided for @accountInviteActiveReward.
+  ///
+  /// In en, this message translates to:
+  /// **'Active invitation reward'**
+  String get accountInviteActiveReward;
+
+  /// No description provided for @accountInviteRewardPermanent.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent'**
+  String get accountInviteRewardPermanent;
+
+  /// No description provided for @accountInviteRewardUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until {date}'**
+  String accountInviteRewardUntil(String date);
+
+  /// No description provided for @accountInviteBoundCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} people bound'**
+  String accountInviteBoundCount(int count);
+
+  /// No description provided for @accountInviteHistoricalReward.
+  ///
+  /// In en, this message translates to:
+  /// **'Historical reward'**
+  String get accountInviteHistoricalReward;
+
+  /// No description provided for @accountInviteCampaignActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Campaign active'**
+  String get accountInviteCampaignActive;
+
+  /// No description provided for @accountInviteCampaignUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Campaign upcoming'**
+  String get accountInviteCampaignUpcoming;
+
+  /// No description provided for @accountInviteCampaignEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Campaign ended'**
+  String get accountInviteCampaignEnded;
+
+  /// No description provided for @accountInviteCampaignPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Campaign paused'**
+  String get accountInviteCampaignPaused;
+
+  /// No description provided for @accountInviteRewardRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked'**
+  String get accountInviteRewardRevoked;
+
+  /// No description provided for @accountInviteJoinCampaign.
+  ///
+  /// In en, this message translates to:
+  /// **'Join current campaign'**
+  String get accountInviteJoinCampaign;
+
+  /// No description provided for @accountInviteCumulativeRewardDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Cumulative {days} days of Explore'**
+  String accountInviteCumulativeRewardDays(int days);
+
+  /// No description provided for @accountInviteRewardReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get accountInviteRewardReceived;
+
+  /// No description provided for @accountInviteRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more to go'**
+  String accountInviteRemaining(int count);
+
+  /// No description provided for @accountInviteNextReward.
+  ///
+  /// In en, this message translates to:
+  /// **'Next reward'**
+  String get accountInviteNextReward;
+
+  /// No description provided for @accountInviteTargetMet.
+  ///
+  /// In en, this message translates to:
+  /// **'Target reached'**
+  String get accountInviteTargetMet;
+
+  /// No description provided for @accountInvitePermanentEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent Explore earned'**
+  String get accountInvitePermanentEarned;
+
+  /// No description provided for @accountInviteRewardDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days'**
+  String accountInviteRewardDays(int days);
+
+  /// No description provided for @accountInvitePeople.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} people'**
+  String accountInvitePeople(int count);
+
+  /// No description provided for @accountInviteRecordsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation history'**
+  String get accountInviteRecordsTitle;
 }
 
 class _AppLocalizationsDelegate

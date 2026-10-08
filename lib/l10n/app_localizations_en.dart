@@ -5894,15 +5894,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountPremiumUnlocked => 'Lifetime Explore unlocked';
 
   @override
-  String get accountPremiumUnlockedReferral =>
-      'Redeemed: you and your inviter both unlocked Lifetime Explore';
-
-  @override
   String get accountInviteTitle => 'Invite friends';
-
-  @override
-  String get accountInviteSubtitle =>
-      'When a friend binds your code and redeems a Lifetime Explore code, both of you unlock Explore forever.';
 
   @override
   String get accountInviteMyCode => 'My invite code';
@@ -5914,32 +5906,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountInviteCopyLink => 'Copy invite link';
 
   @override
-  String get accountInviteShareAction => 'Copy invite link to share';
+  String get accountInviteShareAction => 'Copy invite link';
 
   @override
   String get accountInviteCopied => 'Invite details copied';
 
   @override
-  String accountInviteStats(int invited, int rewarded) {
-    return '$invited invited · $rewarded successful';
-  }
-
-  @override
   String get accountInviteStatsInvited => 'Codes bound';
-
-  @override
-  String get accountInviteStatsRewarded => 'Rewards unlocked';
 
   @override
   String accountInviterBound(String name) {
     return 'Invited by $name';
   }
-
-  @override
-  String get accountInviteRewarded => 'Invite completed';
-
-  @override
-  String get accountInviteWaiting => 'Waiting for code redemption';
 
   @override
   String get accountInviteBindLabel => 'Friend\'s invite code';
@@ -5958,36 +5936,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountInviteHowItWorks => 'How it works';
 
   @override
-  String get accountInviteStepShareTitle => 'Share the link';
-
-  @override
-  String get accountInviteStepShareBody =>
-      'Send the link or code to a friend. They open it and create an account.';
-
-  @override
-  String get accountInviteStepBindTitle => 'Bind the code';
-
-  @override
-  String get accountInviteStepBindBody =>
-      'Your friend enters your code in Account. Each account can bind once.';
-
-  @override
-  String get accountInviteStepRedeemTitle => 'Redeem a code';
-
-  @override
-  String get accountInviteStepRedeemBody =>
-      'When they redeem a Lifetime Explore code, both accounts unlock Explore immediately.';
-
-  @override
   String get accountInviteMyBinding => 'My invite relationship';
 
   @override
   String get accountInviteBindIntro =>
       'If someone invited you, bind their code here to keep the reward attached to your account.';
-
-  @override
-  String get accountInviteBindingNotNeeded =>
-      'This account already has Explore, so no invite code is needed.';
 
   @override
   String get readingDataExportAction => 'Export reading data';
@@ -7593,4 +7546,92 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsWelcomeGuide => 'Welcome guide';
+
+  @override
+  String get accountInviteUnavailable =>
+      'Could not load the current invitation campaign. Try again.';
+
+  @override
+  String get accountInviteActiveProgress => 'Active new users';
+
+  @override
+  String get accountInvitePaidProgress => 'First-time paid friends';
+
+  @override
+  String get accountInviteRewards => 'Reward history';
+
+  @override
+  String get accountInvitePaidReward => 'Purchase invitation reward';
+
+  @override
+  String get accountInviteActiveReward => 'Active invitation reward';
+
+  @override
+  String get accountInviteRewardPermanent => 'Permanent';
+
+  @override
+  String accountInviteRewardUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String accountInviteBoundCount(int count) {
+    return '$count people bound';
+  }
+
+  @override
+  String get accountInviteHistoricalReward => 'Historical reward';
+
+  @override
+  String get accountInviteCampaignActive => 'Campaign active';
+
+  @override
+  String get accountInviteCampaignUpcoming => 'Campaign upcoming';
+
+  @override
+  String get accountInviteCampaignEnded => 'Campaign ended';
+
+  @override
+  String get accountInviteCampaignPaused => 'Campaign paused';
+
+  @override
+  String get accountInviteRewardRevoked => 'Revoked';
+
+  @override
+  String get accountInviteJoinCampaign => 'Join current campaign';
+
+  @override
+  String accountInviteCumulativeRewardDays(int days) {
+    return 'Cumulative $days days of Explore';
+  }
+
+  @override
+  String get accountInviteRewardReceived => 'Received';
+
+  @override
+  String accountInviteRemaining(int count) {
+    return '$count more to go';
+  }
+
+  @override
+  String get accountInviteNextReward => 'Next reward';
+
+  @override
+  String get accountInviteTargetMet => 'Target reached';
+
+  @override
+  String get accountInvitePermanentEarned => 'Permanent Explore earned';
+
+  @override
+  String accountInviteRewardDays(int days) {
+    return '$days days';
+  }
+
+  @override
+  String accountInvitePeople(int count) {
+    return '$count people';
+  }
+
+  @override
+  String get accountInviteRecordsTitle => 'Invitation history';
 }

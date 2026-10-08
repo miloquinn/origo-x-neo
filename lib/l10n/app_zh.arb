@@ -3142,27 +3142,13 @@
   "accountApplePurchaseSubmitted": "购买已提交，正在验证探元权益",
   "accountAppleRestoreSubmitted": "已请求恢复购买",
   "accountPremiumUnlocked": "永久探元已解锁",
-  "accountPremiumUnlockedReferral": "兑换成功：你和邀请人都已解锁永久探元",
   "accountInviteTitle": "邀请好友",
-  "accountInviteSubtitle": "好友绑定你的邀请码并兑换永久探元卡密后，你们两人都永久解锁。",
   "accountInviteMyCode": "我的邀请码",
   "accountInviteCopyCode": "复制邀请码",
   "accountInviteCopyLink": "复制邀请链接",
-  "accountInviteShareAction": "复制邀请链接并分享",
+  "accountInviteShareAction": "复制邀请链接",
   "accountInviteCopied": "邀请信息已复制",
-  "accountInviteStats": "已邀请 {invited} 人 · 已成功 {rewarded} 人",
-  "@accountInviteStats": {
-    "placeholders": {
-      "invited": {
-        "type": "int"
-      },
-      "rewarded": {
-        "type": "int"
-      }
-    }
-  },
   "accountInviteStatsInvited": "已绑定人数",
-  "accountInviteStatsRewarded": "已成功解锁",
   "accountInviterBound": "已绑定邀请人：{name}",
   "@accountInviterBound": {
     "placeholders": {
@@ -3171,22 +3157,13 @@
       }
     }
   },
-  "accountInviteRewarded": "邀请已成功",
-  "accountInviteWaiting": "等待兑换卡密",
   "accountInviteBindLabel": "好友邀请码",
   "accountInviteBindHint": "每个账号只能绑定一次，绑定后不能更换",
   "accountInviteBindAction": "确认绑定",
   "accountInviteBound": "邀请码已绑定",
   "accountInviteHowItWorks": "邀请流程",
-  "accountInviteStepShareTitle": "分享链接",
-  "accountInviteStepShareBody": "把链接或邀请码发给朋友，朋友打开后注册账号。",
-  "accountInviteStepBindTitle": "绑定邀请码",
-  "accountInviteStepBindBody": "朋友在个人中心输入你的邀请码；每个账号只能绑定一次。",
-  "accountInviteStepRedeemTitle": "兑换卡密",
-  "accountInviteStepRedeemBody": "朋友兑换永久探元卡密后，你们两人都会立即解锁。",
   "accountInviteMyBinding": "我的邀请关系",
   "accountInviteBindIntro": "如果你也是被邀请来的，可以在这里绑定好友的邀请码。",
-  "accountInviteBindingNotNeeded": "当前账号已解锁探元，无需再绑定邀请码。",
   "readingDataExportAction": "导出阅读数据",
   "readingDataExportSubtitle": "高亮、下划线与笔记",
   "readingDataExportWholeBook": "整本书",
@@ -3720,5 +3697,72 @@
   "welcomeSkipIntroduction": "跳过介绍",
   "welcomeStartReading": "开始阅读",
   "welcomeTagline": "好故事，慢慢读。",
-  "settingsWelcomeGuide": "欢迎引导"
+  "settingsWelcomeGuide": "欢迎引导",
+  "accountInviteUnavailable": "当前邀请活动加载失败，请重试。",
+  "accountInviteActiveProgress": "有效新用户",
+  "accountInvitePaidProgress": "首次付费好友",
+  "accountInviteRewards": "奖励记录",
+  "accountInvitePaidReward": "付费邀请奖励",
+  "accountInviteActiveReward": "活跃邀请奖励",
+  "accountInviteRewardPermanent": "永久",
+  "accountInviteRewardUntil": "有效至 {date}",
+  "accountInviteBoundCount": "已绑定 {count} 人",
+  "accountInviteHistoricalReward": "历史奖励",
+  "accountInviteCampaignActive": "活动进行中",
+  "accountInviteCampaignUpcoming": "活动尚未开始",
+  "accountInviteCampaignEnded": "活动已结束",
+  "accountInviteCampaignPaused": "活动已暂停",
+  "accountInviteRewardRevoked": "已撤回",
+  "accountInviteJoinCampaign": "参加当前活动",
+  "@accountInviteRewardUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountInviteBoundCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountInviteCumulativeRewardDays": "累计 {days} 天探元",
+  "@accountInviteCumulativeRewardDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "accountInviteRewardReceived": "已领取",
+  "accountInviteRemaining": "还差 {count} 位",
+  "accountInviteNextReward": "下一奖励",
+  "accountInviteTargetMet": "已达标",
+  "accountInvitePermanentEarned": "已获得永久探元",
+  "accountInviteRewardDays": "{days} 天",
+  "accountInvitePeople": "{count} 位",
+  "accountInviteRecordsTitle": "邀请记录",
+  "@accountInviteRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountInviteRewardDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountInvitePeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

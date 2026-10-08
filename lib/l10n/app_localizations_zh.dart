@@ -5589,13 +5589,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountPremiumUnlocked => '永久探元已解锁';
 
   @override
-  String get accountPremiumUnlockedReferral => '兑换成功：你和邀请人都已解锁永久探元';
-
-  @override
   String get accountInviteTitle => '邀请好友';
-
-  @override
-  String get accountInviteSubtitle => '好友绑定你的邀请码并兑换永久探元卡密后，你们两人都永久解锁。';
 
   @override
   String get accountInviteMyCode => '我的邀请码';
@@ -5607,32 +5601,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountInviteCopyLink => '复制邀请链接';
 
   @override
-  String get accountInviteShareAction => '复制邀请链接并分享';
+  String get accountInviteShareAction => '复制邀请链接';
 
   @override
   String get accountInviteCopied => '邀请信息已复制';
 
   @override
-  String accountInviteStats(int invited, int rewarded) {
-    return '已邀请 $invited 人 · 已成功 $rewarded 人';
-  }
-
-  @override
   String get accountInviteStatsInvited => '已绑定人数';
-
-  @override
-  String get accountInviteStatsRewarded => '已成功解锁';
 
   @override
   String accountInviterBound(String name) {
     return '已绑定邀请人：$name';
   }
-
-  @override
-  String get accountInviteRewarded => '邀请已成功';
-
-  @override
-  String get accountInviteWaiting => '等待兑换卡密';
 
   @override
   String get accountInviteBindLabel => '好友邀请码';
@@ -5650,31 +5630,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountInviteHowItWorks => '邀请流程';
 
   @override
-  String get accountInviteStepShareTitle => '分享链接';
-
-  @override
-  String get accountInviteStepShareBody => '把链接或邀请码发给朋友，朋友打开后注册账号。';
-
-  @override
-  String get accountInviteStepBindTitle => '绑定邀请码';
-
-  @override
-  String get accountInviteStepBindBody => '朋友在个人中心输入你的邀请码；每个账号只能绑定一次。';
-
-  @override
-  String get accountInviteStepRedeemTitle => '兑换卡密';
-
-  @override
-  String get accountInviteStepRedeemBody => '朋友兑换永久探元卡密后，你们两人都会立即解锁。';
-
-  @override
   String get accountInviteMyBinding => '我的邀请关系';
 
   @override
   String get accountInviteBindIntro => '如果你也是被邀请来的，可以在这里绑定好友的邀请码。';
-
-  @override
-  String get accountInviteBindingNotNeeded => '当前账号已解锁探元，无需再绑定邀请码。';
 
   @override
   String get readingDataExportAction => '导出阅读数据';
@@ -7150,6 +7109,93 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsWelcomeGuide => '欢迎引导';
+
+  @override
+  String get accountInviteUnavailable => '当前邀请活动加载失败，请重试。';
+
+  @override
+  String get accountInviteActiveProgress => '有效新用户';
+
+  @override
+  String get accountInvitePaidProgress => '首次付费好友';
+
+  @override
+  String get accountInviteRewards => '奖励记录';
+
+  @override
+  String get accountInvitePaidReward => '付费邀请奖励';
+
+  @override
+  String get accountInviteActiveReward => '活跃邀请奖励';
+
+  @override
+  String get accountInviteRewardPermanent => '永久';
+
+  @override
+  String accountInviteRewardUntil(String date) {
+    return '有效至 $date';
+  }
+
+  @override
+  String accountInviteBoundCount(int count) {
+    return '已绑定 $count 人';
+  }
+
+  @override
+  String get accountInviteHistoricalReward => '历史奖励';
+
+  @override
+  String get accountInviteCampaignActive => '活动进行中';
+
+  @override
+  String get accountInviteCampaignUpcoming => '活动尚未开始';
+
+  @override
+  String get accountInviteCampaignEnded => '活动已结束';
+
+  @override
+  String get accountInviteCampaignPaused => '活动已暂停';
+
+  @override
+  String get accountInviteRewardRevoked => '已撤回';
+
+  @override
+  String get accountInviteJoinCampaign => '参加当前活动';
+
+  @override
+  String accountInviteCumulativeRewardDays(int days) {
+    return '累计 $days 天探元';
+  }
+
+  @override
+  String get accountInviteRewardReceived => '已领取';
+
+  @override
+  String accountInviteRemaining(int count) {
+    return '还差 $count 位';
+  }
+
+  @override
+  String get accountInviteNextReward => '下一奖励';
+
+  @override
+  String get accountInviteTargetMet => '已达标';
+
+  @override
+  String get accountInvitePermanentEarned => '已获得永久探元';
+
+  @override
+  String accountInviteRewardDays(int days) {
+    return '$days 天';
+  }
+
+  @override
+  String accountInvitePeople(int count) {
+    return '$count 位';
+  }
+
+  @override
+  String get accountInviteRecordsTitle => '邀请记录';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -12737,13 +12783,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountPremiumUnlocked => '永久探元已解鎖';
 
   @override
-  String get accountPremiumUnlockedReferral => '兌換成功：你和邀請人都已解鎖永久探元';
-
-  @override
   String get accountInviteTitle => '邀請好友';
-
-  @override
-  String get accountInviteSubtitle => '好友綁定你的邀請碼並兌換永久探元卡密後，你們兩人都永久解鎖。';
 
   @override
   String get accountInviteMyCode => '我的邀請碼';
@@ -12755,32 +12795,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountInviteCopyLink => '複製邀請連結';
 
   @override
-  String get accountInviteShareAction => '複製邀請連結並分享';
+  String get accountInviteShareAction => '複製邀請連結';
 
   @override
   String get accountInviteCopied => '邀請資訊已複製';
 
   @override
-  String accountInviteStats(int invited, int rewarded) {
-    return '已邀請 $invited 人 · 已成功 $rewarded 人';
-  }
-
-  @override
   String get accountInviteStatsInvited => '已綁定人數';
-
-  @override
-  String get accountInviteStatsRewarded => '已成功解鎖';
 
   @override
   String accountInviterBound(String name) {
     return '已綁定邀請人：$name';
   }
-
-  @override
-  String get accountInviteRewarded => '邀請已成功';
-
-  @override
-  String get accountInviteWaiting => '等待兌換卡密';
 
   @override
   String get accountInviteBindLabel => '好友邀請碼';
@@ -12798,31 +12824,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get accountInviteHowItWorks => '邀請流程';
 
   @override
-  String get accountInviteStepShareTitle => '分享連結';
-
-  @override
-  String get accountInviteStepShareBody => '把連結或邀請碼傳給好友，好友開啟後註冊帳號。';
-
-  @override
-  String get accountInviteStepBindTitle => '綁定邀請碼';
-
-  @override
-  String get accountInviteStepBindBody => '好友在個人中心輸入你的邀請碼；每個帳號只能綁定一次。';
-
-  @override
-  String get accountInviteStepRedeemTitle => '兌換卡密';
-
-  @override
-  String get accountInviteStepRedeemBody => '好友兌換永久探元卡密後，你們兩人都會立即解鎖。';
-
-  @override
   String get accountInviteMyBinding => '我的邀請關係';
 
   @override
   String get accountInviteBindIntro => '如果你也是受邀而來，可以在這裡綁定好友的邀請碼。';
-
-  @override
-  String get accountInviteBindingNotNeeded => '目前帳號已解鎖探元，無需再綁定邀請碼。';
 
   @override
   String get readingDataExportAction => '匯出閱讀資料';
@@ -14299,4 +14304,91 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsWelcomeGuide => '歡迎導覽';
+
+  @override
+  String get accountInviteUnavailable => '目前邀請活動載入失敗，請重試。';
+
+  @override
+  String get accountInviteActiveProgress => '有效新使用者';
+
+  @override
+  String get accountInvitePaidProgress => '首次付費好友';
+
+  @override
+  String get accountInviteRewards => '獎勵紀錄';
+
+  @override
+  String get accountInvitePaidReward => '付費邀請獎勵';
+
+  @override
+  String get accountInviteActiveReward => '活躍邀請獎勵';
+
+  @override
+  String get accountInviteRewardPermanent => '永久';
+
+  @override
+  String accountInviteRewardUntil(String date) {
+    return '有效至 $date';
+  }
+
+  @override
+  String accountInviteBoundCount(int count) {
+    return '已綁定 $count 人';
+  }
+
+  @override
+  String get accountInviteHistoricalReward => '歷史獎勵';
+
+  @override
+  String get accountInviteCampaignActive => '活動進行中';
+
+  @override
+  String get accountInviteCampaignUpcoming => '活動尚未開始';
+
+  @override
+  String get accountInviteCampaignEnded => '活動已結束';
+
+  @override
+  String get accountInviteCampaignPaused => '活動已暫停';
+
+  @override
+  String get accountInviteRewardRevoked => '已撤回';
+
+  @override
+  String get accountInviteJoinCampaign => '參加目前活動';
+
+  @override
+  String accountInviteCumulativeRewardDays(int days) {
+    return '累計 $days 天探元';
+  }
+
+  @override
+  String get accountInviteRewardReceived => '已領取';
+
+  @override
+  String accountInviteRemaining(int count) {
+    return '還差 $count 位';
+  }
+
+  @override
+  String get accountInviteNextReward => '下一獎勵';
+
+  @override
+  String get accountInviteTargetMet => '已達標';
+
+  @override
+  String get accountInvitePermanentEarned => '已獲得永久探元';
+
+  @override
+  String accountInviteRewardDays(int days) {
+    return '$days 天';
+  }
+
+  @override
+  String accountInvitePeople(int count) {
+    return '$count 位';
+  }
+
+  @override
+  String get accountInviteRecordsTitle => '邀請紀錄';
 }

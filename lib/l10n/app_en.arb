@@ -5814,27 +5814,13 @@
   "accountApplePurchaseSubmitted": "Purchase submitted; verifying Explore access",
   "accountAppleRestoreSubmitted": "Purchase restoration requested",
   "accountPremiumUnlocked": "Lifetime Explore unlocked",
-  "accountPremiumUnlockedReferral": "Redeemed: you and your inviter both unlocked Lifetime Explore",
   "accountInviteTitle": "Invite friends",
-  "accountInviteSubtitle": "When a friend binds your code and redeems a Lifetime Explore code, both of you unlock Explore forever.",
   "accountInviteMyCode": "My invite code",
   "accountInviteCopyCode": "Copy invite code",
   "accountInviteCopyLink": "Copy invite link",
-  "accountInviteShareAction": "Copy invite link to share",
+  "accountInviteShareAction": "Copy invite link",
   "accountInviteCopied": "Invite details copied",
-  "accountInviteStats": "{invited} invited · {rewarded} successful",
-  "@accountInviteStats": {
-    "placeholders": {
-      "invited": {
-        "type": "int"
-      },
-      "rewarded": {
-        "type": "int"
-      }
-    }
-  },
   "accountInviteStatsInvited": "Codes bound",
-  "accountInviteStatsRewarded": "Rewards unlocked",
   "accountInviterBound": "Invited by {name}",
   "@accountInviterBound": {
     "placeholders": {
@@ -5843,22 +5829,13 @@
       }
     }
   },
-  "accountInviteRewarded": "Invite completed",
-  "accountInviteWaiting": "Waiting for code redemption",
   "accountInviteBindLabel": "Friend's invite code",
   "accountInviteBindHint": "An account can bind once and cannot change it later",
   "accountInviteBindAction": "Bind invite code",
   "accountInviteBound": "Invite code bound",
   "accountInviteHowItWorks": "How it works",
-  "accountInviteStepShareTitle": "Share the link",
-  "accountInviteStepShareBody": "Send the link or code to a friend. They open it and create an account.",
-  "accountInviteStepBindTitle": "Bind the code",
-  "accountInviteStepBindBody": "Your friend enters your code in Account. Each account can bind once.",
-  "accountInviteStepRedeemTitle": "Redeem a code",
-  "accountInviteStepRedeemBody": "When they redeem a Lifetime Explore code, both accounts unlock Explore immediately.",
   "accountInviteMyBinding": "My invite relationship",
   "accountInviteBindIntro": "If someone invited you, bind their code here to keep the reward attached to your account.",
-  "accountInviteBindingNotNeeded": "This account already has Explore, so no invite code is needed.",
   "readingDataExportAction": "Export reading data",
   "readingDataExportSubtitle": "Highlights, underlines, and notes",
   "readingDataExportWholeBook": "Whole book",
@@ -6949,5 +6926,72 @@
   "welcomeSkipIntroduction": "Skip introduction",
   "welcomeStartReading": "Start reading",
   "welcomeTagline": "Good stories. Take your time.",
-  "settingsWelcomeGuide": "Welcome guide"
+  "settingsWelcomeGuide": "Welcome guide",
+  "accountInviteUnavailable": "Could not load the current invitation campaign. Try again.",
+  "accountInviteActiveProgress": "Active new users",
+  "accountInvitePaidProgress": "First-time paid friends",
+  "accountInviteRewards": "Reward history",
+  "accountInvitePaidReward": "Purchase invitation reward",
+  "accountInviteActiveReward": "Active invitation reward",
+  "accountInviteRewardPermanent": "Permanent",
+  "accountInviteRewardUntil": "Valid until {date}",
+  "accountInviteBoundCount": "{count} people bound",
+  "accountInviteHistoricalReward": "Historical reward",
+  "accountInviteCampaignActive": "Campaign active",
+  "accountInviteCampaignUpcoming": "Campaign upcoming",
+  "accountInviteCampaignEnded": "Campaign ended",
+  "accountInviteCampaignPaused": "Campaign paused",
+  "accountInviteRewardRevoked": "Revoked",
+  "accountInviteJoinCampaign": "Join current campaign",
+  "@accountInviteRewardUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountInviteBoundCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountInviteCumulativeRewardDays": "Cumulative {days} days of Explore",
+  "@accountInviteCumulativeRewardDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "accountInviteRewardReceived": "Received",
+  "accountInviteRemaining": "{count} more to go",
+  "accountInviteNextReward": "Next reward",
+  "accountInviteTargetMet": "Target reached",
+  "accountInvitePermanentEarned": "Permanent Explore earned",
+  "accountInviteRewardDays": "{days} days",
+  "accountInvitePeople": "{count} people",
+  "accountInviteRecordsTitle": "Invitation history",
+  "@accountInviteRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountInviteRewardDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountInvitePeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
