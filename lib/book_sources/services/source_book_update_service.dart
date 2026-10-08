@@ -6,6 +6,7 @@ import '../../services/library/library_event_bus_service.dart';
 import '../models/source_book_update_info.dart';
 import '../protocol/book_source_protocol.dart';
 import 'book_source_shelf_service.dart';
+import 'book_download_cancellation.dart';
 import 'source_chapter_state.dart';
 
 /// Checks catalogs only. Downloading/merging local text remains an explicit
@@ -25,12 +26,25 @@ class SourceBookUpdateService {
   final BookSourceShelfService Function() _createShelf;
   final SourceChapterStateStore _store;
   final DateTime Function() _now;
-  static final Map<(int, String?, String?), _PendingBookCheck> _pending = {};
+  static final Map<(int, String?, String?, Object), _PendingBookCheck>
+  _pending = {};
   static const automaticInterval = Duration(minutes: 30);
 
-  Future<Book> check(Book book, {bool force = true}) {
+  Future<Book> check(
+    Book book, {
+    bool force = true,
+    BookDownloadCancellation? cancellation,
+  }) {
+    cancellation?.throwIfCancelled();
     if (!book.hasSourceBinding || book.id == null) return Future.value(book);
-    final key = (book.id!, book.sourceId, book.sourceBookId);
+    // A hidden shelf can stop its automatic pass without cancelling a manual
+    // check owned by another page. Unscoped manual callers still share a flight.
+    final key = (
+      book.id!,
+      book.sourceId,
+      book.sourceBookId,
+      cancellation ?? '#shared',
+    );
     final running = _pending[key];
     if (running != null) {
       running.force = running.force || force;
@@ -40,7 +54,7 @@ class SourceBookUpdateService {
     _pending[key] = pending;
     pending.result = () async {
       try {
-        return await _check(book, pending: pending);
+        return await _check(book, pending: pending, cancellation: cancellation);
       } finally {
         _pending.remove(key);
       }
@@ -51,8 +65,10 @@ class SourceBookUpdateService {
   Future<Book> _check(
     Book snapshot, {
     required _PendingBookCheck pending,
+    BookDownloadCancellation? cancellation,
   }) async {
     final book = await _dao.getBookById(snapshot.id!);
+    cancellation?.throwIfCancelled();
     if (book == null || !book.hasSourceBinding) return snapshot;
     if (book.sourceId != snapshot.sourceId ||
         book.sourceBookId != snapshot.sourceBookId) {
@@ -75,13 +91,15 @@ class SourceBookUpdateService {
     late SourceBookUpdateInfo info;
     try {
       final catalog = await shelf
-          .sourceChaptersFor(book)
+          .sourceChaptersFor(book, cancellation: cancellation)
           .timeout(const Duration(seconds: 45));
+      cancellation?.throwIfCancelled();
       if (catalog.isEmpty ||
           catalog.map((c) => c.id).toSet().length != catalog.length) {
         throw const BookSourceProtocolException('Invalid update catalog');
       }
       final state = book.isOnline ? null : await _store.load(book);
+      cancellation?.throwIfCancelled();
       info = compareCatalog(
         book: book,
         previous: old,
@@ -89,7 +107,10 @@ class SourceBookUpdateService {
         localState: state,
         checkedAt: now,
       );
+    } on BookDownloadCancelledException {
+      rethrow;
     } catch (_) {
+      cancellation?.throwIfCancelled();
       info = SourceBookUpdateInfo(
         status: SourceBookCheckStatus.failed,
         checkedAt: now,
@@ -103,6 +124,7 @@ class SourceBookUpdateService {
     } finally {
       shelf.close();
     }
+    cancellation?.throwIfCancelled();
     final encoded = info.encodeInto(book);
     // A source change, download, or another metadata revision wins over this
     // stale network response. Progress and covers are never part of this write.

@@ -185,6 +185,7 @@ class _LongChapterClient extends BookSourceClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => const [
     BookSourceChapter(id: 'chapter-1', title: 'Chapter 1', order: 0),
   ];
@@ -195,6 +196,7 @@ class _LongChapterClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => BookSourceChapterContent(
     bookId: bookId,
     chapterId: chapterId,

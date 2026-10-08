@@ -329,11 +329,14 @@ void main() {
       await _waitFor(
         () => transport.events.where((event) => event == '/book/1').isNotEmpty,
       );
+      final readerCancellation = _RuntimeWaiterProbeCancellation();
       final readerLoad = backend.getChapterContent(
         _source,
         bookId: _bookId,
         chapterId: _secondId,
+        cancellation: readerCancellation,
       );
+      await readerCancellation.waitUntilRuntimeWaiter;
       cancellation.cancel();
       await expectLater(
         cancelledLoad,
@@ -395,6 +398,77 @@ void main() {
       );
     },
   );
+
+  test(
+    'same cold chapter keeps reader alive when download is cancelled',
+    () async {
+      final firstRuntime = SourceRuntime(transport: _ProbeTransport());
+      await _backend(firstRuntime).getChapters(_source, _bookId);
+      firstRuntime.close();
+
+      final catalogRelease = Completer<void>();
+      final transport = _ProbeTransport(catalogRelease: catalogRelease.future);
+      final runtime = SourceRuntime(transport: transport);
+      addTearDown(runtime.close);
+      final backend = _backend(runtime);
+      await backend.getChapters(_source, _bookId);
+      final cancellation = BookDownloadCancellation();
+      final download = backend.getChapterContentForDownload(
+        _source,
+        bookId: _bookId,
+        chapterId: _firstId,
+        cancellation: cancellation,
+      );
+      await _waitFor(
+        () => transport.events.where((event) => event == '/book/1').isNotEmpty,
+      );
+      final reader = backend.getChapterContent(
+        _source,
+        bookId: _bookId,
+        chapterId: _firstId,
+      );
+      cancellation.cancel();
+      await expectLater(
+        download,
+        throwsA(isA<BookDownloadCancelledException>()),
+      );
+
+      catalogRelease.complete();
+      expect((await reader).content, '<main>BODY_ONE</main>');
+      expect(
+        transport.events.where((event) => event == '/chapter/1'),
+        hasLength(1),
+      );
+    },
+  );
+
+  test('last cancelled catalog waiter stops before chapter scripts', () async {
+    final firstRuntime = SourceRuntime(transport: _ProbeTransport());
+    await _backend(firstRuntime).getChapters(_source, _bookId);
+    firstRuntime.close();
+
+    final catalogRelease = Completer<void>();
+    final transport = _ProbeTransport(catalogRelease: catalogRelease.future);
+    final runtime = SourceRuntime(transport: transport);
+    addTearDown(runtime.close);
+    final backend = _backend(runtime);
+    await backend.getChapters(_source, _bookId);
+    final cancellation = BookDownloadCancellation();
+    final content = backend.getChapterContent(
+      _source,
+      bookId: _bookId,
+      chapterId: _firstId,
+      cancellation: cancellation,
+    );
+    await _waitFor(
+      () => transport.events.where((event) => event == '/book/1').isNotEmpty,
+    );
+
+    cancellation.cancel();
+    await expectLater(content, throwsA(isA<BookDownloadCancelledException>()));
+    await transport.catalogCancellationObserved.future;
+    expect(transport.events, isNot(contains('/chapter/1')));
+  });
 
   test(
     'force refresh waits for cold initialization and wins final state',
@@ -579,6 +653,7 @@ class _ProbeTransport implements SourceTransport {
   final bool brokenTail;
   int catalogFailures;
   final Future<void>? catalogRelease;
+  final catalogCancellationObserved = Completer<void>();
   final events = <String>[];
 
   @override
@@ -589,6 +664,11 @@ class _ProbeTransport implements SourceTransport {
     events.add(request.url.path);
     if (request.url.path == '/book/1') {
       if (catalogRelease != null) {
+        cancellation?.whenCancelled.then((_) {
+          if (!catalogCancellationObserved.isCompleted) {
+            catalogCancellationObserved.complete();
+          }
+        });
         await Future.any<void>([
           catalogRelease!,
           if (cancellation != null) cancellation.whenCancelled,
@@ -683,5 +763,21 @@ class _OrderedCatalogTransport implements SourceTransport {
       _ => '<main>OTHER</main>',
     };
     return SourceResponse(body: body, finalUri: request.url);
+  }
+}
+
+class _RuntimeWaiterProbeCancellation extends BookDownloadCancellation {
+  final _runtimeWaiter = Completer<void>();
+  int _checks = 0;
+
+  Future<void> get waitUntilRuntimeWaiter => _runtimeWaiter.future;
+
+  @override
+  void throwIfCancelled() {
+    super.throwIfCancelled();
+    _checks++;
+    if (_checks >= 2 && !_runtimeWaiter.isCompleted) {
+      _runtimeWaiter.complete();
+    }
   }
 }

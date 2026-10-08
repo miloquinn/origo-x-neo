@@ -621,27 +621,33 @@ class BookSourceShelfService {
     );
   }
 
-  Future<List<BookSourceChapter>> sourceChaptersFor(Book book) async {
+  Future<List<BookSourceChapter>> sourceChaptersFor(
+    Book book, {
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
     final binding = bindingFrom(book);
     return [
       ...await _client.getChaptersForDownload(
         binding.source,
         binding.book.id,
         sourceVariables: binding.book.sourceVariables,
+        cancellation: cancellation,
       ),
     ]..sort(compareBookSourceChapters);
   }
 
-  /// Downloads a readable source snapshot without changing the user's current
-  /// TXT. This is the recovery path when an old or externally edited file can
-  /// no longer be mapped safely to the persisted chapter baseline.
+  /// Reads a recovery snapshot without replacing the user's current TXT.
   Future<SourceStateAsset> downloadSourceCandidate({
     required Book shelfBook,
     void Function(int completed, int total)? onProgress,
     BookDownloadCancellation? cancellation,
   }) async {
     final binding = bindingFrom(shelfBook);
-    final catalog = await sourceChaptersFor(shelfBook);
+    final catalog = await sourceChaptersFor(
+      shelfBook,
+      cancellation: cancellation,
+    );
     final candidate = <TrackedSourceChapter>[];
     onProgress?.call(0, catalog.length);
     for (var index = 0; index < catalog.length; index++) {

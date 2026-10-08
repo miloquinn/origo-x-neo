@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../book_sources/protocol/book_source_protocol.dart';
-import '../../book_sources/services/book_source_gateway.dart';
+import '../../book_sources/services/book_source_client.dart';
 import '../../book_sources/services/book_source_shelf_service.dart';
 import '../../services/library/download_task_controller.dart';
 import '../../utils/localization_extension.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/generated_book_cover.dart';
 import '../../widgets/side_toast.dart';
+import '../../widgets/source_cover_image.dart';
+import '../reader/book_settings_page.dart';
 import 'models/sourced_book.dart';
 import 'widgets/book_source_text_normalizer.dart';
 import 'widgets/sourced_book_cards.dart';
@@ -46,6 +49,7 @@ class SourcedBookDetailsPage extends StatelessWidget {
           ..loadDetails()
           ..loadShelfStatus(),
     child: _DetailsPageContent(
+      gateway: gateway,
       onRead: onRead,
       onDownloadContinuesInBackground: onDownloadContinuesInBackground,
     ),
@@ -54,12 +58,50 @@ class SourcedBookDetailsPage extends StatelessWidget {
 
 class _DetailsPageContent extends StatelessWidget {
   const _DetailsPageContent({
+    required this.gateway,
     required this.onRead,
     required this.onDownloadContinuesInBackground,
   });
 
+  final BookSourceGateway gateway;
   final Future<void> Function(BuildContext context, BookSourceBook book) onRead;
   final VoidCallback onDownloadContinuesInBackground;
+
+  String _copy(BuildContext context, String zh, String en, String ja) =>
+      switch (Localizations.localeOf(context).languageCode) {
+        'en' => en,
+        'ja' => ja,
+        _ => zh,
+      };
+
+  Future<void> _openBookSettings(
+    BuildContext context,
+    SourcedBookDetailsState state,
+    BookSourceGateway gateway,
+  ) async {
+    final book = state.result.book;
+    final fallback = GeneratedBookCover(title: book.title, author: book.author);
+    await Navigator.of(context).push<BookSettingsAction>(
+      MaterialPageRoute(
+        builder: (_) => BookSettingsPage(
+          title: book.title,
+          author: book.author,
+          format: 'online',
+          description: book.description,
+          showReaderActions: false,
+          cover: book.coverUrl == null
+              ? fallback
+              : SourceCoverImage(
+                  url: book.coverUrl!,
+                  headers: book.coverHeaders,
+                  fallback: fallback,
+                ),
+          source: state.result.source,
+          client: gateway is BookSourceClient ? gateway : null,
+        ),
+      ),
+    );
+  }
 
   Future<void> _read(
     BuildContext context,
@@ -102,6 +144,28 @@ class _DetailsPageContent extends StatelessWidget {
       key: const Key('bookSourceDetailsPage'),
       title: context.l10n.bookSourceDetailsTitle,
       maxHeaderWidth: 800,
+      actions: [
+        FloatingSubpageMenuButton<_BookDetailsMenuAction>(
+          key: const Key('bookSourceDetailsMoreButton'),
+          icon: Icons.more_horiz_rounded,
+          tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+          items: [
+            FloatingSubpageMenuItem(
+              value: _BookDetailsMenuAction.settings,
+              itemKey: const Key('bookSourceDetailsSettingsMenuItem'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.tune_rounded),
+                  const SizedBox(width: 12),
+                  Text(_copy(context, '书籍设置', 'Book settings', '書籍設定')),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (_) => _openBookSettings(context, state, gateway),
+        ),
+      ],
       body: SingleChildScrollView(
         key: const Key('bookSourceDetailsScroll'),
         padding: floatingSubpagePadding(context, left: 24, right: 24, top: 24),
@@ -299,6 +363,8 @@ class _DetailsPageContent extends StatelessWidget {
     );
   }
 }
+
+enum _BookDetailsMenuAction { settings }
 
 class _BookIdentity extends StatelessWidget {
   const _BookIdentity({required this.result});

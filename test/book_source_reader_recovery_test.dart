@@ -687,6 +687,7 @@ class _RecoveryClient extends BookSourceClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => catalog;
 
   @override
@@ -706,6 +707,7 @@ class _RecoveryClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) {
     requests.add(chapterId);
     return load(chapterId, refreshCount > 0);

@@ -182,6 +182,8 @@ jobs:
           flutter test test/library_shelf_motion_test.dart
           flutter test test/library_shelf_card_test.dart
           flutter test test/library_grid_density_test.dart
+          flutter test test/library_source_update_visibility_test.dart
+          flutter test test/book_source_reader_request_cancellation_test.dart
           flutter test test/library_shelf_responsive_test.dart
           flutter test test/book_source_maintenance_page_test.dart
 

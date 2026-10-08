@@ -91,6 +91,52 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('more menu opens shared book settings with source login', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness());
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('bookSourceDetailsMoreButton')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('bookSourceDetailsMoreButton')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('bookSourceDetailsSettingsMenuItem')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const Key('bookSourceDetailsSettingsMenuItem')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('book-settings-page')), findsOneWidget);
+    expect(find.byKey(const Key('book-settings-login-action')), findsOneWidget);
+    expect(find.byKey(const Key('book-settings-edit-action')), findsNothing);
+    expect(find.byKey(const Key('book-settings-reading-action')), findsNothing);
+    expect(
+      find.byKey(const Key('book-settings-replace-rules-action')),
+      findsNothing,
+    );
+    expect(find.text(_book.title), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('book-settings-page')), findsNothing);
+    expect(find.byKey(const Key('bookSourceDetailsPage')), findsOneWidget);
+    expect(
+      find.byKey(const Key('bookSourceReadButton')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('bookSourceAddToShelfButton')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('pending shelf add cannot be submitted twice and stays on page', (
     tester,
   ) async {

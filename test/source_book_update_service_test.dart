@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/book_sources/models/source_book_update_info.dart';
 import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
+import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 import 'package:xxread/book_sources/services/source_book_update_service.dart';
 import 'package:xxread/book_sources/services/source_chapter_state.dart';
 import 'package:xxread/models/book.dart';
@@ -52,6 +53,82 @@ SourceChapterState _state(List<String> ids) => SourceChapterState(
 );
 
 void main() {
+  test(
+    'cancelled automatic check leaves persisted update metadata intact',
+    () async {
+      final original = _book(info: SourceBookUpdateInfo(checkedAt: _oldDate));
+      final dao = _Dao(original);
+      final gate = Completer<List<BookSourceChapter>>();
+      final started = Completer<void>();
+      final cancellation = BookDownloadCancellation();
+      final shelf = _CancellableShelf((token) {
+        expect(token, same(cancellation));
+        started.complete();
+        // Simulate a transport that completes after cancellation.
+        return gate.future;
+      });
+      final service = SourceBookUpdateService(
+        bookDao: dao,
+        shelfServiceFactory: () => shelf,
+        now: () => _now,
+      );
+      final check = service.check(
+        original,
+        force: false,
+        cancellation: cancellation,
+      );
+      final rejected = expectLater(
+        check,
+        throwsA(isA<BookDownloadCancelledException>()),
+      );
+      await started.future;
+      cancellation.cancel();
+      gate.complete(_catalog(2));
+      await rejected;
+      expect(dao.writes, 0);
+      expect(dao.book!.sourceBookJson, original.sourceBookJson);
+      expect(shelf.closed, isTrue);
+    },
+  );
+
+  test('cancelling a shelf pass does not cancel a manual check', () async {
+    final original = _book();
+    final dao = _Dao(original);
+    final cancellation = BookDownloadCancellation();
+    final automaticGate = Completer<List<BookSourceChapter>>();
+    final manualGate = Completer<List<BookSourceChapter>>();
+    final started = Completer<void>();
+    var requests = 0;
+    final service = SourceBookUpdateService(
+      bookDao: dao,
+      now: () => _now,
+      shelfServiceFactory: () => _CancellableShelf((token) {
+        requests++;
+        if (requests == 2) started.complete();
+        return token == null ? manualGate.future : automaticGate.future;
+      }),
+    );
+    final automatic = service.check(
+      original,
+      force: false,
+      cancellation: cancellation,
+    );
+    final rejected = expectLater(
+      automatic,
+      throwsA(isA<BookDownloadCancelledException>()),
+    );
+    final manual = service.check(original);
+    await started.future;
+    cancellation.cancel();
+    automaticGate.complete(_catalog(2));
+    await rejected;
+    manualGate.complete(_catalog(3));
+    final result = await manual;
+    expect(requests, 2);
+    expect(dao.writes, 1);
+    expect(SourceBookUpdateInfo.fromBook(result).chapterCount, 3);
+  });
+
   test('invalid negative update counts normalize to unknown', () {
     const info = SourceBookUpdateInfo(
       status: SourceBookCheckStatus.available,
@@ -539,12 +616,26 @@ class _Shelf extends BookSourceShelfService {
   final Future<List<BookSourceChapter>> Function() load;
   bool closed = false;
   @override
-  Future<List<BookSourceChapter>> sourceChaptersFor(Book book) => load();
+  Future<List<BookSourceChapter>> sourceChaptersFor(
+    Book book, {
+    BookDownloadCancellation? cancellation,
+  }) => load();
   @override
   void close() {
     closed = true;
     super.close();
   }
+}
+
+class _CancellableShelf extends _Shelf {
+  _CancellableShelf(this.loadWithCancellation) : super(() async => const []);
+  final Future<List<BookSourceChapter>> Function(BookDownloadCancellation?)
+  loadWithCancellation;
+  @override
+  Future<List<BookSourceChapter>> sourceChaptersFor(
+    Book book, {
+    BookDownloadCancellation? cancellation,
+  }) => loadWithCancellation(cancellation);
 }
 
 class _DelayedDao extends _Dao {

@@ -5,12 +5,16 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
     int index, {
     bool Function()? isCurrent,
   }) async {
-    bool shouldApply() => isCurrent?.call() ?? true;
+    final requestCancellation = _activeReaderRequestCancellation;
+    bool shouldApply() =>
+        _isReaderRequestActive(requestCancellation) &&
+        (isCurrent?.call() ?? true);
     if (!shouldApply() || index < 0 || _chapters.isEmpty) return null;
     if (index == _chapters.length) {
       if (!mounted) return null;
       final next = await _refreshCatalogChapter(
         index - 1,
+        cancellation: requestCancellation,
         following: true,
         shouldApply: shouldApply,
       );
@@ -19,8 +23,18 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
     }
     if (index >= _chapters.length) return null;
     final loaded = mounted
-        ? await _chapterContentWithRecovery(index, shouldApply: shouldApply)
-        : (index: index, content: await _continuousContentFor(index));
+        ? await _chapterContentWithRecovery(
+            index,
+            cancellation: requestCancellation,
+            shouldApply: shouldApply,
+          )
+        : (
+            index: index,
+            content: await _continuousContentFor(
+              index,
+              cancellation: requestCancellation,
+            ),
+          );
     if (loaded == null || !shouldApply()) return null;
     index = loaded.index;
     final generation = _catalogGeneration;
@@ -188,13 +202,24 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
         : null;
     final chapterIndex =
         mappedIndex ?? position.chapterIndex.clamp(0, _chapters.length - 1);
-    final content = await _continuousContentFor(chapterIndex);
-    final text =
-        _readableChapterText[chapterIndex] ??
-        await readableBookSourceChapterTextAsync(
-          content,
-          fallbackTitle: _chapters[chapterIndex].title,
-        );
+    var text = _readableChapterText[chapterIndex];
+    if (text == null) {
+      // Closing narration can persist an already prepared position after the
+      // page has cancelled source requests. It must not fetch a new chapter.
+      if (_readerRequestCancellation.isCancelled) return;
+      BookSourceChapterContent content;
+      try {
+        content = await _continuousContentFor(chapterIndex);
+      } on BookDownloadCancelledException {
+        return;
+      }
+      text =
+          _readableChapterText[chapterIndex] ??
+          await readableBookSourceChapterTextAsync(
+            content,
+            fallbackTitle: _chapters[chapterIndex].title,
+          );
+    }
     final progress = text.isEmpty
         ? 0.0
         : (position.offset / text.length).clamp(0.0, 1.0);

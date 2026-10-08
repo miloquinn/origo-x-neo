@@ -3,6 +3,7 @@ part of 'book_source_reader_page.dart';
 extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
   Future<void> _initialize() async {
     final catalogLoadSerial = ++_catalogLoadSerial;
+    final requestCancellation = _activeReaderRequestCancellation;
     ++_chapterLoadSerial;
     _updateReaderState(() {
       _loadingCatalog = true;
@@ -18,6 +19,7 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
           widget.source,
           widget.book.id,
           sourceVariables: widget.book.sourceVariables,
+          cancellation: requestCancellation,
         ),
         widget.progressStore.load(
           sourceId: widget.source.id,
@@ -29,7 +31,10 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         _themeOrderStore.load(),
         _readerSettingsStore.loadTapZones(),
       ]);
-      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
+      if (!_isReaderRequestActive(requestCancellation) ||
+          catalogLoadSerial != _catalogLoadSerial) {
+        return;
+      }
       final resolvedShelfBook = results[0] as Book?;
       final shelfBook = _shelfBook?.id == null ? resolvedShelfBook : _shelfBook;
       _updateReaderState(() {
@@ -58,7 +63,10 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
       if (chapters.isNotEmpty) {
         initialIndex = initialIndex.clamp(0, chapters.length - 1);
       }
-      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
+      if (!_isReaderRequestActive(requestCancellation) ||
+          catalogLoadSerial != _catalogLoadSerial) {
+        return;
+      }
       ReaderThemes.setCustomThemes(customThemes);
       ReaderThemes.setThemeOrder(themeOrder);
       _updateReaderState(() {
@@ -103,8 +111,13 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
           saveCurrent: false,
         );
       }
+    } on BookDownloadCancelledException {
+      return;
     } catch (error) {
-      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
+      if (!_isReaderRequestActive(requestCancellation) ||
+          catalogLoadSerial != _catalogLoadSerial) {
+        return;
+      }
       _updateReaderState(() {
         _loadingCatalog = false;
         _error = error;

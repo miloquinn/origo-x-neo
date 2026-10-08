@@ -140,6 +140,7 @@ class _OverridingClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async {
     contentCalls++;
     throw StateError('expected');

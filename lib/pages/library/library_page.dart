@@ -10,11 +10,13 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'source_book_status_card.dart';
 import '../../widgets/book_update_indicator.dart';
 import '../../book_sources/services/source_book_update_service.dart';
+import '../../book_sources/services/book_download_cancellation.dart';
 import '../../services/sync/book_sync_identity.dart';
 import '../../book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/book_sources/services/book_source_change_service.dart';
@@ -159,6 +161,7 @@ class LibraryPage extends StatefulWidget {
   final ShelfFolderDao? folderDao;
   final BookSourceShelfService? sourceShelfService;
   final BookSourceShelfService Function()? sourceShelfServiceFactory;
+  final SourceBookUpdateService? sourceUpdateService;
 
   const LibraryPage({
     super.key,
@@ -168,6 +171,7 @@ class LibraryPage extends StatefulWidget {
     this.folderDao,
     this.sourceShelfService,
     this.sourceShelfServiceFactory,
+    this.sourceUpdateService,
   }) : assert(sourceShelfService == null || sourceShelfServiceFactory == null);
 
   @override
@@ -215,6 +219,12 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   final FocusNode _searchFocus = FocusNode();
   Timer? _sourceUpdateTimer;
   bool _checkingSourceUpdates = false;
+  bool _sourceUpdatesVisible = false;
+  bool _sourceUpdatesAppActive = true;
+  bool _sourceUpdatesRequested = false;
+  bool _sourceCheckScheduled = false;
+  BookDownloadCancellation? _sourceCheckCancellation;
+  Animation<double>? _sourceUpdateRouteAnimation;
   Timer? _searchDebounce;
   String _searchQuery = '';
   bool _searchBarVisible = false;
@@ -317,12 +327,15 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    BookOpenTransition.navigationHiddenListenable.addListener(
+      _refreshSourceUpdateVisibility,
+    );
     _bookDeletionService = BookDeletionService(bookDao: _bookDao);
     widget.controller?._state = this;
     _loadBooks();
     _sourceUpdateTimer = Timer.periodic(
       SourceBookUpdateService.automaticInterval,
-      (_) => unawaited(_checkSourceUpdates()),
+      (_) => _scheduleSourceUpdates(),
     );
     _librarySubscription = LibraryEventBus().stream.listen((_) {
       if (!mounted) return;
@@ -340,11 +353,30 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _setupThemeBasedImmersiveMode();
+    final activeTab = HomeTabFocusScope.maybeActiveOf(context);
+    final wasVisible = _sourceUpdatesVisible;
+    _sourceUpdatesVisible =
+        (activeTab == null || activeTab == HomeNavigationDestination.library) &&
+        TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.isCurrentOf(context) ?? true);
+    if (_sourceUpdatesVisible && !wasVisible) _sourceUpdatesRequested = true;
+    final animation = ModalRoute.of(context)?.secondaryAnimation;
+    if (_sourceUpdateRouteAnimation != animation) {
+      _sourceUpdateRouteAnimation?.removeStatusListener(_onSourceRouteStatus);
+      _sourceUpdateRouteAnimation = animation;
+      animation?.addStatusListener(_onSourceRouteStatus);
+    }
+    _refreshSourceUpdateVisibility();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    BookOpenTransition.navigationHiddenListenable.removeListener(
+      _refreshSourceUpdateVisibility,
+    );
+    _sourceUpdateRouteAnimation?.removeStatusListener(_onSourceRouteStatus);
+    _sourceCheckCancellation?.cancel();
     if (widget.controller?._state == this) {
       widget.controller?._state = null;
     }
@@ -529,6 +561,7 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadBooks() async {
+    final initialLoad = _isInitialLoading;
     final generation = ++_booksLoadGeneration;
     _loadingBooks = true;
     try {
@@ -558,7 +591,9 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
         });
         _syncSelection();
         _syncFolderTitle();
-        unawaited(_checkSourceUpdates());
+        // Membership/cover events refresh shelf data only. A newly added book
+        // must not start a full source catalog while its details are on screen.
+        if (initialLoad) _scheduleSourceUpdates();
       }
     } catch (error, stackTrace) {
       debugPrint('Failed to load library books: $error');
@@ -610,30 +645,84 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(_checkSourceUpdates());
+    _sourceUpdatesAppActive = state == AppLifecycleState.resumed;
+    if (_sourceUpdatesAppActive) _sourceUpdatesRequested = true;
+    _refreshSourceUpdateVisibility();
+  }
+
+  bool get _canCheckSourceUpdates =>
+      mounted &&
+      _sourceUpdatesVisible &&
+      _sourceUpdatesAppActive &&
+      !_loadingBooks &&
+      !BookOpenTransition.navigationHiddenListenable.value &&
+      (_sourceUpdateRouteAnimation?.isDismissed ?? true);
+
+  void _onSourceRouteStatus(AnimationStatus _) =>
+      _refreshSourceUpdateVisibility();
+
+  void _refreshSourceUpdateVisibility() {
+    if (!_canCheckSourceUpdates) {
+      if (_checkingSourceUpdates) _sourceUpdatesRequested = true;
+      _sourceCheckCancellation?.cancel();
+      return;
+    }
+    if (_sourceUpdatesRequested) _scheduleSourceUpdates();
+  }
+
+  void _scheduleSourceUpdates() {
+    _sourceUpdatesRequested = true;
+    if ((widget.booksLoader != null && widget.sourceUpdateService == null) ||
+        kIsWeb ||
+        !_books.any((book) => book.hasSourceBinding)) {
+      return;
+    }
+    if (!_canCheckSourceUpdates ||
+        _sourceCheckScheduled ||
+        _checkingSourceUpdates) {
+      return;
+    }
+    _sourceCheckScheduled = true;
+    // Wait until route animations and higher priority rendering/input work have
+    // finished. Recheck ownership after the task is dequeued.
+    unawaited(
+      SchedulerBinding.instance.scheduleTask<void>(() async {
+        _sourceCheckScheduled = false;
+        if (_canCheckSourceUpdates) await _checkSourceUpdates();
+      }, Priority.idle),
+    );
   }
 
   Future<void> _checkSourceUpdates() async {
-    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.paused ||
+    if (!_canCheckSourceUpdates ||
         _checkingSourceUpdates ||
-        widget.booksLoader != null ||
+        (widget.booksLoader != null && widget.sourceUpdateService == null) ||
         kIsWeb) {
       return;
     }
     _checkingSourceUpdates = true;
+    _sourceUpdatesRequested = false;
+    final cancellation = BookDownloadCancellation();
+    _sourceCheckCancellation = cancellation;
     try {
-      final service = SourceBookUpdateService();
+      final service = widget.sourceUpdateService ?? SourceBookUpdateService();
       for (final book in List<Book>.of(_books)) {
-        if (!mounted) break;
+        if (!_canCheckSourceUpdates || cancellation.isCancelled) break;
         if (!book.hasSourceBinding) continue;
         try {
-          await service.check(book, force: false);
+          await service.check(book, force: false, cancellation: cancellation);
         } catch (_) {
           /* Retry next cycle. */
         }
       }
     } finally {
+      if (identical(_sourceCheckCancellation, cancellation)) {
+        _sourceCheckCancellation = null;
+      }
       _checkingSourceUpdates = false;
+      if (_sourceUpdatesRequested && _canCheckSourceUpdates) {
+        _scheduleSourceUpdates();
+      }
     }
   }
 

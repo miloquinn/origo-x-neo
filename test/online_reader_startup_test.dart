@@ -343,6 +343,7 @@ class _StartupClient extends BookSourceClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async {
     catalogCount++;
     return const [BookSourceChapter(id: 'chapter-1', title: '第一章', order: 1)];
@@ -354,6 +355,7 @@ class _StartupClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async {
     contentCount++;
     return BookSourceChapterContent(

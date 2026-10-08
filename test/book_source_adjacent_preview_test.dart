@@ -218,6 +218,7 @@ class _AdjacentPreviewClient extends BookSourceClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => const [
     BookSourceChapter(id: 'chapter-1', title: '上一章', order: 1),
     BookSourceChapter(id: 'chapter-2', title: '当前章', order: 2),
@@ -229,6 +230,7 @@ class _AdjacentPreviewClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async {
     requestedChapterIds.add(chapterId);
     final isPrevious = chapterId == 'chapter-1';

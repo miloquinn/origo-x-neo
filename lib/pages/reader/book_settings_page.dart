@@ -36,6 +36,7 @@ class BookSettingsPage extends StatefulWidget {
     this.description = '',
     this.canEditText = false,
     this.canChangeSource = false,
+    this.showReaderActions = true,
     this.source,
     this.client,
     this.loginSessionStore,
@@ -50,6 +51,7 @@ class BookSettingsPage extends StatefulWidget {
   final String description;
   final bool canEditText;
   final bool canChangeSource;
+  final bool showReaderActions;
   final RegisteredBookSource? source;
   final BookSourceClient? client;
   final SourceLoginSessionStore? loginSessionStore;
@@ -140,20 +142,21 @@ class _BookSettingsPageState extends State<BookSettingsPage> {
   );
 
   List<Widget> _actions() => [
-    _action(
-      Icons.edit_note_rounded,
-      _copy('编辑正文', 'Edit text', '本文を編集'),
-      BookSettingsAction.editText,
-      key: const Key('book-settings-edit-action'),
-      enabled: widget.canEditText,
-      subtitle: widget.canEditText
-          ? null
-          : _copy(
-              '仅本地 TXT 书籍可用',
-              'Available for local TXT books only',
-              'ローカル TXT 書籍のみ対応',
-            ),
-    ),
+    if (widget.showReaderActions)
+      _action(
+        Icons.edit_note_rounded,
+        _copy('编辑正文', 'Edit text', '本文を編集'),
+        BookSettingsAction.editText,
+        key: const Key('book-settings-edit-action'),
+        enabled: widget.canEditText,
+        subtitle: widget.canEditText
+            ? null
+            : _copy(
+                '仅本地 TXT 书籍可用',
+                'Available for local TXT books only',
+                'ローカル TXT 書籍のみ対応',
+              ),
+      ),
     if (widget.canChangeSource)
       _action(
         Icons.swap_horiz_rounded,
@@ -172,19 +175,21 @@ class _BookSettingsPageState extends State<BookSettingsPage> {
         loading: _loadingLogin,
         onTap: _login,
       ),
-    _action(
-      Icons.auto_fix_high_rounded,
-      context.l10n.replaceRulesTitle,
-      BookSettingsAction.replaceRules,
-      key: const Key('book-settings-replace-rules-action'),
-      subtitle: context.l10n.replaceRulesSettingsSubtitle,
-    ),
-    _action(
-      Icons.tune_rounded,
-      context.l10n.readingSettings,
-      BookSettingsAction.readingSettings,
-      key: const Key('book-settings-reading-action'),
-    ),
+    if (widget.showReaderActions) ...[
+      _action(
+        Icons.tune_rounded,
+        context.l10n.readingSettings,
+        BookSettingsAction.readingSettings,
+        key: const Key('book-settings-reading-action'),
+      ),
+      _action(
+        Icons.auto_fix_high_rounded,
+        context.l10n.replaceRulesTitle,
+        BookSettingsAction.replaceRules,
+        key: const Key('book-settings-replace-rules-action'),
+        subtitle: context.l10n.replaceRulesSettingsSubtitle,
+      ),
+    ],
   ];
 
   @override
@@ -196,62 +201,73 @@ class _BookSettingsPageState extends State<BookSettingsPage> {
       key: const Key('book-settings-page'),
       title: _copy('书籍设置', 'Book settings', '書籍設定'),
       maxHeaderWidth: 920,
-      body: SingleChildScrollView(
-        key: const Key('book-settings-scroll'),
-        padding: floatingSubpagePadding(context, left: 20, right: 20, top: 20),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 872),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _BookIdentity(
-                  title: widget.title,
-                  author: widget.author,
-                  sourceLabel: _source?.name ?? widget.format.toUpperCase(),
-                  cover: _book?.coverImagePath != null && !kIsWeb
-                      ? Image.file(
-                          File(_book!.coverImagePath!),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => widget.cover,
-                        )
-                      : widget.cover,
-                ),
-                if (normalizedDescription.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _CollapsibleBookDescription(
-                    description: normalizedDescription,
-                    expanded: _descriptionExpanded,
-                    onToggle: () => setState(
-                      () => _descriptionExpanded = !_descriptionExpanded,
-                    ),
-                    showMoreLabel: _copy('展开', 'Show more', 'もっと見る'),
-                    showLessLabel: _copy('收起', 'Show less', '閉じる'),
+      body: Padding(
+        padding: EdgeInsets.only(
+          top: FloatingSubpageScaffold.headerExtentOf(context),
+        ),
+        child: SingleChildScrollView(
+          key: const Key('book-settings-scroll'),
+          padding: floatingSubpagePadding(
+            context,
+            left: 20,
+            right: 20,
+            top: 20,
+            includeHeader: false,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 872),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _BookIdentity(
+                    title: widget.title,
+                    author: widget.author,
+                    sourceLabel: _source?.name ?? widget.format.toUpperCase(),
+                    cover: _book?.coverImagePath != null && !kIsWeb
+                        ? Image.file(
+                            File(_book!.coverImagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => widget.cover,
+                          )
+                        : widget.cover,
                   ),
+                  if (normalizedDescription.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _CollapsibleBookDescription(
+                      description: normalizedDescription,
+                      expanded: _descriptionExpanded,
+                      onToggle: () => setState(
+                        () => _descriptionExpanded = !_descriptionExpanded,
+                      ),
+                      showMoreLabel: _copy('展开', 'Show more', 'もっと見る'),
+                      showLessLabel: _copy('收起', 'Show less', '閉じる'),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  Text(
+                    _copy('书籍功能', 'Book actions', '書籍の操作'),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _BookSettingsActionGrid(actions: _actions()),
+                  if (_book != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20),
+                      child: SourceBookStatusCard(
+                        book: _book!,
+                        allowSourceBinding: !widget.canChangeSource,
+                        onBookChanged: (book) {
+                          setState(() => _book = book);
+                          widget.onBookChanged?.call(book);
+                          _refreshLogin();
+                        },
+                      ),
+                    ),
                 ],
-                const SizedBox(height: 20),
-                Text(
-                  _copy('书籍功能', 'Book actions', '書籍の操作'),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _BookSettingsActionGrid(actions: _actions()),
-                if (_book != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: SourceBookStatusCard(
-                      book: _book!,
-                      allowSourceBinding: !widget.canChangeSource,
-                      onBookChanged: (book) {
-                        setState(() => _book = book);
-                        widget.onBookChanged?.call(book);
-                        _refreshLogin();
-                      },
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
         ),

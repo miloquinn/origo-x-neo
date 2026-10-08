@@ -20,7 +20,10 @@ import 'package:xxread/services/reader_aloud_service.dart';
 import 'package:xxread/services/reader_aloud_session.dart';
 import 'package:xxread/services/tts_service.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
+import 'package:xxread/widgets/reader_desktop_input.dart';
 import 'package:xxread/widgets/reader_annotated_text_page.dart';
+
+import 'support/no_shelf_book_source_service.dart';
 
 void main() {
   for (final action in ['stop', 'new target', 'reopen same book']) {
@@ -77,6 +80,7 @@ void main() {
                 source: _source,
                 book: _book,
                 client: client,
+                shelfServiceFactory: NoShelfBookSourceService.new,
                 replaceRuleService: rules,
                 progressStore: progress,
                 paginationCacheDao: _NoDiskPagination(),
@@ -91,9 +95,7 @@ void main() {
             .evaluate()
             .isNotEmpty,
       );
-      tester
-          .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
-          .onReadAloud!();
+      await _startReadAloud(tester);
       await _pumpUntil(tester, () => tts.isPlaying);
       final controller = session.controller!;
       // Exercise the reader's actual callback and its asynchronous content load.
@@ -227,6 +229,7 @@ void main() {
             source: _source,
             book: _book,
             client: client,
+            shelfServiceFactory: NoShelfBookSourceService.new,
             replaceRuleService: rules,
             progressStore: _MemoryProgress(),
             paginationCacheDao: _NoDiskPagination(),
@@ -236,18 +239,16 @@ void main() {
     );
     final opening = find.textContaining('Opening body.', findRichText: true);
     await _pumpUntil(tester, () => opening.evaluate().isNotEmpty);
-    tester
-        .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
-        .onReadAloud!();
+    await _startReadAloud(tester);
     await _pumpUntil(tester, () => tts.isPlaying);
     final controller = session.controller!;
     Navigator.of(tester.element(find.byType(BottomSheet))).pop();
     await _pumpUntil(tester, () => find.byType(BottomSheet).evaluate().isEmpty);
     await tester.pump(const Duration(milliseconds: 350));
 
-    final reader = find.byKey(const ValueKey('book-source-reader-content'));
-    final readerRect = tester.getRect(reader);
-    await tester.tapAt(Offset(readerRect.right - 20, readerRect.center.dy));
+    final readerInput = find.byType(ReaderDesktopInput);
+    expect(tester.widget<ReaderDesktopInput>(readerInput).enabled, isTrue);
+    tester.widget<ReaderDesktopInput>(readerInput).onNext();
     await _pumpUntil(
       tester,
       () => find
@@ -255,7 +256,8 @@ void main() {
           .evaluate()
           .isNotEmpty,
     );
-    await tester.tapAt(Offset(readerRect.left + 20, readerRect.center.dy));
+    expect(tester.widget<ReaderDesktopInput>(readerInput).enabled, isTrue);
+    tester.widget<ReaderDesktopInput>(readerInput).onPrevious();
     await _pumpUntil(tester, () => opening.evaluate().isNotEmpty);
     expect(tts.spoken, ['Opening body.']);
     expect(session.controller, same(controller));
@@ -292,6 +294,21 @@ void main() {
     await _pumpUntil(tester, () => stopped);
     await stopping;
   });
+}
+
+Future<void> _startReadAloud(WidgetTester tester) async {
+  await tester.tapAt(tester.getCenter(find.byType(BookSourceReaderPage)));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 350));
+  final button = find.byWidgetPredicate(
+    (widget) =>
+        widget is ReaderControlIconButton &&
+        widget.icon == Icons.headphones_rounded,
+  );
+  expect(button.hitTestable(), findsOneWidget);
+  expect(tester.widget<ReaderControlIconButton>(button).onPressed, isNotNull);
+  await tester.tap(button);
+  await tester.pump();
 }
 
 Future<void> _pumpUntil(WidgetTester tester, bool Function() done) async {
@@ -334,6 +351,7 @@ class _DelayedClient extends BookSourceClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => [
     for (var index = 0; index < 3; index++)
       BookSourceChapter(id: '$index', title: 'Chapter $index', order: index),
@@ -344,6 +362,7 @@ class _DelayedClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => chapterId == '1'
       ? delayed.future
       : _content(

@@ -30,6 +30,12 @@ Injected clients, services, transports, and runtimes are borrowed. Dependencies
 created by a page, service, or composition root are owned by that creator and
 closed once, in child-before-parent order. Closing a runtime transport cancels
 pending network work; disposal must not wait indefinitely for that work first.
+Reader pages own cancellation tokens for catalog/content/prefetch requests even
+when borrowing a client. Cache network flights are scoped by that owner; disk
+and memory entries remain shared. ReadingSource catalog initialization retains
+independent waiters and stops only after its last waiter leaves. Source-invariant
+script preparation is bounded and keyed by complete library content; dynamic
+book, chapter and session data never enters that preparation cache.
 
 ## Compatibility boundaries
 

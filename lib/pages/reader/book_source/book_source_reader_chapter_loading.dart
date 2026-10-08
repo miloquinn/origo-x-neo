@@ -12,6 +12,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     if (saveCurrent && index > _chapterIndex) _sessionPagesRead++;
     if (saveCurrent && _content != null) unawaited(_saveProgress());
     if (!mounted) return;
+    final requestCancellation = _activeReaderRequestCancellation;
     final loadSerial = ++_chapterLoadSerial;
     var catalogGeneration = _catalogGeneration;
     var targetIndex = index;
@@ -19,6 +20,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
         mounted &&
         loadSerial == _chapterLoadSerial &&
         catalogGeneration == _catalogGeneration &&
+        _isReaderRequestActive(requestCancellation) &&
         (shouldApply?.call() ?? true);
     _updateReaderState(() {
       _loadingContent = true;
@@ -30,9 +32,11 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     try {
       final loaded = await _chapterContentWithRecovery(
         index,
+        cancellation: requestCancellation,
         shouldApply: () =>
             mounted &&
             loadSerial == _chapterLoadSerial &&
+            _isReaderRequestActive(requestCancellation) &&
             (shouldApply?.call() ?? true),
         onCatalogChanged: (mappedIndex) {
           targetIndex = mappedIndex;
@@ -60,6 +64,8 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
         content,
         restoreProgress: restoreProgress,
       );
+    } on BookDownloadCancelledException {
+      return;
     } catch (error) {
       if (!isCurrent()) return;
       _updateReaderState(() {
@@ -86,22 +92,27 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
   Future<({int index, BookSourceChapterContent content})?>
   _chapterContentWithRecovery(
     int index, {
+    required BookDownloadCancellation cancellation,
     required bool Function() shouldApply,
     void Function(int index)? onCatalogChanged,
   }) async {
     var generation = _catalogGeneration;
     bool isCurrent() =>
-        mounted && generation == _catalogGeneration && shouldApply();
+        mounted &&
+        generation == _catalogGeneration &&
+        _isReaderRequestActive(cancellation) &&
+        shouldApply();
     if (!isCurrent()) return null;
     BookSourceChapterContent content;
     var targetIndex = index;
     try {
-      content = await _continuousContentFor(index);
+      content = await _continuousContentFor(index, cancellation: cancellation);
     } on BookSourceProtocolException catch (error) {
       if (!isCurrent()) return null;
       if (!error.isMissingChapter) rethrow;
       final mapped = await _refreshCatalogChapter(
         index,
+        cancellation: cancellation,
         shouldApply: isCurrent,
       );
       if (mapped == null) {
@@ -112,7 +123,10 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
       generation = _catalogGeneration;
       onCatalogChanged?.call(targetIndex);
       // Only one recovery attempt; surface a second failure to the caller.
-      content = await _continuousContentFor(targetIndex);
+      content = await _continuousContentFor(
+        targetIndex,
+        cancellation: cancellation,
+      );
     }
     if (!isCurrent()) return null;
     return (index: targetIndex, content: content);
@@ -120,6 +134,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
 
   Future<int?> _refreshCatalogChapter(
     int index, {
+    required BookDownloadCancellation cancellation,
     required bool Function() shouldApply,
     bool following = false,
   }) async {
@@ -127,12 +142,16 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     final targetChapter = _chapters[index];
     final targetTitle = _sourceChapterTitle(index);
     bool isCurrent() =>
-        mounted && generation == _catalogGeneration && shouldApply();
+        mounted &&
+        generation == _catalogGeneration &&
+        _isReaderRequestActive(cancellation) &&
+        shouldApply();
     final rawChapters = [
       ...await _client.getChaptersForDownload(
         widget.source,
         widget.book.id,
         sourceVariables: widget.book.sourceVariables,
+        cancellation: cancellation,
       ),
     ]..sort((a, b) => a.order.compareTo(b.order));
     if (!isCurrent()) return null;
@@ -313,7 +332,13 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     }
   }
 
-  Future<BookSourceChapterContent> _continuousContentFor(int index) {
+  Future<BookSourceChapterContent> _continuousContentFor(
+    int index, {
+    BookDownloadCancellation? cancellation,
+  }) {
+    final requestCancellation =
+        cancellation ?? _activeReaderRequestCancellation;
+    requestCancellation.throwIfCancelled();
     final cached = _prefetchedContent[index];
     if (cached != null && _readableChapterText.containsKey(index)) {
       return Future.value(cached);
@@ -325,6 +350,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     final chapterTitle = _sourceChapterTitle(index);
     bool isCurrent() =>
         mounted &&
+        _isReaderRequestActive(requestCancellation) &&
         generation == _catalogGeneration &&
         index < _chapters.length &&
         _chapters[index].id == chapter.id;
@@ -343,6 +369,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
               'bookAuthor': widget.book.author,
               'bookType': '${widget.book.type}',
             },
+            cancellation: requestCancellation,
           );
     future = contentFuture
         .then((content) async {

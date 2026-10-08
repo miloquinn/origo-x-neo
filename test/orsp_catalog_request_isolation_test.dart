@@ -133,6 +133,44 @@ void main() {
     );
     expect(cached.single.id, 'newer');
   });
+
+  test(
+    'reader and download chapter requests have independent cancellation',
+    () async {
+      final adapter = _ControlledCatalogAdapter();
+      final client = _client(adapter, _memoryOnlyCache());
+      final cancellation = BookDownloadCancellation();
+
+      final download = client.getChapterContentForDownload(
+        _source,
+        bookId: 'book',
+        chapterId: 'chapter',
+        cancellation: cancellation,
+      );
+      await adapter.waitForRequests(1);
+      final reader = client.getChapterContent(
+        _source,
+        bookId: 'book',
+        chapterId: 'chapter',
+      );
+      await adapter.waitForRequests(2);
+
+      final downloadExpectation = expectLater(
+        download,
+        throwsA(isA<BookDownloadCancelledException>()),
+      );
+      cancellation.cancel();
+      expect(adapter.requests, hasLength(2));
+      expect(
+        adapter.requests.map((request) => request.options.uri.path),
+        everyElement('/api/v1/books/book/chapters/chapter'),
+      );
+      adapter.requests[1].completeChapter('reader body');
+
+      expect((await reader).content, 'reader body');
+      await downloadExpectation;
+    },
+  );
 }
 
 BookSourceChapterCache _memoryOnlyCache() => BookSourceChapterCache(
@@ -219,6 +257,20 @@ class _PendingCatalogRequest {
       ResponseBody.fromString(
         '{"items":[{"id":"$chapterId","title":"Chapter","order":1}],'
         '"page":1,"pageSize":100,"hasMore":false}',
+        HttpStatus.ok,
+        headers: {
+          Headers.contentTypeHeader: ['application/json'],
+        },
+      ),
+    );
+  }
+
+  void completeChapter(String content) {
+    if (response.isCompleted) return;
+    response.complete(
+      ResponseBody.fromString(
+        '{"bookId":"book","chapterId":"chapter","title":"Chapter",'
+        '"content":"$content","contentType":"text/plain"}',
         HttpStatus.ok,
         headers: {
           Headers.contentTypeHeader: ['application/json'],

@@ -327,6 +327,35 @@ void main() {
     },
   );
 
+  testWidgets(
+    'stopping read-aloud after reader disposal saves the prepared position',
+    (tester) async {
+      final client = _TransitionClient(
+        catalog: const [_firstChapter],
+        refreshedCatalog: const [_firstChapter],
+      );
+      final harness = await _TransitionHarness.open(tester, client: client);
+      harness.tts.position = 4;
+      final expectedProgress =
+          harness.controller.currentOffset /
+          harness.controller.currentChapter!.text.length;
+      final requestsBeforeExit = List<String>.of(client.requests);
+      final savesBeforeExit = harness.progress.saved.length;
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await harness.session.stop();
+
+      expect(client.requests, requestsBeforeExit);
+      expect(harness.progress.saved.length, greaterThan(savesBeforeExit));
+      expect(harness.progress.saved.last.chapterId, _firstChapter.id);
+      expect(harness.progress.saved.last.chapterIndex, 0);
+      expect(
+        harness.progress.saved.last.chapterProgress,
+        closeTo(expectedProgress, 0.0001),
+      );
+    },
+  );
+
   testWidgets('an unchanged refreshed catalog stops once at the real end', (
     tester,
   ) async {
@@ -493,6 +522,7 @@ class _TransitionClient extends BookSourceClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => catalog;
 
   @override
@@ -512,6 +542,7 @@ class _TransitionClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) {
     requests.add(chapterId);
     final callback = load;
@@ -528,6 +559,7 @@ class _TransitionClient extends BookSourceClient {
 class _ControlledTts extends TtsService {
   Completer<void>? _speech;
   final List<String> spokenTexts = [];
+  int position = 0;
 
   @override
   Future<void> initialize({bool force = false}) async {}
@@ -540,7 +572,7 @@ class _ControlledTts extends TtsService {
   @override
   bool get isPlaying => _speech != null;
   @override
-  int get currentPosition => 0;
+  int get currentPosition => position;
 
   @override
   Future<void> speak(String text) async {

@@ -33,6 +33,7 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
       bookContext,
       cancellation: cancellation,
     );
+    cancellation?.throwIfCancelled();
     final rule = source.rule('ruleToc');
     var chapterListRule = _rules.requiredRule(rule, 'chapterList');
     final reverseChapters = chapterListRule.startsWith('-');
@@ -50,6 +51,7 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
     final seenPages = <String>{};
     var fixedPageList = false;
     var fetchedPages = 0;
+    final itemBudget = _CatalogWorkBudget();
     catalogPages:
     while (fetchedPages < SourceRuntimeReading._maxPageHops &&
         pendingUrls.isNotEmpty) {
@@ -65,6 +67,7 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
         book: bookContext,
         cancellation: cancellation,
       );
+      cancellation?.throwIfCancelled();
       _ensureChapterRequestSucceeded(response);
       fetchedPages++;
       final redirectTarget = response.finalUri.toString();
@@ -91,10 +94,12 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
         null,
         chapterListRule,
       );
+      cancellation?.throwIfCancelled();
       if (contexts.isEmpty && source.isImageSource) {
         contexts = _fallbackChapterAnchors(contextualDocument.value);
       }
       for (final context in contexts) {
+        await itemBudget.beforeItem(cancellation);
         chapterContext
           ..clear()
           ..addAll({'index': candidates.length, 'url': pageUrl});
@@ -104,6 +109,7 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
           rule,
           'chapterName',
         );
+        cancellation?.throwIfCancelled();
         if (context is dom.Element &&
             context.localName == 'a' &&
             title.isEmpty) {
@@ -116,9 +122,11 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
           context,
           rule,
         );
+        cancellation?.throwIfCancelled();
         final isVolume = _sourceRuleTrue(
           await _rules.value(contextualDocument, context, rule, 'isVolume'),
         );
+        cancellation?.throwIfCancelled();
         if (title.isEmpty || isVolume) continue;
         if (resolvedChapterUrl.invalid && originalUrl.isEmpty) continue;
         final url = resolvedChapterUrl.invalid
@@ -156,6 +164,7 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
           rule,
           'nextTocUrl',
         );
+        cancellation?.throwIfCancelled();
         final unseenNextUrls = <String>[];
         final pageCandidates = <String>{};
         for (final candidate in nextUrls) {
@@ -182,6 +191,7 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
         }
       }
     }
+    cancellation?.throwIfCancelled();
     var chapterEntries = _deduplicateChapters(
       candidates,
       reverse: reverseChapters,
@@ -203,7 +213,9 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
     }
     final chapters = <BookSourceChapter>[];
     var order = 0;
+    final rememberBudget = _CatalogWorkBudget();
     for (final entry in chapterEntries) {
+      await rememberBudget.beforeItem(cancellation);
       final nextChapterUrl = order + 1 < chapterEntries.length
           ? chapterEntries[order + 1].url
           : '';
@@ -221,9 +233,11 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
       });
       order++;
     }
+    cancellation?.throwIfCancelled();
     _state.rememberBookContext(source, bookId, bookContext);
     _state.rememberRuleState(source, bookId, ruleState);
     await _sessions.flush(source);
+    cancellation?.throwIfCancelled();
     _state.rememberCatalogParsed(source, bookId);
     return chapters;
   }
@@ -384,6 +398,29 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
         ..[chapter.url] = chapter;
     }
     return byUrl.values.toList(growable: false);
+  }
+}
+
+class _CatalogWorkBudget {
+  static const _maxItems = 64;
+  static const _maxElapsedMicroseconds = 8000;
+
+  int _items = 0;
+  final Stopwatch _watch = Stopwatch()..start();
+
+  Future<void> beforeItem(BookDownloadCancellation? cancellation) async {
+    cancellation?.throwIfCancelled();
+    _items++;
+    if (_items < _maxItems &&
+        _watch.elapsedMicroseconds < _maxElapsedMicroseconds) {
+      return;
+    }
+    _items = 0;
+    _watch
+      ..reset()
+      ..start();
+    await Future<void>.delayed(Duration.zero);
+    cancellation?.throwIfCancelled();
   }
 }
 

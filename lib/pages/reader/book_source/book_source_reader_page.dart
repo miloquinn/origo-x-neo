@@ -21,6 +21,7 @@ import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/services/book_source_change_service.dart';
 import 'package:xxread/book_sources/services/book_source_chapter_text.dart';
+import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 import 'package:xxread/book_sources/caching/source_cover_cache.dart';
 import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
 import 'package:xxread/book_sources/services/book_source_registry.dart';
@@ -169,12 +170,29 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   late final bool _ownsClient = widget.client == null;
   late final BookSourceClient _client =
       widget.client ?? (widget.clientFactory ?? BookSourceClient.new)();
+  BookDownloadCancellation _readerRequestCancellation =
+      BookDownloadCancellation();
+  bool _readerExitStarted = false;
   late final bool _ownsShelfService = widget.shelfService == null;
   late final BookSourceShelfService _shelfService =
       widget.shelfService ??
       (widget.shelfServiceFactory ??
           (client) => BookSourceShelfService(client: client))(_client);
   Future<Book?>? _shelfBookLookup;
+
+  BookDownloadCancellation get _activeReaderRequestCancellation {
+    if (_readerRequestCancellation.isCancelled && !_readerExitStarted) {
+      _readerRequestCancellation = BookDownloadCancellation();
+    }
+    return _readerRequestCancellation;
+  }
+
+  bool _isReaderRequestActive(BookDownloadCancellation cancellation) =>
+      mounted &&
+      identical(cancellation, _readerRequestCancellation) &&
+      !cancellation.isCancelled;
+
+  void _cancelReaderRequests() => _readerRequestCancellation.cancel();
   late final SourceCoverCache _remoteImageCache =
       widget.remoteImageCache ?? SourceCoverCache.imagePageInstance;
   late final PaginationCacheDao _paginationCacheDao =
@@ -593,6 +611,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
 
   @override
   void dispose() {
+    _readerExitStarted = true;
+    _cancelReaderRequests();
     _replaceRules.removeListener(_onReplaceRulesChanged);
     ++_replaceRuleRefreshSerial;
     WidgetsBinding.instance.removeObserver(this);

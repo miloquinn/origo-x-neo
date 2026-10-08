@@ -234,15 +234,21 @@ class BookSourceClient implements BookSourceGateway {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
   }) {
     if (source.sourceProtocol == BookSourceProtocolKind.readingSource) {
       return _resources.readingBackend.getChapters(
         source,
         bookId,
         sourceVariables: sourceVariables,
+        cancellation: cancellation,
       );
     }
-    return _resources.orspBackend.getChapters(source, bookId);
+    return _resources.orspBackend.getChapters(
+      source,
+      bookId,
+      cancellation: cancellation,
+    );
   }
 
   @override
@@ -294,6 +300,7 @@ class BookSourceClient implements BookSourceGateway {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
   }) {
     if (source.sourceProtocol == BookSourceProtocolKind.readingSource) {
       return _resources.readingBackend.getChapterContent(
@@ -301,12 +308,14 @@ class BookSourceClient implements BookSourceGateway {
         bookId: bookId,
         chapterId: chapterId,
         sourceVariables: sourceVariables,
+        cancellation: cancellation,
       );
     }
     return _resources.orspBackend.getChapterContent(
       source,
       bookId: bookId,
       chapterId: chapterId,
+      cancellation: cancellation,
     );
   }
 

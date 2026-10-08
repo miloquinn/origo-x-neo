@@ -520,6 +520,7 @@ class _ChangeClient extends BookSourceClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => List.generate(
     source.id == _oldSource.id ? 10 : 12,
     (index) => BookSourceChapter(
@@ -559,6 +560,7 @@ class _ChangeClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async {
     contentRequests++;
     return BookSourceChapterContent(

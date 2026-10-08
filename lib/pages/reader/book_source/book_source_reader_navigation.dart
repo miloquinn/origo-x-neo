@@ -162,12 +162,16 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
     if (_exitPromptVisible) return;
     _stopAutoPageTurn();
     if (_shelfBookId != null) {
-      BookOpenTransition.beginExit();
-      await _saveProgress();
-      unawaited(_flushReadingSession());
-      if (!mounted) return;
-      _updateReaderState(() => _allowPop = true);
-      Navigator.of(context).pop();
+      if (!_beginReaderExit()) return;
+      try {
+        await _saveProgress();
+        unawaited(_flushReadingSession());
+        if (!mounted) return;
+        _finishReaderExit();
+      } catch (_) {
+        if (mounted) _restoreReaderAfterRetainedExit();
+        rethrow;
+      }
       return;
     }
     _exitPromptVisible = true;
@@ -180,9 +184,7 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
     );
     if (!mounted) return;
     if (shelfBook != null) {
-      BookOpenTransition.beginExit();
-      _updateReaderState(() => _allowPop = true);
-      Navigator.of(context).pop();
+      if (_beginReaderExit()) _finishReaderExit();
       return;
     }
 
@@ -195,18 +197,68 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
     );
     _exitPromptVisible = false;
     if (!mounted) return;
+    if (shouldAdd == null) return;
+    if (!_beginReaderExit()) return;
     if (shouldAdd == true) {
-      final added = await _shelfService.addOnline(
-        source: widget.source,
-        book: widget.book,
-      );
-      _shelfBookId = added.id;
-      await _saveProgress();
-      if (!mounted) return;
+      try {
+        final added = await _shelfService.addOnline(
+          source: widget.source,
+          book: widget.book,
+        );
+        _shelfBookId = added.id;
+        await _saveProgress();
+        if (!mounted) return;
+      } catch (_) {
+        if (mounted) _restoreReaderAfterRetainedExit();
+        rethrow;
+      }
+    }
+    _finishReaderExit();
+  }
+
+  bool _beginReaderExit() {
+    if (_readerExitStarted) return false;
+    final navigator = Navigator.of(context);
+    if (!navigator.canPop()) return false;
+    _readerExitStarted = true;
+    _cancelReaderRequests();
+    ++_catalogLoadSerial;
+    ++_chapterLoadSerial;
+    _continuousContentLoads.clear();
+    return true;
+  }
+
+  void _finishReaderExit() {
+    final navigator = Navigator.of(context);
+    if (!navigator.canPop()) {
+      _restoreReaderAfterRetainedExit();
+      return;
     }
     BookOpenTransition.beginExit();
     _updateReaderState(() => _allowPop = true);
-    Navigator.of(context).pop();
+    navigator.pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !(ModalRoute.isCurrentOf(context) ?? false)) return;
+      _restoreReaderAfterRetainedExit();
+    });
+  }
+
+  void _restoreReaderAfterRetainedExit() {
+    _readerExitStarted = false;
+    if (_readerRequestCancellation.isCancelled) {
+      _readerRequestCancellation = BookDownloadCancellation();
+    }
+    if (_loadingCatalog) {
+      unawaited(_initialize());
+      return;
+    }
+    if (_loadingContent && _chapters.isNotEmpty) {
+      final index = (_requestedChapterIndex ?? _chapterIndex).clamp(
+        0,
+        _chapters.length - 1,
+      );
+      unawaited(_loadChapter(index, saveCurrent: false));
+    }
   }
 
   void _handleHorizontalSwipe(DragEndDetails details) {

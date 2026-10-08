@@ -17,9 +17,9 @@ Local and online readers share bounded cache storage policies and the same SQLit
 
 Cold online chapter/catalog callers share the same disk read, scoped by cache
 root, content identity, and clear epoch. Freshness stays a caller decision.
-ORSP downloads and reader catalog refreshes use separate cache flight scopes;
-ReadingSource currently uses the default shared scope (see the known limitation
-below).
+ORSP and ReadingSource chapter/catalog network flights use separate interactive,
+download and cancellation-token scopes. Different owners share persisted data
+without sharing cancellation ownership.
 Pending cold source loads can be joined immediately. A background refresh never
 blocks a stale-while-revalidate disk hit after OS memory release, and a delayed
 disk result cannot replace newer memory. If an early joined request fails,
@@ -112,10 +112,9 @@ Horizontal chapter handoff explicitly requests the frame needed to commit after 
    failed/null lookups are not cached forever. Later settings updates win.
 3. Disk reads share root, kind, content identity and clear generation. Network
    catalog flights additionally include request scope in their key. ORSP passes
-   separate interactive/download scopes; ReadingSource currently passes neither
-   and uses `#shared`. Freshness and acceptable error fallback remain caller
-   decisions. A future isolation repair must avoid merging unrelated cancellation
-   ownership; this is not yet guaranteed for ReadingSource catalog cache flights.
+   separate interactive/download scopes, as does ReadingSource. A page/download
+   cancellation token supplies its own scope for both chapter and catalog
+   flights. Freshness and acceptable error fallback remain caller decisions.
 4. Keep cold flights and refresh flights distinct. After `releaseMemory()`, a
    caller allowing stale content can read disk while refresh is pending. Store
    only the flight future and refresh marker, not a retained decoded payload.
@@ -153,22 +152,39 @@ runtime initialization, parsing and pagination. Record source revision and
 conditions without sensitive data. File-download benchmarks and controlled
 concurrency tests do not establish book-opening speedup percentages.
 
-### Known limitation: ReadingSource catalog cancellation
+### Request lifetime and cooperative source processing
 
 [ORSP catalog loading](../lib/book_sources/protocol/orsp/orsp_book_source_backend.dart)
-passes distinct interactive and download/cancellation scopes to the catalog
-cache. [ReadingSource catalog loading](../lib/book_sources/protocol/reading_source/reading_source_backend.dart)
-currently omits `requestScope` from both `getChapters` and
-`getChaptersForDownload`, so both use the cache's `#shared` scope. Overlapping
-loads can join one cache flight even though the underlying runtime initialization
-waiters have independent cancellation.
+and [ReadingSource catalog loading](../lib/book_sources/protocol/reading_source/reading_source_backend.dart)
+pass distinct owner scopes to the shared cache. Chapter network flights follow
+the same rule. Within one scope equivalent loads still coalesce; cross-scope
+requests share disk/memory entries and preserve the latest-started write winner.
+ReadingSource's required runtime catalog initializer counts its waiters: one
+cancelled waiter leaves the other active, and the last departing waiter cancels
+the internal runtime request before further script processing.
 
-The existing runtime-boundary cancellation cases and ORSP cache-scope tests do
-not prove outer ReadingSource catalog-flight isolation. A repair must distinguish
-these callers at the cache boundary and add a controlled cold-catalog regression
-where cancelling the download does not fail an active reader (and vice versa),
-while retaining per-caller freshness and latest-started catalog semantics.
-This documentation cleanup records the gap; it does not change application code.
+`BookSourceReaderPage` owns one token for its catalog, foreground chapters,
+adjacent prefetch and narration requests. Confirmed exit cancels that token
+before awaiting progress persistence; actual pop and disposal also cancel it.
+Cancelling the exit dialog keeps the page usable. Failed persistence or a route
+that remains mounted restores a token and retries unfinished loading. A reader
+never closes a borrowed client to cancel its own requests, and late responses
+cannot publish page content or layout state.
+
+Compatible catalog extraction checks cancellation between fields and chapters,
+and yields to the event loop after a bounded batch or elapsed processing budget.
+The final chapter-context loop follows the same rule; only completed catalogs
+publish their parsed identity. This makes cancellation and input events reachable
+even for large catalogs whose rules do not invoke asynchronous JavaScript.
+Individual synchronous selector/native operations remain atomic.
+
+`SourceScriptBootstrap` caches only source-invariant shared-library preparation,
+keyed by the complete original `jsLib` content and limited to 16 LRU entries.
+Changing a library immediately uses a fresh preparation. Book/chapter data,
+variables, current scripts and login/session payloads are encoded per invocation.
+The catch guard reads the original source position without repeatedly copying
+the accumulated output. This cache does not alter content cache identity;
+dynamic login/session payloads never enter its key or value.
 
 ### Regression entry points
 
@@ -186,6 +202,9 @@ For online startup/shared-cache changes, the first checks are:
 flutter test --no-pub test/book_source_cache_concurrency_test.dart
 flutter test --no-pub test/online_reader_startup_test.dart
 flutter test --no-pub test/reading_source_cached_catalog_boundary_test.dart
+flutter test --no-pub test/book_source_reader_request_cancellation_test.dart
+flutter test --no-pub test/source_runtime_catalog_cancellation_test.dart
+flutter test --no-pub test/source_script_bootstrap_preparation_test.dart
 ```
 
 Then select the tests for affected boundaries, analyze the changed Dart files
@@ -203,6 +222,8 @@ identity and resource-ownership contracts above as the maintenance reference.
   records retry, runtime catalog state and cancellation fixes for that snapshot.
 - [2026-10-08 loading validation](reviews/2026-10-08-online-book-loading-validation.md)
   records startup/cache concurrency tests and the coordinated device package.
+- [2026-10-08 source-exit ANR investigation](reviews/2026-10-08-source-exit-anr-validation.md)
+  records the Android trace, request lifetime repairs and attribution limits.
 
 Superseded local-only pagination, ownership and cache/startup task lists have
 been removed after their useful contracts were consolidated into this guide and

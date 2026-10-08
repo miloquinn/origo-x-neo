@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import 'source_script_contract.dart';
 import 'source_script_java_compatibility.dart';
 import 'source_script_network_guard.dart';
@@ -11,6 +13,21 @@ const sourceScriptHostChannel = 'OrigoReaderSourceHost';
 
 class SourceScriptBootstrap {
   const SourceScriptBootstrap._();
+
+  static const _maxSharedScriptPreparations = 16;
+  static final Map<String, _PreparedSharedScript> _sharedScriptPreparations =
+      {};
+  static int _sharedScriptPreparationCount = 0;
+
+  @visibleForTesting
+  static int get debugSharedScriptPreparationCount =>
+      _sharedScriptPreparationCount;
+
+  @visibleForTesting
+  static void debugClearSharedScriptPreparations() {
+    _sharedScriptPreparations.clear();
+    _sharedScriptPreparationCount = 0;
+  }
 
   static Map<String, Object?> payload(
     String script,
@@ -107,20 +124,37 @@ class SourceScriptBootstrap {
     // would otherwise silently swallow the internal marker error this
     // engine throws to request a real (async) network/interaction round
     // trip — see source_script_network_guard.dart.
+    final preparedSharedScript = _prepareSharedScript(
+      '${payload['sharedScript'] ?? ''}',
+    );
     final guardedPayload = Map<String, Object?>.from(payload)
       ..['script'] = guardNetworkCatchBlocks('${payload['script'] ?? ''}')
-      ..['sharedScript'] = guardNetworkCatchBlocks(
-        '${payload['sharedScript'] ?? ''}',
-      );
+      ..['sharedScript'] = preparedSharedScript.guardedScript;
     final encoded = jsonEncode(guardedPayload);
-    final sharedFunctionExports = _sharedFunctionExports(
-      guardedPayload['sharedScript'],
-    );
     return _buildSourceScriptProgram(
       encoded,
-      sharedFunctionExports,
+      preparedSharedScript.functionExports,
       awaitResult,
     );
+  }
+
+  static _PreparedSharedScript _prepareSharedScript(String rawScript) {
+    final cached = _sharedScriptPreparations.remove(rawScript);
+    if (cached != null) {
+      _sharedScriptPreparations[rawScript] = cached;
+      return cached;
+    }
+    final guardedScript = guardNetworkCatchBlocks(rawScript);
+    final prepared = _PreparedSharedScript(
+      guardedScript,
+      _sharedFunctionExports(guardedScript),
+    );
+    _sharedScriptPreparationCount++;
+    _sharedScriptPreparations[rawScript] = prepared;
+    while (_sharedScriptPreparations.length > _maxSharedScriptPreparations) {
+      _sharedScriptPreparations.remove(_sharedScriptPreparations.keys.first);
+    }
+    return prepared;
   }
 
   // Compatible source scripts expose shared jsLib functions on the script
@@ -147,6 +181,13 @@ if (typeof $name === "function") {
         )
         .join('\n');
   }
+}
+
+class _PreparedSharedScript {
+  const _PreparedSharedScript(this.guardedScript, this.functionExports);
+
+  final String guardedScript;
+  final String functionExports;
 }
 
 Object _sourceHeader(Object? raw) {

@@ -2105,6 +2105,7 @@ class _BookActionsClient extends _EmptyDiscoveryClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => const [];
 }
 

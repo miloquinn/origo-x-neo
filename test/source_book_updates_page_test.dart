@@ -221,8 +221,10 @@ class _PageShelfService extends BookSourceShelfService {
   BookSourceBook sourceBookFrom(Book book) => _sourceBook;
 
   @override
-  Future<List<BookSourceChapter>> sourceChaptersFor(Book book) async =>
-      _chapters;
+  Future<List<BookSourceChapter>> sourceChaptersFor(
+    Book book, {
+    cancellation,
+  }) async => _chapters;
 
   @override
   Future<SourceChapterState> establishTrackingBaseline({

@@ -184,12 +184,15 @@ class _CatchGuardTransform {
   }
 
   bool _precededByDot() {
-    final text = _out.toString();
-    var i = text.length - 1;
-    while (i >= 0 && (text[i] == ' ' || text[i] == '\t' || text[i] == '\n')) {
+    var i = _pos - 1;
+    while (i >= 0 &&
+        (source[i] == ' ' ||
+            source[i] == '\t' ||
+            source[i] == '\n' ||
+            source[i] == '\r')) {
       i--;
     }
-    return i >= 0 && text[i] == '.';
+    return i >= 0 && source[i] == '.';
   }
 
   int _skipInsignificant(int start) {

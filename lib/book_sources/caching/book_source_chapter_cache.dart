@@ -23,7 +23,7 @@ class BookSourceChapterCache {
   static final Map<String, _CacheEntry<BookSourceChapterContent>> _memory = {};
   static final Map<String, _CacheEntry<List<BookSourceChapter>>>
   _catalogMemory = {};
-  static final Map<String, _CacheFlight<BookSourceChapterContent>> _inFlight =
+  static final Map<Object, _CacheFlight<BookSourceChapterContent>> _inFlight =
       {};
   static final Map<Object, _CacheFlight<List<BookSourceChapter>>>
   _catalogInFlight = {};
@@ -32,6 +32,7 @@ class BookSourceChapterCache {
   static final _catalogDiskReads =
       <(String, int), Future<_CacheEntry<List<BookSourceChapter>>?>>{};
   static final Map<String, Object> _latestCatalogLoads = {};
+  static final Map<String, Object> _latestContentLoads = {};
   static final Map<String, Future<void>> _diskWriteQueues = {};
   static final Map<String, bool> _memoryOrder = {};
   static int _memoryBytes = 0;
@@ -67,6 +68,7 @@ class BookSourceChapterCache {
     _chapterDiskReads.clear();
     _catalogDiskReads.clear();
     _latestCatalogLoads.clear();
+    _latestContentLoads.clear();
     releaseMemory();
   }
 
@@ -89,6 +91,9 @@ class BookSourceChapterCache {
     required String chapterId,
     Duration refreshAfter = chapterRefreshAfter,
     bool staleWhileRevalidate = true,
+    // Requests with different owners load independently while sharing the
+    // same persisted chapter. Equal scopes still deduplicate in flight.
+    Object requestScope = #shared,
     required Future<BookSourceChapterContent> Function() loader,
   }) async {
     final key = _key(sourceId, sourceRevision, bookId, chapterId);
@@ -102,6 +107,7 @@ class BookSourceChapterCache {
         memory,
         refreshAfter: refreshAfter,
         staleWhileRevalidate: staleWhileRevalidate,
+        requestScope: requestScope,
         loader: loader,
         generation: generation,
       );
@@ -109,7 +115,7 @@ class BookSourceChapterCache {
 
     Object? joinedError;
     StackTrace? joinedStack;
-    final pending = _inFlight[key];
+    final pending = _inFlight[(key, requestScope)];
     if (pending != null && (!pending.isRefresh || !staleWhileRevalidate)) {
       try {
         return await pending.future;
@@ -143,11 +149,12 @@ class BookSourceChapterCache {
         cached,
         refreshAfter: refreshAfter,
         staleWhileRevalidate: staleWhileRevalidate,
+        requestScope: requestScope,
         loader: loader,
         generation: generation,
       );
     }
-    return _loadContent(key, loader, generation);
+    return _loadContent(key, requestScope, loader, generation);
   }
 
   /// Returns a previously loaded chapter catalog without waiting for the
@@ -254,6 +261,7 @@ class BookSourceChapterCache {
     _CacheEntry<BookSourceChapterContent> cached, {
     required Duration refreshAfter,
     required bool staleWhileRevalidate,
+    required Object requestScope,
     required Future<BookSourceChapterContent> Function() loader,
     required int generation,
   }) async {
@@ -261,25 +269,38 @@ class BookSourceChapterCache {
       // Versions before 2.6.1 persisted image chapter HTML without its parsed
       // image metadata. Do not keep presenting those entries as zero-page
       // chapters for up to 12 hours; repair them from the source immediately.
-      return _loadContent(key, loader, generation);
+      return _loadContent(key, requestScope, loader, generation);
     }
     if (DateTime.now().difference(cached.cachedAt) < refreshAfter) {
       return cached.value;
     }
     if (!staleWhileRevalidate) {
-      return _loadContent(key, loader, generation, isRefresh: true);
+      return _loadContent(
+        key,
+        requestScope,
+        loader,
+        generation,
+        isRefresh: true,
+      );
     }
-    unawaited(_refreshContent(key, loader, generation));
+    unawaited(_refreshContent(key, requestScope, loader, generation));
     return cached.value;
   }
 
   Future<void> _refreshContent(
     String key,
+    Object requestScope,
     Future<BookSourceChapterContent> Function() loader,
     int generation,
   ) async {
     try {
-      await _loadContent(key, loader, generation, isRefresh: true);
+      await _loadContent(
+        key,
+        requestScope,
+        loader,
+        generation,
+        isRefresh: true,
+      );
     } catch (_) {
       // Previously read content remains usable while the source is offline.
     }
@@ -296,19 +317,28 @@ class BookSourceChapterCache {
 
   Future<BookSourceChapterContent> _loadContent(
     String key,
+    Object requestScope,
     Future<BookSourceChapterContent> Function() loader,
     int generation, {
     bool isRefresh = false,
   }) async {
     if (generation != _writeGeneration) return loader();
-    final pending = _inFlight[key];
+    final flightKey = (key, requestScope);
+    final pending = _inFlight[flightKey];
     if (pending != null) return pending.future;
-    final future = _fetchAndStoreContent(key, loader, generation);
-    _inFlight[key] = (future: future, isRefresh: isRefresh);
+    final loadToken = Object();
+    _latestContentLoads[key] = loadToken;
+    final future = _fetchAndStoreContent(key, loader, generation, loadToken);
+    _inFlight[flightKey] = (future: future, isRefresh: isRefresh);
     try {
       return await future;
     } finally {
-      if (identical(_inFlight[key]?.future, future)) _inFlight.remove(key);
+      if (identical(_inFlight[flightKey]?.future, future)) {
+        _inFlight.remove(flightKey);
+      }
+      if (identical(_latestContentLoads[key], loadToken)) {
+        _latestContentLoads.remove(key);
+      }
     }
   }
 
@@ -316,9 +346,13 @@ class BookSourceChapterCache {
     String key,
     Future<BookSourceChapterContent> Function() loader,
     int generation,
+    Object loadToken,
   ) async {
     final content = await loader();
-    if (generation != _writeGeneration) return content;
+    if (generation != _writeGeneration ||
+        !identical(_latestContentLoads[key], loadToken)) {
+      return content;
+    }
     _remember(
       key,
       _CacheEntry(

@@ -331,6 +331,8 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
         onPopInvokedWithResult: (didPop, _) {
           if (didPop) {
             _stopAutoPageTurn();
+            _readerExitStarted = true;
+            _cancelReaderRequests();
             BookOpenTransition.beginExit();
           } else if (_tapZoneEditorVisible) {
             _updateReaderState(() => _tapZoneEditorVisible = false);

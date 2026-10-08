@@ -505,6 +505,64 @@ void main() {
       expect((await reader).content, 'old');
     },
   );
+
+  test(
+    'chapter request scopes isolate work and newest load owns cache',
+    () async {
+      final firstStarted = Completer<void>();
+      final secondStarted = Completer<void>();
+      final releaseFirst = Completer<void>();
+      final releaseSecond = Completer<void>();
+      addTearDown(() {
+        _release(releaseFirst);
+        _release(releaseSecond);
+      });
+      final cache = BookSourceChapterCache(
+        beforeDiskRead: () async {
+          throw const FileSystemException('memory-only test');
+        },
+        beforeDiskWrite: _noDisk,
+      );
+
+      final first = cache.getOrLoad(
+        sourceId: 'source',
+        bookId: 'book',
+        chapterId: 'chapter',
+        requestScope: #reader,
+        loader: () async {
+          _release(firstStarted);
+          await releaseFirst.future;
+          return _chapter('older');
+        },
+      );
+      await firstStarted.future;
+      final second = cache.getOrLoad(
+        sourceId: 'source',
+        bookId: 'book',
+        chapterId: 'chapter',
+        requestScope: #download,
+        loader: () async {
+          _release(secondStarted);
+          await releaseSecond.future;
+          return _chapter('newer');
+        },
+      );
+      await secondStarted.future;
+
+      _release(releaseSecond);
+      expect((await second).content, 'newer');
+      _release(releaseFirst);
+      expect((await first).content, 'older');
+
+      final cached = await cache.getOrLoad(
+        sourceId: 'source',
+        bookId: 'book',
+        chapterId: 'chapter',
+        loader: () => throw StateError('newest result should remain cached'),
+      );
+      expect(cached.content, 'newer');
+    },
+  );
 }
 
 BookSourceChapterContent _chapter(String body) => BookSourceChapterContent(

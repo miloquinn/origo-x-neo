@@ -1,3 +1,8 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/book_sources/source_engine/source_config.dart';
@@ -309,20 +314,26 @@ void main() {
       'bookSourceName': '测试书源',
       'bookSourceUrl': 'https://example.test',
     });
+    final previewDir = Platform.environment['DETAILS_PREVIEW_DIR'];
+    if (previewDir != null) await _loadPreviewFonts(tester);
 
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('zh'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: BookSettingsPage(
-          title: '书籍',
-          author: '作者',
-          format: 'online',
-          cover: const SizedBox(),
-          canChangeSource: true,
-          source: config.toRegisteredSource(),
-          loginSessionStore: _SessionStore(const SourceLoginSession()),
+        theme: ThemeData(useMaterial3: true, fontFamily: 'DetailsPreview'),
+        home: RepaintBoundary(
+          key: const Key('book-settings-preview'),
+          child: BookSettingsPage(
+            title: '书籍',
+            author: '作者',
+            format: 'online',
+            cover: const ColoredBox(color: Color(0xFFE8D8DF)),
+            canChangeSource: true,
+            source: config.toRegisteredSource(),
+            loginSessionStore: _SessionStore(const SourceLoginSession()),
+          ),
         ),
       ),
     );
@@ -348,6 +359,9 @@ void main() {
     expect(login.width, reading.width);
     expect(edit.height, change.height);
     expect(login.height, reading.height);
+    if (previewDir != null) {
+      await _capturePreview(tester, previewDir, 'settings-wide.png');
+    }
   });
 
   testWidgets(
@@ -359,23 +373,36 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.view.platformDispatcher.clearTextScaleFactorTestValue);
+      final previewDir = Platform.environment['DETAILS_PREVIEW_DIR'];
+      if (previewDir != null) await _loadPreviewFonts(tester);
 
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('zh'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: BookSettingsPage(
-            title: '一本标题非常非常长的测试书籍',
-            author: '一位名字也比较长的测试作者',
-            format: 'epub',
-            cover: const ColoredBox(color: Colors.blue),
-            description: List.filled(12, '很长的简介内容').join(),
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            fontFamily: 'DetailsPreview',
+          ),
+          home: RepaintBoundary(
+            key: const Key('book-settings-preview'),
+            child: BookSettingsPage(
+              title: '一本标题非常非常长的测试书籍',
+              author: '一位名字也比较长的测试作者',
+              format: 'epub',
+              cover: const ColoredBox(color: Colors.blue),
+              description: List.filled(12, '很长的简介内容').join(),
+            ),
           ),
         ),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      if (previewDir != null) {
+        await _capturePreview(tester, previewDir, 'settings-narrow-dark.png');
+      }
 
       final descriptionToggle = find.byKey(
         const Key('book-settings-description-toggle'),
@@ -404,6 +431,44 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+}
+
+Future<void> _loadPreviewFonts(WidgetTester tester) async {
+  await tester.runAsync(() async {
+    final font = await File(
+      '/System/Library/Fonts/Hiragino Sans GB.ttc',
+    ).readAsBytes();
+    await (FontLoader(
+      'DetailsPreview',
+    )..addFont(Future.value(ByteData.sublistView(font)))).load();
+    await (FontLoader(
+      'Ahem',
+    )..addFont(Future.value(ByteData.sublistView(font)))).load();
+    final root = Platform.resolvedExecutable.split('/bin/cache').first;
+    final icons = await File(
+      '$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+    ).readAsBytes();
+    await (FontLoader(
+      'MaterialIcons',
+    )..addFont(Future.value(ByteData.sublistView(icons)))).load();
+  });
+}
+
+Future<void> _capturePreview(
+  WidgetTester tester,
+  String directory,
+  String name,
+) async {
+  final boundary = tester.renderObject<RenderRepaintBoundary>(
+    find.byKey(const Key('book-settings-preview')),
+  );
+  await tester.runAsync(() async {
+    final image = await boundary.toImage();
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    await Directory(directory).create(recursive: true);
+    await File('$directory/$name').writeAsBytes(bytes!.buffer.asUint8List());
+    image.dispose();
+  });
 }
 
 class _SessionStore implements SourceLoginSessionStore {

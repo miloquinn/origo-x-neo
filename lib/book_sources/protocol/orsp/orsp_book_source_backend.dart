@@ -33,8 +33,9 @@ abstract interface class OrspBookSourceBackendPort {
   });
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
-    String bookId,
-  );
+    String bookId, {
+    BookDownloadCancellation? cancellation,
+  });
   Future<List<BookSourceChapter>> getChaptersForDownload(
     RegisteredBookSource source,
     String bookId, {
@@ -49,6 +50,7 @@ abstract interface class OrspBookSourceBackendPort {
     RegisteredBookSource source, {
     required String bookId,
     required String chapterId,
+    BookDownloadCancellation? cancellation,
   });
   Future<BookSourceChapterContent> getChapterContentForDownload(
     RegisteredBookSource source, {
@@ -320,28 +322,35 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
   @override
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
-    String bookId,
-  ) => _chapterCache.getChapterCatalogOrLoad(
-    sourceId: source.id,
-    sourceRevision: source.apiBaseUrl.toString(),
-    bookId: bookId,
-    // A persisted catalog cannot prove that the source still accepts its IDs.
-    // Refresh before handing an online catalog to a new reading session.
-    refreshAfter: Duration.zero,
-    staleWhileRevalidate: false,
-    staleErrorTest: _pipeline.canUseStaleResponse,
-    requestScope: #interactive,
-    loader: () => _fetchAllChapters(
-      OrspHttpPipeline.apiUri(
-        source.apiBaseUrl,
-        'v1/books/${Uri.encodeComponent(bookId)}/chapters',
+    String bookId, {
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    final chapters = await _chapterCache.getChapterCatalogOrLoad(
+      sourceId: source.id,
+      sourceRevision: source.apiBaseUrl.toString(),
+      bookId: bookId,
+      // A persisted catalog cannot prove that the source still accepts its IDs.
+      // Refresh before handing an online catalog to a new reading session.
+      refreshAfter: Duration.zero,
+      staleWhileRevalidate: false,
+      staleErrorTest: _pipeline.canUseStaleResponse,
+      requestScope: cancellation ?? #interactive,
+      loader: () => _fetchAllChapters(
+        OrspHttpPipeline.apiUri(
+          source.apiBaseUrl,
+          'v1/books/${Uri.encodeComponent(bookId)}/chapters',
+        ),
+        pageSize: _chapterPageSizeFor(source),
+        maxBytes: OrspHttpPipeline.maxResponseBytes,
+        receiveTimeout: const Duration(seconds: 6),
+        retryRequests: false,
+        cancellation: cancellation,
       ),
-      pageSize: _chapterPageSizeFor(source),
-      maxBytes: OrspHttpPipeline.maxResponseBytes,
-      receiveTimeout: const Duration(seconds: 6),
-      retryRequests: false,
-    ),
-  );
+    );
+    cancellation?.throwIfCancelled();
+    return chapters;
+  }
 
   @override
   Future<List<BookSourceChapter>> getChaptersForDownload(
@@ -388,24 +397,36 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
     RegisteredBookSource source, {
     required String bookId,
     required String chapterId,
-  }) => _chapterCache.getOrLoad(
-    sourceId: source.id,
-    sourceRevision: source.apiBaseUrl.toString(),
-    bookId: bookId,
-    chapterId: chapterId,
-    loader: () async {
-      final uri = _chapterUri(source, bookId, chapterId);
-      try {
-        final content = BookSourceChapterContent.fromJson(
-          decodeBookSourceJson(await _pipeline.getBounded(uri)),
-        );
-        _validateChapterContentIdentity(content, bookId, chapterId);
-        return content;
-      } on DioException catch (error) {
-        throw _pipeline.mapDioException(error);
-      }
-    },
-  );
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    final content = await _chapterCache.getOrLoad(
+      sourceId: source.id,
+      sourceRevision: source.apiBaseUrl.toString(),
+      bookId: bookId,
+      chapterId: chapterId,
+      requestScope: cancellation ?? #interactiveChapterContent,
+      loader: () async {
+        cancellation?.throwIfCancelled();
+        final uri = _chapterUri(source, bookId, chapterId);
+        try {
+          final content = BookSourceChapterContent.fromJson(
+            decodeBookSourceJson(
+              await _pipeline.getBounded(uri, cancellation: cancellation),
+            ),
+          );
+          cancellation?.throwIfCancelled();
+          _validateChapterContentIdentity(content, bookId, chapterId);
+          return content;
+        } on DioException catch (error) {
+          cancellation?.throwIfCancelled();
+          throw _pipeline.mapDioException(error);
+        }
+      },
+    );
+    cancellation?.throwIfCancelled();
+    return content;
+  }
 
   @override
   Future<BookSourceChapterContent> getChapterContentForDownload(
@@ -421,6 +442,7 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
       bookId: bookId,
       chapterId: chapterId,
       staleWhileRevalidate: false,
+      requestScope: cancellation ?? #downloadChapterContent,
       loader: () => _pipeline.withRetries(() async {
         final content = BookSourceChapterContent.fromJson(
           decodeBookSourceJson(
@@ -432,6 +454,7 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
             ),
           ),
         );
+        cancellation?.throwIfCancelled();
         _validateChapterContentIdentity(content, bookId, chapterId);
         return content;
       }, cancellation: cancellation),

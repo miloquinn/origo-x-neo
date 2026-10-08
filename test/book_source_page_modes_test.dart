@@ -659,6 +659,7 @@ class _PageModeClient extends BookSourceClient {
     RegisteredBookSource source,
     String bookId, {
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => const [
     BookSourceChapter(id: 'chapter-1', title: '第一章', order: 1),
     BookSourceChapter(id: 'chapter-2', title: '第二章', order: 2),
@@ -670,6 +671,7 @@ class _PageModeClient extends BookSourceClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async => BookSourceChapterContent(
     bookId: bookId,
     chapterId: chapterId,
@@ -691,6 +693,7 @@ class _TrackingPageModeClient extends _PageModeClient {
     required String bookId,
     required String chapterId,
     Map<String, String> sourceVariables = const {},
+    cancellation,
   }) async {
     requested.add(chapterId);
     return super.getChapterContent(
