@@ -247,6 +247,12 @@ extension _LibraryPageFolders on _LibraryPageState {
     _updateState(() => _folderMutationInProgress = true);
     try {
       await operation();
+      // DAO change notifications use an asynchronous broadcast stream. Let the
+      // completed mutation's event install its debounce before replacing it
+      // with the immediate reload below.
+      await Future<void>.delayed(Duration.zero);
+      _libraryRefreshDebounce?.cancel();
+      _libraryRefreshDebounce = null;
       if (mounted) await _loadBooks();
     } finally {
       if (mounted) _updateState(() => _folderMutationInProgress = false);

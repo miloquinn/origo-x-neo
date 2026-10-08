@@ -412,6 +412,92 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('navigation settles immediately while tickers are muted', (
+    tester,
+  ) async {
+    final fixture = await _MotionFixture.mount(tester, tickerEnabled: false);
+
+    await tester.tap(find.byKey(const ValueKey('library-folder-$_parentId')));
+    await tester.pump();
+
+    expect(fixture.controller.folderName.value, 'Parent Shelf');
+    expect(fixture.transition(tester).isAnimating, isFalse);
+    expect(find.text('Parent Book 0').hitTestable(), findsWidgets);
+
+    fixture.tickerEnabled.value = true;
+    await tester.pump();
+    fixture.controller.goUp();
+    await _pumpReturnStart(tester);
+    await _finish(tester, fixture);
+    expect(
+      find.byKey(const ValueKey('library-folder-$_parentId')).hitTestable(),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'muting tickers during return preparation finishes and navigation recovers',
+    (tester) async {
+      final fixture = await _MotionFixture.mount(tester);
+      await _startEnter(tester, fixture, _parentId, 'Parent Shelf');
+      await _finish(tester, fixture);
+
+      fixture.controller.goUp();
+      await tester.pump();
+      expect(fixture.transition(tester).isAnimating, isTrue);
+      fixture.tickerEnabled.value = false;
+      await tester.pump();
+
+      expect(fixture.controller.folderName.value, isNull);
+      expect(fixture.transition(tester).isAnimating, isFalse);
+      expect(find.byKey(_snapshotKey), findsNothing);
+      expect(
+        find.byKey(const ValueKey('library-folder-$_parentId')).hitTestable(),
+        findsOneWidget,
+      );
+
+      fixture.tickerEnabled.value = true;
+      await tester.pump();
+      await _startEnter(tester, fixture, _parentId, 'Parent Shelf');
+      await _finish(tester, fixture);
+      fixture.controller.goUp();
+      await _pumpReturnStart(tester);
+      await _finish(tester, fixture);
+    },
+  );
+
+  testWidgets(
+    'muting tickers during return animation finishes and navigation recovers',
+    (tester) async {
+      final fixture = await _MotionFixture.mount(tester);
+      await _startEnter(tester, fixture, _parentId, 'Parent Shelf');
+      await _finish(tester, fixture);
+
+      fixture.controller.goUp();
+      await _pumpReturnStart(tester);
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(fixture.transition(tester).isAnimating, isTrue);
+      fixture.tickerEnabled.value = false;
+      await tester.pump();
+
+      expect(fixture.controller.folderName.value, isNull);
+      expect(fixture.transition(tester).isAnimating, isFalse);
+      expect(find.byKey(_snapshotKey), findsNothing);
+      expect(
+        find.byKey(const ValueKey('library-folder-$_parentId')).hitTestable(),
+        findsOneWidget,
+      );
+
+      fixture.tickerEnabled.value = true;
+      await tester.pump();
+      await _startEnter(tester, fixture, _parentId, 'Parent Shelf');
+      await _finish(tester, fixture);
+      fixture.controller.goUp();
+      await _pumpReturnStart(tester);
+      await _finish(tester, fixture);
+    },
+  );
+
   testWidgets(
     'disposing during shelf motion releases ticker and image safely',
     (tester) async {
@@ -528,10 +614,12 @@ double _buttonFade(WidgetTester tester) => tester
     .value;
 
 class _MotionFixture {
-  _MotionFixture(this.settings);
+  _MotionFixture(this.settings, {required bool tickerEnabled})
+    : tickerEnabled = ValueNotifier(tickerEnabled);
 
   final AppSettingsNotifier settings;
   final controller = LibraryPageController();
+  final ValueNotifier<bool> tickerEnabled;
   late final List<ShelfFolder> folders;
 
   LibraryShelfTransitionState transition(WidgetTester tester) => tester
@@ -541,6 +629,7 @@ class _MotionFixture {
     WidgetTester tester, {
     bool reduceMotion = false,
     bool rootBookMatchesParentName = false,
+    bool tickerEnabled = true,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 844);
@@ -561,11 +650,12 @@ class _MotionFixture {
       }
       return settings;
     }))!;
-    final fixture = _MotionFixture(settings);
+    final fixture = _MotionFixture(settings, tickerEnabled: tickerEnabled);
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
       fixture.controller.dispose();
+      fixture.tickerEnabled.dispose();
       settings.dispose();
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
@@ -628,10 +718,15 @@ class _MotionFixture {
             ).copyWith(disableAnimations: reduceMotion),
             child: child!,
           ),
-          home: LibraryPage(
-            controller: fixture.controller,
-            booksLoader: () async => books,
-            foldersLoader: () async => fixture.folders,
+          home: ValueListenableBuilder<bool>(
+            valueListenable: fixture.tickerEnabled,
+            builder: (context, enabled, child) =>
+                TickerMode(enabled: enabled, child: child!),
+            child: LibraryPage(
+              controller: fixture.controller,
+              booksLoader: () async => books,
+              foldersLoader: () async => fixture.folders,
+            ),
           ),
         ),
       ),

@@ -35,6 +35,8 @@ class LibraryShelfTransitionState extends State<LibraryShelfTransition>
   bool _waitingForReturnLayout = false;
   int _navigationGeneration = 0;
   bool _reduceMotion = false;
+  bool _tickerEnabled = true;
+  bool _finishingTransition = false;
 
   bool get isAnimating => _waitingForReturnLayout || _animation.isAnimating;
 
@@ -42,12 +44,14 @@ class LibraryShelfTransitionState extends State<LibraryShelfTransition>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final tickerEnabled = TickerMode.valuesOf(context).enabled;
     if (reduceMotion && !_reduceMotion && isAnimating) {
-      _navigationGeneration++;
-      _waitingForReturnLayout = false;
-      _animation.value = 1;
+      _finishTransition();
+    } else if (!tickerEnabled && _tickerEnabled && isAnimating) {
+      _finishTransition();
     }
     _reduceMotion = reduceMotion;
+    _tickerEnabled = tickerEnabled;
   }
 
   @override
@@ -57,10 +61,14 @@ class LibraryShelfTransitionState extends State<LibraryShelfTransition>
     final generation = ++_navigationGeneration;
     _releaseSnapshot();
     _hasOrigin = false;
+    if (!_tickerEnabled) {
+      _finishTransition(invalidateCallbacks: false);
+      return;
+    }
     final boundary = _boundaryKey.currentContext?.findRenderObject();
     if (boundary is RenderRepaintBoundary && boundary.hasSize) {
       if (widget.opening) {
-        if (_readOrigin() case final origin?) {
+        if (_tryReadOrigin() case final origin?) {
           _origin = origin;
           _hasOrigin = true;
         }
@@ -95,11 +103,15 @@ class LibraryShelfTransitionState extends State<LibraryShelfTransition>
         if (!mounted || generation != _navigationGeneration) return;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || generation != _navigationGeneration) return;
-          if (_readOrigin() case final origin?) {
+          _waitingForReturnLayout = false;
+          if (_tryReadOrigin() case final origin?) {
             _origin = origin;
             _hasOrigin = true;
           }
-          _waitingForReturnLayout = false;
+          if (!_tickerEnabled) {
+            _finishTransition();
+            return;
+          }
           _animation.forward(from: 0);
         });
         WidgetsBinding.instance.scheduleFrame();
@@ -107,6 +119,16 @@ class LibraryShelfTransitionState extends State<LibraryShelfTransition>
       return;
     }
     _animation.forward(from: 0);
+  }
+
+  Rect? _tryReadOrigin() {
+    try {
+      return _readOrigin();
+    } catch (_) {
+      // A folder tile can detach while its parent collection is being laid out.
+      // Falling back to the full-surface fade must still release input.
+      return null;
+    }
   }
 
   Rect? _readOrigin() {
@@ -133,8 +155,25 @@ class LibraryShelfTransitionState extends State<LibraryShelfTransition>
   }
 
   void _animationChanged(AnimationStatus status) {
-    if (status != AnimationStatus.completed || !mounted) return;
+    if (_finishingTransition ||
+        status != AnimationStatus.completed ||
+        !mounted) {
+      return;
+    }
     setState(_releaseSnapshot);
+  }
+
+  void _finishTransition({bool invalidateCallbacks = true}) {
+    if (invalidateCallbacks) _navigationGeneration++;
+    _waitingForReturnLayout = false;
+    _finishingTransition = true;
+    try {
+      _animation.stop();
+      _animation.value = 1;
+    } finally {
+      _finishingTransition = false;
+    }
+    _releaseSnapshot();
   }
 
   void _releaseSnapshot() {
@@ -143,6 +182,7 @@ class LibraryShelfTransitionState extends State<LibraryShelfTransition>
     if (image != null) {
       // RawImage may still be referenced by the frame currently being replaced.
       WidgetsBinding.instance.addPostFrameCallback((_) => image.dispose());
+      WidgetsBinding.instance.scheduleFrame();
     }
   }
 

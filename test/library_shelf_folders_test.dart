@@ -20,6 +20,7 @@ import 'package:xxread/pages/library/library_folder_name_dialog.dart';
 import 'package:xxread/pages/library/library_grid_book_details.dart';
 import 'package:xxread/pages/library/library_page.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
+import 'package:xxread/services/library/library_event_bus_service.dart';
 import 'package:xxread/services/library/shelf_folder_dao.dart';
 
 void main() {
@@ -267,6 +268,147 @@ void main() {
     expect(_itemCount(tester), 12);
   });
 
+  testWidgets('local folder creation applies one library reload', (
+    tester,
+  ) async {
+    final fixture = await _ShelfFixture.open(tester);
+    await tester.runAsync(() async {
+      await fixture.addBook('First');
+      await fixture.addBook('Second');
+      await fixture.addBook('Third');
+    });
+    await fixture.mount(tester);
+    expect(fixture.libraryLoadCount, 1);
+
+    fixture.controller.selectAllVisible();
+    await tester.pump();
+    unawaited(fixture.controller.createFolderFromSelected());
+    await tester.pumpAndSettle();
+    await _saveFolder(tester, 'One Reload');
+    expect(fixture.libraryLoadCount, 2);
+  });
+
+  testWidgets('local book move applies one library reload', (tester) async {
+    final fixture = await _ShelfFixture.open(tester);
+    late ShelfFolder folder;
+    await tester.runAsync(() async {
+      folder = await fixture.dao.create('Move Target');
+      await fixture.addBook('First');
+      await fixture.addBook('Second');
+      await fixture.addBook('Third');
+    });
+    await fixture.mount(tester);
+    expect(fixture.libraryLoadCount, 1);
+
+    fixture.controller.selectAllVisible();
+    await tester.pump();
+    unawaited(fixture.controller.moveSelected());
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ListTile),
+        matching: find.text(folder.name),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('library-folder-move-here')));
+    await _pumpUntil(
+      tester,
+      () => !fixture.controller.selection.value.isActive,
+      'move to folder finishes with one reload',
+    );
+    expect(fixture.libraryLoadCount, 2);
+  });
+
+  testWidgets(
+    'a newly filled folder can return and accept input around a reload',
+    (tester) async {
+      final fixture = await _ShelfFixture.open(tester);
+      await tester.runAsync(() async {
+        await fixture.addBook('Alpha');
+        await fixture.addBook('Beta');
+        await fixture.addBook('Gamma');
+      });
+      await fixture.mount(tester);
+      fixture.controller.selectAllVisible();
+      await tester.pump();
+      unawaited(fixture.controller.createFolderFromSelected());
+      await tester.pumpAndSettle();
+      await _saveFolder(tester, 'Quick Return', settleAfter: Duration.zero);
+
+      final folder = (await tester.runAsync(fixture.dao.getAll))!.single;
+      await _enterFolder(tester, folder);
+      final reloadGate = Completer<void>();
+      fixture.blockNextLibraryLoad = reloadGate;
+      LibraryEventBus().notifyLibraryChanged();
+      await tester.pump(const Duration(milliseconds: 110));
+      await _pumpUntil(
+        tester,
+        () => fixture.blockNextLibraryLoad == null,
+        'the reload overlaps folder return',
+        settleAfter: Duration.zero,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('library-back-to-parent')));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 320));
+      reloadGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(fixture.controller.folderName.value, isNull);
+      expect(_folderTile(folder).hitTestable(), findsOneWidget);
+      await tester.tap(_folderTile(folder));
+      await tester.pumpAndSettle();
+      expect(fixture.controller.folderName.value, 'Quick Return');
+    },
+  );
+
+  testWidgets('an external event during a local reload is applied afterward', (
+    tester,
+  ) async {
+    final fixture = await _ShelfFixture.open(tester);
+    await tester.runAsync(() => fixture.addBook('External Event'));
+    await fixture.mount(tester);
+    final initialLoads = fixture.libraryLoadCount;
+    final localReloadGate = Completer<void>();
+    fixture.blockNextLibraryLoad = localReloadGate;
+
+    fixture.controller.selectAllVisible();
+    await tester.pump();
+    unawaited(fixture.controller.createFolderFromSelected());
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('library-folder-name')),
+      'External Event Folder',
+    );
+    await tester.tap(find.byKey(const ValueKey('library-folder-save')));
+    await _pumpUntil(
+      tester,
+      () => fixture.blockNextLibraryLoad == null,
+      'the local mutation reload starts',
+      settleAfter: Duration.zero,
+    );
+    expect(fixture.libraryLoadCount, initialLoads + 1);
+
+    LibraryEventBus().notifyLibraryChanged();
+    await tester.pump(const Duration(milliseconds: 110));
+    await _pumpUntil(
+      tester,
+      () => fixture.libraryLoadCount == initialLoads + 2,
+      'the external event starts a second reload',
+      settleAfter: Duration.zero,
+    );
+    localReloadGate.complete();
+    await _pumpUntil(
+      tester,
+      () => find.byType(LibraryFolderNameDialog).evaluate().isEmpty,
+      'the local folder save finishes',
+    );
+    expect(fixture.libraryLoadCount, initialLoads + 2);
+  });
+
   testWidgets('an empty child shelf can create another nested shelf', (
     tester,
   ) async {
@@ -492,7 +634,11 @@ Finder _verticalList() => find.byWidgetPredicate(
   (widget) => widget is ListView && widget.scrollDirection == Axis.vertical,
 );
 
-Future<void> _saveFolder(WidgetTester tester, String name) async {
+Future<void> _saveFolder(
+  WidgetTester tester,
+  String name, {
+  Duration settleAfter = const Duration(milliseconds: 300),
+}) async {
   await tester.enterText(
     find.byKey(const ValueKey('library-folder-name')),
     name,
@@ -502,21 +648,23 @@ Future<void> _saveFolder(WidgetTester tester, String name) async {
     tester,
     () => find.byType(LibraryFolderNameDialog).evaluate().isEmpty,
     'folder save finishes',
+    settleAfter: settleAfter,
   );
 }
 
 Future<void> _pumpUntil(
   WidgetTester tester,
   bool Function() ready,
-  String reason,
-) async {
+  String reason, {
+  Duration settleAfter = const Duration(milliseconds: 300),
+}) async {
   for (var attempt = 0; attempt < 100; attempt++) {
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 10)),
     );
     await tester.pump(const Duration(milliseconds: 20));
     if (ready()) {
-      await tester.pump(const Duration(milliseconds: 300));
+      if (settleAfter > Duration.zero) await tester.pump(settleAfter);
       return;
     }
   }
@@ -530,6 +678,8 @@ class _ShelfFixture {
   final ShelfFolderDao dao;
   final AppSettingsNotifier settings;
   final controller = LibraryPageController();
+  int libraryLoadCount = 0;
+  Completer<void>? blockNextLibraryLoad;
 
   static Future<_ShelfFixture> open(
     WidgetTester tester, {
@@ -607,6 +757,14 @@ class _ShelfFixture {
     orderBy: 'id ASC',
   )).map(Book.fromMap).toList(growable: false);
 
+  Future<List<Book>> loadBooks() async {
+    libraryLoadCount++;
+    final gate = blockNextLibraryLoad;
+    blockNextLibraryLoad = null;
+    if (gate != null) await gate.future;
+    return books();
+  }
+
   Future<void> mount(
     WidgetTester tester, {
     ValueNotifier<HomeNavigationDestination>? activeDestination,
@@ -615,7 +773,7 @@ class _ShelfFixture {
       controller: controller,
       folderDao: dao,
       foldersLoader: dao.getAll,
-      booksLoader: books,
+      booksLoader: loadBooks,
     );
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
