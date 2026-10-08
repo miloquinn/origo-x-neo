@@ -11,6 +11,7 @@ import 'package:xxread/pages/settings/settings_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/core/core_services.dart';
 import 'package:xxread/utils/ui_style.dart';
+import 'package:xxread/utils/glass_config.dart';
 
 class _FakeCacheManager extends AppCacheManager {
   @override
@@ -107,6 +108,56 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  test('fresh preferences use liquid glass with medium opacity', () async {
+    final theme = await _loadThemeNotifier();
+    addTearDown(theme.dispose);
+    expect(theme.isGlassEffectsEnabled, isTrue);
+    expect(theme.glassStyle, GlassStyle.liquid);
+    expect(theme.liquidGlassOpacity, 0.5);
+    expect(GlassEffectConfig.usesLiquidGlass, isTrue);
+    expect(GlassEffectConfig.liquidGlassOpacity, 0.5);
+  });
+
+  test('saved appearance choices survive the new defaults', () async {
+    for (final opacity in [0.0, 0.68]) {
+      SharedPreferences.setMockInitialValues({
+        'ui_style_mode': 'material3',
+        'glass_style_mode': 'frosted',
+        'liquid_glass_opacity': opacity,
+      });
+      final theme = await _loadThemeNotifier();
+      expect(theme.isGlassEffectsEnabled, isFalse);
+      expect(theme.glassStyle, GlassStyle.frosted);
+      expect(theme.liquidGlassOpacity, opacity);
+      theme.dispose();
+    }
+  });
+
+  test('saved liquid style without opacity uses the medium default', () async {
+    SharedPreferences.setMockInitialValues({'glass_style_mode': 'liquid'});
+    final theme = await _loadThemeNotifier();
+    addTearDown(theme.dispose);
+    expect(theme.glassStyle, GlassStyle.liquid);
+    expect(theme.liquidGlassOpacity, 0.5);
+  });
+
+  testWidgets(
+    'fresh settings show liquid glass and a centered opacity slider',
+    (tester) async {
+      final theme = await _pumpGlassSettings(tester);
+      expect(find.text('液态玻璃'), findsOneWidget);
+      expect(theme.glassStyle, GlassStyle.liquid);
+      expect(
+        tester
+            .widget<Slider>(
+              find.byKey(const ValueKey('liquid-glass-opacity-slider')),
+            )
+            .value,
+        0.5,
+      );
+    },
+  );
+
   testWidgets('glass style is visible only while glass effects are enabled', (
     tester,
   ) async {
@@ -126,6 +177,7 @@ void main() {
   testWidgets('selecting liquid glass applies immediately and closes picker', (
     tester,
   ) async {
+    SharedPreferences.setMockInitialValues({'glass_style_mode': 'frosted'});
     final theme = await _pumpGlassSettings(tester);
 
     await tester.tap(find.text('玻璃样式'));
@@ -145,6 +197,7 @@ void main() {
   testWidgets('liquid opacity is visible only for enabled liquid glass', (
     tester,
   ) async {
+    SharedPreferences.setMockInitialValues({'glass_style_mode': 'frosted'});
     final theme = await _pumpGlassSettings(tester);
     final setting = find.byKey(const ValueKey('settings-liquid-glass-opacity'));
 
@@ -243,7 +296,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('毛玻璃'), findsWidgets);
-    expect(find.text('液态玻璃'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('glass-style-liquid')),
+        matching: find.text('液态玻璃'),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey('glass-style-liquid')));
     await tester.pumpAndSettle();
     expect(

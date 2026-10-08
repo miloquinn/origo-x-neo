@@ -26,11 +26,16 @@ enum GlassStyle {
       case 'liquid':
         return GlassStyle.liquid;
       case 'frosted':
-      default:
         return GlassStyle.frosted;
+      default:
+        return defaultGlassStyle;
     }
   }
 }
+
+/// Shared defaults for startup, saved-preference fallback and theme surfaces.
+const defaultGlassStyle = GlassStyle.liquid;
+const double defaultLiquidGlassOpacity = 0.5;
 
 extension AppUiStyleX on AppUiStyle {
   String get storageValue {
@@ -61,8 +66,8 @@ class UiStyleThemeExtension extends ThemeExtension<UiStyleThemeExtension> {
 
   const UiStyleThemeExtension({
     required this.style,
-    this.glassStyle = GlassStyle.frosted,
-    this.liquidGlassOpacity = 0,
+    this.glassStyle = defaultGlassStyle,
+    this.liquidGlassOpacity = defaultLiquidGlassOpacity,
   });
 
   bool get isMaterial3Style => style == AppUiStyle.material3;

@@ -11,7 +11,13 @@ void main() {
     GlassEffectConfig.applyPerformanceMode(reduceEffects: false);
   });
 
+  test('startup glass configuration uses liquid with medium opacity', () {
+    expect(GlassEffectConfig.usesLiquidGlass, isTrue);
+    expect(GlassEffectConfig.liquidGlassOpacity, 0.5);
+  });
+
   test('liquid chrome stays lighter and remembers style while disabled', () {
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
     final frostedBlur = GlassEffectConfig.appBarBlur;
     GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
     expect(GlassEffectConfig.usesLiquidGlass, isTrue);

@@ -2,6 +2,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/utils/ui_style.dart';
 
 void main() {
+  test('glass defaults agree across storage and theme extensions', () {
+    expect(GlassStyle.fromStorage(null), GlassStyle.liquid);
+    expect(GlassStyle.fromStorage('unknown'), GlassStyle.liquid);
+    expect(GlassStyle.fromStorage('frosted'), GlassStyle.frosted);
+    expect(GlassStyle.fromStorage('liquid'), GlassStyle.liquid);
+    const appearance = UiStyleThemeExtension(style: AppUiStyle.glass);
+    expect(appearance.glassStyle, GlassStyle.liquid);
+    expect(appearance.liquidGlassOpacity, 0.5);
+  });
+
   group('appUiStyleFromStorage', () {
     test('defaults to glass effects when no preference is saved', () {
       expect(appUiStyleFromStorage(null), AppUiStyle.glass);

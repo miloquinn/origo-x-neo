@@ -39,7 +39,7 @@ void main() {
       addTearDown(notifier.dispose);
 
       expect(notifier.accentColor, AppThemes.defaultAccentColor);
-      expect(notifier.liquidGlassOpacity, 0);
+      expect(notifier.liquidGlassOpacity, 0.5);
       expect(
         notifier.currentAppTheme.lightColorScheme,
         ColorScheme.fromSeed(
@@ -128,11 +128,12 @@ void main() {
     addTearDown(notifier.dispose);
 
     expect(notifier.uiStyle, AppUiStyle.glass);
-    expect(notifier.glassStyle, GlassStyle.frosted);
-    expect(GlassStyle.fromStorage('unknown'), GlassStyle.frosted);
+    expect(notifier.glassStyle, GlassStyle.liquid);
+    expect(GlassStyle.fromStorage('unknown'), GlassStyle.liquid);
   });
 
   test('glass style persists across notifier recreation', () async {
+    SharedPreferences.setMockInitialValues({'glass_style_mode': 'frosted'});
     final notifier = await _loadNotifier();
     await notifier.setGlassStyle(GlassStyle.liquid);
     notifier.dispose();
@@ -175,8 +176,8 @@ void main() {
 
   test('invalid stored liquid opacity normalizes to a safe value', () async {
     final cases = <Object?, double>{
-      null: 0,
-      'invalid': 0,
+      null: 0.5,
+      'invalid': 0.5,
       double.nan: 0,
       -0.4: 0,
       1.4: 1,

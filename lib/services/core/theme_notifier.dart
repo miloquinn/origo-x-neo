@@ -28,8 +28,8 @@ class ThemeNotifier extends ChangeNotifier {
     AppThemes.defaultAccentColor,
   );
   AppUiStyle _uiStyle = AppUiStyle.glass;
-  GlassStyle _glassStyle = GlassStyle.frosted;
-  double _liquidGlassOpacity = 0;
+  GlassStyle _glassStyle = defaultGlassStyle;
+  double _liquidGlassOpacity = defaultLiquidGlassOpacity;
 
   ThemeMode get themeMode => _themeMode;
   bool get isInitialized => _isInitialized;
@@ -52,7 +52,9 @@ class ThemeNotifier extends ChangeNotifier {
     _glassStyle = GlassStyle.fromStorage(prefs.getString(_glassStylePrefKey));
     final storedOpacity = prefs.get(_liquidGlassOpacityPrefKey);
     _liquidGlassOpacity = normalizeLiquidGlassOpacity(
-      storedOpacity is num ? storedOpacity.toDouble() : 0,
+      storedOpacity is num
+          ? storedOpacity.toDouble()
+          : defaultLiquidGlassOpacity,
     );
     await prefs.remove('disable_glass_effects');
     final storedAccentColor = prefs.getInt(_accentColorPrefKey);

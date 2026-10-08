@@ -19,8 +19,8 @@ class GlassEffectConfig {
   static double _blurScale = 0.85;
   static bool _reduceEffects = false;
   static bool _disableAllGlassEffects = false;
-  static GlassStyle _glassStyle = GlassStyle.frosted;
-  static double _liquidGlassOpacity = 0;
+  static GlassStyle _glassStyle = defaultGlassStyle;
+  static double _liquidGlassOpacity = defaultLiquidGlassOpacity;
 
   static void setGlassStyle(GlassStyle style) => _glassStyle = style;
 

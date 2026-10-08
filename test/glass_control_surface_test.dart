@@ -5,7 +5,10 @@ import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
 
 void main() {
-  setUp(() => GlassEffectConfig.setDisableAllGlassEffects(false));
+  setUp(() {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+  });
   tearDown(() => GlassEffectConfig.setDisableAllGlassEffects(false));
 
   testWidgets('uses one lightweight blur for a glass control', (tester) async {
@@ -54,7 +57,11 @@ Widget _host({
   bool blurBackground = true,
 }) {
   return MaterialApp(
-    theme: ThemeData(extensions: [UiStyleThemeExtension(style: style)]),
+    theme: ThemeData(
+      extensions: [
+        UiStyleThemeExtension(style: style, glassStyle: GlassStyle.frosted),
+      ],
+    ),
     home: Scaffold(
       body: Center(
         child: SizedBox(
