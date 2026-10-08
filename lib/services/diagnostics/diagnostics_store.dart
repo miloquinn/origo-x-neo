@@ -28,6 +28,8 @@ class PendingDiagnosticsReport {
 abstract interface class DiagnosticsStore {
   Future<bool> readEnabled();
   Future<void> writeEnabled(bool enabled);
+  Future<bool?> readConsentChoice();
+  Future<void> writeConsentChoice(bool enabled);
   Future<List<PendingDiagnosticsReport>> readPending();
   Future<void> writePending(List<PendingDiagnosticsReport> reports);
   Future<void> clearPending();
@@ -40,6 +42,7 @@ class SharedPreferencesDiagnosticsStore implements DiagnosticsStore {
 
   // member_ records are device-local and excluded from WebDAV app backups.
   static const enabledKey = 'member_diagnostics_enabled_v1';
+  static const consentChoiceKey = 'member_diagnostics_consent_choice_v1';
   static const pendingKey = 'member_diagnostics_pending_v1';
   final Future<SharedPreferences> Function() _preferences;
 
@@ -49,7 +52,21 @@ class SharedPreferencesDiagnosticsStore implements DiagnosticsStore {
 
   @override
   Future<void> writeEnabled(bool enabled) async {
-    await (await _preferences()).setBool(enabledKey, enabled);
+    final saved = await (await _preferences()).setBool(enabledKey, enabled);
+    if (!saved) throw StateError('Failed to save diagnostics setting.');
+  }
+
+  @override
+  Future<bool?> readConsentChoice() async =>
+      (await _preferences()).getBool(consentChoiceKey);
+
+  @override
+  Future<void> writeConsentChoice(bool enabled) async {
+    final saved = await (await _preferences()).setBool(
+      consentChoiceKey,
+      enabled,
+    );
+    if (!saved) throw StateError('Failed to save diagnostics consent.');
   }
 
   @override

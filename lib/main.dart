@@ -28,6 +28,8 @@ import 'pages/reader/native/native_reader_page.dart';
 import 'pages/library/import_book/import_book_page.dart';
 import 'pages/legal/user_agreement_page.dart';
 import 'pages/legal/legal_agreement_gate.dart';
+import 'pages/legal/legal_document_page.dart';
+import 'pages/support/diagnostics_consent_dialog.dart';
 import 'services/legal/legal_document_repository.dart';
 import 'pages/reader/book_source/online_reader_factory.dart';
 import 'pages/book_sources/source_verification_page.dart';
@@ -244,11 +246,13 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
   bool _requiresUpdatedAgreement = false;
   bool _isBootstrapped = false;
   bool _showFirstHomeSupportAfterAgreement = false;
+  bool _pendingFirstHomeSupportAfterDiagnostics = false;
   _BootstrapError? _bootstrapError;
   StreamSubscription<BackgroundDownloadTap>? _notificationTapSubscription;
   StreamSubscription<SourceInteractionTicket>? _sourceInteractionSubscription;
   final List<SourceInteractionTicket> _pendingSourceInteractions = [];
   bool _showingSourceInteraction = false;
+  bool _diagnosticsConsentPromptActive = false;
   BackgroundDownloadTap? _pendingNotificationTap;
   bool _resumeReadingHandled = false;
   late final IncomingBookService _incomingBookService;
@@ -454,16 +458,85 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
       listen: false,
     );
     account.setNetworkAllowed(true);
-    provider.Provider.of<DiagnosticsController>(
+    final diagnostics = provider.Provider.of<DiagnosticsController>(
       context,
       listen: false,
-    ).setNetworkAllowed(true);
+    );
+    diagnostics.setNetworkAllowed(true);
     cloud.setNetworkAllowed(true);
+    await diagnostics.initialize();
+    if (!mounted || _hasAcceptedAgreement != true) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_maybeOfferDiagnosticsConsent(diagnostics));
+    });
     await account.synchronize();
     if (!mounted || _hasAcceptedAgreement != true || !cloud.networkAllowed) {
       return;
     }
     await cloud.initialize();
+  }
+
+  Future<void> _maybeOfferDiagnosticsConsent(
+    DiagnosticsController diagnostics,
+  ) async {
+    if (!mounted || _hasAcceptedAgreement != true) return;
+    if (!diagnostics.shouldOfferConsent) {
+      _releaseFirstHomeSupport();
+      return;
+    }
+    if (_diagnosticsConsentPromptActive ||
+        (WidgetsBinding.instance.lifecycleState != null &&
+            WidgetsBinding.instance.lifecycleState !=
+                AppLifecycleState.resumed)) {
+      return;
+    }
+    final promptContext = _navigatorKey.currentContext;
+    if (promptContext == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_maybeOfferDiagnosticsConsent(diagnostics));
+      });
+      return;
+    }
+    _diagnosticsConsentPromptActive = true;
+    try {
+      final enable = await showDiagnosticsConsentDialog(
+        promptContext,
+        onOpenPrivacy: () => _openDiagnosticsPrivacy(promptContext),
+        onAnswer: diagnostics.answerConsentPrompt,
+      );
+      if (!mounted || _hasAcceptedAgreement != true) return;
+      debugPrint('性能与耗电统计选择：${enable ? "已开启" : "暂不开启"}');
+      _releaseFirstHomeSupport();
+    } finally {
+      _diagnosticsConsentPromptActive = false;
+    }
+  }
+
+  void _releaseFirstHomeSupport() {
+    if (!mounted || !_pendingFirstHomeSupportAfterDiagnostics) return;
+    setState(() {
+      _pendingFirstHomeSupportAfterDiagnostics = false;
+      _showFirstHomeSupportAfterAgreement = true;
+    });
+  }
+
+  Future<void> _openDiagnosticsPrivacy(BuildContext context) async {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final snapshot = await widget._legalRepository.load(locale: locale);
+    if (!context.mounted) return;
+    final privacy = snapshot.catalog.document('privacy');
+    final navigator = _navigatorKey.currentState;
+    if (privacy == null || navigator == null) return;
+    await navigator.push<void>(
+      MaterialPageRoute(
+        builder: (_) => LegalDocumentPage(
+          document: privacy,
+          repository: widget._legalRepository,
+          source: snapshot.source,
+          checkedAt: snapshot.checkedAt,
+        ),
+      ),
+    );
   }
 
   @override
@@ -592,7 +665,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     setState(() {
       _hasAcceptedAgreement = true;
       if (!_requiresUpdatedAgreement) {
-        _showFirstHomeSupportAfterAgreement = true;
+        _pendingFirstHomeSupportAfterDiagnostics = true;
       }
       _requiresUpdatedAgreement = false;
     });

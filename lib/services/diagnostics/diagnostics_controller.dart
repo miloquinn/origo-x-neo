@@ -88,6 +88,7 @@ class DiagnosticsController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void>? _initializing;
   bool _disposed = false;
   bool _enabled = false;
+  bool _consentAnswered = false;
   bool _foreground = true;
   bool? _networkAllowedOverride;
   bool _sampling = false;
@@ -105,6 +106,13 @@ class DiagnosticsController extends ChangeNotifier with WidgetsBindingObserver {
 
   bool get enabled => _enabled;
   bool get supported => _resourceSampler.supported;
+  bool get shouldOfferConsent =>
+      !_disposed &&
+      _initialized &&
+      supported &&
+      _networkAllowed &&
+      !_enabled &&
+      !_consentAnswered;
 
   bool get _networkAllowed =>
       (_networkAllowedOverride ?? account.networkAllowed) &&
@@ -126,14 +134,18 @@ class DiagnosticsController extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _initialize() async {
     try {
-      final results = await Future.wait<Object>([
+      final results = await Future.wait<Object?>([
         _store.readEnabled(),
+        _store.readConsentChoice(),
         _store.readPending(),
         _packageInfo(),
       ]);
-      _enabled = results[0] as bool;
-      _pending = results[1] as List<PendingDiagnosticsReport>;
-      final info = results[2] as PackageInfo;
+      final storedEnabled = results[0] as bool;
+      final consentChoice = results[1] as bool?;
+      _enabled = consentChoice ?? storedEnabled;
+      _consentAnswered = consentChoice != null || storedEnabled;
+      _pending = results[2] as List<PendingDiagnosticsReport>;
+      final info = results[3] as PackageInfo;
       _appVersion = info.version.trim().isEmpty
           ? 'unknown'
           : info.version.trim();
@@ -143,6 +155,7 @@ class DiagnosticsController extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {
       if (_disposed) return;
       _enabled = false;
+      _consentAnswered = false;
       _pending = <PendingDiagnosticsReport>[];
     }
     if (_disposed) return;
@@ -168,28 +181,59 @@ class DiagnosticsController extends ChangeNotifier with WidgetsBindingObserver {
     if (!_disposed) notifyListeners();
   }
 
-  Future<void> setEnabled(bool value) async {
+  Future<void> setEnabled(bool value) =>
+      _setEnabled(value, reportPersistenceFailure: false);
+
+  Future<void> answerConsentPrompt(bool enable) =>
+      _setEnabled(enable, reportPersistenceFailure: true);
+
+  Future<void> _setEnabled(
+    bool value, {
+    required bool reportPersistenceFailure,
+  }) async {
     if (_disposed) return;
     if (!_initialized) await initialize();
-    if (_disposed || value == _enabled) return;
-    _generation++;
+    if (_disposed) return;
+    _consentAnswered = true;
+    final changed = value != _enabled;
+    if (changed) _generation++;
+
+    Object? consentFailure;
+    StackTrace? consentFailureStack;
     if (value) {
       try {
-        await _store.writeEnabled(true);
-      } catch (_) {
-        if (!_disposed) notifyListeners();
-        return;
+        await _store.writeConsentChoice(true);
+        _enabled = true;
+        try {
+          await _store.writeEnabled(true);
+        } catch (_) {
+          // The consent choice is authoritative; this is a legacy marker.
+        }
+      } catch (error, stack) {
+        consentFailure = error;
+        consentFailureStack = stack;
+        _enabled = false;
+        try {
+          await _store.writeEnabled(false);
+        } catch (_) {
+          // Keep the legacy marker off when a new consent choice fails.
+        }
       }
-      _enabled = true;
     } else {
       _enabled = false;
       try {
+        await _store.writeConsentChoice(false);
+      } catch (error, stack) {
+        consentFailure = error;
+        consentFailureStack = stack;
+      }
+      try {
         await _store.writeEnabled(false);
       } catch (_) {
-        // Privacy choice wins for the running process even if storage failed.
+        // Runtime opt-out and the consent choice remain authoritative.
       }
     }
-    if (!value) {
+    if (!_enabled) {
       _stopSession();
       _pending = <PendingDiagnosticsReport>[];
       await _clearPendingStore();
@@ -197,6 +241,9 @@ class DiagnosticsController extends ChangeNotifier with WidgetsBindingObserver {
       _startSession();
     }
     if (!_disposed) notifyListeners();
+    if (reportPersistenceFailure && consentFailure != null) {
+      Error.throwWithStackTrace(consentFailure, consentFailureStack!);
+    }
   }
 
   /// Mirrors the legal-consent gate immediately. The account controller does

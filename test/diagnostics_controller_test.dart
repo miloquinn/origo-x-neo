@@ -48,6 +48,7 @@ void main() {
   setUp(() {
     account = MemberAccountController(networkAllowed: true);
     store = _MemoryStore(enabled: true);
+    store.consentChoice = true;
     sampler = _Sampler();
     frames = _Frames();
     scheduler = _Scheduler();
@@ -87,6 +88,177 @@ void main() {
     value.dispose();
   });
 
+  test(
+    'offers consent only after legal access and remembers rejection',
+    () async {
+      store.enabled = false;
+      store.consentChoice = null;
+      final value = controller();
+      await value.initialize();
+
+      expect(value.shouldOfferConsent, isTrue);
+      await value.answerConsentPrompt(false);
+
+      expect(value.enabled, isFalse);
+      expect(value.shouldOfferConsent, isFalse);
+      expect(store.consentChoice, isFalse);
+      value.dispose();
+    },
+  );
+
+  test('accepting consent enables collection and is remembered', () async {
+    store.enabled = false;
+    store.consentChoice = null;
+    final value = controller();
+    await value.initialize();
+    await value.answerConsentPrompt(true);
+    await _settleAsyncWork();
+
+    expect(value.enabled, isTrue);
+    expect(value.shouldOfferConsent, isFalse);
+    expect(store.enabled, isTrue);
+    expect(store.consentChoice, isTrue);
+    expect(value.snapshot(), isNotNull);
+    value.dispose();
+  });
+
+  test('a stored rejection is not offered again', () async {
+    store.enabled = true;
+    store.consentChoice = false;
+    final value = controller();
+    await value.initialize();
+
+    expect(value.enabled, isFalse);
+    expect(value.shouldOfferConsent, isFalse);
+    value.dispose();
+  });
+
+  test(
+    'legacy explicit enablement remains enabled without a new choice',
+    () async {
+      store.enabled = true;
+      store.consentChoice = null;
+      final value = controller();
+      await value.initialize();
+
+      expect(value.enabled, isTrue);
+      expect(value.shouldOfferConsent, isFalse);
+      value.dispose();
+    },
+  );
+
+  test('an explicit unchanged setting records the choice', () async {
+    store.enabled = false;
+    store.consentChoice = null;
+    final value = controller();
+    await value.initialize();
+
+    await value.setEnabled(false);
+
+    expect(store.consentChoice, isFalse);
+    expect(value.shouldOfferConsent, isFalse);
+    value.dispose();
+  });
+
+  test('legal gate controls whether unanswered consent is offered', () async {
+    account.dispose();
+    account = MemberAccountController(networkAllowed: false);
+    store.enabled = false;
+    store.consentChoice = null;
+    final value = controller();
+    await value.initialize();
+    value.setNetworkAllowed(false);
+
+    expect(value.shouldOfferConsent, isFalse);
+    account.setNetworkAllowed(true);
+    value.setNetworkAllowed(true);
+
+    expect(value.shouldOfferConsent, isTrue);
+    value.dispose();
+  });
+
+  test('failed rejection persistence still rejects for this run', () async {
+    store.enabled = false;
+    store.consentChoice = null;
+    store.failConsentWrite = true;
+    final value = controller();
+    await value.initialize();
+
+    await expectLater(
+      value.answerConsentPrompt(false),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(value.enabled, isFalse);
+    expect(value.shouldOfferConsent, isFalse);
+    expect(store.consentChoice, isNull);
+    value.dispose();
+  });
+
+  test('failed acceptance persistence never enables collection', () async {
+    store.enabled = false;
+    store.consentChoice = null;
+    store.failConsentWrite = true;
+    store.failEnabledWrite = true;
+    final value = controller();
+    await value.initialize();
+
+    await expectLater(
+      value.answerConsentPrompt(true),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(value.enabled, isFalse);
+    expect(value.shouldOfferConsent, isFalse);
+    expect(value.snapshot(), isNull);
+    expect(store.enabled, isFalse);
+    expect(store.consentChoice, isNull);
+    value.dispose();
+
+    store.failConsentWrite = false;
+    store.failEnabledWrite = false;
+    final restarted = controller();
+    await restarted.initialize();
+    expect(restarted.enabled, isFalse);
+    expect(restarted.shouldOfferConsent, isTrue);
+    restarted.dispose();
+  });
+
+  test('authoritative choice survives legacy marker write failure', () async {
+    store.enabled = false;
+    store.consentChoice = null;
+    store.failEnabledWrite = true;
+    final value = controller();
+    await value.initialize();
+
+    await value.answerConsentPrompt(true);
+
+    expect(value.enabled, isTrue);
+    expect(store.enabled, isFalse);
+    expect(store.consentChoice, isTrue);
+    value.dispose();
+
+    final restarted = controller();
+    await restarted.initialize();
+    expect(restarted.enabled, isTrue);
+    expect(restarted.shouldOfferConsent, isFalse);
+    restarted.dispose();
+  });
+
+  test('settings swallow consent storage errors without enabling', () async {
+    store.enabled = false;
+    store.consentChoice = null;
+    store.failConsentWrite = true;
+    final value = controller();
+    await value.initialize();
+
+    await value.setEnabled(true);
+
+    expect(value.enabled, isFalse);
+    expect(value.snapshot(), isNull);
+    value.dispose();
+  });
+
   test('initial legal gate suspends without deleting retry queue', () async {
     account.dispose();
     account = MemberAccountController(networkAllowed: false);
@@ -116,7 +288,7 @@ void main() {
       final second = value.initialize();
       final disable = value.setEnabled(false);
       expect(identical(first, second), isTrue);
-      expect(store.enabledReads, 1);
+      expect(store.consentReads, 1);
 
       store.readGate!.complete();
       await Future.wait<void>([first, second, disable]);
@@ -316,7 +488,10 @@ class _MemoryStore implements DiagnosticsStore {
   _MemoryStore({required this.enabled});
 
   bool enabled;
-  int enabledReads = 0;
+  bool? consentChoice;
+  bool failConsentWrite = false;
+  bool failEnabledWrite = false;
+  int consentReads = 0;
   Completer<void>? readGate;
   List<PendingDiagnosticsReport> pending = <PendingDiagnosticsReport>[];
 
@@ -324,10 +499,13 @@ class _MemoryStore implements DiagnosticsStore {
   Future<void> clearPending() async => pending = <PendingDiagnosticsReport>[];
 
   @override
-  Future<bool> readEnabled() async {
-    enabledReads++;
+  Future<bool> readEnabled() async => enabled;
+
+  @override
+  Future<bool?> readConsentChoice() async {
+    consentReads++;
     await readGate?.future;
-    return enabled;
+    return consentChoice;
   }
 
   @override
@@ -335,7 +513,16 @@ class _MemoryStore implements DiagnosticsStore {
       List<PendingDiagnosticsReport>.of(pending);
 
   @override
-  Future<void> writeEnabled(bool enabled) async => this.enabled = enabled;
+  Future<void> writeEnabled(bool enabled) async {
+    if (failEnabledWrite) throw StateError('enabled write failed');
+    this.enabled = enabled;
+  }
+
+  @override
+  Future<void> writeConsentChoice(bool enabled) async {
+    if (failConsentWrite) throw StateError('consent write failed');
+    consentChoice = enabled;
+  }
 
   @override
   Future<void> writePending(List<PendingDiagnosticsReport> reports) async =>

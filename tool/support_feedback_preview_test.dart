@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/pages/support/diagnostics_consent_dialog.dart';
 import 'package:xxread/pages/support/feedback_page.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/diagnostics/diagnostics_controller.dart';
@@ -16,6 +17,7 @@ import 'package:xxread/utils/app_themes.dart';
 
 const _captureKey = Key('support-feedback-preview');
 const _outputDirectory = 'build/support-delivery-20261008/previews';
+bool _previewFontsLoaded = false;
 
 class _PreviewAccount extends MemberAccountController {
   @override
@@ -119,25 +121,80 @@ void main() {
     }
     tester.view.reset();
   });
+
+  testWidgets('capture 320px large-text diagnostics consent', (tester) async {
+    await _loadPreviewFonts(tester);
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 720);
+      final appTheme = AppThemes.fromAccentColor(AppThemes.defaultAccentColor);
+      final scheme = brightness == Brightness.light
+          ? appTheme.lightColorScheme
+          : appTheme.darkColorScheme;
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: scheme,
+            fontFamily: 'SupportFeedbackPreview',
+          ),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.5)),
+            child: RepaintBoundary(key: _captureKey, child: child!),
+          ),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: FilledButton(
+                  onPressed: () => showDiagnosticsConsentDialog(
+                    context,
+                    onOpenPrivacy: () async {},
+                    onAnswer: (_) async {},
+                  ),
+                  child: const Text('打开'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('打开'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await _capture(
+        tester,
+        'diagnostics-consent-320-large-${brightness.name}.png',
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+    tester.view.reset();
+  });
 }
 
-Future<void> _loadPreviewFonts(
-  WidgetTester tester,
-) => tester.runAsync(() async {
-  final chinese = await File(
-    '/System/Library/Fonts/Hiragino Sans GB.ttc',
-  ).readAsBytes();
-  await (FontLoader(
-    'SupportFeedbackPreview',
-  )..addFont(Future.value(ByteData.sublistView(chinese)))).load();
-  final flutterRoot = Platform.resolvedExecutable.split('/bin/cache').first;
-  final icons = await File(
-    '$flutterRoot/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
-  ).readAsBytes();
-  await (FontLoader(
-    'MaterialIcons',
-  )..addFont(Future.value(ByteData.sublistView(icons)))).load();
-});
+Future<void> _loadPreviewFonts(WidgetTester tester) {
+  if (_previewFontsLoaded) return Future<void>.value();
+  return tester.runAsync(() async {
+    final chinese = await File(
+      '/System/Library/Fonts/Hiragino Sans GB.ttc',
+    ).readAsBytes();
+    await (FontLoader(
+      'SupportFeedbackPreview',
+    )..addFont(Future.value(ByteData.sublistView(chinese)))).load();
+    final flutterRoot = Platform.resolvedExecutable.split('/bin/cache').first;
+    final icons = await File(
+      '$flutterRoot/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+    ).readAsBytes();
+    await (FontLoader(
+      'MaterialIcons',
+    )..addFont(Future.value(ByteData.sublistView(icons)))).load();
+    _previewFontsLoaded = true;
+  });
+}
 
 Future<void> _capture(WidgetTester tester, String name) async {
   final boundary = tester.renderObject<RenderRepaintBoundary>(

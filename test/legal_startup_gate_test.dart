@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/main.dart';
 import 'package:xxread/models/legal_document.dart';
+import 'package:xxread/pages/legal/legal_document_page.dart';
 import 'package:xxread/pages/legal/user_agreement_page.dart';
 import 'package:xxread/services/account/member_account_controller.dart';
 import 'package:xxread/services/core/core_services.dart';
@@ -114,15 +115,111 @@ void main() {
     expect(fixture.diagnostics.networkAllowed, isTrue);
     await fixture.dispose(tester);
   });
+
+  testWidgets('diagnostics consent appears only after the legal gate opens', (
+    tester,
+  ) async {
+    final fixture = await _mountAcceptedApp(
+      tester,
+      offerDiagnosticsConsent: true,
+    );
+
+    expect(
+      find.byKey(const ValueKey('diagnostics-consent-dialog')),
+      findsNothing,
+    );
+    expect(fixture.diagnostics.initializeCalls, 0);
+
+    fixture.repository.complete(
+      LegalCatalogSnapshot(
+        catalog: legalFixtureCatalog(),
+        source: LegalContentSource.network,
+      ),
+    );
+    await _pumpUntil(
+      tester,
+      () => find
+          .byKey(const ValueKey('diagnostics-consent-dialog'))
+          .evaluate()
+          .isNotEmpty,
+    );
+
+    expect(fixture.diagnostics.networkAllowed, isTrue);
+    expect(fixture.diagnostics.initializeCalls, 1);
+    expect(fixture.diagnostics.answers, isEmpty);
+    final privacyLink = find.byKey(
+      const ValueKey('diagnostics-consent-privacy'),
+    );
+    await tester.ensureVisible(privacyLink);
+    await tester.tap(privacyLink);
+    await _pumpUntil(
+      tester,
+      () => find.byType(LegalDocumentPage).evaluate().isNotEmpty,
+    );
+    expect(find.byType(LegalDocumentPage), findsOneWidget);
+    Navigator.of(tester.element(find.byType(LegalDocumentPage))).pop();
+    await _pumpUntil(
+      tester,
+      () => find.byType(LegalDocumentPage).evaluate().isEmpty,
+    );
+    final decline = find.byKey(const ValueKey('diagnostics-consent-decline'));
+    await tester.ensureVisible(decline);
+    await tester.tap(decline);
+    await _pumpUntil(tester, () => fixture.diagnostics.answers.isNotEmpty);
+    expect(fixture.diagnostics.answers, [false]);
+    await fixture.dispose(tester);
+  });
+
+  testWidgets('paused startup retries diagnostics consent after resume', (
+    tester,
+  ) async {
+    final fixture = await _mountAcceptedApp(
+      tester,
+      offerDiagnosticsConsent: true,
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    fixture.repository.complete(
+      LegalCatalogSnapshot(
+        catalog: legalFixtureCatalog(),
+        source: LegalContentSource.network,
+      ),
+    );
+    await _pumpFrames(tester);
+    expect(
+      find.byKey(const ValueKey('diagnostics-consent-dialog')),
+      findsNothing,
+    );
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await _pumpUntil(
+      tester,
+      () => find
+          .byKey(const ValueKey('diagnostics-consent-dialog'))
+          .evaluate()
+          .isNotEmpty,
+    );
+    final decline = find.byKey(const ValueKey('diagnostics-consent-decline'));
+    await tester.ensureVisible(decline);
+    await tester.tap(decline);
+    await _pumpUntil(tester, () => fixture.diagnostics.answers.isNotEmpty);
+    expect(fixture.diagnostics.answers, [false]);
+    await fixture.dispose(tester);
+  });
 }
 
-Future<_Fixture> _mountAcceptedApp(WidgetTester tester) async {
+Future<_Fixture> _mountAcceptedApp(
+  WidgetTester tester, {
+  bool offerDiagnosticsConsent = false,
+}) async {
   final accepted = legalFixtureCatalog();
   await UserAgreementService.acceptAgreement(locale: 'en', catalog: accepted);
   final repository = _ControlledLegalRepository(accepted);
   final account = _CountingAccount();
   final cloud = _CountingCloud(account);
-  final diagnostics = _CountingDiagnostics(account);
+  final diagnostics = _CountingDiagnostics(
+    account,
+    offerConsent: offerDiagnosticsConsent,
+  );
   final theme = ThemeNotifier();
   final settings = AppSettingsNotifier(account: account);
 
@@ -247,10 +344,29 @@ class _Fixture {
 }
 
 class _CountingDiagnostics extends DiagnosticsController {
-  _CountingDiagnostics(MemberAccountController account)
-    : super(account: account);
+  _CountingDiagnostics(
+    MemberAccountController account, {
+    this.offerConsent = false,
+  }) : super(account: account);
 
   bool networkAllowed = false;
+  bool offerConsent;
+  int initializeCalls = 0;
+  final List<bool> answers = [];
+
+  @override
+  bool get shouldOfferConsent => networkAllowed && offerConsent;
+
+  @override
+  Future<void> initialize() async {
+    initializeCalls++;
+  }
+
+  @override
+  Future<void> answerConsentPrompt(bool enable) async {
+    answers.add(enable);
+    offerConsent = false;
+  }
 
   @override
   void setNetworkAllowed(bool allowed) {
