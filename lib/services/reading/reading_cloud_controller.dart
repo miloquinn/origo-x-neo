@@ -13,8 +13,10 @@ class ReadingCloudController extends ChangeNotifier {
     ReadingCloudStore? store,
     ReadingAccountScope? scope,
     bool automatic = true,
+    bool? networkAllowed,
   }) : _store = store ?? ReadingCloudStore(),
-       _scope = scope ?? ReadingAccountScope.instance {
+       _scope = scope ?? ReadingAccountScope.instance,
+       _networkAllowed = networkAllowed ?? true {
     _owner = _scope.owner;
     _scope.addListener(_ownerChanged);
     account.addListener(_accountChanged);
@@ -47,8 +49,29 @@ class ReadingCloudController extends ChangeNotifier {
   bool savingPreference = false;
   Future<void>? _sync;
   int _syncGeneration = -1;
+  bool _networkAllowed;
+
+  bool get networkAllowed => _networkAllowed;
 
   bool _current(int generation) => !_disposed && generation == _generation;
+  bool _networkCurrent(int generation) =>
+      _networkAllowed && _current(generation);
+
+  /// Changes the transport permission without starting a synchronization.
+  ///
+  /// Changing either direction invalidates every in-flight operation. The
+  /// caller explicitly decides whether to initialize or synchronize after
+  /// enabling access.
+  void setNetworkAllowed(bool value) {
+    if (_disposed || value == _networkAllowed) return;
+    _networkAllowed = value;
+    _generation++;
+    _sync = null;
+    _syncGeneration = -1;
+    busy = false;
+    savingPreference = false;
+    notifyListeners();
+  }
 
   Future<void> initialize() async {
     final generation = _generation;
@@ -60,7 +83,7 @@ class ReadingCloudController extends ChangeNotifier {
       if (cached != null && summary == null) _apply(cached);
       guestSeconds = guest;
       notifyListeners();
-      await synchronize();
+      if (_networkCurrent(generation)) await synchronize();
     } catch (_) {
       if (_current(generation)) {
         error = '无法读取本地阅读数据，请重试';
@@ -82,12 +105,17 @@ class ReadingCloudController extends ChangeNotifier {
 
   void _accountChanged() {
     if (!account.loading && account.user?.id == _owner && _owner != null) {
-      unawaited(synchronize());
+      if (_networkAllowed) {
+        unawaited(synchronize());
+      } else {
+        unawaited(_refreshLocalCounts(_generation));
+      }
     }
   }
 
   Future<void> synchronize() {
     if (_disposed) return Future<void>.value();
+    if (!_networkAllowed) return _refreshLocalCounts(_generation);
     if (savingPreference) return _sync ?? Future<void>.value();
     if (_sync != null && _syncGeneration == _generation) return _sync!;
     final owner = _owner;
@@ -129,18 +157,21 @@ class ReadingCloudController extends ChangeNotifier {
       // Use the account controller's serialized lifecycle to refresh expired
       // credentials before uploading. Reading HTTP calls themselves never
       // refresh tokens and cannot overwrite a newly signed-in account.
+      if (!_networkCurrent(generation)) return;
       await account.synchronize();
-      if (!_current(generation) || account.user?.id != owner) return;
-      while (_current(generation)) {
+      if (!_networkCurrent(generation) || account.user?.id != owner) return;
+      while (_networkCurrent(generation)) {
         final rows = await _store.pending(owner);
-        if (!_current(generation)) return;
+        if (!_networkCurrent(generation)) return;
         if (rows.isEmpty) break;
+        if (!_networkCurrent(generation)) return;
         final result = await account.readingApi.readingRequest(
           'POST',
           'events',
           owner,
           data: {'events': rows.map(_store.payload).toList()},
         );
+        if (!_networkCurrent(generation)) return;
         _checkOwner(result, owner);
         final expected = rows.map((row) => row['event_id']).toSet();
         final acknowledged = {
@@ -152,23 +183,30 @@ class ReadingCloudController extends ChangeNotifier {
         }
         // Updating the captured owner's queue is safe even after a switch.
         await _store.acknowledge(owner, result);
+        if (!_networkCurrent(generation)) return;
       }
-      if (!_current(generation)) return;
-      final responses = await Future.wait([
-        account.readingApi.readingRequest('GET', 'summary', owner),
-        account.readingApi.readingRequest(
+      if (!_networkCurrent(generation)) return;
+      final responses = <Map<String, dynamic>>[];
+      for (final request in <Future<Map<String, dynamic>> Function()>[
+        () => account.readingApi.readingRequest('GET', 'summary', owner),
+        () => account.readingApi.readingRequest(
           'GET',
           'leaderboard',
           owner,
           period: 'week',
         ),
-        account.readingApi.readingRequest(
+        () => account.readingApi.readingRequest(
           'GET',
           'leaderboard',
           owner,
           period: 'month',
         ),
-      ]);
+      ]) {
+        if (!_networkCurrent(generation)) return;
+        final response = await request();
+        if (!_networkCurrent(generation)) return;
+        responses.add(response);
+      }
       for (final response in responses) {
         _checkOwner(response, owner);
       }
@@ -179,7 +217,7 @@ class ReadingCloudController extends ChangeNotifier {
         'updated_at': DateTime.now().toIso8601String(),
       };
       await _store.cache(owner, cached);
-      if (_current(generation)) _apply(cached);
+      if (_networkCurrent(generation)) _apply(cached);
     } catch (exception) {
       if (_current(generation)) {
         error = exception is MemberAccountException
@@ -211,30 +249,39 @@ class ReadingCloudController extends ChangeNotifier {
 
   Future<void> claimGuest() async {
     final owner = _owner;
-    if (owner == null || account.user?.id != owner) return;
+    if (!_networkAllowed || owner == null || account.user?.id != owner) return;
+    final generation = _generation;
     await _store.claimGuest(owner);
-    await _refreshLocalCounts(_generation);
+    if (!_networkCurrent(generation)) return;
+    await _refreshLocalCounts(generation);
+    if (!_networkCurrent(generation)) return;
     await synchronize();
   }
 
   Future<void> setPublic(bool value) async {
     final owner = _owner;
-    if (owner == null || account.user?.id != owner || savingPreference) return;
+    if (!_networkAllowed ||
+        owner == null ||
+        account.user?.id != owner ||
+        savingPreference) {
+      return;
+    }
     final generation = _generation;
     savingPreference = true;
     notifyListeners();
     try {
       final active = _sync;
       if (active != null) await active;
-      if (!_current(generation)) return;
+      if (!_networkCurrent(generation)) return;
       final response = await account.readingApi.readingRequest(
         'PUT',
         'preferences',
         owner,
         data: {'public': value},
       );
+      if (!_networkCurrent(generation)) return;
       _checkOwner(response, owner);
-      if (!_current(generation)) return;
+      if (!_networkCurrent(generation)) return;
       if (summary != null) summary = {...summary!, 'public': value};
       if (!value) {
         Map<String, dynamic>? withoutMe(Map<String, dynamic>? board) =>
@@ -260,9 +307,10 @@ class ReadingCloudController extends ChangeNotifier {
           'updated_at': updatedAt,
         });
       }
-      if (!_current(generation)) return;
+      if (!_networkCurrent(generation)) return;
       savingPreference = false;
       notifyListeners();
+      if (!_networkCurrent(generation)) return;
       await synchronize();
     } catch (exception) {
       if (_current(generation)) {

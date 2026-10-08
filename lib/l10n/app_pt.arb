@@ -952,8 +952,6 @@
   "settingsLibraryLayoutCard": "Cartões",
   "settingsLibraryLayoutGrid": "Grade",
   "settingsLibraryGridColumnsTitle": "Capas por linha no celular",
-  "settingsLibraryGridTwoColumns": "2 colunas",
-  "settingsLibraryGridThreeColumns": "3 colunas",
   "settingsLibraryGridShowDetailsTitle": "Mostrar título e progresso",
   "settingsLibraryGridShowDetailsSubtitle": "Adiciona uma linha de título e uma barra de progresso compacta abaixo de cada capa",
   "settingsLibraryOpenAnimationTitle": "Animação de abertura do livro",

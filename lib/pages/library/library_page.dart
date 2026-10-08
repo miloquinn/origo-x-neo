@@ -22,9 +22,13 @@ import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/pages/reader/book_reader_launcher.dart';
 import 'package:xxread/models/book.dart';
+import 'package:xxread/models/shelf_folder.dart';
+import 'package:xxread/models/home_navigation_destination.dart';
+import 'package:xxread/services/library/shelf_folder_dao.dart';
 import 'package:xxread/pages/export/reading_data_export_dialog.dart';
 import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
+import 'package:xxread/pages/home/widgets/home_page_wrappers.dart';
 import 'package:xxread/pages/book_sources/book_source_change_page.dart';
 import 'package:xxread/pages/reader/book_source/online_reader_factory.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
@@ -47,16 +51,20 @@ import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
 import 'package:xxread/widgets/app_menu.dart';
 import 'package:xxread/widgets/generated_book_cover.dart';
-import 'package:xxread/widgets/scrolling_text.dart';
-import 'package:xxread/widgets/side_toast.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/pill_search_field.dart';
+import 'package:xxread/widgets/scrolling_text.dart';
+import 'package:xxread/widgets/side_toast.dart';
 import 'package:xxread/widgets/source_cover_image.dart';
 
 import 'import_book/import_book_page.dart';
 import 'download_tasks_page.dart';
 import 'library_grid_book_details.dart';
 import 'library_selection_model.dart';
+import 'library_selection_actions.dart';
+import 'library_folder_name_dialog.dart';
+import 'library_shelf_projection.dart';
+import 'library_shelf_transition.dart';
 
 part 'parts/library_book_commands_part.dart';
 part 'parts/library_book_deletion_part.dart';
@@ -64,6 +72,7 @@ part 'parts/library_book_details_part.dart';
 part 'parts/library_book_widgets_part.dart';
 part 'parts/library_chrome_part.dart';
 part 'parts/library_collection_part.dart';
+part 'parts/library_folders_part.dart';
 
 enum _LibraryFilter { all, reading, finished }
 
@@ -74,6 +83,7 @@ class LibraryPageController {
 
   /// 当前是否有生效的筛选（非“全部”）。顶栏据此点亮筛选按钮。
   final ValueNotifier<bool> filterActive = ValueNotifier<bool>(false);
+  final ValueNotifier<String?> folderName = ValueNotifier<String?>(null);
   final ValueNotifier<LibrarySelectionSnapshot> selection =
       ValueNotifier<LibrarySelectionSnapshot>(
         const LibrarySelectionSnapshot.inactive(),
@@ -90,8 +100,18 @@ class LibraryPageController {
 
   Future<void> deleteSelected() async => _state?._confirmDeleteSelectedBooks();
 
+  Future<void> createFolderFromSelected() async =>
+      _state?._createFolderFromSelected();
+
+  Future<void> moveSelected() async => _state?._moveSelectedBooks();
+
+  Future<void> showAddMenu() async => _state?._showAddMenu();
+
+  void goUp() => _state?._goUp();
+
   void dispose() {
     filterActive.dispose();
+    folderName.dispose();
     selection.dispose();
   }
 }
@@ -122,6 +142,8 @@ class LibrarySelectionSnapshot {
 class LibraryPage extends StatefulWidget {
   final LibraryPageController? controller;
   final Future<List<Book>> Function()? booksLoader;
+  final Future<List<ShelfFolder>> Function()? foldersLoader;
+  final ShelfFolderDao? folderDao;
   final BookSourceShelfService? sourceShelfService;
   final BookSourceShelfService Function()? sourceShelfServiceFactory;
 
@@ -129,6 +151,8 @@ class LibraryPage extends StatefulWidget {
     super.key,
     this.controller,
     this.booksLoader,
+    this.foldersLoader,
+    this.folderDao,
     this.sourceShelfService,
     this.sourceShelfServiceFactory,
   }) : assert(sourceShelfService == null || sourceShelfServiceFactory == null);
@@ -139,10 +163,26 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   List<Book> _books = [];
+  List<ShelfFolder> _folders = [];
+  LibraryShelfProjection _shelf = LibraryShelfProjection(const [], const []);
+  late final ShelfFolderDao _folderDao = widget.folderDao ?? ShelfFolderDao();
+  String? _currentFolderId;
+  final List<String> _folderPath = [];
+  final _directoryViews =
+      <String?, ({String query, bool searchVisible, _LibraryFilter filter})>{};
+  final _shelfScrollController = ScrollController();
+  final _directoryScrollOffsets = <String?, double>{};
+  final _shelfTransitionKey = GlobalKey<LibraryShelfTransitionState>();
+  final _folderArtKeys = <String, GlobalKey>{};
+  GlobalKey? _folderMotionOriginKey;
+  bool _folderMotionOpening = true;
+  bool _folderNavigationPending = false;
+  bool _folderMutationInProgress = false;
   int _booksRevision = 0;
   int _visibleBooksCacheRevision = -1;
   _LibraryFilter? _visibleBooksCacheFilter;
   String _visibleBooksCacheQuery = '';
+  String? _visibleBooksCacheFolderId;
   List<Book> _visibleBooksCache = const [];
   bool _isInitialLoading = true;
   Object? _loadError;
@@ -306,6 +346,7 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
+    _shelfScrollController.dispose();
     unawaited(
       _closeOwnedResources(librarySubscription, sourceMetadataSubscription),
     );
@@ -322,6 +363,8 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   }
 
   void _toggleSearchBar() {
+    if (_selection.isActive) _exitSelectionMode();
+    _searchDebounce?.cancel();
     setState(() {
       _searchBarVisible = !_searchBarVisible;
       if (_searchBarVisible) {
@@ -360,7 +403,11 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
       ],
     );
     if (selected == null || !mounted) return;
-    setState(() => _selectedFilter = selected);
+    setState(() {
+      _selectedFilter = selected;
+      _selection.exit();
+    });
+    _syncSelection();
     _syncFilterActive();
   }
 
@@ -445,7 +492,11 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     _searchDebounce = Timer(const Duration(milliseconds: 120), () {
       if (!mounted) return;
       if (_searchQuery == value) return;
-      setState(() => _searchQuery = value);
+      setState(() {
+        _searchQuery = value;
+        _selection.exit();
+      });
+      _syncSelection();
     });
   }
 
@@ -471,20 +522,29 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
       final books = List<Book>.of(
         await (widget.booksLoader?.call() ?? _bookDao.getAllBooks()),
       );
+      final folders =
+          await (widget.foldersLoader?.call() ?? _folderDao.getAll());
       if (mounted && generation == _booksLoadGeneration) {
         for (final change in _metadataChangesDuringLoad) {
           _patchSourceMetadata(books, change);
         }
         _metadataChangesDuringLoad.clear();
         _loadingBooks = false;
+        final shelf = LibraryShelfProjection(folders, books);
         setState(() {
           _books = books;
+          _folders = folders;
+          _shelf = shelf;
+          _reconcileFolderPath();
           _booksRevision++;
           _loadError = null;
-          _selection.retainOnly(books.map((book) => book.id).nonNulls.toSet());
+          _selection.retainOnly(
+            _visibleBooks.map((book) => book.id).nonNulls.toSet(),
+          );
           _isInitialLoading = false;
         });
         _syncSelection();
+        _syncFolderTitle();
         unawaited(_checkSourceUpdates());
       }
     } catch (error, stackTrace) {
@@ -531,6 +591,7 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     setState(() {
       _patchSourceMetadata(_books, change);
       _patchSourceMetadata(_visibleBooksCache, change);
+      _shelf = LibraryShelfProjection(_folders, _books);
     });
   }
 
@@ -581,21 +642,19 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
 
     // 在侧边导航栏模式下，不显示 Scaffold 和 AppBar
     if (useRailNavigation) {
-      return Stack(
-        children: [
-          _buildContent(context, useRailNavigation: useRailNavigation),
-          if (_selection.isActive) _buildRailSelectionBottomBar(),
-        ],
+      return _buildShelfBackScope(
+        Stack(
+          children: [
+            _buildContent(context, useRailNavigation: useRailNavigation),
+            if (_selection.isActive) _buildRailSelectionBottomBar(),
+          ],
+        ),
       );
     }
 
     // 手机模式：显示完整的 Scaffold + AppBar
-    return PopScope(
-      canPop: !_selection.isActive,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _selection.isActive) _exitSelectionMode();
-      },
-      child: Scaffold(
+    return _buildShelfBackScope(
+      Scaffold(
         extendBody: true, // 让内容延伸到导航区，配合手势小白条
         extendBodyBehindAppBar: true,
         appBar: AppBar(

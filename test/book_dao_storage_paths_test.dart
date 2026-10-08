@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:xxread/data/migration/book_storage_path_migration.dart';
 import 'package:xxread/data/migration/book_source_reading_progress_schema_migration.dart';
+import 'package:xxread/data/migration/shelf_folder_schema_migration.dart';
 import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/book_dao.dart';
+import 'package:xxread/services/library/shelf_folder_dao.dart';
 import 'package:xxread/services/sync/book_sync_identity.dart';
 
 void main() {
@@ -34,6 +36,7 @@ void main() {
       )
     ''');
     await BookSourceReadingProgressSchemaMigration.migrate(database);
+    await ShelfFolderSchemaMigration.migrate(database);
 
     dao = BookDao(
       database: () async => database,
@@ -381,6 +384,29 @@ void main() {
       'books/nested/book.epub',
     );
   });
+
+  test(
+    'full updates from stale snapshots never overwrite folder membership',
+    () async {
+      final id = await dao.insertBook(book());
+      final staleRootSnapshot = (await dao.getBookById(id))!;
+      final folderDao = ShelfFolderDao(database: () async => database);
+      final folder = await folderDao.create('Folder');
+      await folderDao.moveBooks({id}, folder.id);
+
+      await dao.updateBook(staleRootSnapshot.copyWith(title: 'Downloaded'));
+      expect((await stored(id))['title'], 'Downloaded');
+      expect((await stored(id))['shelf_folder_id'], folder.id);
+
+      final staleFolderSnapshot = (await dao.getBookById(id))!;
+      await folderDao.dissolve(folder.id);
+      await dao.updateBook(
+        staleFolderSnapshot.copyWith(title: 'Updated after dissolve'),
+      );
+      expect((await stored(id))['title'], 'Updated after dissolve');
+      expect((await stored(id))['shelf_folder_id'], isNull);
+    },
+  );
 
   test(
     'legacy paths migrate without files, repeat safely, and preserve metadata',

@@ -17,6 +17,7 @@ import 'package:xxread/pages/book_sources/book_sources_page.dart';
 import 'package:xxread/pages/book_sources/source_search_page.dart';
 import 'package:xxread/pages/library/import_book/import_book_page.dart';
 import 'package:xxread/pages/library/library_page.dart';
+import 'package:xxread/pages/library/library_selection_actions.dart';
 import 'package:xxread/pages/library/download_tasks_page.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
 import 'package:xxread/services/core/app_distribution.dart';
@@ -37,6 +38,7 @@ import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/page_system_ui.dart';
 
 import 'home_dashboard_page.dart';
 import 'home_mobile_chrome.dart';
@@ -136,6 +138,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
   void initState() {
     super.initState();
     _libraryController.selection.addListener(_handleLibrarySelectionChanged);
+    _libraryController.folderName.addListener(_handleLibrarySelectionChanged);
     unawaited(_bookSourcesController.initialize());
     // 优化PageController，设置合适的视窗比例
     _pageController = PageController(
@@ -253,27 +256,6 @@ class _HomeShellPageState extends State<HomeShellPage> {
     _queuePageControllerSync(_selectedIndex);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final nextL10n = AppLocalizations.of(context);
-    final nextNavigationOrder = context
-        .watch<AppSettingsNotifier>()
-        .visibleHomeNavigationOrder;
-    // 每次依赖变化时重新应用沉浸式设置
-    _setupPageImmersiveMode();
-    // 应用基于主题的设置
-    _setupThemeBasedImmersiveMode();
-    // 仅在本地化实例变化时重建页面表。普通 tab setState 不再重新创建
-    // PageView 的整组子节点，避免切页动画开始前产生额外布局工作。
-    if (_l10n != nextL10n ||
-        _navigationItems.isEmpty ||
-        !listEquals(_navigationOrder, nextNavigationOrder)) {
-      _l10n = nextL10n;
-      _initializeNavigationItems(nextNavigationOrder);
-    }
-  }
-
   void _updateSelectedIndex(int index) {
     if (!mounted) return;
     final destinationChanged = _selectedIndex != index;
@@ -362,6 +344,9 @@ class _HomeShellPageState extends State<HomeShellPage> {
   @override
   void dispose() {
     _libraryController.selection.removeListener(_handleLibrarySelectionChanged);
+    _libraryController.folderName.removeListener(
+      _handleLibrarySelectionChanged,
+    );
     _pageController.dispose();
     _homeDashboardController.dispose();
     _settingsController.dispose();
@@ -401,6 +386,17 @@ class _HomeShellPageState extends State<HomeShellPage> {
   @override
   Widget build(BuildContext context) {
     final navigationType = LayoutHelper.getNavigationType(context);
+    final nextL10n = AppLocalizations.of(context);
+    final nextNavigationOrder = context
+        .select<AppSettingsNotifier, List<HomeNavigationDestination>>(
+          (settings) => settings.visibleHomeNavigationOrder,
+        );
+    if (_l10n != nextL10n ||
+        _navigationItems.isEmpty ||
+        !listEquals(_navigationOrder, nextNavigationOrder)) {
+      _l10n = nextL10n;
+      _initializeNavigationItems(nextNavigationOrder);
+    }
     final hideNavigationLabels = context.select<AppSettingsNotifier, bool>(
       (settings) => settings.hideNavigationLabels,
     );
@@ -417,12 +413,6 @@ class _HomeShellPageState extends State<HomeShellPage> {
     final overlayStyle = SystemUiHelper.overlayStyleForBrightness(
       Theme.of(context).brightness,
     );
-
-    // 某些页面(如阅读器)会临时修改系统栏样式，返回后这里强制恢复当前主题对应的样式。
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _setupThemeBasedImmersiveMode();
-    });
 
     Widget content;
     switch (navigationType) {
@@ -441,23 +431,26 @@ class _HomeShellPageState extends State<HomeShellPage> {
         break;
     }
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: overlayStyle,
-      child: Stack(
-        children: [
-          Positioned.fill(child: content),
-          if (_showSupportIntro)
-            Positioned.fill(
-              child: FirstHomeSupportOverlay(
-                supportLabel: context.l10n.firstHomeSupportNow,
-                laterLabel: context.l10n.firstHomeSupportLater,
-                paperSemanticLabel:
-                    context.l10n.firstHomeSupportPaperSemanticLabel,
-                onSupport: () => unawaited(_openSupportSettings()),
-                onLater: _dismissFirstHomeSupport,
+    return PageSystemUi(
+      brightness: Theme.of(context).brightness,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: overlayStyle,
+        child: Stack(
+          children: [
+            Positioned.fill(child: content),
+            if (_showSupportIntro)
+              Positioned.fill(
+                child: FirstHomeSupportOverlay(
+                  supportLabel: context.l10n.firstHomeSupportNow,
+                  laterLabel: context.l10n.firstHomeSupportLater,
+                  paperSemanticLabel:
+                      context.l10n.firstHomeSupportPaperSemanticLabel,
+                  onSupport: () => unawaited(_openSupportSettings()),
+                  onLater: _dismissFirstHomeSupport,
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

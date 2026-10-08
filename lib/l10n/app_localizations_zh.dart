@@ -3209,12 +3209,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsLibraryGridColumnsTitle => '手机每行封面数量';
 
   @override
-  String get settingsLibraryGridTwoColumns => '2 列';
-
-  @override
-  String get settingsLibraryGridThreeColumns => '3 列';
-
-  @override
   String get settingsLibraryGridShowDetailsTitle => '显示书名和进度';
 
   @override
@@ -7364,11 +7358,72 @@ class AppLocalizationsZh extends AppLocalizations {
   String get activityCenterRefresh => '刷新';
 
   @override
+  String get libraryNewFolder => '新建分组';
+
+  @override
+  String get libraryFolderName => '分组名称';
+
+  @override
+  String get libraryFolderNameHint => '给这个子书架起个名字';
+
+  @override
+  String get libraryRenameFolder => '重命名分组';
+
+  @override
+  String get libraryDissolveFolder => '解散分组';
+
+  @override
+  String get libraryDissolveFolderMessage => '书籍和子分组会移到上一级，书籍和阅读数据会保留。';
+
+  @override
+  String get libraryMoveToFolder => '移动到分组';
+
+  @override
+  String get libraryMoveHere => '移到这里';
+
+  @override
+  String get libraryBackToParent => '返回上一级';
+
+  @override
+  String get libraryRootShelf => '主书架';
+
+  @override
+  String get libraryFolderEmpty => '这个子书架还没有书';
+
+  @override
+  String libraryFolderBooks(int count) {
+    return '$count 本书';
+  }
+
+  @override
+  String get libraryFolderCreateHint => '选中的书籍会移入这个子书架。';
+
+  @override
+  String get libraryFolderOperationFailed => '无法更新分组，请重试。';
+
+  @override
+  String get libraryFolderNameRequired => '请输入分组名称';
+
+  @override
+  String get libraryFolderNameTooLong => '名称最多 60 个字符';
+
+  @override
   String get accountBindEmailTitle => '绑定邮箱';
 
   @override
   String get accountBindEmailHint =>
       '验证邮箱后，将此登录方式绑定到 Origo 账号。使用原账号邮箱即可关联同一个账号。';
+
+  @override
+  String settingsLibraryGridColumnCount(int count) {
+    return '$count 列';
+  }
+
+  @override
+  String get settingsLibraryGridColumnsHint => '屏幕较窄或字号较大时，会自动减少列数，保持封面清晰易读。';
+
+  @override
+  String get libraryFolderEmptyPreview => '还没有书籍';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -10574,12 +10629,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsLibraryGridColumnsTitle => '手機每列封面數量';
-
-  @override
-  String get settingsLibraryGridTwoColumns => '2 列';
-
-  @override
-  String get settingsLibraryGridThreeColumns => '3 列';
 
   @override
   String get settingsLibraryGridShowDetailsTitle => '顯示書名和進度';
@@ -14732,9 +14781,70 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get activityCenterRefresh => '重新整理';
 
   @override
+  String get libraryNewFolder => '新增分組';
+
+  @override
+  String get libraryFolderName => '分組名稱';
+
+  @override
+  String get libraryFolderNameHint => '為這個子書架命名';
+
+  @override
+  String get libraryRenameFolder => '重新命名分組';
+
+  @override
+  String get libraryDissolveFolder => '解散分組';
+
+  @override
+  String get libraryDissolveFolderMessage => '書籍和子分組將移到上一層，書籍與閱讀資料會保留。';
+
+  @override
+  String get libraryMoveToFolder => '移動到分組';
+
+  @override
+  String get libraryMoveHere => '移至這裡';
+
+  @override
+  String get libraryBackToParent => '返回上一層';
+
+  @override
+  String get libraryRootShelf => '主書架';
+
+  @override
+  String get libraryFolderEmpty => '這個子書架還沒有書';
+
+  @override
+  String libraryFolderBooks(int count) {
+    return '$count 本書';
+  }
+
+  @override
+  String get libraryFolderCreateHint => '選取的書籍將移入這個子書架。';
+
+  @override
+  String get libraryFolderOperationFailed => '無法更新分組，請重試。';
+
+  @override
+  String get libraryFolderNameRequired => '請輸入分組名稱';
+
+  @override
+  String get libraryFolderNameTooLong => '名稱最多 60 個字元';
+
+  @override
   String get accountBindEmailTitle => '綁定電子郵件';
 
   @override
   String get accountBindEmailHint =>
       '驗證電子郵件後，將此登入方式綁定到 Origo 帳號。使用原帳號的電子郵件即可關聯同一帳號。';
+
+  @override
+  String settingsLibraryGridColumnCount(int count) {
+    return '$count 列';
+  }
+
+  @override
+  String get settingsLibraryGridColumnsHint => '螢幕較窄或字體較大時，會自動減少列數，讓封面保持清楚易讀。';
+
+  @override
+  String get libraryFolderEmptyPreview => '還沒有書籍';
 }

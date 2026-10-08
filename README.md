@@ -217,9 +217,9 @@ tool/              # 本地开发、官网发布校验与示例服务工具
 官网、发行 API、安装包镜像与下载统计服务位于独立仓库
 [`miloquinn/origo-web`](https://github.com/miloquinn/origo-web)。
 
-更完整的架构说明见 [`structure.md`](structure.md) 和
-[`CODEBASE_DOCUMENTATION.md`](CODEBASE_DOCUMENTATION.md)，版本变化见
-[`CHANGELOG.md`](CHANGELOG.md)。
+维护入口见 [`docs/README.md`](docs/README.md)，按主题进入当前架构、调用链和回归测试。
+模块概览见 [`CODEBASE_DOCUMENTATION.md`](CODEBASE_DOCUMENTATION.md) 与
+[`structure.md`](structure.md)，版本变化见 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 支持开发
 

@@ -814,6 +814,76 @@ void main() {
     },
   );
 
+  for (final (fontSize, lineHeight) in [(19.0, 1.75), (28.0, 2.0)]) {
+    testWidgets('continuous TXT chapters leave a body-scaled gap '
+        '(fontSize=$fontSize, lineHeight=$lineHeight)', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: ReaderPageMode.verticalScroll.name,
+        ReaderSettingsStore.scrollByChapterKey: false,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+        ReaderSettingsStore.fontSizeKey: fontSize,
+        ReaderSettingsStore.lineHeightKey: lineHeight,
+      });
+      bookFile.writeAsStringSync(
+        '第1章 风暴将至\n\n上一章的最后一段。\n\n'
+        '第2章 雨过天晴\n\n下一章的第一段。',
+      );
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NativeReaderPage(
+            replaceRuleService: replaceRuleService,
+            book: Book(
+              title: '章间距测试',
+              filePath: bookFile.path,
+              format: 'txt',
+              textEncoding: 'utf8',
+              fileModifiedTime: bookFile
+                  .lastModifiedSync()
+                  .millisecondsSinceEpoch,
+            ),
+          ),
+        ),
+      );
+      final nextPage = find.byWidgetPredicate(
+        (widget) =>
+            widget is ReaderAnnotatedTextPage &&
+            widget.chapterTitle == '第2章 雨过天晴',
+      );
+      await tester.runAsync(() async {
+        for (var attempt = 0; attempt < 30; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+          if (nextPage.evaluate().isNotEmpty) return;
+        }
+      });
+      await _pumpUntilFound(tester, nextPage);
+      final previousPage = find.byWidgetPredicate(
+        (widget) =>
+            widget is ReaderAnnotatedTextPage &&
+            widget.chapterTitle == '第1章 风暴将至',
+      );
+      final nextHeading = find.descendant(
+        of: nextPage,
+        matching: find.byType(ReaderInlineChapterTitle),
+      );
+      expect(
+        tester.getTopLeft(nextHeading).dy -
+            tester.getBottomLeft(previousPage).dy,
+        closeTo(fontSize * lineHeight * 1.5, 0.5),
+      );
+      final next = tester.widget<ReaderAnnotatedTextPage>(nextPage);
+      expect(next.page.startOffset, 0);
+      expect(next.sourceText, contains('下一章的第一段。'));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+  }
+
   for (final chapterTitlePageEnabled in [true, false]) {
     for (final scrollByChapter in [true, false]) {
       testWidgets('vertical TXT TOC jump aligns the chapter start '

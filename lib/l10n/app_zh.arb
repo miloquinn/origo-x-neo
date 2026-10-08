@@ -138,7 +138,19 @@
   },
   "bookSourceChangeConfirmTitle": "确认换源",
   "bookSourceChangeQuickProgress": "快速查找：{completed}/{batch} · 共 {total} 个可用书源",
-  "@bookSourceChangeQuickProgress": {"placeholders": {"completed": {"type": "int"}, "batch": {"type": "int"}, "total": {"type": "int"}}},
+  "@bookSourceChangeQuickProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "batch": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "bookSourceChangeStopSearch": "停止查找",
   "bookSourceChangeLoadFailed": "无法加载书源",
   "bookSourceChangeLoadFailedHint": "请检查网络后重试。",
@@ -154,9 +166,27 @@
   "bookSourceChangeReaderOpenFailed": "来源已切换，但新章节暂时打不开。请重试或返回书架。",
   "bookSourceChangeReadingPosition": "阅读位置",
   "bookSourceChangeOriginalChapter": "原：第 {number} 章 · {title}",
-  "@bookSourceChangeOriginalChapter": {"placeholders": {"number": {"type": "int"}, "title": {"type": "String"}}},
+  "@bookSourceChangeOriginalChapter": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "bookSourceChangeNewChapter": "新：第 {number} 章 · {title}",
-  "@bookSourceChangeNewChapter": {"placeholders": {"number": {"type": "int"}, "title": {"type": "String"}}},
+  "@bookSourceChangeNewChapter": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "bookSourceChangeMappingTitle": "按章节标题匹配",
   "bookSourceChangeMappingNumber": "按章节号匹配，请核对位置",
   "bookSourceChangeMappingManual": "已手动选择章节",
@@ -167,7 +197,13 @@
   "bookSourceChangeLocalImpact": "本地正文与阅读位置保持不变，只更改后续更新使用的书源。",
   "bookSourceChangeOnlineImpact": "将更新书架来源和阅读位置；原来源的位置仍会保留。",
   "bookSourceChangeConfirmAction": "确认换到 {source}",
-  "@bookSourceChangeConfirmAction": {"placeholders": {"source": {"type": "String"}}},
+  "@bookSourceChangeConfirmAction": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
   "bookSourceChannelCount": "{count} 个频道",
   "@bookSourceChannelCount": {
     "placeholders": {
@@ -276,8 +312,12 @@
   "bookSourcesExportSuccess": "已将 {count} 个书源导出到 {location}",
   "@bookSourcesExportSuccess": {
     "placeholders": {
-      "count": { "type": "int" },
-      "location": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "location": {
+        "type": "String"
+      }
     }
   },
   "bookSourcesExportFailed": "无法导出所选书源",
@@ -286,7 +326,9 @@
   "bookSourcesExportReplaceMessage": "{path} 已存在文件，是否替换？",
   "@bookSourcesExportReplaceMessage": {
     "placeholders": {
-      "path": { "type": "String" }
+      "path": {
+        "type": "String"
+      }
     }
   },
   "bookSourcesExportReplaceAction": "替换",
@@ -2180,8 +2222,6 @@
   "settingsLibraryLayoutCard": "卡片",
   "settingsLibraryLayoutGrid": "网格",
   "settingsLibraryGridColumnsTitle": "手机每行封面数量",
-  "settingsLibraryGridTwoColumns": "2 列",
-  "settingsLibraryGridThreeColumns": "3 列",
   "settingsLibraryGridShowDetailsTitle": "显示书名和进度",
   "settingsLibraryGridShowDetailsSubtitle": "在每本封面下显示单行书名和精简进度条",
   "settingsLibraryOpenAnimationTitle": "书籍打开动画",
@@ -3830,6 +3870,39 @@
     }
   },
   "activityCenterRefresh": "刷新",
+  "libraryNewFolder": "新建分组",
+  "libraryFolderName": "分组名称",
+  "libraryFolderNameHint": "给这个子书架起个名字",
+  "libraryRenameFolder": "重命名分组",
+  "libraryDissolveFolder": "解散分组",
+  "libraryDissolveFolderMessage": "书籍和子分组会移到上一级，书籍和阅读数据会保留。",
+  "libraryMoveToFolder": "移动到分组",
+  "libraryMoveHere": "移到这里",
+  "libraryBackToParent": "返回上一级",
+  "libraryRootShelf": "主书架",
+  "libraryFolderEmpty": "这个子书架还没有书",
+  "libraryFolderBooks": "{count} 本书",
+  "@libraryFolderBooks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryFolderCreateHint": "选中的书籍会移入这个子书架。",
+  "libraryFolderOperationFailed": "无法更新分组，请重试。",
+  "libraryFolderNameRequired": "请输入分组名称",
+  "libraryFolderNameTooLong": "名称最多 60 个字符",
   "accountBindEmailTitle": "绑定邮箱",
-  "accountBindEmailHint": "验证邮箱后，将此登录方式绑定到 Origo 账号。使用原账号邮箱即可关联同一个账号。"
+  "accountBindEmailHint": "验证邮箱后，将此登录方式绑定到 Origo 账号。使用原账号邮箱即可关联同一个账号。",
+  "@settingsLibraryGridColumnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsLibraryGridColumnCount": "{count} 列",
+  "settingsLibraryGridColumnsHint": "屏幕较窄或字号较大时，会自动减少列数，保持封面清晰易读。",
+  "libraryFolderEmptyPreview": "还没有书籍"
 }

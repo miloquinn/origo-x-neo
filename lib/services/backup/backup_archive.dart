@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uuid/uuid.dart';
+import 'package:uuid/validation.dart';
 
 import '../../book_sources/services/book_source_registry_storage.dart';
 import '../../book_sources/models/registered_book_source.dart';
@@ -27,14 +28,20 @@ class BackupArchive {
   final Directory documents;
   final SharedPreferences preferences;
   final BookSourceRegistryStorage sources;
-  static const tables = [
+  static const _legacyTables = [
     'books',
     'bookmarks',
     'reading_stats',
     'reading_sessions',
     'book_notes',
   ];
+  static const tables = ['shelf_folders', ..._legacyTables];
+  static const _folderSchema = 28;
+  static const _legacySchemas = {25, 26, 27};
   static const sourceKey = 'origo_x_book_sources_v1';
+
+  static List<String> _tablesForSchema(int schema) =>
+      schema >= _folderSchema ? tables : _legacyTables;
 
   // Account sessions, device permissions and cloud passwords are device-local.
   static bool includesPreference(String key) =>
@@ -45,6 +52,7 @@ class BackupArchive {
       key != sourceKey;
 
   Future<Map<String, Object?>> _snapshot() async {
+    final schema = await database.getVersion();
     const caches = {
       'cached_pages',
       'cached_content',
@@ -56,7 +64,7 @@ class BackupArchive {
     )).map((c) => c['name'] as String).toList();
     final rows = await database.transaction(
       (tx) async => <String, Object?>{
-        for (final table in tables)
+        for (final table in _tablesForSchema(schema))
           table: await tx.query(
             table,
             columns: table == 'books'
@@ -93,7 +101,7 @@ class BackupArchive {
       'format': 'origo-x-backup',
       'version': 1,
       'createdAt': DateTime.now().toUtc().toIso8601String(),
-      'schema': await database.getVersion(),
+      'schema': schema,
       'tables': rows,
       'identities': identities,
       'preferences': {
@@ -165,8 +173,13 @@ class BackupArchive {
         whereArgs: ['frozen_book_uid:%'],
       );
       if (!selection.reading && selection.bookIds.isEmpty) {
-        for (final table in ['books', 'bookmarks', 'book_notes']) {
-          rows[table] = <Object>[];
+        for (final table in [
+          'shelf_folders',
+          'books',
+          'bookmarks',
+          'book_notes',
+        ]) {
+          if (rows.containsKey(table)) rows[table] = <Object>[];
         }
       }
       if (!selection.statistics) {
@@ -313,9 +326,14 @@ class BackupArchive {
       );
       final names = extracted.$1;
       final data = extracted.$2;
+      final schema = data['schema'];
+      final currentSchema = await database.getVersion();
       if (data['format'] != 'origo-x-backup' ||
           ![1, 2].contains(data['version']) ||
-          data['schema'] != await database.getVersion()) {
+          schema is! int ||
+          !(schema == currentSchema ||
+              currentSchema == _folderSchema &&
+                  _legacySchemas.contains(schema))) {
         throw const FormatException('Unsupported backup version');
       }
       if (data['version'] == 2) {
@@ -371,14 +389,20 @@ class BackupArchive {
         }
       }
       final rows = (data['tables'] as Map).cast<String, dynamic>();
-      if (rows.length != tables.length || !tables.every(rows.containsKey)) {
+      final expectedTables = _tablesForSchema(schema);
+      if (rows.length != expectedTables.length ||
+          !expectedTables.every(rows.containsKey)) {
         throw const FormatException('Missing backup data');
       }
-      for (final table in tables) {
+      for (final table in expectedTables) {
         final columns = (await database.rawQuery(
           'PRAGMA table_info($table)',
         )).map((c) => c['name']).toSet();
-        for (final row in rows[table] as List) {
+        final tableRows = rows[table];
+        if (tableRows is! List) {
+          throw const FormatException('Invalid backup table');
+        }
+        for (final row in tableRows) {
           if (row is! Map ||
               row.keys.any((k) => !columns.contains(k)) ||
               row.values.any((v) => v != null && v is! String && v is! num)) {
@@ -399,11 +423,72 @@ class BackupArchive {
           }
         }
       }
+      rows['shelf_folders'] = _orderedFolders(
+        rows['shelf_folders'] as List? ?? const [],
+      );
+      final folderIds = {
+        for (final row in rows['shelf_folders'] as List) row['id'],
+      };
+      for (final book in rows['books'] as List) {
+        final folderId = book['shelf_folder_id'];
+        if (folderId != null &&
+            (folderId is! String || !folderIds.contains(folderId))) {
+          throw const FormatException('Invalid book folder reference');
+        }
+      }
       return ValidatedBackup(directory, data);
     } catch (_) {
       await directory.delete(recursive: true);
       rethrow;
     }
+  }
+
+  /// Parents precede children, regardless of their order in an archive.
+  static List<Map<String, Object?>> _orderedFolders(List rows) {
+    final folders = <String, Map<String, Object?>>{};
+    for (final original in rows) {
+      if (original is! Map) {
+        throw const FormatException('Invalid shelf folder');
+      }
+      final row = Map<String, Object?>.from(original);
+      final id = row['id'];
+      final name = row['name'];
+      final parent = row['parent_id'];
+      if (id is! String ||
+          !UuidValidation.isValidUUID(fromString: id) ||
+          name is! String ||
+          name.trim().isEmpty ||
+          name.trim().runes.length > 60 ||
+          !row.containsKey('parent_id') ||
+          parent != null && parent is! String ||
+          row['created_at'] is! int ||
+          folders.containsKey(id)) {
+        throw const FormatException('Invalid shelf folder');
+      }
+      folders[id] = row;
+    }
+    final children = <String, List<String>>{};
+    final ordered = <Map<String, Object?>>[];
+    for (final entry in folders.entries) {
+      final parent = entry.value['parent_id'] as String?;
+      if (parent == null) {
+        ordered.add(entry.value);
+      } else {
+        if (parent == entry.key || !folders.containsKey(parent)) {
+          throw const FormatException('Invalid shelf folder parent');
+        }
+        (children[parent] ??= []).add(entry.key);
+      }
+    }
+    for (var index = 0; index < ordered.length; index++) {
+      for (final child in children[ordered[index]['id']] ?? const <String>[]) {
+        ordered.add(folders[child]!);
+      }
+    }
+    if (ordered.length != folders.length) {
+      throw const FormatException('Cyclic shelf folders');
+    }
+    return ordered;
   }
 
   static Future<(Set<String>, Map<String, dynamic>)> _extractZip(
@@ -538,15 +623,25 @@ class BackupArchive {
         moved.add(target);
       }
       final rows = (backup.data['tables'] as Map).cast<String, dynamic>();
+      final restoreTables = _tablesForSchema(await database.getVersion());
       await database.transaction((tx) async {
         if (scope != null) {
-          await _restoreSelected(tx, backup, id, scope);
+          await _restoreSelected(
+            tx,
+            backup,
+            id,
+            scope,
+            hasFolders: restoreTables.contains('shelf_folders'),
+          );
         } else {
-          for (final table in tables.reversed) {
+          for (final table in restoreTables.reversed) {
             await tx.delete(table);
           }
-          for (final table in tables) {
-            for (final original in rows[table] as List) {
+          for (final table in restoreTables) {
+            final originals = table == 'shelf_folders'
+                ? _orderedFolders(rows[table] as List? ?? const [])
+                : rows[table] as List;
+            for (final original in originals) {
               final row = Map<String, Object?>.from(original as Map);
               if (table == 'books') {
                 for (final key in ['filePath', 'cover_image_path']) {
@@ -605,8 +700,9 @@ class BackupArchive {
     Transaction tx,
     ValidatedBackup backup,
     String operation,
-    Map scope,
-  ) async {
+    Map scope, {
+    required bool hasFolders,
+  }) async {
     final rows = backup.data['tables'] as Map;
     final mapping = <int, int>{};
     final skipped = <int>{};
@@ -629,6 +725,13 @@ class BackupArchive {
         ),
     };
     if (scope['reading'] == true) {
+      if (hasFolders) {
+        await _restoreFolders(
+          tx,
+          rows['shelf_folders'] as List? ?? const [],
+          overwrite: scope['overwrite'] != false,
+        );
+      }
       for (final original in rows['books'] as List) {
         final row = Map<String, Object?>.from(original as Map);
         final oldId = row.remove('id') as int;
@@ -712,6 +815,32 @@ class BackupArchive {
     if ((await tx.rawQuery('PRAGMA foreign_key_check')).isNotEmpty) {
       throw const FormatException('Invalid backup references');
     }
+  }
+
+  Future<void> _restoreFolders(
+    Transaction tx,
+    List rows, {
+    required bool overwrite,
+  }) async {
+    final existingIds = {
+      for (final row in await tx.query('shelf_folders', columns: ['id']))
+        row['id'],
+    };
+    for (final row in _orderedFolders(rows)) {
+      final id = row['id'];
+      if (!existingIds.contains(id)) {
+        await tx.insert('shelf_folders', row);
+      } else if (overwrite) {
+        // REPLACE would delete the old row and clear unrelated memberships.
+        await tx.update(
+          'shelf_folders',
+          Map<String, Object?>.from(row)..remove('id'),
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      }
+    }
+    _orderedFolders(await tx.query('shelf_folders'));
   }
 
   Future<void> _writeSources(String raw) async {

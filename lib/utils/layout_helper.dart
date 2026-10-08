@@ -164,20 +164,61 @@ class LayoutHelper {
     );
   }
 
-  /// 纯封面网格密度。手机严格使用用户选择的 2/3 列；宽屏按相同的
-  /// 封面密度增加列数，避免平板或桌面仍只显示两三个超大封面。
+  /// 纯封面网格密度。
+  ///
+  /// [mobileColumns] 是用户的密度偏好，保存后不会因当前窗口变窄而被改写。
+  /// 实际列数同时受容器净宽、64dp 最小封面宽度和文字缩放影响：
+  /// 390dp 手机在标准字号下可排 5 列，320dp 会自动降为 4 列。
+  /// 宽屏延续相同密度意图，但最多 8 列。
   static int coverOnlyGridColumnsForWidth(
     double width, {
     required int mobileColumns,
+    bool? usesWideLayout,
+    double? horizontalPadding,
+    double? spacing,
+    bool showDetails = false,
+    bool hasFolders = false,
+    double textScaleFactor = 1,
   }) {
-    final normalizedColumns = mobileColumns == 2 ? 2 : 3;
-    if (width < tabletBreakpoint) return normalizedColumns;
-    final targetItemExtent = normalizedColumns == 2 ? 184.0 : 148.0;
-    const horizontalPadding = 32.0;
-    return ((width - horizontalPadding) / targetItemExtent).round().clamp(
-      normalizedColumns,
-      12,
+    final preferredColumns = mobileColumns.clamp(2, 5).toInt();
+    final wide = usesWideLayout ?? width >= tabletBreakpoint;
+    final resolvedPadding = horizontalPadding ?? (wide ? 32.0 : 12.0);
+    final resolvedSpacing = spacing ?? (wide ? 14.0 : 10.0);
+    final availableWidth = (width - resolvedPadding * 2).clamp(
+      0.0,
+      double.infinity,
     );
+    final accessibleScale = textScaleFactor < 1 ? 1.0 : textScaleFactor;
+    final minimumCoverWidth = showDetails || hasFolders
+        ? 64.0 + (accessibleScale - 1) * 32.0
+        : 64.0;
+    final fittingColumns =
+        ((availableWidth + resolvedSpacing) /
+                (minimumCoverWidth + resolvedSpacing))
+            .floor()
+            .clamp(1, wide ? 8 : 5)
+            .toInt();
+
+    if (!wide) {
+      return preferredColumns.clamp(1, fittingColumns).toInt();
+    }
+
+    final preferredItemWidth = switch (preferredColumns) {
+      2 => 184.0,
+      3 => 148.0,
+      4 => 116.0,
+      _ => 96.0,
+    };
+    final targetItemWidth = preferredItemWidth.clamp(
+      minimumCoverWidth,
+      double.infinity,
+    );
+    final densityColumns =
+        ((availableWidth + resolvedSpacing) /
+                (targetItemWidth + resolvedSpacing))
+            .round()
+            .toInt();
+    return densityColumns.clamp(1, fittingColumns).toInt();
   }
 
   // 判断是否应该显示双页布局

@@ -172,6 +172,16 @@ extension _LibraryPageBookDetails on _LibraryPageState {
                       ),
                       _buildOptionItem(
                         context: context,
+                        icon: Icons.drive_file_move_outlined,
+                        iconColor: localScheme.primary,
+                        title: context.l10n.libraryMoveToFolder,
+                        onTap: () {
+                          Navigator.pop(context);
+                          unawaited(_moveBooksToFolder({book.id!}));
+                        },
+                      ),
+                      _buildOptionItem(
+                        context: context,
                         icon: Icons.play_circle_outline,
                         iconColor: localScheme.primary,
                         title: context.l10n.continueReading,

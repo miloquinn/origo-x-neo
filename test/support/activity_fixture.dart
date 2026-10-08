@@ -12,9 +12,7 @@ Map<String, dynamic> activityFixture({
   'revision': 3,
   'kind': kind,
   'title': title,
-  'subtitle': kind == 'referral'
-      ? '邀请真实使用的好友，领取限时或永久探元。'
-      : '每天留一点时间，读完想读的那本书。',
+  'subtitle': kind == 'referral' ? '邀请真实使用的好友，领取限时或永久探元。' : '每天留一点时间，读完想读的那本书。',
   'accent': accent,
   'state': state,
   'channels': channels,

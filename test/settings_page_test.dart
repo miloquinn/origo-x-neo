@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/account/account_page.dart';
+import 'package:xxread/pages/legal/legal_documents_page.dart';
 import 'package:xxread/pages/settings/about/open_source_licenses_page.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
 import 'package:xxread/pages/account/premium_membership_page.dart';
@@ -17,6 +18,7 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/core/core_services.dart';
 import 'package:xxread/services/backup/webdav_backup_controller.dart';
+import 'package:xxread/services/legal/legal_document_repository.dart';
 
 class _SettingsAloudService extends ChangeNotifier
     implements ReaderAloudService {
@@ -560,9 +562,22 @@ void main() {
     final entry = find.byKey(const ValueKey('settings-welcome-link'));
     await tester.ensureVisible(entry);
     await tester.tap(entry);
+    await tester.pump();
+    // The replay reads a real asset. Drain its repository I/O before advancing
+    // only the widget test's fake clock in pumpAndSettle.
+    await tester.runAsync(
+      () => LegalDocumentRepository.instance.load(locale: 'en'),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('welcomePager')), findsOneWidget);
     await tester.tap(find.byKey(const Key('welcomeSkip')));
+    // Mount the lazy final page after its 850 ms page transition, then finish
+    // the asset work outside the fake clock before settling its loading cards.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 850));
+    await tester.runAsync(
+      () => LegalDocumentRepository.instance.load(locale: 'en'),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('agreementTermsDisclosure')), findsOneWidget);
     expect(find.text('Done'), findsOneWidget);
@@ -589,6 +604,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(OpenSourceLicensesPage), findsOneWidget);
+    await _disposeSettingsPage(tester);
+  });
+
+  testWidgets('opens the agreements and privacy document hub', (tester) async {
+    await _pumpSettingsPage(tester, locale: const Locale('zh'));
+    await _scrollToAboutCard(tester);
+
+    final entry = find.byKey(const ValueKey('settings-legal-documents-link'));
+    await tester.ensureVisible(entry);
+    await tester.pumpAndSettle();
+    await tester.tap(entry.hitTestable());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(LegalDocumentsPage), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await _disposeSettingsPage(tester);
   });
 }

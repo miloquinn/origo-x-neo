@@ -135,6 +135,7 @@ class BookSourceReaderPage extends StatefulWidget {
   final BookSourceClient Function()? clientFactory;
   final BookSourceShelfService Function(BookSourceClient client)?
   shelfServiceFactory;
+  final Book? initialShelfBook;
   final ReaderThemePalette? initialTheme;
   final SourceCoverCache? remoteImageCache;
   final PaginationCacheDao? paginationCacheDao;
@@ -150,6 +151,7 @@ class BookSourceReaderPage extends StatefulWidget {
     this.shelfService,
     this.clientFactory,
     this.shelfServiceFactory,
+    this.initialShelfBook,
     this.initialTheme,
     this.remoteImageCache,
     this.paginationCacheDao,
@@ -172,6 +174,7 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
       widget.shelfService ??
       (widget.shelfServiceFactory ??
           (client) => BookSourceShelfService(client: client))(_client);
+  Future<Book?>? _shelfBookLookup;
   late final SourceCoverCache _remoteImageCache =
       widget.remoteImageCache ?? SourceCoverCache.imagePageInstance;
   late final PaginationCacheDao _paginationCacheDao =
@@ -295,8 +298,10 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
       ReaderDesktopResizeController();
   bool _exitPromptVisible = false;
   bool _allowPop = false;
-  int? _shelfBookId;
-  Book? _shelfBook;
+  late int? _shelfBookId = widget.initialShelfBook?.id;
+  late Book? _shelfBook = widget.initialShelfBook?.id == null
+      ? null
+      : widget.initialShelfBook;
   Timer? _progressSaveTimer;
   Timer? _controlsTimer;
   final ReadingStatsDao _readingStatsDao = ReadingStatsDao();

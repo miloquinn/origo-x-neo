@@ -9,11 +9,6 @@ part of '../home_shell_page.dart';
 /// - 手机底部导航布局
 /// - 页面包装与导入跳转
 extension _HomeShellLayoutPart on _HomeShellPageState {
-  bool _shouldApplySystemUI() {
-    final route = ModalRoute.of(context);
-    return route?.isCurrent ?? true;
-  }
-
   bool get _isMaterial3Style {
     return Theme.of(
           context,
@@ -23,37 +18,6 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
 
   bool get _disableShellBlur =>
       _isMaterial3Style || GlassEffectConfig.shouldDisableBlur;
-
-  // 页面级沉浸式设置
-  void _setupPageImmersiveMode() {
-    if (!_shouldApplySystemUI()) {
-      return;
-    }
-    // 强制启用边到边模式
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-    // 初始样式跟随当前主题亮度
-    final overlayStyle = SystemUiHelper.overlayStyleForBrightness(
-      Theme.of(context).brightness,
-    );
-    SystemChrome.setSystemUIOverlayStyle(overlayStyle);
-  }
-
-  // 基于主题的沉浸式设置 (在didChangeDependencies中调用)
-  void _setupThemeBasedImmersiveMode() {
-    if (!_shouldApplySystemUI()) {
-      return;
-    }
-    final overlayStyle = SystemUiHelper.overlayStyleForBrightness(
-      Theme.of(context).brightness,
-    );
-
-    // 使用 microtask 确保在当前帧渲染后执行
-    Future.microtask(() {
-      if (!mounted) return;
-      SystemChrome.setSystemUIOverlayStyle(overlayStyle);
-    });
-  }
 
   /// 桌面布局：左侧 NavigationRail + 右侧页面内容。
   ///
@@ -223,7 +187,6 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
   }) {
     final mediaQuery = MediaQuery.of(context);
     final wideTopNavigation = LayoutHelper.usesTabletLayout(context);
-    final scheme = Theme.of(context).colorScheme;
     final stableSystemInsets = _mobileSystemInsets.resolve(
       mediaQuery,
       lockForReaderTransition: BookOpenTransition.hasActiveReaderActivity,
@@ -416,26 +379,17 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
                               child: SizedBox(
                                 width: double.infinity,
                                 height: metrics.floatingNavHeight,
-                                child: FilledButton.icon(
-                                  key: const ValueKey(
-                                    'library-delete-selected',
+                                child: LibrarySelectionActions(
+                                  selectedCount: librarySelection.selectedCount,
+                                  onCreateFolder: () => unawaited(
+                                    _libraryController
+                                        .createFolderFromSelected(),
                                   ),
-                                  onPressed: librarySelection.selectedCount == 0
-                                      ? null
-                                      : () => unawaited(
-                                          _libraryController.deleteSelected(),
-                                        ),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: scheme.error,
-                                    foregroundColor: scheme.onError,
+                                  onMove: () => unawaited(
+                                    _libraryController.moveSelected(),
                                   ),
-                                  icon: const Icon(
-                                    Icons.delete_outline_rounded,
-                                  ),
-                                  label: Text(
-                                    context.l10n.libraryDeleteSelected(
-                                      librarySelection.selectedCount,
-                                    ),
+                                  onDelete: () => unawaited(
+                                    _libraryController.deleteSelected(),
                                   ),
                                 ),
                               ),
@@ -578,7 +532,7 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
             const SizedBox(width: 8),
             _buildTopBarActionButton(
               icon: Icons.add_rounded,
-              onTap: _navigateToImport,
+              onTap: () => unawaited(_libraryController.showAddMenu()),
             ),
           ],
         );
@@ -631,6 +585,8 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
         ? context.l10n.librarySelectedBooks(
             _libraryController.selection.value.selectedCount,
           )
+        : currentPage is LibraryPage
+        ? _libraryController.folderName.value ?? title
         : title;
     return Positioned(
       top: topNavigation ? metrics.toolbarTopInset : 0,

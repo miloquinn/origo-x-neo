@@ -1,4 +1,6 @@
 import 'package:xxread/pages/legal/agreement_summary.dart';
+import 'package:xxread/pages/legal/legal_copy.dart';
+import 'package:xxread/pages/legal/legal_documents_page.dart';
 import 'package:xxread/pages/onboarding/reading_welcome_page.dart';
 // 文件说明：设置页面，负责应用主题、语言、同步、备份和外观设置。
 // 技术要点：Flutter UI、Icons Plus、Package Info、Provider、SharedPreferences、URL Launcher。

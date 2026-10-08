@@ -6010,18 +6010,6 @@ abstract class AppLocalizations {
   /// **'Covers per row on phones'**
   String get settingsLibraryGridColumnsTitle;
 
-  /// Two-column mobile library grid option
-  ///
-  /// In en, this message translates to:
-  /// **'2 columns'**
-  String get settingsLibraryGridTwoColumns;
-
-  /// Three-column mobile library grid option
-  ///
-  /// In en, this message translates to:
-  /// **'3 columns'**
-  String get settingsLibraryGridThreeColumns;
-
   /// Toggle for showing book titles and reading progress below grid covers
   ///
   /// In en, this message translates to:
@@ -13544,6 +13532,102 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get activityCenterRefresh;
 
+  /// No description provided for @libraryNewFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'New group'**
+  String get libraryNewFolder;
+
+  /// No description provided for @libraryFolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name'**
+  String get libraryFolderName;
+
+  /// No description provided for @libraryFolderNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this bookshelf a name'**
+  String get libraryFolderNameHint;
+
+  /// No description provided for @libraryRenameFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename group'**
+  String get libraryRenameFolder;
+
+  /// No description provided for @libraryDissolveFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Dissolve group'**
+  String get libraryDissolveFolder;
+
+  /// No description provided for @libraryDissolveFolderMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Move books and subgroups up one level. Your books and reading data are kept.'**
+  String get libraryDissolveFolderMessage;
+
+  /// No description provided for @libraryMoveToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to group'**
+  String get libraryMoveToFolder;
+
+  /// No description provided for @libraryMoveHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Move here'**
+  String get libraryMoveHere;
+
+  /// No description provided for @libraryBackToParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up one level'**
+  String get libraryBackToParent;
+
+  /// No description provided for @libraryRootShelf.
+  ///
+  /// In en, this message translates to:
+  /// **'Main bookshelf'**
+  String get libraryRootShelf;
+
+  /// No description provided for @libraryFolderEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This bookshelf is empty'**
+  String get libraryFolderEmpty;
+
+  /// No description provided for @libraryFolderBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} books'**
+  String libraryFolderBooks(int count);
+
+  /// No description provided for @libraryFolderCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected books will move into this bookshelf.'**
+  String get libraryFolderCreateHint;
+
+  /// No description provided for @libraryFolderOperationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the group. Please try again.'**
+  String get libraryFolderOperationFailed;
+
+  /// No description provided for @libraryFolderNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a group name'**
+  String get libraryFolderNameRequired;
+
+  /// No description provided for @libraryFolderNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 60 characters or fewer'**
+  String get libraryFolderNameTooLong;
+
   /// Email verification step after a provider authorization without a usable verified email.
   ///
   /// In en, this message translates to:
@@ -13555,6 +13639,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verify your email to link this sign-in method to your Origo account. Use your existing account email to keep the same account.'**
   String get accountBindEmailHint;
+
+  /// Selectable number of book covers per row on phones
+  ///
+  /// In en, this message translates to:
+  /// **'{count} columns'**
+  String settingsLibraryGridColumnCount(int count);
+
+  /// Explains adaptive library grid density
+  ///
+  /// In en, this message translates to:
+  /// **'Narrow screens and larger text may use fewer columns to keep covers readable.'**
+  String get settingsLibraryGridColumnsHint;
+
+  /// No description provided for @libraryFolderEmptyPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'No books yet'**
+  String get libraryFolderEmptyPreview;
 }
 
 class _AppLocalizationsDelegate

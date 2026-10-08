@@ -3430,12 +3430,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Copertine per riga su telefoni';
 
   @override
-  String get settingsLibraryGridTwoColumns => '2 colonne';
-
-  @override
-  String get settingsLibraryGridThreeColumns => '3 colonne';
-
-  @override
   String get settingsLibraryGridShowDetailsTitle =>
       'Mostra titolo e avanzamento';
 
@@ -7936,9 +7930,74 @@ class AppLocalizationsIt extends AppLocalizations {
   String get activityCenterRefresh => 'Aggiorna';
 
   @override
+  String get libraryNewFolder => 'New group';
+
+  @override
+  String get libraryFolderName => 'Group name';
+
+  @override
+  String get libraryFolderNameHint => 'Give this bookshelf a name';
+
+  @override
+  String get libraryRenameFolder => 'Rename group';
+
+  @override
+  String get libraryDissolveFolder => 'Dissolve group';
+
+  @override
+  String get libraryDissolveFolderMessage =>
+      'Move books and subgroups up one level. Your books and reading data are kept.';
+
+  @override
+  String get libraryMoveToFolder => 'Move to group';
+
+  @override
+  String get libraryMoveHere => 'Move here';
+
+  @override
+  String get libraryBackToParent => 'Back up one level';
+
+  @override
+  String get libraryRootShelf => 'Main bookshelf';
+
+  @override
+  String get libraryFolderEmpty => 'This bookshelf is empty';
+
+  @override
+  String libraryFolderBooks(int count) {
+    return '$count books';
+  }
+
+  @override
+  String get libraryFolderCreateHint =>
+      'Selected books will move into this bookshelf.';
+
+  @override
+  String get libraryFolderOperationFailed =>
+      'Could not update the group. Please try again.';
+
+  @override
+  String get libraryFolderNameRequired => 'Enter a group name';
+
+  @override
+  String get libraryFolderNameTooLong => 'Use 60 characters or fewer';
+
+  @override
   String get accountBindEmailTitle => 'Verifica la tua email';
 
   @override
   String get accountBindEmailHint =>
       'Verifica la tua email per collegare questo metodo di accesso al tuo account Origo. Usa l’email del tuo account esistente.';
+
+  @override
+  String settingsLibraryGridColumnCount(int count) {
+    return '$count columns';
+  }
+
+  @override
+  String get settingsLibraryGridColumnsHint =>
+      'Narrow screens and larger text may use fewer columns to keep covers readable.';
+
+  @override
+  String get libraryFolderEmptyPreview => 'No books yet';
 }

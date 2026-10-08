@@ -34,6 +34,10 @@ class MemberAccountException implements Exception {
   final String? code;
   final int? retryAfter;
 
+  static const legalConsentRequiredCode = 'legal_consent_required';
+
+  bool get isLegalConsentRequired => code == legalConsentRequiredCode;
+
   bool get isTransientNetworkFailure =>
       code == 'network_timeout' || code == 'network_unavailable';
 
@@ -53,7 +57,9 @@ class MemberAccountApiClient {
     OfflineReaderLicenseStore? offlineReaderLicenseStore,
     ReaderInstallationCredentialStore? readerCredentialStore,
     Uri? baseUri,
+    bool? networkAllowed,
   }) : baseUri = baseUri ?? Uri.parse('https://open.xxread.top'),
+       _networkAllowed = networkAllowed ?? true,
        _dio =
            dio ??
            Dio(
@@ -80,12 +86,37 @@ class MemberAccountApiClient {
   Future<MemberSession>? _refreshing;
   Future<void>? _tokenMutationBarrier;
   int _sessionIntentGeneration = 0;
+  bool _networkAllowed;
+  int _networkGeneration = 0;
   final StreamController<void> _sessionInvalidations =
       StreamController<void>.broadcast();
 
   /// Emits after the server explicitly rejects the refresh session and local
   /// credentials have been revoked. Transient network failures never emit.
   Stream<void> get sessionInvalidations => _sessionInvalidations.stream;
+
+  bool get networkAllowed => _networkAllowed;
+
+  void setNetworkAllowed(bool value) {
+    if (value == _networkAllowed) return;
+    _networkAllowed = value;
+    _networkGeneration++;
+  }
+
+  int _captureNetworkGeneration() {
+    final generation = _networkGeneration;
+    _checkNetworkAllowed(generation);
+    return generation;
+  }
+
+  void _checkNetworkAllowed(int generation) {
+    if (!_networkAllowed || generation != _networkGeneration) {
+      throw const MemberAccountException(
+        '请先同意最新协议',
+        code: MemberAccountException.legalConsentRequiredCode,
+      );
+    }
+  }
 
   /// Prevents an in-flight identity response from becoming the current
   /// session. This is synchronous so UI-level cancellation can win before a
@@ -109,7 +140,9 @@ class MemberAccountApiClient {
       );
 
   Future<MemberUser> currentUser() async {
+    final networkGeneration = _captureNetworkGeneration();
     final pending = await _tokenStore.readMfaPending();
+    _checkNetworkAllowed(networkGeneration);
     final json = await _jsonRequest(
       'GET',
       '$authRoot/me',
@@ -141,7 +174,9 @@ class MemberAccountApiClient {
   );
 
   Future<MemberSession> restoreSession() async {
+    final networkGeneration = _captureNetworkGeneration();
     final storedPending = await _tokenStore.readMfaPending();
+    _checkNetworkAllowed(networkGeneration);
     String? authorizationToken;
     final json = await _jsonRequest(
       'GET',
@@ -149,12 +184,16 @@ class MemberAccountApiClient {
       retryAuthentication: !storedPending,
       onAccessTokenUsed: (token) => authorizationToken = token,
     );
+    _checkNetworkAllowed(networkGeneration);
     final mfaRequired = json['mfa_required'] as bool? ?? false;
     late final String accessToken;
     late final String refreshToken;
     await _withTokenMutation(() async {
+      _checkNetworkAllowed(networkGeneration);
       final currentAccessToken = await _tokenStore.readAccessToken();
+      _checkNetworkAllowed(networkGeneration);
       final currentRefreshToken = await _tokenStore.readRefreshToken();
+      _checkNetworkAllowed(networkGeneration);
       if (authorizationToken == null ||
           currentAccessToken != authorizationToken) {
         throw const MemberAccountException(
@@ -176,8 +215,10 @@ class MemberAccountApiClient {
           refreshToken: refreshToken,
           mfaPending: mfaRequired,
         );
+        _checkNetworkAllowed(networkGeneration);
       }
     });
+    _checkNetworkAllowed(networkGeneration);
     return MemberSession(
       accessToken: accessToken,
       refreshToken: refreshToken,
@@ -618,9 +659,12 @@ class MemberAccountApiClient {
     ),
   );
 
-  Future<Map<String, String>> _readerHeaders() async => {
-    'X-Origo-Reader-Key': (await readerCredential()).value,
-  };
+  Future<Map<String, String>> _readerHeaders() async {
+    final networkGeneration = _captureNetworkGeneration();
+    final credential = await readerCredential();
+    _checkNetworkAllowed(networkGeneration);
+    return {'X-Origo-Reader-Key': credential.value};
+  }
 
   Future<MemberMembership> redeemMembership(
     String code, {
@@ -707,10 +751,13 @@ class MemberAccountApiClient {
   );
 
   Future<void> logout() async {
+    final networkGeneration = _captureNetworkGeneration();
     // Invalidate in-flight identity responses before the logout request yields.
     final intent = ++_sessionIntentGeneration;
+    var clearLocalSession = true;
     try {
       final token = await _tokenStore.readAccessToken();
+      _checkNetworkAllowed(networkGeneration);
       if (token != null && token.isNotEmpty) {
         await _request(
           'POST',
@@ -719,8 +766,13 @@ class MemberAccountApiClient {
           retryAuthentication: false,
         );
       }
+    } on MemberAccountException catch (error) {
+      if (error.isLegalConsentRequired) clearLocalSession = false;
+      rethrow;
     } finally {
-      await _clearLocalSession(notify: false, expectedSessionIntent: intent);
+      if (clearLocalSession) {
+        await _clearLocalSession(notify: false, expectedSessionIntent: intent);
+      }
     }
   }
 
@@ -737,6 +789,7 @@ class MemberAccountApiClient {
   }
 
   Future<MemberSession> _performRefresh() async {
+    final networkGeneration = _captureNetworkGeneration();
     if (await _tokenStore.readMfaPending()) {
       throw const MemberAccountException(
         '请先完成双重验证',
@@ -744,7 +797,9 @@ class MemberAccountApiClient {
         code: 'mfa_required',
       );
     }
+    _checkNetworkAllowed(networkGeneration);
     final refreshToken = await _tokenStore.readRefreshToken();
+    _checkNetworkAllowed(networkGeneration);
     if (refreshToken == null || refreshToken.isEmpty) {
       throw const MemberAccountException('请先登录', statusCode: 401);
     }
@@ -756,11 +811,13 @@ class MemberAccountApiClient {
         expectedRefreshToken: refreshToken,
         establishesSession: false,
       );
+      _checkNetworkAllowed(networkGeneration);
       await _offlineReaderLicenseStore.rebind(
         oldBinding: oldBinding,
         newBinding: _sessionBinding(session.refreshToken),
         expectedUserId: session.user.id,
       );
+      _checkNetworkAllowed(networkGeneration);
       return session;
     } on MemberAccountException catch (error) {
       // Only discard the stored session when the server actually rejects it.
@@ -811,6 +868,7 @@ class MemberAccountApiClient {
     String? expectedRefreshToken,
     bool establishesSession = true,
   }) async {
+    final networkGeneration = _captureNetworkGeneration();
     final sessionIntent = establishesSession
         ? ++_sessionIntentGeneration
         : null;
@@ -828,6 +886,7 @@ class MemberAccountApiClient {
           ? (token) => authorizationToken = token
           : null,
     );
+    _checkNetworkAllowed(networkGeneration);
     if (json['email_binding_required'] == true) {
       if (sessionIntent != _sessionIntentGeneration) {
         throw const MemberAccountException(
@@ -850,6 +909,7 @@ class MemberAccountApiClient {
     final session = MemberSession.fromJson(json, baseUri: baseUri);
     try {
       await _withTokenMutation(() async {
+        _checkNetworkAllowed(networkGeneration);
         if (sessionIntent != null &&
             sessionIntent != _sessionIntentGeneration) {
           throw const MemberAccountException(
@@ -859,7 +919,9 @@ class MemberAccountApiClient {
         }
         if (guardStoredSession) {
           final currentAccessToken = await _tokenStore.readAccessToken();
+          _checkNetworkAllowed(networkGeneration);
           final currentRefreshToken = await _tokenStore.readRefreshToken();
+          _checkNetworkAllowed(networkGeneration);
           final authorizationRequired = authenticated || accessToken != null;
           final authorizationChanged =
               authorizationRequired &&
@@ -880,12 +942,14 @@ class MemberAccountApiClient {
           refreshToken: session.refreshToken,
           mfaPending: session.mfaRequired,
         );
+        _checkNetworkAllowed(networkGeneration);
       });
     } on MemberAccountException {
       rethrow;
     } catch (_) {
       throw const MemberAccountException('无法安全保存登录状态，请检查系统安全存储设置');
     }
+    _checkNetworkAllowed(networkGeneration);
     return session;
   }
 
@@ -941,16 +1005,19 @@ class MemberAccountApiClient {
     Map<String, String>? headers,
     void Function(String?)? onAccessTokenUsed,
   }) async {
+    final networkGeneration = _captureNetworkGeneration();
     var token = accessToken;
     if (authenticated && token == null) {
       token = await _tokenStore.readAccessToken();
+      _checkNetworkAllowed(networkGeneration);
       if (token == null || token.isEmpty) {
         throw const MemberAccountException('请先登录', statusCode: 401);
       }
     }
+    _checkNetworkAllowed(networkGeneration);
     onAccessTokenUsed?.call(token);
     try {
-      return await _dio.request<dynamic>(
+      final response = await _dio.request<dynamic>(
         baseUri.resolve(path).toString(),
         data: data,
         options: Options(
@@ -961,11 +1028,15 @@ class MemberAccountApiClient {
           },
         ),
       );
+      _checkNetworkAllowed(networkGeneration);
+      return response;
     } on DioException catch (error) {
+      _checkNetworkAllowed(networkGeneration);
       if (authenticated &&
           retryAuthentication &&
           error.response?.statusCode == 401) {
         final refreshed = await refreshSession();
+        _checkNetworkAllowed(networkGeneration);
         return _request(
           method,
           path,

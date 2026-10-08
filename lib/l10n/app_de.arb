@@ -952,8 +952,6 @@
   "settingsLibraryLayoutCard": "Karten",
   "settingsLibraryLayoutGrid": "Raster",
   "settingsLibraryGridColumnsTitle": "Cover pro Zeile auf Smartphones",
-  "settingsLibraryGridTwoColumns": "2 Spalten",
-  "settingsLibraryGridThreeColumns": "3 Spalten",
   "settingsLibraryGridShowDetailsTitle": "Titel und Fortschritt anzeigen",
   "settingsLibraryGridShowDetailsSubtitle": "Fügt unter jedem Cover eine Titelzeile und eine schlanke Fortschrittsleiste hinzu",
   "settingsLibraryOpenAnimationTitle": "Animation beim Buchöffnen",

@@ -9,6 +9,7 @@ extension _LibraryPageChrome on _LibraryPageState {
     required bool useRailNavigation,
   }) {
     final books = _visibleBooks;
+    final folders = _visibleFolders;
     final libraryLayoutMode = context
         .select<AppSettingsNotifier, LibraryLayoutMode>(
           (settings) => settings.libraryLayoutMode,
@@ -52,18 +53,29 @@ extension _LibraryPageChrome on _LibraryPageState {
                       : mobileChrome.topBarHeight,
                   color: Theme.of(context).colorScheme.primary,
                   backgroundColor: palette.cardStrong,
-                  child: _books.isEmpty
+                  child: _books.isEmpty && _folders.isEmpty
                       ? _buildRefreshableState(_buildEmptyLibrary())
-                      : books.isEmpty
-                      ? _buildRefreshableState(_buildNoSearchResult())
+                      : books.isEmpty && folders.isEmpty
+                      ? _buildRefreshableState(
+                          _currentFolderId != null &&
+                                  _searchQuery.trim().isEmpty &&
+                                  _selectedFilter == _LibraryFilter.all
+                              ? _buildEmptyFolder()
+                              : _buildNoSearchResult(),
+                        )
                       : libraryLayoutMode == LibraryLayoutMode.grid
                       ? _buildCoverOnlyGrid(
                           books,
+                          folders: folders,
                           topPadding: listTopPadding,
                           mobileColumns: libraryGridColumns,
                           showDetails: libraryGridShowDetails,
                         )
-                      : _buildBooksGrid(books, topPadding: listTopPadding),
+                      : _buildBooksGrid(
+                          books,
+                          folders: folders,
+                          topPadding: listTopPadding,
+                        ),
                 ),
         ),
       ],
@@ -76,7 +88,13 @@ extension _LibraryPageChrome on _LibraryPageState {
               ? LayoutHelper.tabletContentMaxWidth
               : double.infinity,
         ),
-        child: content,
+        child: LibraryShelfTransition(
+          key: _shelfTransitionKey,
+          directoryId: _currentFolderId,
+          opening: _folderMotionOpening,
+          originKey: _folderMotionOriginKey,
+          child: content,
+        ),
       ),
     );
     return Container(
@@ -84,8 +102,21 @@ extension _LibraryPageChrome on _LibraryPageState {
         gradient: PageStyleHelper.backgroundGradient(context),
       ),
       child: useRailNavigation
-          ? SafeArea(bottom: false, child: centeredContent)
-          : centeredContent,
+          ? SafeArea(
+              bottom: false,
+              child: Stack(
+                children: [
+                  centeredContent,
+                  _buildParentButton(useRailNavigation: true),
+                ],
+              ),
+            )
+          : Stack(
+              children: [
+                centeredContent,
+                _buildParentButton(useRailNavigation: false),
+              ],
+            ),
     );
   }
 
@@ -114,10 +145,12 @@ extension _LibraryPageChrome on _LibraryPageState {
     final query = _searchQuery.trim().toLowerCase();
     if (_visibleBooksCacheRevision == _booksRevision &&
         _visibleBooksCacheFilter == _selectedFilter &&
+        _visibleBooksCacheFolderId == _currentFolderId &&
         _visibleBooksCacheQuery == query) {
       return _visibleBooksCache;
     }
-    final filteredByStatus = _books
+    final filteredByStatus = _shelf
+        .booksIn(_currentFolderId)
         .where((book) => _matchesSelectedFilter(book))
         .toList();
     final result = query.isEmpty
@@ -128,6 +161,7 @@ extension _LibraryPageChrome on _LibraryPageState {
           }).toList();
     _visibleBooksCacheRevision = _booksRevision;
     _visibleBooksCacheFilter = _selectedFilter;
+    _visibleBooksCacheFolderId = _currentFolderId;
     _visibleBooksCacheQuery = query;
     _visibleBooksCache = result;
     return result;
@@ -173,7 +207,7 @@ extension _LibraryPageChrome on _LibraryPageState {
                   ? context.l10n.librarySelectedBooks(
                       _selection.selectedIds.length,
                     )
-                  : context.l10n.library,
+                  : _shelfTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -227,17 +261,7 @@ extension _LibraryPageChrome on _LibraryPageState {
               icon: Icons.add_rounded,
               foregroundColor: palette.iconMuted,
               color: _isMaterial3Style ? scheme.surfaceContainer : palette.card,
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ImportBookPage(),
-                  ),
-                );
-                if (result == true && mounted) {
-                  _loadBooks();
-                }
-              },
+              onPressed: _showAddMenu,
             ),
           ],
         ],
@@ -246,7 +270,6 @@ extension _LibraryPageChrome on _LibraryPageState {
   }
 
   Widget _buildRailSelectionBottomBar() {
-    final scheme = Theme.of(context).colorScheme;
     return Positioned(
       left: 24,
       right: 24,
@@ -254,19 +277,13 @@ extension _LibraryPageChrome on _LibraryPageState {
       child: SafeArea(
         top: false,
         child: Center(
-          child: FilledButton.icon(
-            key: const ValueKey('library-delete-selected'),
-            onPressed: _selection.selectedIds.isEmpty
-                ? null
-                : _confirmDeleteSelectedBooks,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(260, 52),
-              backgroundColor: scheme.error,
-              foregroundColor: scheme.onError,
-            ),
-            icon: const Icon(Icons.delete_outline_rounded),
-            label: Text(
-              context.l10n.libraryDeleteSelected(_selection.selectedIds.length),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: LibrarySelectionActions(
+              selectedCount: _selection.selectedIds.length,
+              onCreateFolder: () => unawaited(_createFolderFromSelected()),
+              onMove: () => unawaited(_moveSelectedBooks()),
+              onDelete: () => unawaited(_confirmDeleteSelectedBooks()),
             ),
           ),
         ),
@@ -410,6 +427,11 @@ extension _LibraryPageChrome on _LibraryPageState {
             icon: const Icon(Icons.add),
             label: Text(context.l10n.importBooks),
           ),
+          TextButton.icon(
+            onPressed: () => _createFolder(),
+            icon: const Icon(Icons.create_new_folder_outlined),
+            label: Text(context.l10n.libraryNewFolder),
+          ),
         ],
       ),
     );
@@ -434,10 +456,33 @@ extension _LibraryPageChrome on _LibraryPageState {
     );
   }
 
+  Widget _buildEmptyFolder() => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.folder_open_outlined,
+          size: 48,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 16),
+        Text(context.l10n.libraryFolderEmpty, textAlign: TextAlign.center),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          key: const ValueKey('library-create-empty-folder'),
+          onPressed: () => _createFolder(),
+          icon: const Icon(Icons.create_new_folder_outlined),
+          label: Text(context.l10n.libraryNewFolder),
+        ),
+      ],
+    ),
+  );
+
   Widget _buildRefreshableState(Widget state) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return ListView(
+          controller: _shelfScrollController,
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),

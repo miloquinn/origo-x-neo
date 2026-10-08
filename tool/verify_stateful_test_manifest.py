@@ -32,6 +32,36 @@ class DynamicContract:
 
 
 DYNAMIC_CONTRACTS = {
+    "test/native_reader_txt_title_page_test.dart": (
+        DynamicContract(
+            "continuous TXT chapters leave a body-scaled gap "
+            "(fontSize=$fontSize, lineHeight=$lineHeight)",
+            manifest_titles=(
+                "continuous TXT chapters leave a body-scaled gap (fontSize=19.0, lineHeight=1.75)",
+                "continuous TXT chapters leave a body-scaled gap (fontSize=28.0, lineHeight=2.0)",
+            ),
+        ),
+        DynamicContract(
+            "vertical TXT TOC jump aligns the chapter start "
+            "(titlePage=$chapterTitlePageEnabled, scrollByChapter=$scrollByChapter)",
+            workflow_fragments=(
+                "for chapter_title_page_enabled in true false; do",
+                "for scroll_by_chapter in true false; do",
+                "vertical TXT TOC jump aligns the chapter start "
+                "(titlePage=$chapter_title_page_enabled, "
+                "scrollByChapter=$scroll_by_chapter)",
+            ),
+        ),
+    ),
+    "test/native_reader_epub_chapter_transition_test.dart": (
+        DynamicContract(
+            "EPUB TOC far-back jump mounts the cold target body on ${viewport.name}",
+            manifest_titles=(
+                "EPUB TOC far-back jump mounts the cold target body on phone",
+                "EPUB TOC far-back jump mounts the cold target body on tablet",
+            ),
+        ),
+    ),
     "test/native_reader_initial_progress_test.dart": (
         DynamicContract(
             "EPUB exit captures the final active scroll frame "
@@ -54,6 +84,24 @@ DYNAMIC_CONTRACTS = {
         ),
     ),
     "test/book_source_reader_page_test.dart": (
+        DynamicContract(
+            "continuous source chapters leave a body-scaled gap "
+            "(fontSize=$fontSize, lineHeight=$lineHeight)",
+            manifest_titles=(
+                "continuous source chapters leave a body-scaled gap (fontSize=19.0, lineHeight=1.75)",
+                "continuous source chapters leave a body-scaled gap (fontSize=28.0, lineHeight=2.0)",
+            ),
+        ),
+        DynamicContract(
+            "vertical source catalog jump aligns the chapter beginning "
+            "(scrollByChapter=$scrollByChapter, titlePage=$titlePage)",
+            workflow_fragments=(
+                "for scroll_by_chapter in false true; do",
+                "for title_page in false true; do",
+                "vertical source catalog jump aligns the chapter beginning "
+                "(scrollByChapter=$scroll_by_chapter, titlePage=$title_page)",
+            ),
+        ),
         DynamicContract(
             "vertical source reopens at the saved text anchor "
             "(scrollByChapter=$scrollByChapter, titlePage=$titlePage)",

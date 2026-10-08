@@ -6,6 +6,17 @@ class LibraryGridBookDetails extends StatelessWidget {
 
   static const double height = 40;
 
+  static double heightFor(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    // Keep the original 40px at normal size, and let accessible title and
+    // progress text enlarge without taking space from the book cover.
+    return (14 +
+            scaler.scale(13) * 1.15 +
+            scaler.scale(10).clamp(3.0, double.infinity))
+        .ceilToDouble()
+        .clamp(height, double.infinity);
+  }
+
   final Book book;
 
   @override
@@ -15,7 +26,7 @@ class LibraryGridBookDetails extends StatelessWidget {
     final percent = (progress * 100).round();
 
     return SizedBox(
-      height: height,
+      height: heightFor(context),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(2, 8, 2, 2),
         child: Column(

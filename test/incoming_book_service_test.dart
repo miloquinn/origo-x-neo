@@ -135,6 +135,86 @@ void main() {
   );
 
   test(
+    'pauses an imported request before routing and resumes it without reimport',
+    () async {
+      final request = await _request(
+        sandbox,
+        'paused-import',
+        'paused.txt',
+        'paused',
+      );
+      final bridge = _FakeBridge(initial: [request]);
+      final importer = _ControlledImporter();
+      final opened = <String>[];
+      final service = IncomingBookService(
+        bridge: bridge,
+        materializer: IncomingBookMaterializer(),
+        importer: importer,
+        openBook: (book) async => opened.add(book.title),
+        openImportQueue: (_) async {},
+      );
+
+      await service.start();
+      final initialDrain = service.setReady(true);
+      await importer.started.future;
+      await service.setReady(false).timeout(const Duration(seconds: 1));
+      importer.release.complete();
+      await importer.finished.future;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(importer.calls, 1);
+      expect(opened, isEmpty);
+      expect(bridge.completed, isEmpty);
+
+      await service.setReady(true);
+      await initialDrain;
+      expect(importer.calls, 1);
+      expect(opened, ['paused']);
+      expect(bridge.completed, ['paused-import']);
+      await service.dispose();
+    },
+  );
+
+  test('dispose releases a request paused before routing', () async {
+    final request = await _request(
+      sandbox,
+      'dispose-paused',
+      'dispose.txt',
+      'dispose',
+    );
+    final bridge = _FakeBridge(initial: [request]);
+    final importer = _ControlledImporter();
+    final failures = <String>[];
+    final opened = <String>[];
+    final service = IncomingBookService(
+      bridge: bridge,
+      materializer: IncomingBookMaterializer(),
+      importer: importer,
+      openBook: (book) async => opened.add(book.title),
+      openImportQueue: (_) async {},
+      onFailure: (failure) => failures.add(failure.code),
+    );
+
+    await service.start();
+    final initialDrain = service.setReady(true);
+    await importer.started.future;
+    await service.setReady(false);
+    importer.release.complete();
+    await importer.finished.future;
+    await Future<void>.delayed(Duration.zero);
+
+    await Future.wait([
+      service.dispose(),
+      initialDrain,
+    ]).timeout(const Duration(seconds: 1));
+    expect(importer.calls, 1);
+    expect(opened, isEmpty);
+    expect(failures, isEmpty);
+    expect(bridge.completed, isEmpty);
+    expect(bridge.disposed, isTrue);
+  });
+
+  test(
     'rejects unsupported and content-mismatched files with stable codes',
     () async {
       final badExtension = await _request(sandbox, 'bad', 'bad.exe', 'data');
@@ -454,6 +534,8 @@ class _FakeBridge implements IncomingBookRequestSource {
   final List<IncomingBookRequest> initial;
   final StreamController<IncomingBookRequest> controller =
       StreamController<IncomingBookRequest>.broadcast();
+  final List<String> completed = [];
+  bool disposed = false;
 
   @override
   Stream<IncomingBookRequest> get requests => controller.stream;
@@ -467,10 +549,15 @@ class _FakeBridge implements IncomingBookRequestSource {
   Future<void> completeRequest(
     String requestId, {
     required bool deleteFiles,
-  }) async {}
+  }) async {
+    completed.add(requestId);
+  }
 
   @override
-  Future<void> dispose() => controller.close();
+  Future<void> dispose() async {
+    disposed = true;
+    await controller.close();
+  }
 }
 
 class _FakeImporter implements BookFileImporter {
@@ -489,5 +576,34 @@ class _FakeImporter implements BookFileImporter {
         format: source.extension,
       ),
     );
+  }
+}
+
+class _ControlledImporter implements BookFileImporter {
+  final Completer<void> started = Completer<void>();
+  final Completer<void> release = Completer<void>();
+  final Completer<void> finished = Completer<void>();
+  int calls = 0;
+
+  @override
+  Future<BookImportResult> importFile(
+    BookImportSource source, {
+    BookImportProgress? onProgress,
+  }) async {
+    calls++;
+    started.complete();
+    await release.future;
+    final result = BookImportResult(
+      source: source,
+      outcome: BookImportOutcome.imported,
+      book: Book(
+        id: source.displayName.hashCode,
+        title: source.displayName.replaceAll(RegExp(r'\.[^.]+$'), ''),
+        filePath: source.localPath!,
+        format: source.extension,
+      ),
+    );
+    finished.complete();
+    return result;
   }
 }

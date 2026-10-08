@@ -104,6 +104,473 @@ void main() {
     return file;
   }
 
+  const folderA = '10000000-0000-4000-8000-000000000001';
+  const folderB = '10000000-0000-4000-8000-000000000002';
+  const folderC = '10000000-0000-4000-8000-000000000003';
+  const folderD = '10000000-0000-7000-8000-000000000004';
+
+  Future<void> enableFolders() async {
+    await db.execute(
+      'CREATE TABLE shelf_folders(id TEXT PRIMARY KEY, name TEXT NOT NULL, parent_id TEXT REFERENCES shelf_folders(id) ON DELETE SET NULL, created_at INTEGER NOT NULL)',
+    );
+    await db.execute(
+      'ALTER TABLE books ADD COLUMN shelf_folder_id TEXT REFERENCES shelf_folders(id) ON DELETE SET NULL',
+    );
+    await db.setVersion(28);
+  }
+
+  Future<void> addFolder(String id, {String? parent, String name = '同名'}) =>
+      db.insert('shelf_folders', {
+        'id': id,
+        'name': name,
+        'parent_id': parent,
+        'created_at': 123,
+      });
+
+  Future<File> editManifest(
+    File zip,
+    void Function(Map<String, dynamic>) edit,
+  ) async {
+    final decoded = ZipDecoder().decodeBytes(await zip.readAsBytes());
+    final data =
+        jsonDecode(
+              utf8.decode(
+                decoded.findFile('backup.json')!.content as List<int>,
+              ),
+            )
+            as Map<String, dynamic>;
+    edit(data);
+    final updated = Archive();
+    for (final entry in decoded.files) {
+      if (entry.name != 'backup.json') updated.addFile(entry);
+    }
+    final manifest = utf8.encode(jsonEncode(data));
+    updated.addFile(ArchiveFile('backup.json', manifest.length, manifest));
+    final result = File('${documents.path}/edited.zip');
+    await result.writeAsBytes(ZipEncoder().encode(updated)!);
+    return result;
+  }
+
+  test(
+    'full restore retains nested and empty folders in parent order',
+    () async {
+      await enableFolders();
+      await addFolder(folderA);
+      await addFolder(folderB, parent: folderA);
+      await addFolder(folderC, parent: folderB);
+      await addFolder(folderD);
+      await db.update('books', {'shelf_folder_id': folderC});
+      final zip = await editManifest(await snapshot(), (data) {
+        data['tables']['shelf_folders'] =
+            (data['tables']['shelf_folders'] as List).reversed.toList();
+      });
+      await db.update('shelf_folders', {'name': 'changed'});
+      await db.update('books', {'shelf_folder_id': null});
+      final checked = await archive.validate(zip);
+      await archive.restore(checked);
+      expect(await db.query('shelf_folders'), hasLength(4));
+      expect(
+        (await db.query(
+          'shelf_folders',
+          where: 'id = ?',
+          whereArgs: [folderC],
+        )).single['parent_id'],
+        folderB,
+      );
+      expect(
+        (await db.query('shelf_folders')).every((row) => row['name'] == '同名'),
+        isTrue,
+      );
+      expect((await db.query('books')).single['shelf_folder_id'], folderC);
+      expect(await db.rawQuery('PRAGMA foreign_key_check'), isEmpty);
+      await checked.directory.delete(recursive: true);
+    },
+  );
+
+  test('valid Unicode folder names survive a backup round trip', () async {
+    await enableFolders();
+    final name = '😀' * 60;
+    await addFolder(folderA, name: name);
+    await db.update('books', {'shelf_folder_id': folderA});
+    final checked = await archive.validate(await snapshot());
+    await db.update('shelf_folders', {'name': 'changed'});
+    await archive.restore(checked);
+    expect((await db.query('shelf_folders')).single['name'], name);
+    expect((await db.query('books')).single['shelf_folder_id'], folderA);
+    await checked.directory.delete(recursive: true);
+  });
+
+  test('metadata-only backup retains folder graph and memberships', () async {
+    await enableFolders();
+    await addFolder(folderA);
+    await addFolder(folderB, parent: folderA);
+    await addFolder(folderC);
+    await db.update('books', {'shelf_folder_id': folderB});
+    final zip = File('${documents.path}/metadata-folders.zip');
+    await archive.create(zip, selection: const BackupSelection());
+    final checked = await archive.validate(zip);
+    expect(checked.data['files'], isEmpty);
+    expect(checked.data['tables']['shelf_folders'], hasLength(3));
+    await db.update('books', {'shelf_folder_id': null});
+    await archive.restore(checked);
+    expect((await db.query('books')).single['shelf_folder_id'], folderB);
+    expect((await db.query('books')).single['filePath'], 'books/book.txt');
+    await checked.directory.delete(recursive: true);
+  });
+
+  test(
+    'reading-unselected backup and restore leave folders unchanged',
+    () async {
+      await enableFolders();
+      await addFolder(folderA);
+      await db.update('books', {'shelf_folder_id': folderA});
+      final zip = File('${documents.path}/settings-folders.zip');
+      await archive.create(
+        zip,
+        selection: const BackupSelection(
+          reading: false,
+          statistics: false,
+          sources: false,
+        ),
+      );
+      final checked = await archive.validate(zip);
+      expect(checked.data['tables']['shelf_folders'], isEmpty);
+      await db.update('shelf_folders', {'name': 'keep local'});
+      await archive.restore(checked);
+      expect((await db.query('shelf_folders')).single['name'], 'keep local');
+      expect((await db.query('books')).single['shelf_folder_id'], folderA);
+      await checked.directory.delete(recursive: true);
+    },
+  );
+
+  test(
+    'selected restore remaps book IDs and keeps stable folder IDs',
+    () async {
+      await enableFolders();
+      await addFolder(folderA);
+      await addFolder(folderB, parent: folderA);
+      await db.update('books', {'shelf_folder_id': folderB});
+      final zip = File('${documents.path}/portable-folders.zip');
+      await archive.create(
+        zip,
+        selection: const BackupSelection(bookIds: {1}, statistics: false),
+      );
+      await db.delete('book_notes');
+      await db.delete('bookmarks');
+      await db.delete('books');
+      await db.delete('sync_local_state');
+      await db.update('shelf_folders', {'name': 'local folder'});
+      await db.insert('books', {
+        'id': 1,
+        'title': 'Other',
+        'filePath': 'books/other.txt',
+        'shelf_folder_id': folderA,
+      });
+      for (var count = 0; count < 2; count++) {
+        final checked = await archive.validate(zip);
+        await archive.restore(checked, selection: const RestoreSelection());
+        await checked.directory.delete(recursive: true);
+      }
+      expect(await db.query('books'), hasLength(2));
+      expect(await db.query('shelf_folders'), hasLength(2));
+      final restored = (await db.query('books', where: 'id != 1')).single;
+      expect(restored['shelf_folder_id'], folderB);
+      expect((await db.query('book_notes')).single['book_id'], restored['id']);
+      expect(
+        (await db.query('books', where: 'id = 1')).single['shelf_folder_id'],
+        folderA,
+      );
+      expect(
+        (await db.query(
+          'shelf_folders',
+        )).every((row) => row['name'] == 'local folder'),
+        isTrue,
+      );
+    },
+  );
+
+  test('folder overwrite preserves unrelated book memberships', () async {
+    await enableFolders();
+    await addFolder(folderA, name: 'archived parent');
+    await addFolder(folderB, parent: folderA);
+    await addFolder(folderC);
+    await addFolder(folderD, parent: folderB);
+    await db.update('books', {'shelf_folder_id': folderB});
+    final zip = File('${documents.path}/folder-overwrite.zip');
+    await archive.create(zip, selection: const BackupSelection());
+    await db.update(
+      'shelf_folders',
+      {'name': 'local parent', 'parent_id': folderC},
+      where: 'id = ?',
+      whereArgs: [folderA],
+    );
+    await db.update(
+      'shelf_folders',
+      {'parent_id': null},
+      where: 'id = ?',
+      whereArgs: [folderB],
+    );
+    await db.delete('shelf_folders', where: 'id = ?', whereArgs: [folderD]);
+    await db.update('books', {'shelf_folder_id': null});
+    await db.insert('books', {
+      'id': 2,
+      'title': 'Unrelated',
+      'filePath': 'books/other.txt',
+      'shelf_folder_id': folderA,
+    });
+    final first = await archive.validate(zip);
+    await archive.restore(first, selection: const RestoreSelection());
+    expect(
+      (await db.query(
+        'shelf_folders',
+        where: 'id = ?',
+        whereArgs: [folderA],
+      )).single['name'],
+      'local parent',
+    );
+    expect(
+      (await db.query('books', where: 'id = 1')).single['shelf_folder_id'],
+      isNull,
+    );
+    expect(await db.query('shelf_folders'), hasLength(4));
+    await first.directory.delete(recursive: true);
+    final second = await archive.validate(zip);
+    await archive.restore(
+      second,
+      selection: const RestoreSelection(
+        files: false,
+        statistics: false,
+        sources: false,
+        settings: false,
+        overwrite: true,
+      ),
+    );
+    final parent = (await db.query(
+      'shelf_folders',
+      where: 'id = ?',
+      whereArgs: [folderA],
+    )).single;
+    expect(parent['name'], 'archived parent');
+    expect(parent['parent_id'], isNull);
+    expect(
+      (await db.query(
+        'shelf_folders',
+        where: 'id = ?',
+        whereArgs: [folderB],
+      )).single['parent_id'],
+      folderA,
+    );
+    expect(
+      (await db.query('books', where: 'id = 1')).single['shelf_folder_id'],
+      folderB,
+    );
+    expect(
+      (await db.query('books', where: 'id = 2')).single['shelf_folder_id'],
+      folderA,
+    );
+    await second.directory.delete(recursive: true);
+  });
+
+  test(
+    'explicit null membership clears a folder on selected overwrite',
+    () async {
+      await enableFolders();
+      await addFolder(folderA);
+      await db.update('books', {'shelf_folder_id': folderA});
+      final zip = File('${documents.path}/root-membership.zip');
+      await archive.create(zip, selection: const BackupSelection());
+      final edited = await editManifest(zip, (data) {
+        (data['tables']['books'] as List).single['shelf_folder_id'] = null;
+      });
+      final checked = await archive.validate(edited);
+      await archive.restore(
+        checked,
+        selection: const RestoreSelection(overwrite: true),
+      );
+      expect((await db.query('books')).single['shelf_folder_id'], isNull);
+      await checked.directory.delete(recursive: true);
+    },
+  );
+
+  for (final schema in [25, 26, 27]) {
+    for (final version in [1, 2]) {
+      test(
+        'legacy v$version schema $schema preserves missing membership',
+        () async {
+          await db.setVersion(schema);
+          final zip = File('${documents.path}/legacy.zip');
+          await archive.create(
+            zip,
+            selection: version == 2 ? const BackupSelection() : null,
+          );
+          await enableFolders();
+          await addFolder(folderA);
+          await db.update('books', {
+            'shelf_folder_id': folderA,
+            'currentPage': 88,
+          });
+          final checked = await archive.validate(zip);
+          expect(checked.data['tables']['shelf_folders'], isEmpty);
+          expect(
+            (checked.data['tables']['books'] as List).single.containsKey(
+              'shelf_folder_id',
+            ),
+            isFalse,
+          );
+          // v1 fixtures already carry the same stable identity as the local book.
+          await archive.restore(
+            checked,
+            selection: const RestoreSelection(
+              files: false,
+              statistics: false,
+              sources: false,
+              settings: false,
+              overwrite: true,
+            ),
+          );
+          final book = (await db.query('books')).single;
+          expect(book['shelf_folder_id'], folderA);
+          expect(book['currentPage'], 4);
+          await checked.directory.delete(recursive: true);
+        },
+      );
+    }
+  }
+
+  test(
+    'legacy full restore creates root books and removes local folders',
+    () async {
+      final zip = await snapshot();
+      await enableFolders();
+      await addFolder(folderA);
+      await db.update('books', {'shelf_folder_id': folderA});
+      final checked = await archive.validate(zip);
+      await archive.restore(checked);
+      expect(await db.query('shelf_folders'), isEmpty);
+      expect((await db.query('books')).single['shelf_folder_id'], isNull);
+      await checked.directory.delete(recursive: true);
+    },
+  );
+
+  test('legacy selected restore creates new books at root', () async {
+    final zip = File('${documents.path}/legacy-new-book.zip');
+    await archive.create(zip, selection: const BackupSelection());
+    await enableFolders();
+    await addFolder(folderA);
+    await db.delete('book_notes');
+    await db.delete('bookmarks');
+    await db.delete('books');
+    await db.delete('sync_local_state');
+    await db.insert('books', {
+      'id': 1,
+      'title': 'Unrelated',
+      'filePath': 'books/other.txt',
+      'shelf_folder_id': folderA,
+    });
+    final checked = await archive.validate(zip);
+    await archive.restore(checked, selection: const RestoreSelection());
+    expect(
+      (await db.query('books', where: 'id != 1')).single['shelf_folder_id'],
+      isNull,
+    );
+    expect(
+      (await db.query('books', where: 'id = 1')).single['shelf_folder_id'],
+      folderA,
+    );
+    await checked.directory.delete(recursive: true);
+  });
+
+  test(
+    'invalid folder archives are rejected without local mutations',
+    () async {
+      await enableFolders();
+      await addFolder(folderA);
+      await addFolder(folderB, parent: folderA);
+      await db.update('books', {'shelf_folder_id': folderB});
+      final zip = await snapshot();
+      final cases = <String, void Function(Map<String, dynamic>)>{
+        'duplicate IDs': (data) {
+          final rows = data['tables']['shelf_folders'] as List;
+          rows.add(Map<String, dynamic>.from(rows.first as Map));
+        },
+        'invalid UUID': (data) =>
+            data['tables']['shelf_folders'][0]['id'] = 'bad',
+        'blank name': (data) =>
+            data['tables']['shelf_folders'][0]['name'] = ' ',
+        'invalid timestamp': (data) =>
+            data['tables']['shelf_folders'][0]['created_at'] = 1.5,
+        'missing parent': (data) =>
+            data['tables']['shelf_folders'][0]['parent_id'] = folderC,
+        'self parent': (data) =>
+            data['tables']['shelf_folders'][0]['parent_id'] = folderA,
+        'cycle': (data) =>
+            data['tables']['shelf_folders'][0]['parent_id'] = folderB,
+        'dangling membership': (data) =>
+            data['tables']['books'][0]['shelf_folder_id'] = folderC,
+        'unknown column': (data) =>
+            data['tables']['shelf_folders'][0]['extra'] = 'bad',
+        'missing folder table': (data) =>
+            (data['tables'] as Map).remove('shelf_folders'),
+        'invalid folder table': (data) => data['tables']['shelf_folders'] = {},
+        'future schema': (data) => data['schema'] = 29,
+        'unknown legacy schema': (data) => data['schema'] = 24,
+      };
+      for (final entry in cases.entries) {
+        final edited = await editManifest(zip, entry.value);
+        await expectLater(
+          archive.validate(edited),
+          throwsA(isA<FormatException>()),
+          reason: entry.key,
+        );
+      }
+      expect(await db.query('shelf_folders'), hasLength(2));
+      expect((await db.query('books')).single['shelf_folder_id'], folderB);
+    },
+  );
+
+  test('selected restore rejects a cyclic merged local hierarchy', () async {
+    await enableFolders();
+    await addFolder(folderA);
+    await addFolder(folderB, parent: folderA);
+    final zip = File('${documents.path}/merged-cycle.zip');
+    await archive.create(zip, selection: const BackupSelection());
+    final checked = await archive.validate(zip);
+    await db.update(
+      'shelf_folders',
+      {'parent_id': folderB},
+      where: 'id = ?',
+      whereArgs: [folderA],
+    );
+    await db.update('books', {'currentPage': 88});
+    await expectLater(
+      archive.restore(checked, selection: const RestoreSelection()),
+      throwsA(isA<FormatException>()),
+    );
+    expect((await db.query('books')).single['currentPage'], 88);
+    expect(prefs.getDouble('reader_font_size'), 22);
+    await checked.directory.delete(recursive: true);
+  });
+
+  test(
+    'failed full restore rolls back folder metadata and memberships',
+    () async {
+      await enableFolders();
+      await addFolder(folderA);
+      await db.update('books', {'shelf_folder_id': folderA});
+      final checked = await archive.validate(await snapshot());
+      (checked.data['tables']['book_notes'] as List).first['book_id'] = 999;
+      await db.update('shelf_folders', {'name': 'keep local'});
+      await db.update('books', {'shelf_folder_id': null, 'currentPage': 88});
+      await expectLater(archive.restore(checked), throwsA(anything));
+      expect((await db.query('shelf_folders')).single['name'], 'keep local');
+      expect((await db.query('books')).single['shelf_folder_id'], isNull);
+      expect((await db.query('books')).single['currentPage'], 88);
+      expect(prefs.getDouble('reader_font_size'), 22);
+      expect(await db.rawQuery('PRAGMA foreign_key_check'), isEmpty);
+      await checked.directory.delete(recursive: true);
+    },
+  );
+
   test('fast packing streams progress and omits database caches', () async {
     await db.execute('ALTER TABLE books ADD COLUMN cached_content TEXT');
     await db.update('books', {'cached_content': 'x' * (1024 * 1024)});

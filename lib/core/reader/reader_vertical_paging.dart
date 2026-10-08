@@ -4,6 +4,15 @@ import 'package:flutter/foundation.dart';
 
 import 'reader_safe_area.dart';
 
+/// Separates continuous chapters by one and a half body lines.
+///
+/// Apply at the previous chapter's trailing edge, outside the text cells, so
+/// chapter-start jumps and canonical body offsets retain their alignment.
+double readerContinuousChapterSpacing({
+  required double fontSize,
+  required double lineHeight,
+}) => fontSize * lineHeight * 1.5;
+
 /// Fixed viewport chrome used by vertical paging.
 ///
 /// The chapter label and page status belong to the viewport rather than to an

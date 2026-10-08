@@ -952,8 +952,6 @@
   "settingsLibraryLayoutCard": "Tarjetas",
   "settingsLibraryLayoutGrid": "Cuadrícula",
   "settingsLibraryGridColumnsTitle": "Portadas por fila en teléfonos",
-  "settingsLibraryGridTwoColumns": "2 columnas",
-  "settingsLibraryGridThreeColumns": "3 columnas",
   "settingsLibraryGridShowDetailsTitle": "Mostrar título y progreso",
   "settingsLibraryGridShowDetailsSubtitle": "Añade una línea de título y una barra compacta de progreso bajo cada portada",
   "settingsLibraryOpenAnimationTitle": "Animación al abrir libros",

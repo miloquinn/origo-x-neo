@@ -72,31 +72,33 @@ class LibraryLayoutSettingsPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: SegmentedButton<int>(
-                        key: const ValueKey('settings-library-grid-columns'),
-                        showSelectedIcon: false,
-                        expandedInsets: EdgeInsets.zero,
-                        segments: [
-                          ButtonSegment(
-                            value: 2,
-                            icon: const Icon(Icons.view_column_outlined),
-                            label: Text(l10n.settingsLibraryGridTwoColumns),
+                    Wrap(
+                      key: const ValueKey('settings-library-grid-columns'),
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final columns in const [2, 3, 4, 5])
+                          ChoiceChip(
+                            key: ValueKey(
+                              'settings-library-grid-columns-$columns',
+                            ),
+                            showCheckmark: false,
+                            label: Text(
+                              l10n.settingsLibraryGridColumnCount(columns),
+                            ),
+                            selected: settings.libraryGridColumns == columns,
+                            onSelected: (_) => unawaited(
+                              settings.setLibraryGridColumns(columns),
+                            ),
                           ),
-                          ButtonSegment(
-                            value: 3,
-                            icon: const Icon(Icons.view_week_outlined),
-                            label: Text(l10n.settingsLibraryGridThreeColumns),
-                          ),
-                        ],
-                        selected: {settings.libraryGridColumns},
-                        onSelectionChanged: (selection) {
-                          if (selection.isEmpty) return;
-                          unawaited(
-                            settings.setLibraryGridColumns(selection.first),
-                          );
-                        },
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.settingsLibraryGridColumnsHint,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.35,
                       ),
                     ),
                     const SizedBox(height: 8),

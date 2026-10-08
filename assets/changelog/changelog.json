@@ -3,6 +3,76 @@
     "entries": [
         {
             "version": "2.7.3",
+            "buildNumber": "261008005",
+            "notes": {
+                "zh": [
+                    "书架分组卡片横向展示多张封面，支持滑动查看，并保留点击进入分组的操作。",
+                    "手机书库网格新增 4、5 列选择，与原有 2、3 列一起保存；根据可用宽度和界面字号限制实际列数。",
+                    "普通书籍封面保持 2:3 比例，大字号下为分组文字留出高度，避免封面被拉长。",
+                    "延续共享搜索框、玻璃控件与书架展开和返回动画，改善卡片、网格及窄屏下的排版。"
+                ],
+                "en": [
+                    "Shelf group cards show a horizontal strip of covers. Swipe to browse covers and tap to open the group.",
+                    "Add four- and five-column choices beside the existing two and three columns. The actual column count adapts to available width and interface text size.",
+                    "Keep book covers at a 2:3 aspect ratio while reserving room for group labels at larger text sizes.",
+                    "Preserve shared search fields, glass controls and shelf opening and return animations across card and grid layouts."
+                ]
+            }
+        },
+        {
+            "version": "2.7.3",
+            "buildNumber": "261008004",
+            "notes": {
+                "zh": [
+                    "扩展液态玻璃效果：首页悬浮导航、阅读工具栏、菜单和共用控件采用一致的玻璃表面，按压、展开与回弹动画更加统一。",
+                    "新增液态玻璃与毛玻璃切换，并支持调节液态玻璃的背景浓度，在通透效果与文字可读性之间自由选择。",
+                    "统一书库、书源管理、搜索、替换规则、备份与朗读设置等页面的搜索框，采用圆润胶囊外形，改善清空、焦点及放大字号下的布局。",
+                    "首页 AI 与阅读器 AI 输入框同步使用共用玻璃外壳，保留多行输入、选书、发送和键盘提交功能。",
+                    "优化深浅主题、阅读器独立配色、平板布局与减少动态效果设置下的控件呈现。",
+                    "新增多层子书架：可新建空分组，或多选书籍后创建分组；支持逐层进入、返回上一级，并保留各层滚动位置。",
+                    "支持单本及批量移动书籍，书架可改名、移动或解散；解散后将书籍和下级书架移回上一级，保留正文、进度与笔记。",
+                    "书架文件夹显示组合封面与书籍总数，优化手机、平板及窄屏下的布局和进入、退出转场。",
+                    "书籍封面右上角显示准确新增章数，多位数字完整显示；无法可靠判断数量时显示更新图标，网格、卡片和列表保持一致。",
+                    "完善更新计数：连续追加累计新增章数，重复检查不会重复计数；检查失败仍保留已发现的更新，加载对应最新目录后再清除标记。",
+                    "完善书库更新信息卡，集中查看最新章节、检查状态和更新时间；本地 TXT 支持绑定书源，在确认章节对应后下载新章节。",
+                    "WebDAV 备份纳入嵌套书架与书籍归属，支持全量及选择性恢复，并兼容旧版无书架信息的备份。",
+                    "优化在线阅读启动，将互不依赖的准备工作并行处理，减少目录和正文显示前的等待。",
+                    "完善统一目录与章节缓存，同一内容的并发加载复用进行中的读取和请求，减少重复访问磁盘与书源服务器。",
+                    "修复缓存更新的先后顺序，防止较慢的旧读取覆盖新目录；加载失败时按缓存规则恢复可用内容，减少重复重试。",
+                    "连续滚动阅读在章节之间增加随字号和行距变化的留白，改善章节衔接，同时保留章节跳转与阅读位置对齐。",
+                    "清理设置返回时的重复系统栏恢复和无关页面重建，统一首页、子页面的状态栏管理。",
+                    "新增原生协议文档列表与详情页，统一展示使用条款、隐私说明及购买政策等文档，支持中英文内容。",
+                    "协议文档优先显示本地内容，再检查网络更新；离线仍可阅读，并明确显示文档版本与来源状态。",
+                    "完善协议同意记录与重要版本更新提示，使记录对应用户实际查看并接受的文档。",
+                    "整理阅读加载、缓存、书库更新与协议文档的维护说明，统一维护入口，清理被现有说明替代的旧计划和重复实现。"
+                ],
+                "en": [
+                    "Extend liquid glass across floating navigation, reader controls, menus and shared components, with consistent press, expansion and spring animations.",
+                    "Switch between liquid and frosted glass and adjust liquid glass background tint for your preferred transparency and readability.",
+                    "Unify search fields across Library, sources, replacement rules, backup and speech settings with pill shapes and improved clearing, focus and larger-text layouts.",
+                    "Use the shared glass surface for both AI message composers while retaining multiline editing, book selection, sending and keyboard submission.",
+                    "Improve shared controls across light and dark themes, reader palettes, tablet layouts and reduced-motion settings.",
+                    "Add nested bookshelves: create empty folders or organize selected books into a new folder, navigate levels and retain scroll positions.",
+                    "Move individual or selected books, rename or move shelves, and dissolve folders into their parent while preserving content, reading progress and notes.",
+                    "Show combined cover previews and book totals for folders, with improved compact and tablet layouts and navigation animations.",
+                    "Show reliable new-chapter counts at the top-right of book covers, including complete multi-digit values; use an update icon when the count is unknown across grid, card and list views.",
+                    "Improve cumulative update counts without double-counting repeated checks; retain discovered updates after check failures and clear them only after loading the corresponding latest catalog.",
+                    "Improve update details with latest chapter, check status and update times; local TXT books can bind to sources and download new chapters after confirming chapter alignment.",
+                    "Include nested shelves and book membership in WebDAV backups, support full and selective restoration, and retain compatibility with older backups without shelf data.",
+                    "Run independent online-reader startup tasks in parallel to reduce waiting before the catalog and chapter become available.",
+                    "Improve unified catalog and chapter caching by sharing in-flight reads and requests for the same content, reducing duplicate disk and source-server access.",
+                    "Prevent slower stale cache reads from overwriting newer catalogs; recover usable cached content after loading failures according to cache rules and reduce duplicate retries.",
+                    "Add chapter spacing that follows font size and line height in continuous scrolling while preserving chapter jumps and reading-position alignment.",
+                    "Remove redundant system-bar updates and unrelated page rebuilds when returning from settings, and share system-bar management across home and subpages.",
+                    "Add native legal-document lists and detail pages for terms, privacy information and purchase policies, with Chinese and English content.",
+                    "Display local legal documents before checking for network updates; retain offline reading and show document versions and source status.",
+                    "Improve acceptance records and important-version prompts so records match the documents actually viewed and accepted.",
+                    "Consolidate maintenance guides for reader loading, caching, source updates and legal documents, and remove superseded plans and duplicate implementations."
+                ]
+            }
+        },
+        {
+            "version": "2.7.3",
             "buildNumber": "261008001",
             "notes": {
                 "zh": [

@@ -1,5 +1,12 @@
 # Book-source architecture
 
+Current module guide. Start at [the maintenance index](../../docs/README.md);
+online startup, shared cache identities, invalidation and troubleshooting are
+maintained in [Reading cache](../../docs/reading-cache.md). Dated plans and
+diagnoses are historical evidence, not instructions to repeat completed work.
+Shelf update counts, unknown-count markers and loaded-catalog confirmation are
+maintained in [Library source updates](../../docs/library-source-updates.md).
+
 The book-source feature follows a one-way dependency flow:
 
 1. Pages compose dependencies and own navigation, localization, dialogs, and

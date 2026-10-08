@@ -26,6 +26,14 @@ These rules are mandatory for every coding and release task in this repository.
 - Follow the workspace Lore commit format and include concrete `Tested:` and `Not-tested:` trailers.
 - Commit and push validated changes promptly, then synchronize Windows and `sloane.local:~/code/origo-x` through Git. Fetch before editing; use fast-forward updates, preserve unrelated local work, and independently verify both HEADs against the live remote. Never force-push over the other computer's work.
 
+## Documentation maintenance
+
+- Start maintenance from `docs/README.md` and the linked current module guide, then verify the implementation and regression tests.
+- Update the current guide when behavior, ownership, cache identity/invalidation, schema or delivery contracts change. Include code locations, regression entry points and known limits.
+- Keep one current guide per topic. Remove completed, redundant plans after consolidating useful decisions and evidence; repair their references in the same change.
+- Keep uniquely useful historical diagnosis, validation and release evidence dated and explicitly historical, with a link to the current guide. Do not execute historical plans as new instructions or treat old failures as current defects.
+- Preserve active plans and unrelated work. Check links, source paths and diff after documentation changes; documentation-only changes do not require an app build or device installation.
+
 ## Physical-device acceptance
 
 - After completing APP changes, automatically build, install in place, and launch the latest app on the user's SloanePro for acceptance; do not wait for another installation request. This standing instruction was given on 2026-10-08.
@@ -33,3 +41,4 @@ These rules are mandatory for every coding and release task in this repository.
 - Use the appropriate acceptance distribution channel and report it. A local development installation is separate from a TestFlight or App Store release.
 - Verify the installed app identity and successful launch. If a required service changed, complete the authorized service delivery so the new feature works against the real endpoint.
 - Ask for device unlock only when iOS actually blocks launch. Report any remaining device or service blocker and distinguish installation from physical UI acceptance.
+- When multiple chats change the same app, coordinate one installation owner and build the combined latest shared checkout. Isolated worktrees may validate individual changes, but their older snapshots must not replace the combined device build.

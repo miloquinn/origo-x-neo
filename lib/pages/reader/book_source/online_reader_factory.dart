@@ -59,6 +59,7 @@ Widget buildOnlineReader({
     replaceRuleService: replaceRuleService,
     client: client,
     shelfService: shelfService,
+    initialShelfBook: shelfBook,
     initialTheme: initialTheme,
   );
 }

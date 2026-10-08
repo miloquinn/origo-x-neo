@@ -1,5 +1,7 @@
 # 阅读跳章、重试和缓存恢复验证
 
+> 历史验收，覆盖 2026-10-07 的代码和测试快照。下文的版本、检查结果及“当前工作区”不代表后续版本状态；启动顺序已在 2026-10-08 改为并行。当前维护入口为 [阅读缓存](../reading-cache.md) 与 [书源架构](../../lib/book_sources/README.md)，后续交付见 [在线加载验证](2026-10-08-online-book-loading-validation.md)。
+
 ## 结果与范围
 
 修复公共章节加载与 ReadingSource 目录状态恢复；沿用当前工作区已有的失败目标、
@@ -85,7 +87,7 @@ Reader 8 个检查项及 Source 8 个检查项的 Flutter 静态分析均为 `No
 - `test/reading_source_cached_catalog_boundary_test.dart`
 - `test/reading_source_rule_revision_test.dart`
 - `test/source_http_transport_test.dart`
-- 本计划、诊断与验证记录。
+- 诊断与验证记录；完成计划已合并到当前维护说明并删除重复任务清单。
 
 ## 证据边界
 

@@ -265,8 +265,13 @@ void main() {
       LibraryBookOpenAnimationPace.fast,
     );
 
+    await notifier.setLibraryGridColumns(5);
+    final expanded = await _loadNotifier();
+    addTearDown(expanded.dispose);
+    expect(expanded.libraryGridColumns, 5);
+
     await notifier.setLibraryLayoutMode(LibraryLayoutMode.grid);
-    await notifier.setLibraryGridColumns(2);
+    await notifier.setLibraryGridColumns(4);
     await notifier.setLibraryGridShowDetails(true);
     await notifier.setLibraryBookOpenAnimation(
       LibraryBookOpenAnimation.classicCover,
@@ -277,10 +282,18 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('library_layout_mode_v1'), 'grid');
-    expect(prefs.getInt('library_grid_columns_v1'), 2);
+    expect(prefs.getInt('library_grid_columns_v1'), 4);
     expect(prefs.getBool('library_grid_show_details_v1'), isTrue);
     expect(prefs.getString('library_book_open_animation_v1'), 'classicCover');
     expect(prefs.getString('library_book_open_animation_pace_v1'), 'elegant');
+
+    final restored = await _loadNotifier();
+    addTearDown(restored.dispose);
+    expect(restored.libraryGridColumns, 4);
+
+    await restored.setLibraryGridColumns(9);
+    expect(restored.libraryGridColumns, 2);
+    expect(prefs.getInt('library_grid_columns_v1'), 2);
   });
 
   test(
@@ -288,7 +301,7 @@ void main() {
     () async {
       SharedPreferences.setMockInitialValues({
         'library_layout_mode_v1': 'list',
-        'library_grid_columns_v1': 5,
+        'library_grid_columns_v1': 9,
         'library_book_open_animation_v1': 'unknown',
       });
       final notifier = await _loadNotifier();

@@ -4,6 +4,32 @@ import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/library/library_grid_book_details.dart';
 
 void main() {
+  testWidgets('grid details reserve space for enlarged readable text', (
+    tester,
+  ) async {
+    final book = Book(
+      title: '大字号书名',
+      filePath: '/tmp/large.txt',
+      format: 'TXT',
+      readingProgress: 0.5,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
+          child: Scaffold(
+            body: SizedBox(
+              width: 110,
+              child: LibraryGridBookDetails(book: book),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('50%'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('grid details show an ellipsized title and reading progress', (
     tester,
   ) async {

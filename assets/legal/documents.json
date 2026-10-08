@@ -1,0 +1,1077 @@
+{
+  "schemaVersion": 1,
+  "bundles": {
+    "zh-CN": {
+      "schemaVersion": 1,
+      "bundleVersion": "2026-10-08.1",
+      "locale": "zh-CN",
+      "documents": [
+        {
+          "id": "terms",
+          "locale": "zh-CN",
+          "title": "使用协议",
+          "summary": "适用于开元阅读 App、官网、账号与服务的基本使用规则。",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "建立统一的服务使用、账号安全、内容责任与合理使用规则。"
+          ],
+          "canonicalUrl": "https://open.xxread.top/terms",
+          "requiresAcceptance": true,
+          "sections": [
+            {
+              "id": "agreement",
+              "title": "协议范围与接受",
+              "paragraphs": [
+                "本《使用协议》由你与开元阅读（Origo X）服务提供者 Wangtao Xie 订立，适用于开元阅读各平台 App，以及账号、会员、下载和相关第一方服务。App 在首次使用或条款重要更新后展示协议时，你点击“同意并继续”或页面明确说明的同等确认动作，才表示接受本协议及与所用功能相关的规则。仅访问 open.xxread.top 的公开页面或阅读公开法律文件，不视为接受全部协议。",
+                "如果你不同意本协议，请不要继续使用需要接受协议的服务。基础功能是否需要账号、付费或联网，以 App 当前界面和相应专项条款为准。未成年人应在监护人指导下使用联网、账号和购买功能。"
+              ]
+            },
+            {
+              "id": "service",
+              "title": "服务内容与可用性",
+              "paragraphs": [
+                "开元阅读提供本地电子书阅读、书架与阅读记录管理，并可提供账号、会员验证、软件下载、更新检查及你主动配置的联网能力。部分功能依赖操作系统、应用商店、内容网站或你选择的第三方服务，实际可用范围会随平台、版本、地区、设备能力和服务配置变化。",
+                "我们会维护服务并处理合理的安全、兼容性和故障问题，但不能保证所有第三方服务、网络连接或导入内容始终可用。计划维护、紧急修复、上游接口变化或安全风险可能导致部分功能暂时受限。"
+              ]
+            },
+            {
+              "id": "account",
+              "title": "账号与安全",
+              "paragraphs": [
+                "你应提供真实、可用的登录信息，妥善保护密码、验证码、通行密钥、双重验证凭据及登录设备，并对自己账号下的操作负责。发现未经授权的使用时，请及时修改凭据并通过支持入口联系维护者。",
+                "不得买卖、出租账号，不得绕过登录、购买验证、会员权限或风控措施，也不得使用自动化请求、批量注册、恶意兑换、攻击或其他方式干扰服务。我们可为保护用户和服务安全限制异常请求，并在有证据表明账号被滥用或危害服务时暂停相关能力；同一 IP 本身不会自动被认定为同一人。"
+              ]
+            },
+            {
+              "id": "content",
+              "title": "书籍、笔记与用户配置",
+              "paragraphs": [
+                "你导入的书籍、书源、笔记、划线、封面、字体、备份和其他内容仍由相应权利人享有权利。你应确认自己有权获得、保存、处理、同步和阅读这些内容，并对导入、发布或连接的内容与配置负责。",
+                "本地阅读内容默认保存在设备。你启用 WebDAV、AI、云端朗读、书源或其他外部服务时，相应内容会按你的操作发送给该服务；具体边界见《隐私政策》《书源与第三方内容使用规则》和《第三方服务说明》。请在删除、清理、卸载或同步前自行备份重要内容。"
+              ]
+            },
+            {
+              "id": "acceptable-use",
+              "title": "合理使用",
+              "paragraphs": [
+                "你不得利用开元阅读实施违法活动、侵犯他人知识产权或隐私、传播恶意代码、规避网站访问控制、未经允许抓取或向第三方施加异常负载，也不得冒充维护者或误导他人认为某个书源、内容或服务由开元阅读背书。",
+                "开元阅读是通用阅读工具，不提供或销售第三方书籍，也不授予你访问第三方内容的权利。收到具体且可核实的问题报告时，我们可移除官方渠道中的链接、配置或功能入口，并在必要范围内保存处理记录。"
+              ]
+            },
+            {
+              "id": "software",
+              "title": "软件、开源组件与反馈",
+              "paragraphs": [
+                "开元阅读软件及官网代码、品牌、界面素材和服务内容受适用的知识产权规则保护；其中已按开源许可证发布的部分，以对应许可证为准。本协议不会改变第三方开源组件的许可证，也不会转让你导入内容的权利。",
+                "你通过公开支持渠道提交的故障描述、改进建议或代码贡献，可由项目在处理问题、改进产品和维护项目所必需的范围内使用；代码贡献另受仓库采用的贡献和开源许可约束。不要在公开反馈中附带个人信息、密钥、完整订单或受限制内容。"
+              ]
+            },
+            {
+              "id": "changes",
+              "title": "更新、终止与协议变更",
+              "paragraphs": [
+                "你可以停止使用服务、退出账号或按《隐私声明与用户选择》操作账号注销。退出、卸载和账号注销的影响不同；购买、退款、第三方副本和依法需要保留的记录按对应规则处理。",
+                "当产品功能、数据处理、购买模式或服务规则发生实质变化时，我们会更新版本、日期和变更说明，并在需要时要求你重新接受。仅修正排版或不改变含义的文字时，不应无故提升同意版本。"
+              ],
+              "links": [
+                {
+                  "label": "联系开元阅读维护者",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                },
+                {
+                  "label": "查看法律文件目录",
+                  "href": "/legal?lang=zh-CN"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "privacy",
+          "locale": "zh-CN",
+          "title": "隐私政策",
+          "summary": "说明开元阅读 App 与官网如何处理个人信息，以及本地阅读、账号和可选联网功能之间的数据边界。",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "统一隐私政策版本与生效日期。",
+            "保留本地阅读、账号、风控、购买、可选联网功能及保留期限的现行说明。",
+            "补充账号阅读统计、Huawei 登录、中国大陆生产服务和注销后交易终态归属说明。"
+          ],
+          "canonicalUrl": "https://open.xxread.top/privacy",
+          "requiresAcceptance": true,
+          "sections": [
+            {
+              "id": "scope",
+              "title": "适用范围与负责人",
+              "paragraphs": [
+                "开元阅读（Origo X）由 Wangtao Xie 提供。本政策适用于开元阅读各平台 App、官网 open.xxread.top，以及我们提供的账号、会员和下载服务。Wangtao Xie 是这些第一方服务的个人信息处理负责人。",
+                "书源网站、登录平台、支付平台，以及你自行配置的 AI、WebDAV 和其他外部服务也会按其自己的隐私政策处理数据。请在连接这些服务前了解其条款。本政策不会替代第三方的政策。"
+              ]
+            },
+            {
+              "id": "local-reading",
+              "title": "本地阅读与设备权限",
+              "paragraphs": [
+                "基础本地阅读无需注册。导入的书籍、阅读进度、书签、划线、笔记、阅读统计和阅读设置默认保存在设备中；使用本地阅读本身不会将这些内容上传到我们的账号服务器。导出文件由你选择存储或分享的位置。",
+                "文件或照片选择、通知或语音朗读等功能仅在你使用对应功能、且平台要求时请求相关权限。我们不会因为你使用本地阅读而读取通讯录、获取精确位置或录制你的语音。系统语音服务、iCloud 文稿和系统备份是否连接网络，由你的设备设置和平台服务决定。"
+              ]
+            },
+            {
+              "id": "account-reading",
+              "title": "账号阅读统计与排行榜",
+              "paragraphs": [
+                "登录后，阅读记录的唯一编号、账号归属、起止时间、阅读时长和来源类型会上传到官方服务器，用于跨设备统计、去重和生成个人汇总。此功能不上传书籍正文、书名、书单或硬件标识；未登录记录留在本机，只有在你确认合并后才归入所选账号，且不能再转给其他账号。",
+                "公开排行榜默认关闭。你主动开启后，榜单会展示昵称、头像和有效阅读时长；关闭后不再公开排名，个人云端统计仍保留。注销账号会删除与该账号关联的云端阅读记录。"
+              ]
+            },
+            {
+              "id": "account",
+              "title": "账号、登录与安全",
+              "paragraphs": [
+                "为识别异常访问，我们按 IP 汇总下载、注册和兑换请求的频率及源站发送流量。风控业务事件保留 90 天，分钟统计保留 7 天并汇总为小时统计保留 90 天，处置审计保留 180 天。授权管理员可核对关联证据并对 IP 或账号施加限制；同 IP 不自动认定为同一人。",
+                "注册和登录账号时，我们记录连接 IP；成功兑换卡密或活动激活码时，我们记录兑换 IP、账号及兑换时间，用于识别同一 IP 多账号领取等滥用行为和后续账号安全风控。这些记录仅向具备相应权限的管理员开放。",
+                "创建或登录账号时，我们处理你提供的邮箱、用户名、显示名称、头像，以及账号 ID、登录状态和会员状态。邮箱用于验证身份和账号安全；密码验证材料、验证码、多因素验证及通行密钥相关数据用于完成你选择的认证方式。请勿向客服发送密码或验证码。",
+                "使用 Apple、Google、GitHub 或 Huawei 登录时，相应平台处理授权请求，并可能向我们提供授权范围内的身份标识、邮箱和基本资料。具体可用登录方式以当前页面为准。我们使用这些数据建立或关联账号，而不是获取你在第三方平台上的全部内容。",
+                "App 将登录令牌保存在系统安全存储中，并在本地保存显示账号资料所需的摘要。退出登录会清除本机登录状态，但不会自动删除服务器账号或其他设备上的数据。"
+              ]
+            },
+            {
+              "id": "purchases",
+              "title": "会员与购买验证",
+              "paragraphs": [
+                "购买或恢复会员时，Apple 或你选择的支付服务负责处理付款。我们处理商品、订单或交易标识、购买时间、交易状态、验证凭据和会员权益，并在需要时将权益关联到你的账号，以验证购买、恢复权益、处理退款与防止欺诈。",
+                "通过 Apple 付款时，我们不会获得你的银行卡号或完整付款账户信息。删除 App、退出账号或提出数据删除请求不会自动向支付平台发起退款，也不会删除平台依法保留的交易记录。"
+              ]
+            },
+            {
+              "id": "optional-services",
+              "title": "你选择的联网功能",
+              "paragraphs": [
+                "以下功能需要你主动配置或使用。接收请求的服务器能够看到连接 IP 地址及提供服务所需的请求信息。"
+              ],
+              "bullets": [
+                "WebDAV：按你的同步和备份选择，将书架、进度、书签、笔记、阅读时段、设置等数据，以及可选的书籍文件与封面发送到你指定的服务器。同步还使用随机生成并保存在本机的设备标识区分设备、处理冲突；它不是广告标识或硬件指纹。服务器地址和凭据用于访问该服务；远端保留与删除由你和该服务管理。",
+                "AI：将你提交的问题、选中文字或页面内容、必要的书籍及章节上下文，以及对话上下文发送给你配置的 AI 提供商。API 密钥用于向该提供商认证。请勿提交不希望对方接收的私密信息；对方的数据保留及模型训练规则以其政策和你的账号设置为准。",
+                "云端朗读：切换到你配置的云 TTS 服务并朗读时，将需要朗读的文本、音色及语速等设置发送给该提供商，使用你的 API 密钥认证。默认系统朗读由设备的语音引擎处理；这与录制或上传你的声音不同。",
+                "书源、搜索及网页内容：你发起的查询、目录和章节请求会发送至所选内容服务；网站登录状态和脚本请求取决于你导入或配置的书源。仅连接你信任且有权使用的服务。",
+                "远程封面、字体和更新：加载在线资源或查询更新时，对应服务器会接收资源地址、版本或平台信息及网络连接信息。"
+              ]
+            },
+            {
+              "id": "website",
+              "title": "官网、运行记录与本地存储",
+              "paragraphs": [
+                "访问官网、调用在线接口或下载软件时，服务基础设施会处理 IP 地址、请求时间、路径、响应状态及浏览器或客户端信息，用于提供服务、排查故障和保障安全。下载服务还记录所选版本、平台及下载事件，并根据 IP 推断大致地区，用于下载统计；这不是 GPS 定位。",
+                "官网使用 Cloudflare 提供网络代理与安全服务。下载地区统计可能将公网 IP 发送给 IP.SB、ipwho.is 或太平洋电脑网 IP 查询服务，取得国家或省市级的大致地区。这些解析服务会按各自政策处理请求；它们不会因此收到你的阅读正文或账号密码。",
+                "网站使用必要的会话或认证存储，并在 Cookie 或浏览器本地存储中保存语言和外观等偏好。清除这些数据可能使你退出登录或重置偏好。我们不以这些存储开展跨网站广告追踪。"
+              ]
+            },
+            {
+              "id": "purposes-sharing",
+              "title": "使用目的与接收方",
+              "paragraphs": [
+                "我们为提供你请求的功能、维护账号和购买权益、保护服务安全、处理支持请求及改进下载服务而处理数据。对于需要你授权的可选功能，由你决定是否开启；在适用法律要求的其他情形，我们会另行取得相应授权。",
+                "我们不出售个人信息，不将阅读内容用于广告画像，也不将数据提供给数据经纪商或用于跨公司广告追踪。必要的数据会由承载服务的云基础设施、你选择的身份或支付平台及你主动连接的外部服务处理。发生法定义务、安全事件或争议时，我们可能在必要范围内保留或提供相关记录。",
+                "我们没有在 App 中集成用于自动上传阅读行为的广告或通用分析 SDK。本机调试记录不会因此自动发送给我们；你主动分享的诊断或支持材料可能包含书名、路径或截图，请先检查并遮盖敏感内容。系统平台自行收集的诊断信息受其设置和政策约束。"
+              ]
+            },
+            {
+              "id": "retention",
+              "title": "保留期限与安全",
+              "paragraphs": [
+                "本地内容通常保留到你删除、清理应用数据或卸载为止；系统备份、你导出的文件和 WebDAV 副本需要分别管理。账号数据在提供账号服务期间保留；购买和安全记录按履行交易、处理争议、防止欺诈及适用法律所必需的期限保留。我们不会把退出登录视为删除账号。",
+                "下载明细中的 IP、IP 哈希、浏览器信息和地区数据按 180 天期限定期清理，累计下载数量可以继续保留。网站访问日志按大小轮换，最长保留 30 天。邮箱验证码记录在请求两天后清理；过期会话和临时登录挑战另有短期清理机制。账号主体、交易和安全审计记录目前没有统一的自动删除期限。",
+                "数据删除请求会按数据类别处理。必须继续保留的部分会限制用途；备份副本可能在备份轮换后才消除。不同数据的保留周期并不相同，我们不承诺所有数据均在固定天数内自动删除。",
+                "你在 App 或官网自助注销账号时，账号主体、登录方式、会话、双重验证配置、会员权益、邀请关系和云端阅读统计会被删除。已兑换卡密保持已使用状态；账号绑定的开卷与探元购买会终止为不可重新认领的记录，并保留不可变的原账号归属，用于防止把同一交易换号重绑。注销还会留下一条不含邮箱明文的最小记录。",
+                "我们采用 HTTPS、认证控制和访问限制等措施保护在线数据。你自行提供的第三方服务地址及共享文件是否安全，取决于该服务和你的配置。没有任何网络或存储措施能够保证绝对安全。",
+                "WebDAV 同步目前不提供应用层端到端加密；同步数据在你选择的服务端以可读取的数据或文件保存。HTTPS 保护传输过程，不代表服务端无法读取内容。"
+              ]
+            },
+            {
+              "id": "international",
+              "title": "服务地点与跨地区访问",
+              "paragraphs": [
+                "我们的官网、账号、购买验证和阅读统计生产服务目前部署在中国大陆。基础设施和具体机房可能随运维调整，因此本政策不把某一云厂商或城市作为长期保证。你选择的登录、支付、AI、WebDAV、书源或资源服务可能位于其他国家或地区；使用这些功能可能涉及跨地区传输。请在连接前检查服务商及其部署地区，并避免向不信任的服务提供个人信息。",
+                "适用法律对特定传输另有要求时，我们应按照相关要求处理；本政策本身不替代依法需要的单独告知、同意或其他措施。"
+              ]
+            },
+            {
+              "id": "rights-contact",
+              "title": "你的权利与联系方式",
+              "paragraphs": [
+                "你可以根据适用法律请求了解、访问、更正、复制或删除我们处理的个人信息，撤回相关授权或提出异议。可直接操作的设置和不同副本的删除方式，见《隐私声明与用户选择》。为保护账号，我们可能需要核验请求人的身份，但不会要求提供登录密码或一次性验证码。",
+                "目前的公开支持入口是项目 GitHub Issues。涉及账号、订单或数据删除时，请仅说明需要与维护者进行私密隐私沟通，待取得私密渠道后再提供核验所需的最少资料。不要在公开 Issue 中提交邮箱、订单凭据、书籍内容、密钥或其他个人信息。"
+              ],
+              "links": [
+                {
+                  "label": "联系开元阅读维护者",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                },
+                {
+                  "label": "查看隐私声明与用户选择",
+                  "href": "/privacy-choices?lang=zh-CN"
+                }
+              ]
+            },
+            {
+              "id": "children-changes",
+              "title": "未成年人及政策更新",
+              "paragraphs": [
+                "未成年人应在监护人指导下使用联网服务。涉及依法需要监护人同意的儿童个人信息时，应先取得该同意。监护人发现儿童在未获得必要同意的情况下提供了个人信息，可通过上述渠道联系我们处理。",
+                "功能或数据处理方式发生变化时，我们会更新本页面的版本、生效日期、变更说明和内容。涉及处理目的、数据类别、接收方或用户权利等重要变化时，我们会提供醒目标示，并在需要继续处理前通过“同意并继续”或同等明确动作重新取得同意；不会把沉默或继续浏览公开网页视为同意。"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sources",
+          "locale": "zh-CN",
+          "title": "书源与第三方内容使用规则",
+          "summary": "说明书源、第三方内容、访问授权、脚本安全与分享责任。",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "新增书源角色、授权边界、脚本安全和问题报告规则。"
+          ],
+          "canonicalUrl": "https://open.xxread.top/source-terms",
+          "requiresAcceptance": true,
+          "sections": [
+            {
+              "id": "role",
+              "title": "工具与内容来源",
+              "paragraphs": [
+                "开元阅读是可导入文件、访问用户配置内容服务的通用阅读工具。开元阅读官方服务不托管、编辑或销售你通过第三方书源访问的书籍，也不会因为提供解析、搜索或阅读能力而取得这些内容的权利。",
+                "书源规则、脚本、网站地址及登录状态可能来自你、社区或第三方。除非明确标记为官方提供，否则其可用性、安全性、内容、授权和维护状态不由开元阅读承诺。"
+              ]
+            },
+            {
+              "id": "authorization",
+              "title": "访问授权与内容权利",
+              "paragraphs": [
+                "你只能连接自己有权访问的服务，并应遵守内容网站的条款、访问限制、付费要求和适用规则。不得利用书源绕过订阅、付费墙、技术保护、地区限制或其他访问控制，也不得下载、传播或保留无权使用的内容。",
+                "内容是否进入公有领域、是否获得作者或平台许可，以及某种使用是否被允许，取决于具体内容和使用方式。开元阅读无法替你作出授权判断；有疑问时应停止访问并向权利人或服务提供者确认。"
+              ]
+            },
+            {
+              "id": "security",
+              "title": "脚本、登录与安全风险",
+              "paragraphs": [
+                "书源可以发起网络请求、解析网页并使用其所属网站的登录状态。导入前应检查来源、域名、脚本行为和所需凭据；不应导入来历不明或要求不必要敏感信息的配置。",
+                "第三方网站能够看到连接 IP、请求内容和必要的客户端信息。网站账号、Cookie、令牌、验证码和付费凭据由你与网站共同管理。不要把密码、验证码或密钥写入公开书源；发现异常请求、跳转、证书或账号活动时应立即停用该书源并处理相关凭据。"
+              ]
+            },
+            {
+              "id": "sharing",
+              "title": "导入、分享与维护",
+              "paragraphs": [
+                "分享书源前，应确认其中不包含个人 Cookie、令牌、账号标识、私有地址、密钥或无权公开的信息，并说明它依赖的服务、登录要求和已知限制。接收者应自行复核后使用。",
+                "网站改版、反自动化措施、接口停用或网络条件变化都可能使书源失效。开元阅读可改进通用运行时兼容性，但不保证修复某个第三方网站，也不承诺维持对已停止或不再允许访问的接口的兼容。"
+              ]
+            },
+            {
+              "id": "reports",
+              "title": "问题报告与处置",
+              "paragraphs": [
+                "如果官方渠道中的书源链接或说明包含恶意行为、个人凭据、误导信息或明确的侵权问题，可通过公开支持入口提供可核实的链接和不含敏感信息的说明。账号、书籍正文、Cookie、密钥和完整凭据不应公开提交。",
+                "我们可以从官方目录、示例或推荐入口中移除存在安全、授权或维护问题的内容。移除官方入口不会自动删除用户设备中的副本，也不代表我们能够删除第三方网站上的内容。"
+              ],
+              "links": [
+                {
+                  "label": "联系开元阅读维护者",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "membership",
+          "locale": "zh-CN",
+          "title": "会员与购买条款",
+          "summary": "说明开卷、探元、试用、卡密、购买验证、恢复与退款边界。",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "建立会员权益、试用、购买验证、恢复和退款的统一说明。"
+          ],
+          "canonicalUrl": "https://open.xxread.top/membership-terms",
+          "requiresAcceptance": false,
+          "sections": [
+            {
+              "id": "scope",
+              "title": "适用范围与权益类型",
+              "paragraphs": [
+                "基础本地阅读功能可免费使用。本条款适用于开元阅读 App 和官网另行提供的开卷购买权益、探元扩展权益、试用、卡密、活动赠送及应用商店购买。实际可购买商品、价格、平台、功能和资格以购买页面、应用商店商品页及服务器返回的当前配置为准。",
+                "一次性购买所称“永久”是指对相应已购软件权益的不设固定到期日访问，不表示 App、设备、第三方商店、联网接口或每项功能会无限期存在，也不排除因退款、欺诈、账号归属冲突或违反规则而撤销错误授予的权益。"
+              ]
+            },
+            {
+              "id": "account",
+              "title": "账号、购买与归属",
+              "paragraphs": [
+                "新的应用商店购买需要登录 Origo 账号，并由商店凭据及服务器校验把权益绑定到该账号。已验证的正式购买可按当前产品规则在受支持平台恢复；历史匿名购买按兼容规则处理，不会仅因首次登录就自动转移到任意账号。",
+                "购买前请确认账号、商品层级和商店账号。交易一旦绑定，不应在不同 Origo 账号之间转移。探元升级商品要求账号先拥有独立的永久开卷权益；探元完整商品包含开卷，具体上架状态以商店为准。卡密和活动权益按其页面说明、资格条件及有效期发放。"
+              ]
+            },
+            {
+              "id": "trial",
+              "title": "试用与临时权益",
+              "paragraphs": [
+                "试用是否开放、期限和适用平台以当前界面为准。同一账号的跨平台阅读试用只能按服务器记录开始一次，不因重装、换设备、改系统时间或重复请求而延长。测试环境交易不会创建正式生产权益。",
+                "临时探元、活动或邀请权益在其到期日结束。其派生的阅读能力会同时结束，除非账号另有独立的永久开卷或其他有效来源。"
+              ]
+            },
+            {
+              "id": "billing",
+              "title": "支付、验证与恢复",
+              "paragraphs": [
+                "Apple App Store、Google Play 或购买页面标明的支付服务负责收款和付款账户。我们处理商品、订单或交易标识、购买时间、状态、验证凭据和权益归属，以验证购买、恢复访问、处理撤销并防止欺诈；不会从 Apple 付款取得你的完整银行卡号。",
+                "购买验证需要联网，离线凭据只有有限有效期并需定期刷新。重复提交同一有效交易不会重复发放权益。待处理、无效、沙盒、账号不匹配、已退款或已撤销的交易不会创建正式权益。"
+              ]
+            },
+            {
+              "id": "refunds",
+              "title": "退款、撤销与账号删除",
+              "paragraphs": [
+                "退款和撤销由原支付渠道及其规则处理。删除 App、退出账号或注销 Origo 账号不会自动申请退款。支付平台的交易记录可能继续保留。账号绑定的开卷与探元交易归属不可换号；账号注销后会成为不可重新认领的终态记录，不能在新账号恢复。",
+                "退款或商店撤销会使相应购买来源失效，但不会撤销账号上仍然有效的其他独立卡密、活动、管理或商店权益。若探元升级所依赖的永久开卷购买被撤销，升级交易仍保留归属记录，但其探元和派生阅读权益会暂停，直到账号再次具备符合条件的独立永久开卷权益。"
+              ]
+            },
+            {
+              "id": "changes",
+              "title": "价格、功能与条款更新",
+              "paragraphs": [
+                "尚未购买的商品价格、组合、试用和销售地区可以调整；已完成交易的处理以购买时展示的商品及商店记录为基础。产品功能会持续演进，但我们不会把另一项全新付费商品自动解释为既有商品必然包含的内容。",
+                "购买模式、权益范围或恢复规则发生实质变化时，我们会更新版本、日期和变更说明。购买或恢复问题请通过支持入口联系，并仅在私密渠道提供核验所需的最少交易资料。"
+              ],
+              "links": [
+                {
+                  "label": "查看高级版页面",
+                  "href": "/premium"
+                },
+                {
+                  "label": "联系开元阅读维护者",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "privacyChoices",
+          "locale": "zh-CN",
+          "title": "隐私声明与用户选择",
+          "summary": "管理本机内容、账号和第三方副本。退出登录、删除本地内容与删除服务器数据，是不同的操作。",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "统一隐私选择说明的版本、日期与入口。",
+            "保留本地、账号、WebDAV、AI、权限和网站数据的现有控制方式。",
+            "明确账号注销会删除云端阅读统计，账号绑定购买不能换号恢复。"
+          ],
+          "canonicalUrl": "https://open.xxread.top/privacy-choices",
+          "requiresAcceptance": false,
+          "sections": [
+            {
+              "id": "local",
+              "title": "管理本地书籍与阅读记录",
+              "paragraphs": [
+                "你可以在 App 对应的书架、书籍、笔记和设置界面管理或删除内容，并使用已提供的导出、备份功能保留自己的副本。操作前请确认是否还需要书籍文件、书签或批注。",
+                "卸载或清理 App 数据可能清除本机资料，但不会清除你导出的文件、系统备份、iCloud 文件或 WebDAV 远端副本。也不要把删除本地书架条目理解为删除所有原始文件。"
+              ]
+            },
+            {
+              "id": "account",
+              "title": "账号访问、退出与删除请求",
+              "paragraphs": [
+                "登录官网账号中心，可查看账号和会员信息，并使用页面当前提供的资料及安全设置。App 中退出登录仅清除本机账号令牌和显示摘要。",
+                "你可以自助注销账号：在 App 的「账号安全」页面，或在官网账号安全页面点击「注销账号」。注销需要依次确认注销条款、通过发送到账号邮箱的验证码（已开启双重验证时还需动态码），并重新输入账号邮箱。完成后账号、登录方式、会话、双重验证配置和会员权益会被立即永久删除，不可恢复。",
+                "注销后我们保留一条不含邮箱明文的最小注销记录，以及必要且不可变的购买原账号归属与终态验证记录，用于防止滥用和交易换号重绑；此前账号绑定的开卷或探元购买不能在新账号恢复。注销不会退款，也不会删除你在其他服务上的数据或撤销付款；设备本地的书籍与阅读记录仍保存在你的设备中，需要时请自行删除。",
+                "如需索取账号数据副本、更正无法自行修改的信息，或注销入口不可用，请联系 Wangtao Xie（开元阅读维护者）。先在下方公开支持入口请求私密沟通渠道，勿公开提交个人信息；之后再提供必要的账号核验资料。我们在核验后按请求及适用要求处理，并说明必须保留的交易、安全或法律记录。"
+              ],
+              "links": [
+                {
+                  "label": "打开账号中心",
+                  "href": "/account"
+                },
+                {
+                  "label": "注销账号",
+                  "href": "/account/delete"
+                },
+                {
+                  "label": "联系维护者处理隐私请求",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                }
+              ]
+            },
+            {
+              "id": "webdav",
+              "title": "关闭同步及删除 WebDAV 副本",
+              "paragraphs": [
+                "在 App 的 WebDAV 或同步设置中停止同步、取消自动同步或移除配置，可停止后续同步。断开连接或清除本机凭据，不等于删除远端备份。",
+                "如需删除已上传的书籍、笔记、进度或备份，请到你自己的 WebDAV 服务中删除相应文件，并检查回收站、版本历史和服务商备份。其他已连接设备可能重新上传数据；先停止各设备同步，再处理副本。"
+              ]
+            },
+            {
+              "id": "ai",
+              "title": "管理 AI 内容与密钥",
+              "paragraphs": [
+                "不配置或不使用 AI 功能，就不会因该功能提交新的内容。你可以停止使用 AI，并清除本机对话记录。删除快捷模型不等于删除已存储的密钥；当前 AI 设置没有独立的密钥删除入口。",
+                "清除本机聊天记录不能撤回已发送给 AI 服务商的内容。远端历史、保留期限、训练开关和删除请求，请到该提供商的账号或隐私设置处理。需要停用密钥时，应同时在提供商处撤销该密钥。",
+                "使用云端朗读时，可切回系统 TTS 并清除云端服务密钥来停止后续云端请求。已发送的朗读文本由云 TTS 服务商按其政策管理。"
+              ]
+            },
+            {
+              "id": "permissions",
+              "title": "管理权限与第三方授权",
+              "paragraphs": [
+                "可在系统的应用权限设置中调整文件、照片、通知等授权；相关功能可能因此受限。修改系统语音、iCloud 与备份设置，应使用平台提供的控制项。",
+                "Apple、Google、GitHub 等第三方登录授权可在各平台账号设置中撤销。撤销授权可能影响后续登录，但不会自动删除我们的账号资料。书源登录状态、云端文件和支付数据也需要到相应服务分别管理。"
+              ]
+            },
+            {
+              "id": "website",
+              "title": "网站偏好与必要记录",
+              "paragraphs": [
+                "可使用浏览器清除 open.xxread.top 的 Cookie 和网站存储，以重置语言、主题和登录状态。网站没有用于跨公司广告追踪的个性化广告开关。",
+                "清除浏览器存储不会删除服务器的账号、交易、下载或安全记录。必要的在线请求记录用于功能、安全和下载统计；如需行使相关个人信息权利，请通过隐私请求渠道联系我们。"
+              ]
+            },
+            {
+              "id": "requests",
+              "title": "如何提出隐私请求",
+              "paragraphs": [
+                "请求中可说明希望访问、更正、导出或删除哪一类数据，以及涉及 App 本机、我们的账号服务还是第三方服务。我们只处理我们能够控制的数据；本机和第三方副本请按前述方式管理。",
+                "公开 GitHub Issue 只用于建立联系：可以写“我需要通过私密渠道处理开元阅读账号隐私请求”。不要附上密码、验证码、完整订单、邮箱、书籍、截图中的个人信息或任何密钥。"
+              ],
+              "links": [
+                {
+                  "label": "发起隐私联络",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                },
+                {
+                  "label": "阅读完整隐私政策",
+                  "href": "/privacy?lang=zh-CN"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "third-party-services",
+          "locale": "zh-CN",
+          "title": "第三方服务说明",
+          "summary": "集中说明登录、支付、WebDAV、AI、云端朗读、书源与网络服务的边界。",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "新增第三方服务分类、数据流向和用户控制说明。"
+          ],
+          "canonicalUrl": "https://open.xxread.top/third-party-services",
+          "requiresAcceptance": false,
+          "sections": [
+            {
+              "id": "overview",
+              "title": "何时会连接第三方",
+              "paragraphs": [
+                "开元阅读以本地阅读为基础。只有在你选择登录、购买、同步、AI、云端朗读、书源、在线资源或更新等功能时，才会连接相应服务。第三方根据自己的条款和隐私政策处理其收到的数据；本说明列出功能边界，不代表开元阅读控制这些服务。"
+              ]
+            },
+            {
+              "id": "identity-payment",
+              "title": "身份与支付平台",
+              "paragraphs": [
+                "你选择 Apple、Google、GitHub 或 Huawei 登录时，相应平台完成授权，并可能在授权范围内提供身份标识、已验证邮箱和基本资料。你可在平台账号设置中撤销授权；撤销不会自动删除 Origo 账号。",
+                "Apple App Store、Google Play 或页面注明的支付服务处理付款、退款和支付账户。我们仅接收验证交易和维护权益所需的商品、交易、状态与验证信息。商品是否上架及支付争议处理以对应平台为准。"
+              ]
+            },
+            {
+              "id": "cloud",
+              "title": "WebDAV、AI 与云端朗读",
+              "paragraphs": [
+                "WebDAV 数据发送到你指定的服务器，可能包括书架、进度、书签、笔记、阅读时段、设置，以及你选择同步的书籍和封面。开元阅读当前不为 WebDAV 数据提供应用层端到端加密；服务端保留和删除由你与服务商管理。",
+                "AI 会接收你提交的问题、选中文字或页面内容、必要的书籍与章节上下文以及对话上下文；云端朗读会接收朗读文本、音色和语速等设置。API 密钥用于向你选择的提供商认证。其保留、训练及删除规则应在提供商处管理。"
+              ]
+            },
+            {
+              "id": "content-network",
+              "title": "内容、资源与网络服务",
+              "paragraphs": [
+                "书源、搜索、目录、章节、封面、字体和更新请求会发送到对应内容或资源服务器。官网使用 Cloudflare 提供网络代理与安全服务；下载地区统计可能使用 IP.SB、ipwho.is 或太平洋电脑网 IP 查询服务解析公网 IP 的大致地区，不会向其发送阅读正文或账号密码。",
+                "系统语音、iCloud 文稿、系统备份、系统诊断和应用商店服务是否联网，由设备设置和平台规则决定。开元阅读无法替你删除这些平台或你配置服务中的副本。"
+              ]
+            },
+            {
+              "id": "control",
+              "title": "选择与控制",
+              "paragraphs": [
+                "不使用或不配置某项可选服务，可停止该功能产生新的第三方请求。断开服务、清除本机记录和删除远端副本是不同操作；请到《隐私声明与用户选择》查看各类数据的具体管理方式。",
+                "连接前应核对服务提供者、部署地区、收费、数据用途和删除入口。只使用你信任的服务，不要在公开反馈或书源中提交密码、验证码、Cookie、令牌、密钥、完整订单或书籍内容。"
+              ],
+              "links": [
+                {
+                  "label": "查看隐私声明与用户选择",
+                  "href": "/privacy-choices?lang=zh-CN"
+                },
+                {
+                  "label": "联系开元阅读维护者",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "en": {
+      "schemaVersion": 1,
+      "bundleVersion": "2026-10-08.1",
+      "locale": "en",
+      "documents": [
+        {
+          "id": "terms",
+          "locale": "en",
+          "title": "Terms of Use",
+          "summary": "Rules for using the Origo X apps, website, accounts and services.",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "Introduces unified rules for service use, account security, content responsibility and acceptable use."
+          ],
+          "canonicalUrl": "https://open.xxread.top/terms",
+          "requiresAcceptance": true,
+          "sections": [
+            {
+              "id": "agreement",
+              "title": "Scope and acceptance",
+              "paragraphs": [
+                "These Terms of Use are between you and Wangtao Xie, the provider of Origo X. They cover Origo X apps and our account, membership, download and related first-party services. When the app presents the terms on first use or after a material update, you accept them only by selecting “Agree and continue” or an equivalent confirmation clearly described on that screen. Merely visiting open.xxread.top or reading a public legal document does not accept all terms.",
+                "If you do not agree, do not continue using a service that requires acceptance. Whether a feature requires an account, payment or network access is shown in the current app and its specific terms. Minors should use online, account and purchase features with guidance from a parent or guardian."
+              ]
+            },
+            {
+              "id": "service",
+              "title": "Services and availability",
+              "paragraphs": [
+                "Origo X provides local ebook reading, library and reading-record management, and may provide accounts, membership verification, software downloads, update checks and online features that you configure. Some features depend on operating systems, app stores, content sites or services you choose, so availability varies by platform, version, region, device and configuration.",
+                "We maintain the service and address reasonable security, compatibility and reliability issues, but cannot guarantee uninterrupted third-party services, networks or imported content. Planned maintenance, urgent fixes, upstream changes or security risks may temporarily limit a feature."
+              ]
+            },
+            {
+              "id": "account",
+              "title": "Accounts and security",
+              "paragraphs": [
+                "Provide usable sign-in information and protect passwords, verification codes, passkeys, two-factor credentials and signed-in devices. You are responsible for activity under your account. If you detect unauthorized use, update your credentials and contact the maintainer through the support channel.",
+                "Do not sell or rent accounts, bypass authentication, purchase verification, entitlements or risk controls, or disrupt the service through automated abuse, bulk registration, malicious redemption, attacks or similar conduct. We may limit abnormal requests and suspend affected capabilities when evidence shows abuse or danger to the service. Sharing an IP address alone does not establish that users are the same person."
+              ]
+            },
+            {
+              "id": "content",
+              "title": "Books, notes and configuration",
+              "paragraphs": [
+                "Rights in books, sources, notes, highlights, covers, fonts, backups and other material you import remain with their respective owners. You are responsible for having permission to obtain, store, process, sync and read that material and for the content and configuration you import, publish or connect.",
+                "Local reading data is stored on the device by default. When you enable WebDAV, AI, cloud speech, sources or another external service, material is sent to that service according to your action. See the Privacy Policy, Book Sources and Third-Party Content Rules, and Third-Party Services Notice. Back up important material before deletion, cleanup, uninstall or sync."
+              ]
+            },
+            {
+              "id": "acceptable-use",
+              "title": "Acceptable use",
+              "paragraphs": [
+                "Do not use Origo X for unlawful activity, infringement of intellectual property or privacy, malicious code, bypassing access controls, unauthorized scraping, abnormal load, impersonating the maintainer, or misleading others into believing a source, item or service is endorsed by Origo X.",
+                "Origo X is a general reading tool. It does not provide or sell third-party books and does not grant rights to access them. When we receive a specific, verifiable report, we may remove a link, configuration or entry from official channels and keep records needed to handle the report."
+              ]
+            },
+            {
+              "id": "software",
+              "title": "Software, open source and feedback",
+              "paragraphs": [
+                "The Origo X software and website code, brand, interface assets and service content are protected under applicable intellectual-property rules. Components released under open-source licenses remain governed by those licenses. These terms do not change third-party licenses or transfer rights in content you import.",
+                "Bug reports, suggestions and code contributions sent through public project channels may be used as needed to investigate issues, improve the product and maintain the project. Code contributions are also governed by the repository’s contribution and open-source terms. Never post personal information, keys, full orders or restricted content publicly."
+              ]
+            },
+            {
+              "id": "changes",
+              "title": "Updates, termination and changes",
+              "paragraphs": [
+                "You may stop using the service, sign out, or delete an account as described in Privacy Notice & Choices. Sign-out, uninstall and account deletion have different effects. Purchases, refunds, third-party copies and records that must remain are handled under their specific rules.",
+                "When product features, data processing, purchase models or service rules materially change, we update the version, dates and change summary and request acceptance again where needed. Editorial changes that do not alter meaning should not unnecessarily advance the consent version."
+              ],
+              "links": [
+                {
+                  "label": "Contact the Origo X maintainer",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                },
+                {
+                  "label": "Browse legal documents",
+                  "href": "/legal?lang=en"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "privacy",
+          "locale": "en",
+          "title": "Privacy Policy",
+          "summary": "How Origo X and its website handle personal information across local reading, account services and optional online features.",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "Unifies the policy version and effective date.",
+            "Preserves current disclosures for local reading, accounts, risk controls, purchases, optional online features and retention.",
+            "Adds account reading statistics, Huawei sign-in, mainland-China production services and terminal purchase ownership after account deletion."
+          ],
+          "canonicalUrl": "https://open.xxread.top/privacy",
+          "requiresAcceptance": true,
+          "sections": [
+            {
+              "id": "scope",
+              "title": "Scope and responsible person",
+              "paragraphs": [
+                "Origo X is provided by Wangtao Xie, who is responsible for personal information processed by our first-party services. This policy covers Origo X apps, open.xxread.top, and our account, membership and download services.",
+                "Content websites, sign-in and payment platforms, and AI, WebDAV or other services you configure also handle data under their own privacy policies. Review those policies before connecting. This policy does not replace them."
+              ]
+            },
+            {
+              "id": "local-reading",
+              "title": "Local reading and permissions",
+              "paragraphs": [
+                "Basic local reading does not require an account. Imported books, reading progress, bookmarks, highlights, notes, reading statistics and preferences are stored on your device by default. Local reading alone does not upload this content to our account server. You choose where exported files are saved or shared.",
+                "Features such as file or photo selection, notifications and text-to-speech request permissions when needed for the feature and required by the platform. Local reading does not require access to contacts, precise location or recordings of your voice. Network use by system speech services, iCloud documents and system backups depends on your device settings and platform services."
+              ]
+            },
+            {
+              "id": "account-reading",
+              "title": "Account reading statistics and leaderboards",
+              "paragraphs": [
+                "While signed in, reading record IDs, account ownership, start and end times, durations and provenance are uploaded to our server for cross-device statistics, deduplication and personal summaries. This feature does not upload book text, titles, book lists or hardware identifiers. Guest records stay on the device until you choose an account to import them into, and imported records cannot be reassigned.",
+                "Public rankings are off by default. If you opt in, the leaderboard shows your display name, avatar and eligible reading time. Opting out hides your ranking while private cloud statistics remain. Deleting the account deletes its cloud reading records."
+              ]
+            },
+            {
+              "id": "account",
+              "title": "Accounts, sign-in and security",
+              "paragraphs": [
+                "To detect abuse, we aggregate download, registration and redemption request rates and origin bytes by IP. Risk events and hourly aggregates are retained for 90 days, minute aggregates for 7 days, and action audits for 180 days. Authorized administrators may review evidence and restrict accounts or IPs; sharing an IP does not establish that users are the same person.",
+                "We record connection IP addresses when accounts are created or signed in, and the IP address, account and time of each successful card or promotional code redemption. These records help identify abuse such as multiple accounts claiming codes from the same IP and support account security controls. Only administrators with the relevant permissions can access them.",
+                "When you create or sign in to an account, we process the email address, username, display name and avatar you provide, together with your account ID, authentication status and membership status. Email is used for verification and account security. Password verification material, verification codes, multi-factor authentication and passkey information support the authentication methods you select. Never send support your password or verification codes.",
+                "When you choose Apple, Google, GitHub or Huawei sign-in, the platform handles authorization and may share an identifier, email address and basic profile information within the authorized scope. Available methods depend on the current service. We use this information to create or link your account; this does not give us access to all your content on that platform.",
+                "The app stores authentication tokens in system secure storage and a local summary for displaying your account. Signing out removes the local sign-in state, but does not automatically delete the server account or data on other devices."
+              ]
+            },
+            {
+              "id": "purchases",
+              "title": "Membership and purchase verification",
+              "paragraphs": [
+                "Apple or your selected payment provider processes payments. We process product, order or transaction identifiers, purchase time, transaction status, verification evidence and membership entitlements, linking entitlements to your account where needed to verify purchases, restore access, handle refunds and prevent fraud.",
+                "For Apple payments, we do not receive your card number or complete payment account information. Deleting the app, signing out or requesting data deletion does not automatically request a refund or delete transaction records that the payment platform must retain."
+              ]
+            },
+            {
+              "id": "optional-services",
+              "title": "Online features you choose",
+              "paragraphs": [
+                "These features require you to configure or use them. A server receiving a request can see the connection IP address and information needed to provide its service."
+              ],
+              "bullets": [
+                "WebDAV: depending on your sync and backup choices, library information, progress, bookmarks, notes, reading sessions, settings and optionally book files and covers are sent to the server you specify. Sync also sends a randomly generated device identifier stored locally to distinguish devices and resolve conflicts; it is not an advertising identifier or hardware fingerprint. Server credentials are used to access that service. You and the provider manage remote retention and deletion.",
+                "AI: your questions, selected text or page content, relevant book and chapter context, and conversation context are sent to your configured AI provider. Your API key authenticates with that provider. Do not submit private information you do not want it to receive. Its retention and model-training practices depend on its policy and your account settings.",
+                "Cloud text-to-speech: when you switch to a configured cloud TTS service and use read-aloud, text to be spoken and settings such as voice and speed are sent to that provider, using your API key. Default system speech is handled by the device speech engine; cloud TTS does not record or upload your voice.",
+                "Book sources, search and web content: queries and requests for catalogs or chapters go to your selected content service. Website login state and script requests depend on the sources you import or configure. Use only trusted services and content you are entitled to access.",
+                "Remote covers, fonts and updates: loading online resources or checking for updates sends the resource address, version or platform information and network connection information to the relevant server."
+              ]
+            },
+            {
+              "id": "website",
+              "title": "Website, operational records and storage",
+              "paragraphs": [
+                "When you visit the website, use online APIs or download software, service infrastructure processes IP addresses, request times, paths, response status and browser or client information to deliver the service, troubleshoot and protect it. The download service also records the selected version, platform and download event, and infers an approximate region from the IP address for download statistics. This is not GPS location.",
+                "The website uses Cloudflare for network proxy and security services. Download-region statistics may send a public IP address to IP.SB, ipwho.is or PConline’s IP lookup service to obtain an approximate country, province or city. These lookup services handle requests under their own policies; this lookup does not send them your reading text or account password.",
+                "The website uses necessary session or authentication storage and saves preferences such as language and appearance in cookies or browser storage. Clearing this storage may sign you out or reset preferences. We do not use it for cross-site advertising tracking."
+              ]
+            },
+            {
+              "id": "purposes-sharing",
+              "title": "Purposes and recipients",
+              "paragraphs": [
+                "We process data to provide requested features, maintain accounts and purchase entitlements, protect the service, respond to support requests and improve download services. You decide whether to enable optional features requiring your authorization. We seek additional authorization where applicable law requires it.",
+                "We do not sell personal information, use reading content to build advertising profiles, or provide data to brokers or for cross-company advertising tracking. Necessary information is processed by our cloud infrastructure, your chosen identity or payment platforms and external services you connect. We may retain or disclose relevant records where necessary for legal obligations, security incidents or disputes.",
+                "The app does not integrate advertising or general analytics SDKs that automatically upload reading activity. Local debug records are not automatically sent to us. Diagnostic or support material you choose to share may contain book names, file paths or screenshots; review and redact it first. Platform diagnostics collected by the operating system are governed by its settings and policies."
+              ]
+            },
+            {
+              "id": "retention",
+              "title": "Retention and security",
+              "paragraphs": [
+                "Local content generally remains until you delete it, clear app data or uninstall. System backups, exports and WebDAV copies must be managed separately. Account information is retained while we provide account services. Purchase and security records are retained as necessary for transactions, disputes, fraud prevention and applicable legal requirements. Signing out is not account deletion.",
+                "IP addresses, IP hashes, browser information and region data in download event details are periodically cleared under a 180-day retention period; cumulative download counts may remain. Website access logs rotate by size and are kept for up to 30 days. Email verification records are cleared two days after the request; expired sessions and temporary sign-in challenges have separate short-term cleanup rules. Core account, transaction and security audit records currently have no single automatic deletion period.",
+                "Deletion requests are handled by data category. Any records that must remain are restricted to the necessary purposes. Backup copies may remain until backup rotation. Retention periods differ; we do not promise that all records are automatically erased after a fixed number of days.",
+                "When you delete your account yourself in the app or on the website, the account record, sign-in methods, sessions, two-factor setup, membership access, referral links and cloud reading statistics are deleted. Redeemed codes remain spent. Account-bound Reader and Explorer purchases become terminal records that cannot be claimed again, while immutable original account ownership remains to prevent moving the same transaction to another account. A minimal deletion record remains without the plaintext email address.",
+                "We use HTTPS, authentication controls and access restrictions to protect online data. The security of third-party addresses and shared files depends on the service and your configuration. No network or storage measure can guarantee absolute security.",
+                "WebDAV sync currently has no app-level end-to-end encryption. Synced data is stored as readable data or files on your selected service. HTTPS protects data in transit; it does not prevent the service from reading it."
+              ]
+            },
+            {
+              "id": "international",
+              "title": "Service locations and international access",
+              "paragraphs": [
+                "Our website, account, purchase-verification and reading-statistics production services currently operate in mainland China. Infrastructure and the specific facility may change, so this policy does not promise a permanent cloud provider or city. Sign-in, payment, AI, WebDAV, content and resource services you choose may operate in other countries or regions, and using them may involve cross-region transfers. Review the provider and its location before connecting and avoid sending personal information to untrusted services.",
+                "Where applicable law imposes additional requirements on a transfer, those requirements apply. This policy does not replace any separate notice, consent or other measures required by law."
+              ]
+            },
+            {
+              "id": "rights-contact",
+              "title": "Your rights and contact",
+              "paragraphs": [
+                "Subject to applicable law, you can request information about, access to, correction, a copy or deletion of your personal information, withdraw relevant authorization or object to processing. See Privacy Notice & Choices for available controls and instructions for different copies of your data. We may verify your identity to protect your account, but will never ask for your password or one-time verification code.",
+                "Our current public support channel is the project GitHub Issues page. For account, order or deletion matters, initially ask only for a private privacy-support channel. Share the minimum verification information after a private channel is arranged. Do not post email addresses, purchase evidence, book content, API keys or other personal information in a public issue."
+              ],
+              "links": [
+                {
+                  "label": "Contact the Origo X maintainer",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                },
+                {
+                  "label": "Privacy Notice & Choices",
+                  "href": "/privacy-choices?lang=en"
+                }
+              ]
+            },
+            {
+              "id": "children-changes",
+              "title": "Minors and policy changes",
+              "paragraphs": [
+                "Minors should use online services with guidance from a parent or guardian. Where the law requires parental consent for processing a child’s information, that consent must be obtained first. A guardian who believes a child provided information without required consent can contact us through the channel above.",
+                "We update this page, its version, effective date and change summary when features or processing practices change. Material changes to purposes, data categories, recipients or user rights receive prominent notice and, before the changed processing continues where consent is required, a new “Agree and continue” or equivalent affirmative choice. Silence or continued browsing of public pages is not treated as consent."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sources",
+          "locale": "en",
+          "title": "Book Sources and Third-Party Content Rules",
+          "summary": "Rules for sources, third-party content, access authorization, script safety and sharing.",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "Adds source roles, authorization boundaries, script safety and reporting rules."
+          ],
+          "canonicalUrl": "https://open.xxread.top/source-terms",
+          "requiresAcceptance": true,
+          "sections": [
+            {
+              "id": "role",
+              "title": "The tool and content providers",
+              "paragraphs": [
+                "Origo X is a general reading tool for imported files and user-configured content services. Origo X first-party services do not host, edit or sell books reached through third-party sources, and parsing, search or reading features do not transfer rights in that content to Origo X.",
+                "Source rules, scripts, website addresses and sessions may come from you, a community or another party. Unless explicitly identified as official, Origo X does not promise their availability, security, content, authorization or maintenance."
+              ]
+            },
+            {
+              "id": "authorization",
+              "title": "Authorization and content rights",
+              "paragraphs": [
+                "Connect only to services you are entitled to use and follow the content site’s terms, access limits, payment requirements and applicable rules. Do not use a source to bypass subscriptions, paywalls, technical measures, geographic restrictions or other access controls, or to download, distribute or retain content without permission.",
+                "Whether material is in the public domain, licensed by an author or platform, or permitted for a particular use depends on the specific material and use. Origo X cannot make that determination for you. Stop and confirm with the rights holder or provider when uncertain."
+              ]
+            },
+            {
+              "id": "security",
+              "title": "Scripts, sign-in and security",
+              "paragraphs": [
+                "A source can make network requests, parse web pages and use the sign-in state for its website. Before importing, inspect its origin, domains, script behavior and credentials. Avoid unknown configurations or those requesting unnecessary sensitive information.",
+                "Third-party sites can see your connection IP, requests and client information needed to respond. You and the site manage its account, cookies, tokens, verification codes and payment credentials. Never place passwords, codes or keys in a public source. Disable the source and secure related credentials if requests, redirects, certificates or account activity look abnormal."
+              ]
+            },
+            {
+              "id": "sharing",
+              "title": "Importing, sharing and maintenance",
+              "paragraphs": [
+                "Before sharing a source, remove personal cookies, tokens, account identifiers, private addresses, keys and material you may not publish. Explain its dependent service, sign-in requirements and known limits. Recipients must review it before use.",
+                "Website redesigns, anti-automation controls, discontinued APIs and network changes can break sources. Origo X may improve general runtime compatibility but does not promise a fix for a specific third-party site or continued compatibility with an interface that is withdrawn or no longer permits access."
+              ]
+            },
+            {
+              "id": "reports",
+              "title": "Reports and action",
+              "paragraphs": [
+                "If a link or description in an official channel contains malicious behavior, personal credentials, misleading claims or a specific infringement issue, provide a verifiable link and a description without sensitive information through the public support channel. Do not publicly post accounts, book text, cookies, keys or complete credentials.",
+                "We may remove material with security, authorization or maintenance problems from official catalogs, examples or recommendations. Removing an official entry does not erase copies on user devices or content hosted by a third-party site."
+              ],
+              "links": [
+                {
+                  "label": "Contact the Origo X maintainer",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "membership",
+          "locale": "en",
+          "title": "Membership and Purchase Terms",
+          "summary": "Terms for Reader, Explorer, trials, codes, purchase verification, restoration and refunds.",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "Introduces unified terms for entitlements, trials, purchase verification, restoration and refunds."
+          ],
+          "canonicalUrl": "https://open.xxread.top/membership-terms",
+          "requiresAcceptance": false,
+          "sections": [
+            {
+              "id": "scope",
+              "title": "Scope and entitlement types",
+              "paragraphs": [
+                "Basic local reading features are available free of charge. These terms cover separately offered Reader purchase entitlements, Explorer extensions, trials, redemption codes, promotional grants and app-store purchases. Products, prices, platforms, features and eligibility are those shown on the purchase screen, store listing and current server configuration.",
+                "“Lifetime” for a one-time purchase means the corresponding purchased software entitlement has no fixed expiry date. It does not promise that the app, device, third-party store, online interface or every feature will exist indefinitely, and it does not prevent reversal of an erroneous grant after a refund, fraud, ownership conflict or rule violation."
+              ]
+            },
+            {
+              "id": "account",
+              "title": "Accounts, purchase and ownership",
+              "paragraphs": [
+                "New store purchases require an Origo account. Store evidence and server verification bind the entitlement to that account. A verified Production purchase can be restored on supported platforms under the current product rules. Historical anonymous purchases use compatibility rules and do not move to an arbitrary account merely because it signs in first.",
+                "Before purchase, confirm the Origo account, product tier and store account. Once bound, a transaction should not move between Origo accounts. The Explorer upgrade requires an independent permanent Reader entitlement; the complete Explorer offer includes Reader access, subject to actual store availability. Codes and promotional grants follow their displayed eligibility and expiry rules."
+              ]
+            },
+            {
+              "id": "trial",
+              "title": "Trials and temporary access",
+              "paragraphs": [
+                "Trial availability, duration and platforms are shown in the current interface. A cross-platform Reader trial can start only once for the same account according to server records and is not extended by reinstalling, changing devices or clocks, or repeating requests. Test-environment transactions do not create Production access.",
+                "Temporary Explorer, campaign and referral grants end at their recorded expiry. Any derived Reader capability ends with them unless the account has a separate permanent Reader right or another active source."
+              ]
+            },
+            {
+              "id": "billing",
+              "title": "Payment, verification and restore",
+              "paragraphs": [
+                "Apple App Store, Google Play or the payment service named on the purchase page processes payment and payment-account information. We process product, order or transaction identifiers, purchase time, state, verification evidence and entitlement ownership to verify purchases, restore access, handle reversals and prevent fraud. Apple payments do not give us your complete card number.",
+                "Purchase verification needs network access. Offline evidence has a bounded validity and must refresh. Replaying the same valid transaction does not grant duplicate access. Pending, invalid, Sandbox, account-mismatched, refunded or revoked transactions do not create Production access."
+              ]
+            },
+            {
+              "id": "refunds",
+              "title": "Refunds, revocation and account deletion",
+              "paragraphs": [
+                "Refunds and reversals are handled by the original payment channel under its rules. Deleting the app, signing out or deleting an Origo account does not automatically request a refund. The payment platform may retain transaction records. Ownership of account-bound Reader and Explorer transactions cannot move to another account; after account deletion they become terminal records and cannot be restored to a new account.",
+                "A refund or store revocation deactivates that purchase source but does not revoke another independent code, campaign, administrative or store entitlement that remains active. If the permanent Reader purchase required by an Explorer upgrade is revoked, ownership of the upgrade transaction remains recorded but Explorer and derived Reader access pause until another qualifying independent permanent Reader right is active."
+              ]
+            },
+            {
+              "id": "changes",
+              "title": "Prices, features and updates",
+              "paragraphs": [
+                "Prices, bundles, trials and sales regions for products not yet purchased may change. Completed transactions are handled according to the product shown at purchase and the store record. Product features evolve, and a separate new paid product is not automatically included in an earlier product unless its offer says so.",
+                "When purchase models, entitlement scope or restoration rules materially change, we update the version, dates and change summary. For purchase or restoration support, use the support channel and share only the minimum transaction evidence through a private channel."
+              ],
+              "links": [
+                {
+                  "label": "View Premium",
+                  "href": "/premium"
+                },
+                {
+                  "label": "Contact the Origo X maintainer",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "privacyChoices",
+          "locale": "en",
+          "title": "Privacy Notice & Choices",
+          "summary": "Manage local content, your account and third-party copies. Signing out, deleting local files and deleting server data are separate actions.",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "Unifies the version, dates and entry point for privacy choices.",
+            "Preserves existing controls for local data, accounts, WebDAV, AI, permissions and website data.",
+            "Clarifies that account deletion removes cloud reading statistics and account-bound purchases cannot be restored to another account."
+          ],
+          "canonicalUrl": "https://open.xxread.top/privacy-choices",
+          "requiresAcceptance": false,
+          "sections": [
+            {
+              "id": "local",
+              "title": "Manage local books and reading records",
+              "paragraphs": [
+                "Use the relevant library, book, note and settings screens to manage or delete content, and the available export and backup features to keep a copy. Check whether you still need book files, bookmarks or annotations before deleting them.",
+                "Uninstalling or clearing app data may remove local information, but does not erase exported files, system backups, iCloud files or WebDAV copies. Removing a library entry does not necessarily delete every original file."
+              ]
+            },
+            {
+              "id": "account",
+              "title": "Account access, sign-out and deletion requests",
+              "paragraphs": [
+                "Sign in to the website account center to view account and membership information and use the profile and security controls currently available. Signing out in the app only removes the local account token and display summary.",
+                "You can delete your account yourself: open Account security in the app, or the account security page on the website, and choose Delete account. Deletion requires accepting the deletion terms, entering a code sent to your account email (plus your two-factor code if you have one enabled), and retyping your account email. Your account, sign-in methods, sessions, two-factor setup and membership access are then permanently deleted and cannot be restored.",
+                "After deletion we keep a minimal deletion record without the plaintext email address, together with the necessary immutable original ownership and terminal verification records for purchases, to prevent abuse and moving the same transaction to another account. Account-bound Reader or Explorer purchases cannot be restored to a new account. Deletion does not issue a refund, remove data held by other services or reverse a payment. Books and reading records on your device stay on your device; remove them there if you want them gone.",
+                "To request a copy of your account information, a correction you cannot make yourself, or if the deletion control is unavailable, contact Wangtao Xie, the Origo X maintainer. First request a private contact channel through the public support link below without posting personal information; then provide only the information needed to verify your account. After verification we handle the request according to applicable requirements and explain any transaction, security or legal records that must remain."
+              ],
+              "links": [
+                {
+                  "label": "Open account center",
+                  "href": "/account"
+                },
+                {
+                  "label": "Delete account",
+                  "href": "/account/delete"
+                },
+                {
+                  "label": "Contact the maintainer about privacy",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                }
+              ]
+            },
+            {
+              "id": "webdav",
+              "title": "Stop sync and delete WebDAV copies",
+              "paragraphs": [
+                "Stop sync, disable automatic sync or remove the configuration in the app’s WebDAV or sync settings to stop future syncing. Disconnecting or removing local credentials does not delete remote backups.",
+                "To remove uploaded books, notes, progress or backups, delete the relevant files on your own WebDAV service and check its trash, version history and backups. Other connected devices may upload data again: stop syncing on each device before removing copies."
+              ]
+            },
+            {
+              "id": "ai",
+              "title": "Manage AI content and keys",
+              "paragraphs": [
+                "Without configuring or using AI, no new content is submitted through that feature. You can stop using AI and clear local conversation history. Removing a quick model does not delete a stored key; current AI settings do not provide a separate key-deletion control.",
+                "Clearing local history cannot retract content already sent to an AI provider. Manage remote history, retention, training settings and deletion requests through that provider. Revoke an API key with the provider as well if you want to disable it.",
+                "For cloud read-aloud, switch back to system TTS and clear the cloud service key to stop further cloud requests. Text already sent is managed under the cloud TTS provider’s policy."
+              ]
+            },
+            {
+              "id": "permissions",
+              "title": "Manage permissions and authorizations",
+              "paragraphs": [
+                "Adjust file, photo, notification and other permissions in system app settings; related features may then be limited. Use the platform’s controls for speech, iCloud and backup settings.",
+                "Revoke Apple, Google, GitHub or Huawei sign-in authorization in the corresponding platform account settings. Revocation may prevent future sign-in, but does not automatically delete our account records. Manage source-website sessions, cloud files and payment information with each relevant service."
+              ]
+            },
+            {
+              "id": "website",
+              "title": "Website preferences and necessary records",
+              "paragraphs": [
+                "Clear cookies and website storage for open.xxread.top in your browser to reset language, theme and sign-in state. The website has no personalized advertising control for cross-company ad tracking.",
+                "Clearing browser storage does not delete server-side account, transaction, download or security records. Necessary online request records support functionality, security and download statistics. Contact us to exercise applicable personal information rights."
+              ]
+            },
+            {
+              "id": "requests",
+              "title": "Make a privacy request",
+              "paragraphs": [
+                "Explain the category of information you want to access, correct, export or delete, and whether it concerns your device, our account service or a third party. We can handle data under our control; manage local and third-party copies as described above.",
+                "Use a public GitHub issue only to establish contact: for example, “I need a private channel for an Origo X account privacy request.” Do not attach passwords, verification codes, complete orders, email addresses, books, screenshots containing personal information or any keys."
+              ],
+              "links": [
+                {
+                  "label": "Request privacy contact",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                },
+                {
+                  "label": "Read the full Privacy Policy",
+                  "href": "/privacy?lang=en"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "third-party-services",
+          "locale": "en",
+          "title": "Third-Party Services Notice",
+          "summary": "How sign-in, payment, WebDAV, AI, cloud speech, sources and network services interact with Origo X.",
+          "revision": "2026-10-08.1",
+          "consentVersion": "2026-10-08.1",
+          "effectiveDate": "2026-10-08",
+          "updatedAt": "2026-10-08",
+          "changeSummary": [
+            "Adds a categorized explanation of third-party services, data flows and user controls."
+          ],
+          "canonicalUrl": "https://open.xxread.top/third-party-services",
+          "requiresAcceptance": false,
+          "sections": [
+            {
+              "id": "overview",
+              "title": "When third parties are contacted",
+              "paragraphs": [
+                "Origo X is local-reading first. It connects to another service only when you choose features such as sign-in, purchase, sync, AI, cloud speech, book sources, online resources or updates. Each third party handles received data under its own terms and privacy policy. This notice explains feature boundaries; it does not mean Origo X controls those services."
+              ]
+            },
+            {
+              "id": "identity-payment",
+              "title": "Identity and payment platforms",
+              "paragraphs": [
+                "When you choose Apple, Google, GitHub or Huawei sign-in, that platform handles authorization and may provide an identifier, verified email and basic profile information within the approved scope. You can revoke authorization in the platform account settings; revocation does not automatically delete the Origo account.",
+                "Apple App Store, Google Play or the payment service named on the page handles payment, refunds and payment-account information. We receive only product, transaction, status and verification information needed to verify purchases and maintain entitlements. Store availability and payment disputes are governed by that platform."
+              ]
+            },
+            {
+              "id": "cloud",
+              "title": "WebDAV, AI and cloud speech",
+              "paragraphs": [
+                "WebDAV sends data to the server you specify, potentially including library data, progress, bookmarks, notes, reading sessions, settings and books or covers you choose to sync. Origo X currently provides no app-level end-to-end encryption for WebDAV data. You and the provider manage server retention and deletion.",
+                "AI receives questions, selected text or page content, necessary book and chapter context, and conversation context that you submit. Cloud speech receives text and settings such as voice and speed. API keys authenticate to your selected provider. Manage retention, training and deletion under that provider’s controls."
+              ]
+            },
+            {
+              "id": "content-network",
+              "title": "Content, resources and network services",
+              "paragraphs": [
+                "Book source, search, catalog, chapter, cover, font and update requests go to the corresponding content or resource server. The website uses Cloudflare for network proxy and security. Download-region statistics may use IP.SB, ipwho.is or PConline’s IP lookup service to resolve an approximate region from a public IP address; they do not receive reading text or account passwords for that lookup.",
+                "Network use by system speech, iCloud documents, system backups, platform diagnostics and app-store services depends on device settings and platform rules. Origo X cannot delete copies held by those platforms or services you configure."
+              ]
+            },
+            {
+              "id": "control",
+              "title": "Choice and control",
+              "paragraphs": [
+                "Do not use or configure an optional service if you do not want new requests sent through that feature. Disconnecting a service, clearing local records and deleting remote copies are separate actions. See Privacy Notice & Choices for specific controls.",
+                "Before connecting, review the provider, service region, fees, data use and deletion controls. Use only services you trust. Never post passwords, verification codes, cookies, tokens, keys, full orders or book content in public feedback or sources."
+              ],
+              "links": [
+                {
+                  "label": "View Privacy Notice & Choices",
+                  "href": "/privacy-choices?lang=en"
+                },
+                {
+                  "label": "Contact the Origo X maintainer",
+                  "href": "https://github.com/miloquinn/origo-x-neo/issues"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -16,10 +16,7 @@ class MeasuredSize extends SingleChildRenderObjectWidget {
       _RenderMeasuredSize(onChanged);
 
   @override
-  void updateRenderObject(
-    BuildContext context,
-    RenderObject renderObject,
-  ) {
+  void updateRenderObject(BuildContext context, RenderObject renderObject) {
     (renderObject as _RenderMeasuredSize).onChanged = onChanged;
   }
 }

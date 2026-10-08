@@ -172,7 +172,9 @@ class SourceQuickJsRuntime extends QuickJsRuntime2 {
           identical(runtimeOpaques[pointer], _nativeOpaque)) {
         runtimeOpaques.remove(pointer);
       }
-      JavascriptRuntime.channelFunctionsRegistered.remove(getEngineInstanceId());
+      JavascriptRuntime.channelFunctionsRegistered.remove(
+        getEngineInstanceId(),
+      );
       _interrupt?.close();
       _interrupt = null;
     }

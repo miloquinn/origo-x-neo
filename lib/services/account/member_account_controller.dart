@@ -53,6 +53,7 @@ class MemberAccountController extends ChangeNotifier {
     GoogleNativeSignInClient? googleNativeSignIn,
     PurchaseStore? purchaseStore,
     ReadingAccountScope? readingScope,
+    bool? networkAllowed,
     this.membershipRetryDelay = const Duration(seconds: 30),
   }) : _api =
            api ??
@@ -60,6 +61,7 @@ class MemberAccountController extends ChangeNotifier {
              offlineReaderLicenseStore: offlineReaderLicenseStore,
              readerCredentialStore: readerCredentialStore,
            ),
+       _networkAllowed = networkAllowed ?? true,
        _readingScope = readingScope ?? ReadingAccountScope.instance,
        _avatarCache = avatarCache ?? AccountAvatarCache.instance,
        _summaryCache = summaryCache ?? const MemberAccountSummaryCache(),
@@ -70,6 +72,7 @@ class MemberAccountController extends ChangeNotifier {
        _pendingAuthorizationStore =
            pendingAuthorizationStore ?? SecurePendingDeviceAuthorizationStore(),
        _authCallbackBridge = authCallbackBridge ?? AccountAuthCallbackBridge() {
+    _api.setNetworkAllowed(_networkAllowed);
     _googleNativeSignIn =
         googleNativeSignIn ?? GoogleNativeSignInService.instance;
     _apiSessionSubscription = _api.sessionInvalidations.listen((_) {
@@ -248,6 +251,8 @@ class MemberAccountController extends ChangeNotifier {
   bool _membershipSyncFailed = false;
   int _membershipRequest = 0;
   int _referralRequest = 0;
+  bool _networkAllowed;
+  int _networkGeneration = 0;
   bool _disposed = false;
   void _notifyStorePurchase() {
     if (!_disposed) notifyListeners();
@@ -255,6 +260,41 @@ class MemberAccountController extends ChangeNotifier {
 
   Future<void>? _synchronizing;
   bool get membershipSyncFailed => _membershipSyncFailed;
+
+  bool get networkAllowed => _networkAllowed;
+
+  void setNetworkAllowed(bool value) {
+    if (_disposed || value == _networkAllowed) return;
+    _networkAllowed = value;
+    _networkGeneration++;
+    _api.setNetworkAllowed(value);
+    if (value) return;
+    _membershipRetry?.cancel();
+    _membershipRetry = null;
+    _membershipRequest++;
+    _referralRequest++;
+    _accountReaderRequest++;
+    _synchronizing = null;
+  }
+
+  bool _isLegalConsentRequired(Object error) =>
+      error is MemberAccountException && error.isLegalConsentRequired;
+
+  int _captureNetworkGeneration() {
+    final generation = _networkGeneration;
+    _requireNetworkAllowed(generation);
+    return generation;
+  }
+
+  void _requireNetworkAllowed([int? generation]) {
+    if (!_networkAllowed ||
+        (generation != null && generation != _networkGeneration)) {
+      throw const MemberAccountException(
+        '请先同意最新协议',
+        code: MemberAccountException.legalConsentRequiredCode,
+      );
+    }
+  }
 
   bool _isRetryableMembershipError(Object error) =>
       error is MemberAccountException &&
@@ -269,9 +309,10 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   void _scheduleMembershipRetry(String? accountId) {
+    if (_disposed || !_networkAllowed) return;
     _membershipRetry?.cancel();
     _membershipRetry = Timer(membershipRetryDelay, () async {
-      if (_disposed || _user?.id != accountId) return;
+      if (_disposed || !_networkAllowed || _user?.id != accountId) return;
       if (_loading) {
         _scheduleMembershipRetry(accountId);
         return;
@@ -287,9 +328,10 @@ class MemberAccountController extends ChangeNotifier {
   /// Reconcile the account without opening StoreKit or requiring a page visit.
   /// Callers may share this operation; temporary failures schedule recovery.
   Future<void> synchronize() {
+    if (_disposed || !_networkAllowed) return Future<void>.value();
+    final networkGeneration = _captureNetworkGeneration();
     final active = _synchronizing;
     if (active != null) return active;
-    if (_disposed) return Future<void>.value();
     if (_loading || _storePurchase.busy) {
       _scheduleMembershipRetry(_user?.id);
       return Future<void>.value();
@@ -300,9 +342,12 @@ class MemberAccountController extends ChangeNotifier {
           try {
             if (_user == null) {
               await initialize(force: true);
+              _requireNetworkAllowed(networkGeneration);
             } else {
               await loadMembership();
+              _requireNetworkAllowed(networkGeneration);
               await refreshReaderAccess();
+              _requireNetworkAllowed(networkGeneration);
             }
           } catch (_) {
             // Public explicit actions still throw; background lifecycle sync reports
@@ -615,28 +660,39 @@ class MemberAccountController extends ChangeNotifier {
   }
 
   Future<void> initialize({bool force = false}) async {
+    if (_disposed || !_networkAllowed) return;
     if (_loading) return;
     if (_initialized && !force) return;
+    final networkGeneration = _captureNetworkGeneration();
+    var consentInterrupted = false;
     try {
       await _run(() async {
         await _restorePendingDeviceAuthorization();
+        _requireNetworkAllowed(networkGeneration);
         unawaited(_initializeAuthCallbackBridge());
         _summary = await _summaryCache.load();
+        _requireNetworkAllowed(networkGeneration);
         if (AppDistribution.isStore) {
           try {
             _readerCredential = await _readerCredentialStore.getOrCreate();
+            _requireNetworkAllowed(networkGeneration);
             _accountReaderAttestation = await _readerAccessCache.loadAccount(
               credential: _readerCredential!,
               sessionBinding: await _api.offlineReaderSessionBinding(),
             );
+            _requireNetworkAllowed(networkGeneration);
             _offlineReaderAccountId = _accountReaderAttestation?.accountId;
             _readerAttestation = await _readerAccessCache.load(
               credential: _readerCredential!,
               channel: _readerChannel,
             );
+            _requireNetworkAllowed(networkGeneration);
             final result = await _api.readerStatus(_readerChannel);
+            _requireNetworkAllowed(networkGeneration);
             await _acceptReaderResult(result);
-          } catch (_) {
+            _requireNetworkAllowed(networkGeneration);
+          } catch (error) {
+            if (_isLegalConsentRequired(error)) rethrow;
             // A current server status is preferred; a still-valid opaque
             // attestation keeps the reader available during a network outage.
           }
@@ -653,12 +709,14 @@ class MemberAccountController extends ChangeNotifier {
             _api.authConfig(),
             _api.membershipConfig(),
           ]);
+          _requireNetworkAllowed(networkGeneration);
           _authConfig = configs[0] as MemberAuthConfig;
           _membershipConfig = configs[1] as MemberMembershipConfig;
           _configureStoreProducts();
           if (AppDistribution.usesStoreBilling && storeBillingReady) {
             try {
               await _storePurchase.initialize();
+              _requireNetworkAllowed(networkGeneration);
             } catch (_) {
               // Product metadata can be retried independently from account and
               // anonymous reader state initialization.
@@ -669,14 +727,18 @@ class MemberAccountController extends ChangeNotifier {
           deferred = error;
         }
         try {
+          _requireNetworkAllowed(networkGeneration);
           final session = await _api.restoreSession();
+          _requireNetworkAllowed(networkGeneration);
           _acceptSession(session);
           if (session.mfaRequired) {
             await _clearSummary();
             await _clearMembershipCache();
           } else {
-            await _loadAccountValues();
+            await _loadAccountValues(networkGeneration: networkGeneration);
+            _requireNetworkAllowed(networkGeneration);
             await _persistSummary();
+            _requireNetworkAllowed(networkGeneration);
           }
         } on MemberAccountException catch (error) {
           if (error.statusCode == 401) {
@@ -697,6 +759,10 @@ class MemberAccountController extends ChangeNotifier {
         if (deferred != null) throw deferred;
       });
     } catch (error) {
+      if (_isLegalConsentRequired(error)) {
+        consentInterrupted = true;
+        return;
+      }
       if (_isRetryableMembershipError(error)) {
         _membershipSyncFailed = true;
         _scheduleMembershipRetry(_user?.id);
@@ -716,7 +782,7 @@ class MemberAccountController extends ChangeNotifier {
       // The account center must remain usable after a network failure. A
       // spinner-only page with no retry is how users get stuck unable to
       // sign in with or without a proxy.
-      _initialized = true;
+      if (!consentInterrupted) _initialized = true;
       notifyListeners();
     }
   }
@@ -1847,6 +1913,7 @@ class MemberAccountController extends ChangeNotifier {
           request != _membershipRequest) {
         rethrow;
       }
+      if (_isLegalConsentRequired(error)) rethrow;
       _membershipSyncFailed = true;
       if (_isRetryableMembershipError(error)) {
         // Keep only this session's server-verified grant; never trust UI cache.
@@ -1872,7 +1939,8 @@ class MemberAccountController extends ChangeNotifier {
       // The authenticated profile includes this inviter's locked campaign rules.
       // Public campaign revisions only apply to participants without that lock.
       referral = await _api.referral();
-    } catch (_) {
+    } catch (error) {
+      if (_isLegalConsentRequired(error)) rethrow;
       if (!_disposed &&
           identical(_user, owner) &&
           request == _referralRequest) {
@@ -1886,19 +1954,24 @@ class MemberAccountController extends ChangeNotifier {
     _referral = referral;
   }
 
-  Future<void> _loadAccountValues() async {
+  Future<void> _loadAccountValues({int? networkGeneration}) async {
+    _requireNetworkAllowed(networkGeneration);
     try {
       await _loadMembershipValue();
-    } on MemberAccountException {
+    } on MemberAccountException catch (error) {
+      if (error.isLegalConsentRequired) rethrow;
       // The session and user returned by authentication are authoritative.
       // Membership is supplementary and can recover on a later account load.
     }
+    _requireNetworkAllowed(networkGeneration);
     try {
       await refreshReaderAccess();
-    } on MemberAccountException {
+    } on MemberAccountException catch (error) {
+      if (error.isLegalConsentRequired) rethrow;
       // Account login succeeds independently from billing availability. A
       // verified account-bound offline license remains usable within its TTL.
     }
+    _requireNetworkAllowed(networkGeneration);
     if (AppDistribution.usesStoreBilling) {
       try {
         await initializeStorePurchases();
@@ -1906,14 +1979,17 @@ class MemberAccountController extends ChangeNotifier {
         // StoreKit availability is independent from account authentication;
         // the account page can still offer a retry or restore action.
       }
+      _requireNetworkAllowed(networkGeneration);
     }
     try {
       await _loadReferralValue();
-    } on MemberAccountException {
+    } on MemberAccountException catch (error) {
+      if (error.isLegalConsentRequired) rethrow;
       // Referral is additive. Older servers or a temporary referral endpoint
       // failure must not prevent an otherwise valid account session.
       _referral = null;
     }
+    _requireNetworkAllowed(networkGeneration);
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -1928,7 +2004,7 @@ class MemberAccountController extends ChangeNotifier {
     try {
       await action();
     } on MemberAccountException catch (error) {
-      _error = error.message;
+      if (!error.isLegalConsentRequired) _error = error.message;
       rethrow;
     } catch (_) {
       const error = MemberAccountException('账号操作失败，请稍后再试');

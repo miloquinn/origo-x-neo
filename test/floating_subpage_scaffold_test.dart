@@ -1,10 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 
 void main() {
+  testWidgets('parent rebuild does not rewrite unchanged system UI', (
+    tester,
+  ) async {
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method.startsWith('SystemChrome.')) calls.add(call);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    final rebuild = ValueNotifier(0);
+    addTearDown(rebuild.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ValueListenableBuilder<int>(
+          valueListenable: rebuild,
+          builder: (context, value, child) => FloatingSubpageScaffold(
+            title: 'Preferences $value',
+            body: const SizedBox.shrink(),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    calls.clear();
+
+    rebuild.value += 1;
+    await tester.pump();
+
+    expect(calls, isEmpty);
+  });
+
   testWidgets('header reserves the measured width of text actions', (
     tester,
   ) async {

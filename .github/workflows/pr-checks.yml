@@ -178,6 +178,11 @@ jobs:
           done
 
           flutter test test/library_cover_storage_repair_test.dart
+          flutter test test/library_shelf_folders_test.dart
+          flutter test test/library_shelf_motion_test.dart
+          flutter test test/library_shelf_card_test.dart
+          flutter test test/library_grid_density_test.dart
+          flutter test test/library_shelf_responsive_test.dart
           flutter test test/book_source_maintenance_page_test.dart
 
           organization_tests=(
@@ -216,7 +221,14 @@ jobs:
           # Native reader suites share asynchronous disposal and platform state.
           # Keep all cases active while giving each a fresh process.
           native_txt_tests=(
+            'continuous TXT chapters leave a body-scaled gap (fontSize=19.0, lineHeight=1.75)'
+            'continuous TXT chapters leave a body-scaled gap (fontSize=28.0, lineHeight=2.0)'
             'native TXT replacement rules clean title and content'
+            'native live purification restores original title and body'
+            'native latest purification wins when old body finishes last'
+            'native source rules read registered nested source config'
+            'native initial title batch retries after a rule save'
+            'native book rule entry shares the DB key and current effects'
             'TXT chapter title is a dedicated first page'
             'native open failure keeps the seeded reader theme background'
             'disabled TXT title page places the heading above body text'
@@ -232,6 +244,12 @@ jobs:
             flutter test test/native_reader_txt_title_page_test.dart \
               --plain-name "$test_name"
           done
+          for chapter_title_page_enabled in true false; do
+            for scroll_by_chapter in true false; do
+              flutter test test/native_reader_txt_title_page_test.dart \
+                --plain-name "vertical TXT TOC jump aligns the chapter start (titlePage=$chapter_title_page_enabled, scrollByChapter=$scroll_by_chapter)"
+            done
+          done
 
           native_epub_tests=(
             'only book-embedded mode preserves EPUB font'
@@ -241,6 +259,10 @@ jobs:
             'EPUB horizontal paging continues past image-only front matter'
             'EPUB horizontal paging does not bounce when turning again at a warming tail'
             'EPUB backward turns keep one horizontal controller'
+            'EPUB TOC far-back jump mounts the cold target body on phone'
+            'EPUB TOC far-back jump mounts the cold target body on tablet'
+            'latest EPUB TOC jump wins when an older cold jump finishes last'
+            'EPUB TOC jump stays rendered while its predecessor is still preparing'
             'EPUB page curl returns from a chapter first page to the previous last page'
           )
           for test_name in "${native_epub_tests[@]}"; do
@@ -280,11 +302,15 @@ jobs:
           for scroll_by_chapter in false true; do
             for title_page in false true; do
               flutter test test/book_source_reader_page_test.dart \
+                --plain-name "vertical source catalog jump aligns the chapter beginning (scrollByChapter=$scroll_by_chapter, titlePage=$title_page)"
+              flutter test test/book_source_reader_page_test.dart \
                 --plain-name "vertical source reopens at the saved text anchor (scrollByChapter=$scroll_by_chapter, titlePage=$title_page)"
             done
           done
 
           reader_tests=(
+            'continuous source chapters leave a body-scaled gap (fontSize=19.0, lineHeight=1.75)'
+            'continuous source chapters leave a body-scaled gap (fontSize=28.0, lineHeight=2.0)'
             'reader closes owned resources to cancel pending initialization'
             'reader does not close borrowed resources'
             'image-only source chapters open in the paged image reader'
@@ -300,6 +326,12 @@ jobs:
             'source continuous scroll preserves chapter preference and pauses'
             'source continuous scroll crosses chapters without changing its layout preference'
             'replacement rules clean source chapter titles and content'
+            'online live purification restores original title and body'
+            'online latest purification wins when old body finishes last'
+            'online purification takes over a pending initial body load'
+            'online initial title batch retries after a rule save'
+            'online bookshelf purification uses the stored book ID'
+            'online image source defaults off and exposes the book rule entry'
             'restores the last source chapter on reopen'
             'uses the shared reader settings with independent margins'
             'naturally aligns source body text in verticalScroll mode'
@@ -315,7 +347,7 @@ jobs:
             'prefetched chapter turn does not wait for progress persistence'
             'horizontal slide commits a prefetched chapter only after the animation settles'
             'horizontal slide requests a frame for an idle boundary commit'
-            'horizontal slide finishes one swipe after a delayed next chapter arrives'
+            'horizontal slide commits a delayed next chapter at the boundary'
             'horizontal slide lets a new drag take over a cross-chapter settle'
             'tablet forward chapter curl uses prefetched page one at half-page width without refetching'
             'tablet forward chapter curl previews title and body leaves for a short chapter'

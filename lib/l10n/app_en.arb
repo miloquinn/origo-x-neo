@@ -138,7 +138,19 @@
   },
   "bookSourceChangeConfirmTitle": "Confirm source change",
   "bookSourceChangeQuickProgress": "Quick search: {completed}/{batch} · {total} sources available",
-  "@bookSourceChangeQuickProgress": {"placeholders": {"completed": {"type": "int"}, "batch": {"type": "int"}, "total": {"type": "int"}}},
+  "@bookSourceChangeQuickProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "batch": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "bookSourceChangeStopSearch": "Stop searching",
   "bookSourceChangeLoadFailed": "Could not load sources",
   "bookSourceChangeLoadFailedHint": "Check your connection and try again.",
@@ -154,9 +166,27 @@
   "bookSourceChangeReaderOpenFailed": "The source changed, but this chapter could not be opened. Try again or return to your bookshelf.",
   "bookSourceChangeReadingPosition": "Reading position",
   "bookSourceChangeOriginalChapter": "Current: chapter {number} · {title}",
-  "@bookSourceChangeOriginalChapter": {"placeholders": {"number": {"type": "int"}, "title": {"type": "String"}}},
+  "@bookSourceChangeOriginalChapter": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "bookSourceChangeNewChapter": "New: chapter {number} · {title}",
-  "@bookSourceChangeNewChapter": {"placeholders": {"number": {"type": "int"}, "title": {"type": "String"}}},
+  "@bookSourceChangeNewChapter": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "bookSourceChangeMappingTitle": "Matched by chapter title",
   "bookSourceChangeMappingNumber": "Matched by chapter number; please check the position",
   "bookSourceChangeMappingManual": "Chapter chosen by you",
@@ -167,7 +197,13 @@
   "bookSourceChangeLocalImpact": "Your downloaded text and reading position stay unchanged. Only the source for future updates changes.",
   "bookSourceChangeOnlineImpact": "The bookshelf source and reading position will change. Your old source position remains saved.",
   "bookSourceChangeConfirmAction": "Change to {source}",
-  "@bookSourceChangeConfirmAction": {"placeholders": {"source": {"type": "String"}}},
+  "@bookSourceChangeConfirmAction": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
   "bookSourceChannelCount": "{count} channels",
   "@bookSourceChannelCount": {
     "placeholders": {
@@ -276,8 +312,12 @@
   "bookSourcesExportSuccess": "Exported {count} source(s) to {location}",
   "@bookSourcesExportSuccess": {
     "placeholders": {
-      "count": { "type": "int" },
-      "location": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "location": {
+        "type": "String"
+      }
     }
   },
   "bookSourcesExportFailed": "Could not export the selected sources",
@@ -286,7 +326,9 @@
   "bookSourcesExportReplaceMessage": "A file already exists at {path}. Replace it?",
   "@bookSourcesExportReplaceMessage": {
     "placeholders": {
-      "path": { "type": "String" }
+      "path": {
+        "type": "String"
+      }
     }
   },
   "bookSourcesExportReplaceAction": "Replace",
@@ -1010,12 +1052,24 @@
   "languageItalian": "Italiano",
   "languagePortuguese": "Português",
   "languageRussian": "Русский",
-  "@languageGerman": {"description": "Language option label written in its own language"},
-  "@languageSpanish": {"description": "Language option label written in its own language"},
-  "@languageFrench": {"description": "Language option label written in its own language"},
-  "@languageItalian": {"description": "Language option label written in its own language"},
-  "@languagePortuguese": {"description": "Language option label written in its own language"},
-  "@languageRussian": {"description": "Language option label written in its own language"},
+  "@languageGerman": {
+    "description": "Language option label written in its own language"
+  },
+  "@languageSpanish": {
+    "description": "Language option label written in its own language"
+  },
+  "@languageFrench": {
+    "description": "Language option label written in its own language"
+  },
+  "@languageItalian": {
+    "description": "Language option label written in its own language"
+  },
+  "@languagePortuguese": {
+    "description": "Language option label written in its own language"
+  },
+  "@languageRussian": {
+    "description": "Language option label written in its own language"
+  },
   "@languageJapanese": {
     "description": "Japanese language shown in its native name"
   },
@@ -3332,14 +3386,6 @@
   "settingsLibraryGridColumnsTitle": "Covers per row on phones",
   "@settingsLibraryGridColumnsTitle": {
     "description": "Title of the mobile library grid column selector"
-  },
-  "settingsLibraryGridTwoColumns": "2 columns",
-  "@settingsLibraryGridTwoColumns": {
-    "description": "Two-column mobile library grid option"
-  },
-  "settingsLibraryGridThreeColumns": "3 columns",
-  "@settingsLibraryGridThreeColumns": {
-    "description": "Three-column mobile library grid option"
   },
   "settingsLibraryGridShowDetailsTitle": "Show title and progress",
   "@settingsLibraryGridShowDetailsTitle": {
@@ -6827,9 +6873,21 @@
   "storeExploreBundlePriceCaption": "Origo Read + Explore · one purchase, cross-platform access",
   "storeExploreUpgradePriceCaption": "Origo Read owned · upgrade to Explore",
   "storeExploreBundleBilling": "This is a one-time purchase containing Origo Read and the Explore extension, with no auto-renewal. {store} displays the price and processes payment. Access is linked to your current Origo account after verification.",
-  "@storeExploreBundleBilling": {"placeholders": {"store": {"type": "String"}}},
+  "@storeExploreBundleBilling": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
   "storeExploreUpgradeBilling": "This is a one-time Explore upgrade for Origo Read owners, with no auto-renewal. {store} displays the price and processes payment.",
-  "@storeExploreUpgradeBilling": {"placeholders": {"store": {"type": "String"}}},
+  "@storeExploreUpgradeBilling": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
   "storePremiumPurchaseButton": "Buy Origo Explore with {store}",
   "@storeReaderLicenseTitle": {
     "description": "Separate app reader unlock and account Premium billing."
@@ -6941,19 +6999,37 @@
   "settingsWelcomeGuide": "Welcome guide",
   "replaceRulesDefaultEnabledLabel": "Enable by default for all books",
   "replaceRulesBookEnabledLabel": "Enable for “{bookTitle}”",
-  "@replaceRulesBookEnabledLabel": {"placeholders": {"bookTitle": {"type": "String"}}},
+  "@replaceRulesBookEnabledLabel": {
+    "placeholders": {
+      "bookTitle": {
+        "type": "String"
+      }
+    }
+  },
   "replaceRulesEffectiveLabel": "Effective now",
   "replaceRulesGroupAll": "All groups",
   "replaceRulesSelectionMode": "Select rules",
   "replaceRulesSelectedCount": "{count} selected",
-  "@replaceRulesSelectedCount": {"placeholders": {"count": {"type": "int"}}},
+  "@replaceRulesSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "replaceRulesSelectAll": "Select all",
   "replaceRulesEnableSelected": "Enable",
   "replaceRulesDisableSelected": "Disable",
   "replaceRulesDeleteSelected": "Delete",
   "replaceRulesDeleteSelectedConfirmTitle": "Delete selected rules?",
   "replaceRulesDeleteSelectedConfirmBody": "{count} rules will be deleted.",
-  "@replaceRulesDeleteSelectedConfirmBody": {"placeholders": {"count": {"type": "int"}}},
+  "@replaceRulesDeleteSelectedConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "replaceRulesExportSelected": "Export",
   "replaceRulesCopyJson": "Copy JSON",
   "replaceRulesPasteJson": "Paste JSON",
@@ -6966,7 +7042,16 @@
   "replaceRulesTimeoutInvalid": "Enter a timeout greater than 0",
   "replaceRulesMissingTarget": "Select chapter titles or content",
   "replaceRulesContextSubtitle": "{bookTitle} · {sourceName}",
-  "@replaceRulesContextSubtitle": {"placeholders": {"bookTitle": {"type": "String"}, "sourceName": {"type": "String"}}},
+  "@replaceRulesContextSubtitle": {
+    "placeholders": {
+      "bookTitle": {
+        "type": "String"
+      },
+      "sourceName": {
+        "type": "String"
+      }
+    }
+  },
   "replaceRulesUnsupportedReplacement": "JavaScript replacement scripts are not supported here. Use text or regular-expression replacements.",
   "replaceRulesTimeoutNotice": "This rule timed out and was disabled. Edit it, then enable it again.",
   "readerPurifySelection": "Clean selected text",
@@ -7066,6 +7151,29 @@
     }
   },
   "activityCenterRefresh": "Refresh",
+  "libraryNewFolder": "New group",
+  "libraryFolderName": "Group name",
+  "libraryFolderNameHint": "Give this bookshelf a name",
+  "libraryRenameFolder": "Rename group",
+  "libraryDissolveFolder": "Dissolve group",
+  "libraryDissolveFolderMessage": "Move books and subgroups up one level. Your books and reading data are kept.",
+  "libraryMoveToFolder": "Move to group",
+  "libraryMoveHere": "Move here",
+  "libraryBackToParent": "Back up one level",
+  "libraryRootShelf": "Main bookshelf",
+  "libraryFolderEmpty": "This bookshelf is empty",
+  "libraryFolderBooks": "{count} books",
+  "@libraryFolderBooks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryFolderCreateHint": "Selected books will move into this bookshelf.",
+  "libraryFolderOperationFailed": "Could not update the group. Please try again.",
+  "libraryFolderNameRequired": "Enter a group name",
+  "libraryFolderNameTooLong": "Use 60 characters or fewer",
   "accountBindEmailTitle": "Verify your email",
   "accountBindEmailHint": "Verify your email to link this sign-in method to your Origo account. Use your existing account email to keep the same account.",
   "@accountBindEmailTitle": {
@@ -7073,5 +7181,19 @@
   },
   "@accountBindEmailHint": {
     "description": "Email verification step after a provider authorization without a usable verified email."
-  }
+  },
+  "@settingsLibraryGridColumnsHint": {
+    "description": "Explains adaptive library grid density"
+  },
+  "@settingsLibraryGridColumnCount": {
+    "description": "Selectable number of book covers per row on phones",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsLibraryGridColumnCount": "{count} columns",
+  "settingsLibraryGridColumnsHint": "Narrow screens and larger text may use fewer columns to keep covers readable.",
+  "libraryFolderEmptyPreview": "No books yet"
 }

@@ -62,6 +62,14 @@ extension _SettingsAboutPart on _SettingsPageState {
           _buildAboutLine(l10n.settingsVersionLabel, _appVersion),
           const SizedBox(height: 4),
           _buildAboutNavigationLink(
+            key: const ValueKey('settings-legal-documents-link'),
+            title: LegalCopy.of(context).hubTitle,
+            icon: Icons.policy_outlined,
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) => const LegalDocumentsPage()),
+            ),
+          ),
+          _buildAboutNavigationLink(
             key: const ValueKey('settings-open-source-licenses-link'),
             title: l10n.openSourceLicensesTitle,
             icon: Icons.balance_outlined,

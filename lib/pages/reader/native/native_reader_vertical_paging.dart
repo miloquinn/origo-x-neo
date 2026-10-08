@@ -487,6 +487,13 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
             chapterIndex: chapterIndex,
             partIndex: partIndex,
           ),
+        if (!_chapterTitlePageEnabled && chapterIndex < chapters.length - 1)
+          SizedBox(
+            height: readerContinuousChapterSpacing(
+              fontSize: _fontSize,
+              lineHeight: _lineHeight,
+            ),
+          ),
       ],
     );
   }

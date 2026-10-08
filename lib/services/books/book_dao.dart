@@ -108,6 +108,7 @@ class BookDao implements BookImportStore {
     'source_kind',
     'source_locator',
     'source_modified_time',
+    'shelf_folder_id',
   ];
 
   Future<int> insertBook(Book book) async {
@@ -430,6 +431,10 @@ class BookDao implements BookImportStore {
     try {
       final db = await _databaseProvider();
       final stored = await _toStorage(book);
+      // Folder membership has its own transactional API. Generic book writes
+      // can be based on a stale download/source snapshot and must not move a
+      // book back or restore a folder that has since been dissolved.
+      stored.remove('shelf_folder_id');
       await db.transaction((txn) async {
         final rows = await txn.query(
           'books',

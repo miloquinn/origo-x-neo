@@ -20,8 +20,9 @@ class SourceBookUpdateInfo {
     this.chapterCount = 0,
     this.latestChapterId,
     this.latestChapter,
-    this.newChapterCount = 0,
-  });
+    this.hasUnacknowledgedUpdate = false,
+    int newChapterCount = 0,
+  }) : newChapterCount = newChapterCount < 0 ? 0 : newChapterCount;
 
   static const storageKey = '_openReadingUpdates';
   final SourceBookCheckStatus status;
@@ -30,10 +31,13 @@ class SourceBookUpdateInfo {
   final int chapterCount;
   final String? latestChapterId;
   final String? latestChapter;
+  final bool hasUnacknowledgedUpdate;
   final int newChapterCount;
 
   bool get hasNewChapters =>
-      status == SourceBookCheckStatus.available || newChapterCount > 0;
+      hasUnacknowledgedUpdate ||
+      status == SourceBookCheckStatus.available ||
+      newChapterCount > 0;
 
   factory SourceBookUpdateInfo.fromBook(Book book) {
     try {
@@ -54,6 +58,7 @@ class SourceBookUpdateInfo {
         latestChapter:
             data['latestChapter'] as String? ??
             json['latestChapter'] as String?,
+        hasUnacknowledgedUpdate: data['hasUnacknowledgedUpdate'] == true,
         newChapterCount: (data['newChapterCount'] as num?)?.toInt() ?? 0,
       );
     } catch (_) {
@@ -68,6 +73,7 @@ class SourceBookUpdateInfo {
     'chapterCount': chapterCount,
     'latestChapterId': latestChapterId,
     'latestChapter': latestChapter,
+    'hasUnacknowledgedUpdate': hasUnacknowledgedUpdate,
     'newChapterCount': newChapterCount,
   };
 

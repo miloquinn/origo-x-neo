@@ -33,6 +33,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: LibraryPage(
+            foldersLoader: () async => const [],
             booksLoader: () async => const [],
             sourceShelfServiceFactory: () => ownedService,
           ),
@@ -55,6 +56,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: LibraryPage(
+            foldersLoader: () async => const [],
             booksLoader: () async => const [],
             sourceShelfService: borrowedService,
           ),
@@ -87,7 +89,10 @@ void main() {
           locale: const Locale('zh'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: LibraryPage(booksLoader: () async => [book]),
+          home: LibraryPage(
+            foldersLoader: () async => const [],
+            booksLoader: () async => [book],
+          ),
         ),
       ),
     );
@@ -140,6 +145,7 @@ void main() {
           theme: ThemeData(useMaterial3: true),
           home: LibraryPage(
             controller: controller,
+            foldersLoader: () async => const [],
             booksLoader: () async => books,
           ),
         ),
@@ -214,6 +220,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: LibraryPage(
+            foldersLoader: () async => const [],
             booksLoader: () async {
               loads++;
               return books;
@@ -278,6 +285,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: LibraryPage(
+            foldersLoader: () async => const [],
             booksLoader: () {
               loads++;
               return loads == 1 ? Future.value([book]) : pendingReload.future;
@@ -322,6 +330,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(useMaterial3: true),
           home: LibraryPage(
+            foldersLoader: () async => const [],
             booksLoader: () async {
               attempts++;
               if (attempts == 1) throw StateError('database unavailable');
@@ -394,6 +403,7 @@ void main() {
               metrics: chrome,
               child: LibraryPage(
                 controller: controller,
+                foldersLoader: () async => const [],
                 booksLoader: () async => books,
               ),
             ),

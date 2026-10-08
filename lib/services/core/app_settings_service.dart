@@ -409,10 +409,13 @@ class AppSettingsNotifier extends ChangeNotifier {
       'card' => LibraryLayoutMode.card,
       _ => LibraryLayoutMode.grid,
     };
-    _libraryGridColumns = switch (prefs.getInt(_keyLibraryGridColumns)) {
-      3 => 3,
-      _ => 2,
-    };
+    final storedLibraryGridColumns = prefs.getInt(_keyLibraryGridColumns);
+    _libraryGridColumns =
+        storedLibraryGridColumns != null &&
+            storedLibraryGridColumns >= 2 &&
+            storedLibraryGridColumns <= 5
+        ? storedLibraryGridColumns
+        : 2;
     _libraryGridShowDetails = prefs.getBool(_keyLibraryGridShowDetails) ?? true;
     _libraryBookOpenAnimation = switch (prefs.getString(
       _keyLibraryBookOpenAnimation,
@@ -687,7 +690,7 @@ class AppSettingsNotifier extends ChangeNotifier {
   }
 
   Future<void> setLibraryGridColumns(int columns) async {
-    final normalized = columns == 2 ? 2 : 3;
+    final normalized = columns >= 2 && columns <= 5 ? columns : 2;
     if (_libraryGridColumns == normalized) return;
     _libraryGridColumns = normalized;
     notifyListeners();

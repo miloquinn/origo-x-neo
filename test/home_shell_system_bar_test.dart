@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/models/home_navigation_destination.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
 import 'package:xxread/pages/home/widgets/home_mobile_top_bar.dart';
 import 'package:xxread/widgets/glass_top_bar.dart';
@@ -12,6 +14,70 @@ import 'package:xxread/utils/book_open_transition.dart';
 import 'package:xxread/utils/ui_style.dart';
 
 void main() {
+  testWidgets(
+    'unrelated settings notifications keep the home shell widget instances',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final historyStore = AiChatHistoryStore();
+      final settings = _TestAppSettingsNotifier();
+      addTearDown(historyStore.dispose);
+      addTearDown(settings.dispose);
+      await tester.binding.setSurfaceSize(const Size(412, 915));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppSettingsNotifier>.value(
+          value: settings,
+          child: MaterialApp(
+            locale: const Locale('zh'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HomeShellPage(aiChatHistoryStore: historyStore),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final pageViewFinder = find.byType(PageView);
+      final shellScaffoldFinder = find.ancestor(
+        of: pageViewFinder,
+        matching: find.byType(Scaffold),
+      );
+      final pageViewBefore = tester.widget<PageView>(pageViewFinder);
+      final scaffoldBefore = tester.widget<Scaffold>(shellScaffoldFinder.first);
+
+      for (var iteration = 0; iteration < 30; iteration++) {
+        settings.notifyUnrelatedChange();
+        await tester.pump();
+
+        expect(tester.widget<PageView>(pageViewFinder), same(pageViewBefore));
+        expect(
+          tester.widget<Scaffold>(shellScaffoldFinder.first),
+          same(scaffoldBefore),
+        );
+      }
+
+      await settings.setHomeNavigationOrder(const [
+        HomeNavigationDestination.home,
+        HomeNavigationDestination.discover,
+        HomeNavigationDestination.library,
+        HomeNavigationDestination.ai,
+        HomeNavigationDestination.settings,
+      ]);
+      await tester.pump();
+
+      final reorderedPageView = tester.widget<PageView>(pageViewFinder);
+      final reorderedChildren =
+          (reorderedPageView.childrenDelegate as SliverChildListDelegate)
+              .children;
+      expect(
+        (reorderedChildren[1].key! as ValueKey<String>).value,
+        'home-page-discover',
+      );
+    },
+  );
+
   testWidgets('mobile home shell leaves the status bar to its custom top bar', (
     tester,
   ) async {
@@ -237,4 +303,8 @@ void main() {
     await tester.pump();
     expect(tester.getSize(motionFinder).height, 98);
   });
+}
+
+class _TestAppSettingsNotifier extends AppSettingsNotifier {
+  void notifyUnrelatedChange() => notifyListeners();
 }

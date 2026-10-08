@@ -1,10 +1,35 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/models/legal_document.dart';
 import 'package:xxread/pages/legal/agreement_summary.dart';
+import 'package:xxread/pages/legal/legal_document_page.dart';
+import 'package:xxread/services/legal/legal_document_repository.dart';
 
 void main() {
+  late LegalCatalog catalog;
+  late LegalDocumentRepository repository;
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    catalog = _catalog();
+    final dio = Dio()..httpClientAdapter = _CatalogAdapter(catalog);
+    repository = LegalDocumentRepository(
+      dio: dio,
+      bundledContent: () async => jsonEncode({
+        'schemaVersion': 1,
+        'bundles': {'en': catalog.toJson(), 'zh-CN': catalog.toJson()},
+      }),
+    );
+  });
+
   Widget buildSubject({double textScale = 1}) {
     return MaterialApp(
       locale: const Locale('en'),
@@ -13,16 +38,16 @@ void main() {
       home: Scaffold(
         body: MediaQuery(
           data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-          child: const SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: AgreementSummary(),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: AgreementSummary(catalog: catalog, repository: repository),
           ),
         ),
       ),
     );
   }
 
-  testWidgets('disclosures start collapsed and reveal complete terms', (
+  testWidgets('shows three summaries and opens a fixed document snapshot', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -35,50 +60,21 @@ void main() {
     expect(find.byKey(const Key('agreementTermsDisclosure')), findsOneWidget);
     expect(find.byKey(const Key('agreementSourceDisclosure')), findsOneWidget);
     expect(find.byKey(const Key('agreementPrivacyDisclosure')), findsOneWidget);
-    expect(find.text('Scope and acceptance'), findsNothing);
-    expect(find.text('Third-party source boundary'), findsNothing);
-    expect(find.text('Local by default'), findsNothing);
+    expect(find.text('Terms full paragraph'), findsNothing);
 
-    await tester.tap(find.text('Terms'));
+    await tester.tap(find.byKey(const Key('agreementTermsDisclosure')));
     await tester.pumpAndSettle();
-    expect(find.text('Scope and acceptance'), findsOneWidget);
-    expect(find.text('Open-source license'), findsOneWidget);
-    expect(find.text('Changes, termination, and law'), findsOneWidget);
-    expect(
-      find.textContaining('does not preinstall, bundle, or recommend'),
-      findsOneWidget,
-    );
 
-    await tester.tap(find.text('Terms'));
-    await tester.pumpAndSettle();
-    expect(find.text('Scope and acceptance'), findsNothing);
-
-    await tester.ensureVisible(find.text('Book sources'));
-    await tester.tap(find.text('Book sources'));
-    await tester.pumpAndSettle();
-    expect(find.text('Third-party source boundary'), findsOneWidget);
-    expect(find.text('Book sources and third parties'), findsOneWidget);
-    // This fact appears in the always-visible summary and in the full text.
-    expect(
-      find.textContaining('provides no source addresses'),
-      findsNWidgets(2),
-    );
-
-    await tester.ensureVisible(find.text('Privacy'));
-    await tester.tap(find.text('Privacy'));
-    await tester.pumpAndSettle();
-    expect(find.text('Local by default'), findsOneWidget);
-    expect(find.text('Network use is explicit'), findsOneWidget);
-    expect(find.text('Limited download records'), findsOneWidget);
-    expect(find.text('Data and privacy'), findsOneWidget);
-    expect(
-      find.textContaining('kept for no more than 180 days'),
-      findsOneWidget,
-    );
+    expect(find.byType(LegalDocumentPage), findsOneWidget);
+    expect(find.text('Terms full paragraph'), findsOneWidget);
+    expect(find.text('2026-10-08.1'), findsWidgets);
+    expect(find.text('Scope and acceptance'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('fits a narrow screen with large text', (tester) async {
+  testWidgets('fits summary and detail on a narrow screen with large text', (
+    tester,
+  ) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(320, 640);
     addTearDown(tester.view.reset);
@@ -87,10 +83,79 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
-    await tester.ensureVisible(find.text('Privacy'));
-    await tester.tap(find.text('Privacy'));
+    await tester.ensureVisible(
+      find.byKey(const Key('agreementPrivacyDisclosure')),
+    );
+    await tester.tap(find.byKey(const Key('agreementPrivacyDisclosure')));
     await tester.pumpAndSettle();
-    expect(find.text('Data and privacy'), findsOneWidget);
+    expect(find.text('Privacy full paragraph'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+}
+
+LegalCatalog _catalog() {
+  LegalDocument document(String id, String title, String summary, String body) {
+    return LegalDocument(
+      id: id,
+      locale: 'en',
+      title: title,
+      summary: summary,
+      revision: '2026-10-08.1',
+      consentVersion: '2026-10-08.1',
+      effectiveDate: '2026-10-08',
+      updatedAt: '2026-10-08',
+      changeSummary: const ['Initial unified publication.'],
+      canonicalUrl: Uri.parse('https://open.xxread.top/legal/$id'),
+      requiresAcceptance: true,
+      sections: [
+        LegalSection(
+          id: 'scope',
+          title: 'Scope and acceptance',
+          paragraphs: [body],
+        ),
+      ],
+    );
+  }
+
+  return LegalCatalog(
+    schemaVersion: 1,
+    bundleVersion: '2026-10-08.1',
+    locale: 'en',
+    documents: [
+      document(
+        'terms',
+        'Terms of use',
+        'Rules for using Origo X.',
+        'Terms full paragraph',
+      ),
+      document(
+        'sources',
+        'Book source notice',
+        'Third-party source boundaries.',
+        'Source full paragraph',
+      ),
+      document(
+        'privacy',
+        'Privacy policy',
+        'How data is handled.',
+        'Privacy full paragraph',
+      ),
+    ],
+  );
+}
+
+class _CatalogAdapter implements HttpClientAdapter {
+  _CatalogAdapter(this.catalog);
+
+  final LegalCatalog catalog;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(jsonEncode(catalog.toJson()), 200);
+
+  @override
+  void close({bool force = false}) {}
 }

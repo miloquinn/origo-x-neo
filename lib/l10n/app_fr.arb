@@ -952,8 +952,6 @@
   "settingsLibraryLayoutCard": "Cartes",
   "settingsLibraryLayoutGrid": "Grille",
   "settingsLibraryGridColumnsTitle": "Couvertures par ligne sur téléphone",
-  "settingsLibraryGridTwoColumns": "2 colonnes",
-  "settingsLibraryGridThreeColumns": "3 colonnes",
   "settingsLibraryGridShowDetailsTitle": "Afficher le titre et la progression",
   "settingsLibraryGridShowDetailsSubtitle": "Ajouter une ligne de titre et une barre de progression compacte sous chaque couverture",
   "settingsLibraryOpenAnimationTitle": "Animation d'ouverture du livre",

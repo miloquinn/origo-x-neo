@@ -6,6 +6,7 @@ import '../utils/system_ui_helper.dart';
 import 'glass_top_bar.dart';
 import 'app_menu.dart';
 import 'glass_buttons.dart';
+import 'page_system_ui.dart';
 
 /// Shared navigation shell for pushed secondary pages.
 ///
@@ -84,7 +85,7 @@ class FloatingSubpageScaffold extends StatelessWidget {
           ? Row(mainAxisSize: MainAxisSize.min, children: actions)
           : const SizedBox.square(dimension: 48),
     );
-    return _SubpageSystemUi(
+    return PageSystemUi(
       brightness: scheme.brightness,
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiHelper.overlayStyleForBrightness(scheme.brightness),
@@ -171,48 +172,6 @@ EdgeInsets floatingSubpagePadding(
   right,
   bottom + MediaQuery.viewPaddingOf(context).bottom,
 );
-
-class _SubpageSystemUi extends StatefulWidget {
-  const _SubpageSystemUi({required this.brightness, required this.child});
-
-  final Brightness brightness;
-  final Widget child;
-
-  @override
-  State<_SubpageSystemUi> createState() => _SubpageSystemUiState();
-}
-
-class _SubpageSystemUiState extends State<_SubpageSystemUi> {
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _apply();
-  }
-
-  @override
-  void didUpdateWidget(covariant _SubpageSystemUi oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.brightness != widget.brightness) _apply();
-  }
-
-  bool get _isCurrentRoute => ModalRoute.of(context)?.isCurrent ?? true;
-
-  void _apply() {
-    if (!_isCurrentRoute) return;
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiHelper.overlayStyleForBrightness(widget.brightness),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _apply();
-    });
-    return widget.child;
-  }
-}
 
 class FloatingSubpageAction extends StatelessWidget {
   const FloatingSubpageAction({

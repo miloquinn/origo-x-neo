@@ -515,6 +515,14 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
                 pageIndex: pageIndex,
                 content: content,
               ),
+            if (!_chapterTitlePageEnabled &&
+                chapterIndex < _chapters.length - 1)
+              SizedBox(
+                height: readerContinuousChapterSpacing(
+                  fontSize: _fontSize,
+                  lineHeight: _lineHeight,
+                ),
+              ),
           ],
         ),
       );

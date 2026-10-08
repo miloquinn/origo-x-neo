@@ -97,6 +97,7 @@ class SourceBookUpdateService {
         chapterCount: old.chapterCount,
         latestChapterId: old.latestChapterId,
         latestChapter: old.latestChapter,
+        hasUnacknowledgedUpdate: old.hasNewChapters,
         newChapterCount: old.newChapterCount,
       );
     } finally {
@@ -131,25 +132,45 @@ class SourceBookUpdateService {
       } else {
         additions = catalog.length - tracked.length;
       }
-    } else if (previous.latestChapterId != null) {
-      final boundary = catalog.indexWhere(
-        (c) => c.id == previous.latestChapterId,
-      );
-      if (boundary >= 0) {
-        additions = catalog.length - boundary - 1;
-      }
-      // Keep the unread update marker until the user opens the online book.
-      if (previous.status == SourceBookCheckStatus.available ||
-          previous.newChapterCount > 0) {
+    } else {
+      final previousCount = previous.newChapterCount;
+      final hadUnread = previous.hasNewChapters;
+      final countUnknown = hadUnread && previousCount == 0;
+      bool hasReliableBoundary(int boundary) =>
+          previous.chapterCount == 0 || boundary == previous.chapterCount - 1;
+      if (countUnknown) {
         status = SourceBookCheckStatus.available;
-        additions += previous.newChapterCount;
+      } else if (previous.latestChapterId != null) {
+        final boundaries = catalog.indexed
+            .where((entry) => entry.$2.id == previous.latestChapterId)
+            .map((entry) => entry.$1)
+            .toList();
+        if (boundaries.length == 1 && hasReliableBoundary(boundaries.single)) {
+          additions =
+              catalog.length -
+              boundaries.single -
+              1 +
+              (hadUnread ? previousCount : 0);
+        } else {
+          status = SourceBookCheckStatus.available;
+        }
+      } else if (previous.latestChapter?.trim().isNotEmpty == true) {
+        final boundaries = catalog.indexed
+            .where((entry) => entry.$2.title == previous.latestChapter)
+            .map((entry) => entry.$1)
+            .toList();
+        if (boundaries.length == 1 && hasReliableBoundary(boundaries.single)) {
+          additions =
+              catalog.length -
+              boundaries.single -
+              1 +
+              (hadUnread ? previousCount : 0);
+        } else {
+          status = SourceBookCheckStatus.available;
+        }
+      } else if (hadUnread) {
+        status = SourceBookCheckStatus.available;
       }
-    } else if (previous.latestChapter?.trim().isNotEmpty == true &&
-        previous.latestChapter != catalog.last.title) {
-      final boundary = catalog.indexWhere(
-        (c) => c.title == previous.latestChapter,
-      );
-      if (boundary >= 0) additions = catalog.length - boundary - 1;
     }
     if (additions > 0) status = SourceBookCheckStatus.available;
     final sourceDates = catalog.map((c) => c.updatedAt).nonNulls.toList()
@@ -169,6 +190,7 @@ class SourceBookUpdateService {
       chapterCount: catalog.length,
       latestChapterId: catalog.last.id,
       latestChapter: catalog.last.title,
+      hasUnacknowledgedUpdate: status == SourceBookCheckStatus.available,
       newChapterCount: additions,
     );
   }
@@ -192,6 +214,7 @@ class SourceBookUpdateService {
     json[SourceBookUpdateInfo.storageKey] = {
       ...info.toJson(),
       'status': SourceBookCheckStatus.current.name,
+      'hasUnacknowledgedUpdate': false,
       'newChapterCount': 0,
     };
     final encoded = jsonEncode(json);

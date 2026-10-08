@@ -952,8 +952,6 @@
   "settingsLibraryLayoutCard": "Карточки",
   "settingsLibraryLayoutGrid": "Сетка",
   "settingsLibraryGridColumnsTitle": "Обложек в ряд на телефонах",
-  "settingsLibraryGridTwoColumns": "2 столбца",
-  "settingsLibraryGridThreeColumns": "3 столбца",
   "settingsLibraryGridShowDetailsTitle": "Показывать название и прогресс",
   "settingsLibraryGridShowDetailsSubtitle": "Добавляет строку с названием и компактный индикатор прогресса под каждой обложкой",
   "settingsLibraryOpenAnimationTitle": "Анимация открытия книги",

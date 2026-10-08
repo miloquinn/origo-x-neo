@@ -1,8 +1,7 @@
 # Origo X 项目结构
 
-> 最后更新：2026-08-04
-> 当前版本：2.3.8
-> 本文记录稳定的项目结构、模块边界和核心数据结构，不罗列每个实现细节。
+> 本文为模块概览。维护先读 [文档入口](docs/README.md)；书源与缓存的具体契约分别维护在 [书源架构](lib/book_sources/README.md) 和 [阅读缓存](docs/reading-cache.md)。
+> 应用版本、数据库版本及模块细节以对应源码、迁移和构建收据为准。
 
 ## 维护规则
 
@@ -124,7 +123,7 @@ lib/
 - `services/books/incoming_book_*`：统一系统“打开方式/分享”入站请求、冷/热启动 FIFO、初始化/协议门禁、格式与文件头校验、单书导入后打开及多书导入队列；原生层必须先把临时 URI/URL 物化成本地暂存文件。
 - `pages/reader/native/native_reader_page.dart`：本地 TXT、EPUB 等内容适配器；全局阅读字体尚未从磁盘恢复并完成运行时注册时只显示主题化打开占位。正文排版读取共享的字重、字间距与对齐方式，重排后按 canonical 文本锚点恢复位置。阅读位置通过 `core/reader/reader_position_save_queue.dart` 串行写入 SQLite，主动退出会等待最后一次写入完成，避免异步写入乱序覆盖新进度。EPUB 的 NCX/Navigation Document 目录链接会保留 fragment，并映射到解析后正文的 UTF-16 offset；同一 XHTML 内的二级标题可精确跳转，活动小节按全书目录目标位置判定，章节内容跨越相邻 XHTML 时仍保持上一小节为当前状态，直到下一个锚点进入阅读位置。
 - `pages/reader/book_source/book_source_reader_page.dart`：在线书源章节内容适配器；与本地阅读器共享字体就绪门禁、字重、字间距和自然/两端对齐设置，目录或正文先返回时也不会提前使用临时字体绘制。正文请求会携带书名、作者、书籍类型、章节序号和章节标题，供依赖实体上下文的脚本规则使用。
-- `book_sources/caching/book_source_chapter_cache.dart`：在线书源目录与正文的共享内存/磁盘缓存。章节目录命中后立即返回，超过 30 分钟在后台刷新；已读正文超过 12 小时同样采用旧内容先读、后台更新，目录和正文最多保留 30 天。缓存键包含书源 API 地址，书源迁移后不会误复用旧数据；设置页“书源章节缓存”可安全清空全部目录与正文缓存。
+- `book_sources/caching/book_source_chapter_cache.dart`：统一在线目录/正文缓存。缓存身份、刷新策略、预算、失效与清除统一维护在 [阅读缓存](docs/reading-cache.md)，按其源码和测试入口核对。
 - `pages/book_sources/source_search_page.dart`：在线书源搜索与发现；大型书源库的范围条按需构建，“全部书源”通过最多 8 个 worker 有界并发搜索，按单源超时渐进追加结果，清空、切换范围或离页时取消当前请求。手机入口先打开加载页，再在后台解析注册表并替换为搜索页。
 - `pages/book_sources/book_source_management_page.dart`：统一书源导入与管理。大型阅读书源聚合 JSON 在后台 isolate 做一次本地解析、按 URL 去重和能力标记，不以联网搜索/阅读结果作为保存条件；管理列表使用 Sliver 惰性构建，支持文本、启停/可执行状态、分组筛选和针对当前结果的批量操作。
 - `book_sources/source_engine/`：阅读书源 JSON 的原生执行层，负责 URL 模板、HTTP/WebView、QuickJS、CSS/旧式 DOM、XPath、JSONPath、正则与跨阶段状态。脚本上下文、网络请求/响应和 evaluator 接口集中在共享契约文件，原生与 Web 平台只保留各自执行实现；每来源的变量、键值、Java 状态和两级缓存由单一隔离状态对象管理。登录信息与登录 Header 通过系统安全存储按来源隔离，运行时自动注入请求并执行响应登录检查；声明式登录表单由 `SourceLoginField` 和 `SourceLoginPage` 承载。旧式 DOM 兼容 `&&`、`||`、`%%`、方括号索引/排除/区间/倒序以及 `@all`、`@ownText`、`@textNodes`。
@@ -227,7 +226,7 @@ lib/
 - `core/reader/reader_text_pagination.dart`：本地文件与在线书源唯一的文字章节分页入口和 `ReaderTextPage` 页面模型；统一 canonical/display offset、首行缩进、段落间距、页首空白折叠、独占章节标题页、首屏特殊高度和 760px 单 leaf 内容宽度上限。书源兼容包装不再拥有独立分页算法。
 - `core/reader/reader_annotation.dart`：阅读标注共享领域层；把页内选区还原为章节 UTF-16 offset 与 `CanonicalLocator/TextAnchor`，统一高亮/下划线/文字批注样式、批注点击识别和章节匹配。听书当前句以独立的临时 UTF-16 范围叠加，不写入 `book_notes`；文字批注优先保留下划线与点击语义，重排后仍跟随原文锚点。
 - `core/reader/reader_text_characters.dart`：TXT、EPUB、HTML/HTM/XHTML、Markdown、FB2、RTF、DOCX 与在线书源共享的硬换行和段首空白规则；覆盖 CR/LF、VT、FF、NEL、Unicode line/paragraph separator，以及常见 Unicode 空格和 BOM，保证各适配器与 Flutter 排版对段落起点的判断一致。
-- `core/reader/txt_chapter_parser.dart`：TXT 章节识别与标题/正文边界的单一实现；识别出的标题独立存储，正文范围跳过标题行和相邻空行，并输出 `isNeedSplitTitle` 供分页模式插入章节标题页。小文件解析缓存和大文件 UTF-8 索引共用该边界结果；超大 TXT 的每一个超过约 32K 字符的章节都会优先靠近换行边界切成懒加载片段，避免整本无章节文件或单个异常巨型章节在 UI isolate 同步解码、分页。索引片段由异步文件读取器按当前窗口加载；首次大文件索引延后到封面→加载交接完成后启动，既有有效索引在封面飞行动画落定后立即复用，避免缓存反序列化和首屏准备抢占入口动画。
+- `core/reader/txt_chapter_parser.dart`：TXT 章节识别与标题/正文边界的单一实现；识别出的标题独立存储，正文范围跳过标题行和相邻空行，并输出 `isNeedSplitTitle`；是否插入独占标题页由共同章节标题设置决定。小文件解析缓存和大文件 UTF-8 索引共用该边界结果；超大 TXT 的每一个超过约 32K 字符的章节都会优先靠近换行边界切成懒加载片段，避免整本无章节文件或单个异常巨型章节在 UI isolate 同步解码、分页。索引片段由异步文件读取器按当前窗口加载；首次大文件索引延后到封面→加载交接完成后启动，既有有效索引在封面飞行动画落定后立即复用，避免缓存反序列化和首屏准备抢占入口动画。
 - `core/reader/reader_text_layout.dart`：把首行缩进和段落间距投影成显示文字，并维护显示 UTF-16 boundary 到原文 boundary 的单调映射，保证书签和阅读进度仍使用 canonical offset；所有可重排文本格式使用同一段首识别，既有半角/全角空白统一替换为设置宽度。视觉缩进使用字形为空、Unicode 分类为宽字符而非空白的 Hangul Filler，避免 Flutter/SkParagraph 在两端对齐的长段落首行裁掉前导空白。TXT、EPUB 与在线书源会在显示层把连续换行和夹有空格/Tab 的空白行归一为一个结构换行，再仅按用户的段距设置增加间距，不改写规范文本和原文锚点。
 - `core/reader/reader_page_turn_geometry.dart` 与 `widgets/src/page_curl/reader_page_curl_state.dart`：经典折页使用“局部装订始终为 x=0”的 leaf canonical 坐标；`bindingEdge` 只负责左右 leaf 的坐标换算，翻页方向不再移动书脊。几何显式区分 outgoing（当前页卷走）与 incoming（上一页展开）两种运动；手机单页手势以真实水平位移决定方向，所以任意横向起点向左均可翻下一页、向右均可翻上一页，匹配自由外缘的起手继续使用更宽松阈值和即时跟手。平板双页仍以 `edgeDragOnly` 仅允许两侧自由外缘起手，避免从中央书脊误触。手机 backward 按起手后的位移驱动折线，固定起手高度参与对角斜率，纵向移动会实时改变折痕。提交时双轴弹簧吸附到精确的 x=0 / x=width 竖直端点，使 shader 的透明/identity 终态分支稳定命中。
 - `core/reader/reader_leaf_status.dart`：分钟级时间、电量状态；Android/iOS 通过 `com.niki.xxread/reader_status` method channel 读取电量。分页模式选用阅读信息栏时，状态 revision 会参与纸页快照更新；上下翻页则由固定视口信息栏直接消费。
@@ -254,7 +253,7 @@ lib/
 - `widgets/reader_pull_bookmark.dart`：只从屏幕顶部区域起手的原始指针下拉手势、阈值反馈和当前页书签页缘标记；数据仍复用既有 `BookmarkDao`。
 - `widgets/reader_vertical_paging_surface.dart`：本地文件与在线书源共用的上下翻页交互宿主；把中间轻点识别放在 `SelectionArea` 内部，统一“轻点呼出控制栏、竖滑只滚正文”的手势优先级。
 - `widgets/reader_chapter_title_page.dart`：章节独占标题页组件；从正文样式继承字体与主色，字号按正文 `1.8×` 并限制在 28–34，标题水平居中且垂直略偏上。
-- `widgets/reader_text_page_content.dart`：本地与在线文字页的共享最终绘制组件；直接消费分页阶段生成的 `ReaderTextPage` 与 `NativeTextFlowStyle`，正文统一使用同一 `RichText` 参数，并把 `SelectionContainer` registrar 与主题选区颜色显式交给 `RichText`，确保所有翻页模式都可选中文字；章节标题统一转交独占标题页组件。
+- `widgets/reader_text_page_content.dart`：本地与在线文字页的共享最终绘制组件；直接消费分页阶段生成的 `ReaderTextPage` 与 `NativeTextFlowStyle`，正文统一使用同一 `RichText` 参数，并把 `SelectionContainer` registrar 与主题选区颜色显式交给 `RichText`，确保所有翻页模式都可选中文字；独占标题页分支使用共享标题组件；是否独占由共同标题设置与分页结果决定，见 [章节标题布局](docs/reading-cache.md#shared-chapter-title-layout)。
 - `widgets/reader_annotated_text_page.dart`：标注产品层；在同一纸页内组合可选择正文、主题化选区工具栏、高亮/下划线颜色编辑和文字批注输入。已保存文字批注使用可点击虚线下划线，轻点后以当前阅读主题展示引用原文和笔记内容。
 - `widgets/reader_tap_zone_editor.dart`：全屏点击区域编辑层；从阅读设置面板进入后收起控制栏，在真实阅读页上方展示九宫格与各区域当前动作，点格弹出主题化动作选择面板并即时持久化，支持一键恢复默认，系统返回键先关闭编辑层再退出阅读器。
 - `widgets/reader_tap_observer.dart`：本地与在线阅读器共享的轻点观察器；不进入 Flutter gesture arena，只把短时、未移动的指针序列交给翻页/控制栏，长按选区、拖选、滚动和批注点击继续由各自手势处理。普通轻点会延后到内联文字识别器完成后再兜底，避免查看笔记时同时翻页。
@@ -282,7 +281,7 @@ lib/
 
 平板仿真翻页按两张独立 leaf 组成 spread，本地文件与在线书源阅读器共用相同约束：只有横屏平板满足断点且 `tabletTwoPageEnabled` 开启时才进入双页，关闭后回退单页；设置变化时本地阅读器按文本锚点恢复，书源阅读器会失效分页缓存并按文本 offset 恢复。左页从屏幕最左自由边向后翻并使用右装订，右页从屏幕最右自由边向前翻并使用左装订，翻页步长为两页；正中的 24px `_spreadGutter` 是固定书脊，不进入任一 leaf 的抓图变换或手势命中区。`ReaderPageCurlSpread` 以固定位置的 `Stack` 保持左右页布局不变，并把 coordinator 当前持有的活动 leaf 放到最后绘制；活动经典折页的 shader 绘制边界会沿装订侧扩展到整张 spread，因此下一页由右页跨书脊覆盖左页，上一页则由左页覆盖右页，静止 leaf 与手势命中区仍限制在各自半屏。纸张内容按“正面 / 背面 / 底页”三层分离：例如 8/9 向前翻时右 leaf 的 source 为 9、独立纸背为 10、实时底页为 11；向后翻时左 leaf 的 source 为当前左页、纸背为上一 spread 右页、底页为上一 spread 左页。native 双页会给奇数页章节补右侧空白 slot，使每章稳定从左页开始，动态扩展章节窗口不会改变既有 spread 奇偶；两个阅读器在视口重排时都按文本 offset 恢复，而在线书源跨章优先使用已预取章节的真实目标 leaf，并为左右 boundary/blank slot 使用不同快照身份，按最后可见页保存双页进度。手机单页使用整屏 leaf，前后翻页的物理装订边都位于左缘；backward 是独立 incoming 通道，不再通过方向镜像书脊或整套 forward 几何。
 
-TXT 在识别到“第 X 章 / Chapter X / Part X / 序章”等章节行时，把标题与正文分离。分页模式将 `isNeedSplitTitle` 章节的第 0 页作为特殊标题页：标题使用正文主色、约 `1.8×` 正文字号（限制在 28–34）、水平居中并略偏上；后续页面进入 `ReaderTextLayout → ReaderTextPage → NativeTextPaginator`。在线书源目录天然提供章节结构，因此同样先生成独占标题页，正文不再把标题嵌入首屏或缩减第一页高度。未识别出章节结构的普通 TXT 不把文件名强制转为独占标题页。上下翻页直接竖向排列同一套分页结果，并由固定视口章名跟随当前中心可见页。
+TXT 解析分离章节标题与正文，在线目录提供章节结构。两类文字阅读器共用 `ReaderSettings.chapterTitlePageEnabled`：开启时使用独占标题页，关闭时使用共享行内标题布局；标题与正文偏移、分页缓存和旧偏好键的维护契约见 [阅读缓存：章节标题布局](docs/reading-cache.md#shared-chapter-title-layout)。
 
 EPUB 图片块与其后的正文共用同一个显示投影：携带图片的第一张页面按图片区/文字区约 `5:6` 排列，只有该页使用较小的文字高度；同一图片块后的纯文字续页立即恢复完整页面高度，避免图片影响扩散到后续多页。图片块本身仍作为不可拆分内容边界，因此图片前一个文本段落的末页可能比普通非末页短。
 
@@ -310,7 +309,7 @@ EPUB 图片块与其后的正文共用同一个显示投影：携带图片的第
 - `SourceImportService` / `BookSourceImportAnalyzer`：64 MiB、最多 10,000 条的聚合导入边界；单次 UTF-8/JSON 解码，按 `bookSourceUrl` 保留最后一条，分别统计无效项和重复项。文件解析使用后台 isolate；URL 输入只在直接内容不是有效书源且声明嵌套 URL 时递归加载。能力扫描只生成本地摘要，不执行站点可用性探测，也不作为保存书源的前置条件。
 - `SourceRuntime` / `SourceHttpTransport`：阅读书源的应用内执行链路。搜索和详情规则产生的书籍级变量会随书籍快照传入目录、正文、下载与换源验证；依赖实体上下文的来源还会保存书名、作者和类型。目录规则先写入章节标题再计算章节 URL，正文恢复章节序号、标题和地址；短小的登录、验证、访问频繁与加载占位页会被拒绝，带有效图片标签的章节不受影响。旧快照缺变量时可从详情 URL 模板和状态写入规则反推。章节地址绝对化保留末尾请求选项，正文多节点按换行合并后再执行默认不跨行的清理表达式。请求按书源维持独立 Cookie 会话，接收并校验 `Set-Cookie` 的域、路径、Secure 与过期属性，支持配置中的静态 Cookie；请求 Cookie 头由共享纯函数解析，响应 `Set-Cookie` 仍按独立语义处理。重定向按浏览器语义处理 301/302/303/307/308，跨站时移除 Host、Authorization 和静态 Cookie。源级请求头支持 `source.getKey()`、`source.bookSourceUrl` 等常见取值表达式。普通公网 DNS 使用已校验地址连接；虚拟 DNS 的保留地址在同样检查后使用系统网络通道，避免本地隧道被自定义连接破坏。脚本网络调用通过暂停、APP 请求和上下文重放实现同步语义；Android 后台网页等待导航稳定后再回传最终 DOM、URL 与 Cookie。脚本 evaluator 通过 `source_script_engine_platform.dart` 条件导出：原生平台使用 QuickJS，Web 使用 API 兼容的明确不支持实现，避免 `flutter_js` 的 `dart:ffi` 依赖进入 Dart2JS，同时在实际遇到脚本规则时返回可识别错误。
 - `BookSourceChapterText`：仅把 HTML/纯文本响应转换为 canonical chapter text，并清理重复远端页码；HTML 和 64 KiB 以上正文通过后台 isolate 规范化，短纯文本保留直接路径以避免 isolate 开销。若正文最前面的首行/首段与接口标题或目录标题规范化后完全相同，则像本地 TXT 章节解析一样剥离该重复标题。不注入首行缩进、段间距或章节标题，这些展示语义全部交给共享文字阅读内核。
-- `BookSourceChapterCache`：章节正文的内存/磁盘缓存和并发去重；网络结果进入内存后立即返回，目录与正文 JSON 持久化在后台完成，磁盘失败不阻断阅读。同一缓存键的后台写入严格串行并通过临时文件替换；缓存清理递增写入代次，使清理前尚未完成的任务不能重新创建旧缓存。在线阅读器的 canonical 正文只保留最近 8 章，优先预取下一章并在正文首帧后生成分页布局，再机会式准备上一章与更远的后一章。水平滑动到相邻章节时，真实预览页先在当前 `PageView` 内完成整段动画，只有 `ScrollEnd` 确认停在边界页后才提交章节状态；提交后复用已预热布局，并让新控制器直接挂接目标页，避免停稳后的可见重置。中途回滑会取消待提交切章，进度持久化不阻塞跨章提交。
+- `BookSourceChapterCache`：共享章节/目录缓存、磁盘读与请求去重、后台刷新及清除代际边界；在线启动、身份隔离、分页复用和故障排查统一维护在 [阅读缓存](docs/reading-cache.md)，不在本概览复制完整实现说明。
 - `SourceCoverCache`：协议书源相对封面按 API 基址解析；远程封面请求保留来源提供的 Referer、Cookie 等请求头并补齐浏览器 User-Agent。响应通过 PNG/JPEG/GIF/WebP 文件头识别真实图片，不依赖可能缺失或错误的 Content-Type；跨域重定向移除 Cookie、Authorization 与 Host。缓存仍按 URL 和请求头共同去重，最多 4 路并发、瞬态失败单次退避重试，并使用压缩字节内存 LRU 和应用缓存目录磁盘缓存；单 URL 驱逐使用独立 epoch，旧请求完成时不能覆盖或移除新请求。
 - `BookSourceShelfService`：在线书籍加入本地书架与原位替换来源绑定；换源保持原 `Book.id`、书名、封面、书签/笔记外键和书架顺序，只更新来源快照及映射后的章节进度。完整下载以最多 3 章为一批并发抓取，按目录顺序持续写入同目录 `.part` 文件，每批 flush 后释放正文对象，完成后再改名为正式 TXT，内存占用不随整书篇幅线性增长。任务级取消会停止目录/章节请求并删除未完成的 `.part`；书源提供远程封面时下载到文档目录的 `covers/` 作为书架持久封面，缺失时生成统一封面。
 - `BookSourceReadingProgressStore`：在线章节阅读进度。

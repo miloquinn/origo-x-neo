@@ -6,6 +6,7 @@ part of '../library_page.dart';
 extension _LibraryPageCollection on _LibraryPageState {
   Widget _buildCoverOnlyGrid(
     List<Book> books, {
+    List<ShelfFolder> folders = const [],
     required double topPadding,
     required int mobileColumns,
     required bool showDetails,
@@ -23,36 +24,59 @@ extension _LibraryPageCollection on _LibraryPageState {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final textScaler = MediaQuery.textScalerOf(context);
         final horizontalPadding = usesTabletLayout
             ? LayoutHelper.tabletPagePadding
             : useRail
             ? 16.0
             : 12.0;
-        final normalizedMobileColumns = mobileColumns == 2 ? 2 : 3;
-        final usableWidth = math.max(
-          0.0,
-          constraints.maxWidth - horizontalPadding * 2,
+        final crossAxisCount = LayoutHelper.coverOnlyGridColumnsForWidth(
+          constraints.maxWidth,
+          mobileColumns: mobileColumns,
+          usesWideLayout: useRail || usesTabletLayout,
+          horizontalPadding: horizontalPadding,
+          spacing: spacing,
+          showDetails: showDetails,
+          hasFolders: folders.isNotEmpty,
+          textScaleFactor: textScaler.scale(1),
         );
-        final targetExtent = normalizedMobileColumns == 2 ? 184.0 : 148.0;
-        final crossAxisCount = usesTabletLayout
-            ? ((usableWidth + spacing) / (targetExtent + spacing))
-                  .round()
-                  .clamp(normalizedMobileColumns, 8)
-                  .toInt()
-            : LayoutHelper.coverOnlyGridColumnsForWidth(
-                constraints.maxWidth,
-                mobileColumns: mobileColumns,
-              );
         final itemWidth =
             (constraints.maxWidth -
                 horizontalPadding * 2 -
                 spacing * (crossAxisCount - 1)) /
             crossAxisCount;
+        double scaledLineHeight(TextStyle? style, double fallbackFontSize) {
+          final painter = TextPainter(
+            text: TextSpan(
+              text: 'Ag',
+              style: style ?? TextStyle(fontSize: fallbackFontSize),
+            ),
+            textDirection: Directionality.of(context),
+            textScaler: textScaler,
+            maxLines: 1,
+          );
+          try {
+            painter.layout();
+            return painter.height.ceilToDouble();
+          } finally {
+            painter.dispose();
+          }
+        }
+
+        final folderDetailsHeight = folders.isEmpty
+            ? 0.0
+            : 8.0 +
+                  scaledLineHeight(Theme.of(context).textTheme.titleSmall, 14) +
+                  scaledLineHeight(Theme.of(context).textTheme.bodySmall, 12);
+        final bookDetailsHeight = showDetails
+            ? LibraryGridBookDetails.heightFor(context)
+            : 0.0;
         final itemHeight =
             itemWidth * 3 / 2 +
-            (showDetails ? LibraryGridBookDetails.height : 0);
+            math.max(folderDetailsHeight, bookDetailsHeight);
         return GridView.builder(
           key: const ValueKey('library-cover-grid'),
+          controller: _shelfScrollController,
           scrollCacheExtent: const ScrollCacheExtent.pixels(720),
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
@@ -61,7 +85,7 @@ extension _LibraryPageCollection on _LibraryPageState {
             horizontalPadding,
             topPadding,
             horizontalPadding,
-            bottomPadding,
+            bottomPadding + (_currentFolderId == null ? 0 : 64),
           ),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
@@ -69,9 +93,10 @@ extension _LibraryPageCollection on _LibraryPageState {
             mainAxisSpacing: spacing + 2,
             childAspectRatio: itemWidth / itemHeight,
           ),
-          itemCount: books.length,
+          itemCount: books.length + folders.length,
           itemBuilder: (context, index) {
-            final book = books[index];
+            if (index < folders.length) return _buildFolderTile(folders[index]);
+            final book = books[index - folders.length];
             final coverKey = _coverKeyFor(book);
             return RepaintBoundary(
               child: Semantics(
@@ -103,7 +128,9 @@ extension _LibraryPageCollection on _LibraryPageState {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
+                            SizedBox(
+                              width: double.infinity,
+                              height: itemWidth * 3 / 2,
                               child: SizedBox.expand(
                                 key: coverKey,
                                 child: DecoratedBox(
@@ -154,12 +181,16 @@ extension _LibraryPageCollection on _LibraryPageState {
     return (book.progress * 100).round();
   }
 
-  Widget _buildBooksGrid(List<Book> books, {required double topPadding}) {
+  Widget _buildBooksGrid(
+    List<Book> books, {
+    required double topPadding,
+    List<ShelfFolder> folders = const [],
+  }) {
     final useRail = NavigationContext.of(context)?.useRailNavigation ?? false;
     final usesTabletLayout = LayoutHelper.usesTabletLayout(context);
     final mobileChrome = HomeMobileChromeScope.of(context);
     if (!useRail && !usesTabletLayout) {
-      return _buildBooksList(books, topPadding: topPadding);
+      return _buildBooksList(books, topPadding: topPadding, folders: folders);
     }
 
     final spacing = LayoutHelper.isDesktop(context) ? 16.0 : 14.0;
@@ -209,6 +240,7 @@ extension _LibraryPageCollection on _LibraryPageState {
           ),
           child: GridView.builder(
             key: const ValueKey('library-card-grid'),
+            controller: _shelfScrollController,
             scrollCacheExtent: const ScrollCacheExtent.pixels(720),
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
@@ -217,12 +249,13 @@ extension _LibraryPageCollection on _LibraryPageState {
               horizontalPadding,
               topPadding,
               horizontalPadding,
-              useRail
-                  ? MediaQuery.viewPaddingOf(context).bottom +
-                        (_selection.isActive ? 104 : 24)
-                  : usesTabletLayout && _selection.isActive
-                  ? mobileChrome.navContainerHeight + 10
-                  : mobileChrome.pageBottomPadding,
+              (useRail
+                      ? MediaQuery.viewPaddingOf(context).bottom +
+                            (_selection.isActive ? 104 : 24)
+                      : usesTabletLayout && _selection.isActive
+                      ? mobileChrome.navContainerHeight + 10
+                      : mobileChrome.pageBottomPadding) +
+                  (_currentFolderId == null ? 0 : 64),
             ),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
@@ -230,9 +263,12 @@ extension _LibraryPageCollection on _LibraryPageState {
               mainAxisSpacing: spacing + 8,
               childAspectRatio: childAspectRatio,
             ),
-            itemCount: books.length,
+            itemCount: books.length + folders.length,
             itemBuilder: (context, index) {
-              final book = books[index];
+              if (index < folders.length) {
+                return _buildFolderTile(folders[index]);
+              }
+              final book = books[index - folders.length];
               final coverKey = _coverKeyFor(book);
               return RepaintBoundary(
                 child: _BookCoverItem(
@@ -263,10 +299,15 @@ extension _LibraryPageCollection on _LibraryPageState {
     );
   }
 
-  Widget _buildBooksList(List<Book> books, {required double topPadding}) {
+  Widget _buildBooksList(
+    List<Book> books, {
+    required double topPadding,
+    List<ShelfFolder> folders = const [],
+  }) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return ListView.builder(
+      controller: _shelfScrollController,
       scrollCacheExtent: const ScrollCacheExtent.pixels(720),
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
@@ -275,11 +316,15 @@ extension _LibraryPageCollection on _LibraryPageState {
         16,
         topPadding,
         16,
-        HomeMobileChromeScope.of(context).pageBottomPadding,
+        HomeMobileChromeScope.of(context).pageBottomPadding +
+            (_currentFolderId == null ? 0 : 64),
       ),
-      itemCount: books.length,
+      itemCount: books.length + folders.length,
       itemBuilder: (context, index) {
-        final book = books[index];
+        if (index < folders.length) {
+          return _buildFolderTile(folders[index], list: true);
+        }
+        final book = books[index - folders.length];
         final coverKey = _coverKeyFor(book);
         final progress = book.progress;
         final progressText = context.l10n.libraryProgressContinue(

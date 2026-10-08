@@ -3,6 +3,8 @@
 > 范围：主 Flutter 工程及 Android、iOS、Windows、macOS、Linux、Web 平台壳层
 > 目标：提供与当前代码一致的阅读顺序和模块边界。
 
+维护入口见 [docs/README.md](docs/README.md)。本文件保留模块概览；缓存和书源的具体契约分别维护在 [阅读缓存](docs/reading-cache.md) 与 [书源架构](lib/book_sources/README.md)。
+
 ## 当前主链路
 
 开元阅读的本地书籍入口是 `BookReaderLauncher`，文字阅读页面是 `NativeReaderPage`。
@@ -73,8 +75,13 @@ Android 目录只使用 SAF 持久化 URI 权限，不申请广泛存储权限�
 开放书源协议实现：
 
 - `models/`：已注册书源与协议数据模型；
-- `protocol/`：协议常量、发现文档和响应解析；
-- `services/`：HTTP 客户端与本地书源注册表。
+- `protocol/`：ORSP 和兼容阅读书源后端、协议模型及响应解析；
+- `services/`：客户端门面、注册表与应用层组合；
+- `caching/`：共享章节、目录、响应与图片缓存；
+- `networking/`：网络访问策略与固定地址校验；
+- `source_engine/`：请求、规则、脚本、登录、目录和正文运行时。
+
+在线开书通过客户端门面进入后端，复用统一章节/目录缓存和 SQLite 分页存储；启动的并发边界、身份隔离与缓存清除见 [阅读缓存维护](docs/reading-cache.md)。
 
 规范和参考服务独立维护在：
 https://github.com/miloquinn/origo-source-protocol

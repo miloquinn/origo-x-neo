@@ -11,11 +11,9 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
       _error = null;
     });
     try {
-      await _replaceRules.load();
-      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
-      await _resolveShelfBook(loadReadingData: false);
-      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
       final results = await Future.wait<Object?>([
+        _resolveShelfBookForInitialization(),
+        _replaceRules.load(),
         _client.getChapters(
           widget.source,
           widget.book.id,
@@ -31,18 +29,25 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         _themeOrderStore.load(),
         _readerSettingsStore.loadTapZones(),
       ]);
-      final rawChapters = [...results[0]! as List<BookSourceChapter>]
+      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
+      final resolvedShelfBook = results[0] as Book?;
+      final shelfBook = _shelfBook?.id == null ? resolvedShelfBook : _shelfBook;
+      _updateReaderState(() {
+        _shelfBook = shelfBook;
+        _shelfBookId = shelfBook?.id;
+      });
+      final rawChapters = [...results[2]! as List<BookSourceChapter>]
         ..sort((a, b) => a.order.compareTo(b.order));
       final rawChapterTitlesById = <String, String>{
         for (final chapter in rawChapters) chapter.id: chapter.title,
       };
       final chapters = await _withReplacedChapterTitles(rawChapters);
-      final saved = results[1] as BookSourceReadingProgress?;
-      final settings = results[2]! as ReaderSettings;
-      final scrollByChapter = results[3]! as bool;
-      final customThemes = results[4] as List<ReaderCustomTheme>;
-      final themeOrder = results[5] as List<String>;
-      final tapZones = results[6] as ReaderTapZones;
+      final saved = results[3] as BookSourceReadingProgress?;
+      final settings = results[4]! as ReaderSettings;
+      final scrollByChapter = results[5]! as bool;
+      final customThemes = results[6] as List<ReaderCustomTheme>;
+      final themeOrder = results[7] as List<String>;
+      final tapZones = results[8] as ReaderTapZones;
       var initialIndex = saved?.chapterIndex ?? 0;
       if (saved != null && saved.chapterId.isNotEmpty) {
         final byId = chapters.indexWhere(
@@ -83,8 +88,15 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         _loadingCatalog = false;
       });
       unawaited(_syncVolumeKeyPaging());
+      if (shelfBook != null) {
+        unawaited(
+          _loadShelfReadingData(
+            shelfBook,
+            catalogLoadSerial: catalogLoadSerial,
+          ),
+        );
+      }
       if (chapters.isNotEmpty) {
-        unawaited(_resolveShelfBook());
         await _loadChapter(
           initialIndex,
           restoreProgress: saved?.chapterProgress ?? 0,
@@ -287,25 +299,39 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
     return _progressSaveQueue;
   }
 
-  Future<void> _resolveShelfBook({bool loadReadingData = true}) async {
-    Book? shelfBook;
+  Future<Book?> _resolveShelfBookForInitialization() {
+    final shelfBook = _shelfBook;
+    if (shelfBook?.id != null) return Future<Book?>.value(shelfBook);
+    final pending = _shelfBookLookup;
+    if (pending != null) return pending;
+
+    late final Future<Book?> lookup;
+    lookup = _findShelfBook().whenComplete(() {
+      if (identical(_shelfBookLookup, lookup)) _shelfBookLookup = null;
+    });
+    _shelfBookLookup = lookup;
+    return lookup;
+  }
+
+  Future<Book?> _findShelfBook() async {
     try {
-      shelfBook = await _shelfService.findShelfBook(
+      return await _shelfService.findShelfBook(
         sourceId: widget.source.id,
         sourceBookId: widget.book.id,
       );
     } catch (error) {
       debugPrint('resolve source shelf book failed: $error');
-      return;
+      return null;
     }
-    if (!mounted) return;
-    _updateReaderState(() {
-      _shelfBook = shelfBook;
-      _shelfBookId = shelfBook?.id;
-    });
-    final shelfBookId = _shelfBookId;
-    if (shelfBookId == null || !loadReadingData) return;
-    if (shelfBook != null && _chapters.isNotEmpty) {
+  }
+
+  Future<void> _loadShelfReadingData(
+    Book shelfBook, {
+    required int catalogLoadSerial,
+  }) async {
+    final shelfBookId = shelfBook.id;
+    if (shelfBookId == null) return;
+    if (_chapters.isNotEmpty) {
       unawaited(
         SourceBookUpdateService()
             .markOnlineOpened(shelfBook, latestChapterId: _chapters.last.id)
@@ -318,13 +344,12 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         _bookmarkDao.getBookmarksForBook(shelfBookId),
         _bookNoteDao.selectBookNotesByBookId(shelfBookId),
       ]);
-      if (mounted) {
-        _updateReaderState(() {
-          _bookmarks = results[0] as List<Bookmark>;
-          _annotations = results[1] as List<BookNote>;
-          _annotationRevision++;
-        });
-      }
+      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
+      _updateReaderState(() {
+        _bookmarks = results[0] as List<Bookmark>;
+        _annotations = results[1] as List<BookNote>;
+        _annotationRevision++;
+      });
     } catch (error) {
       debugPrint('load source bookmarks and annotations failed: $error');
     }

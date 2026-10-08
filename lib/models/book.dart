@@ -53,6 +53,7 @@ class Book {
   final String? sourceKind;
   final String? sourceLocator;
   final int? sourceModifiedTime;
+  final String? shelfFolderId;
 
   bool get isOnline => storageType == 'online';
 
@@ -99,6 +100,7 @@ class Book {
     this.sourceKind,
     this.sourceLocator,
     this.sourceModifiedTime,
+    this.shelfFolderId,
   }) : importDate = importDate ?? DateTime.now();
 
   // content 字段已被移除
@@ -132,6 +134,7 @@ class Book {
       'source_kind': sourceKind,
       'source_locator': sourceLocator,
       'source_modified_time': sourceModifiedTime,
+      'shelf_folder_id': shelfFolderId,
     };
   }
 
@@ -164,6 +167,7 @@ class Book {
       sourceKind: map['source_kind'] as String?,
       sourceLocator: map['source_locator'] as String?,
       sourceModifiedTime: map['source_modified_time'] as int?,
+      shelfFolderId: map['shelf_folder_id'] as String?,
     );
   }
 
@@ -195,7 +199,9 @@ class Book {
     String? sourceKind,
     String? sourceLocator,
     int? sourceModifiedTime,
+    String? shelfFolderId,
     bool clearSourceMetadata = false,
+    bool clearShelfFolder = false,
   }) {
     return Book(
       id: id ?? this.id,
@@ -233,6 +239,9 @@ class Book {
       sourceModifiedTime: clearSourceMetadata
           ? null
           : sourceModifiedTime ?? this.sourceModifiedTime,
+      shelfFolderId: clearShelfFolder
+          ? null
+          : shelfFolderId ?? this.shelfFolderId,
     );
   }
 

@@ -10,10 +10,12 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
     );
     // The library may have checked or downloaded this book while reading.
     try {
-      _shelfBook = await _shelfService.findShelfBook(
+      final shelfBook = await _shelfService.findShelfBook(
         sourceId: widget.source.id,
         sourceBookId: widget.book.id,
       );
+      _shelfBook = shelfBook;
+      _shelfBookId = shelfBook?.id;
     } catch (_) {
       /* Keep the last known association if storage is unavailable. */
     }
@@ -25,6 +27,7 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
           shelfBook: _shelfBook,
           onBookChanged: (book) {
             _shelfBook = book;
+            _shelfBookId = book.id;
             catalogChecked = true;
           },
           title: widget.book.title,

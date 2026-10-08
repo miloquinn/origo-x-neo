@@ -3258,12 +3258,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsLibraryGridColumnsTitle => 'スマートフォンの1行あたりの表紙数';
 
   @override
-  String get settingsLibraryGridTwoColumns => '2列';
-
-  @override
-  String get settingsLibraryGridThreeColumns => '3列';
-
-  @override
   String get settingsLibraryGridShowDetailsTitle => 'タイトルと進捗を表示';
 
   @override
@@ -7496,9 +7490,74 @@ class AppLocalizationsJa extends AppLocalizations {
   String get activityCenterRefresh => '更新';
 
   @override
+  String get libraryNewFolder => 'New group';
+
+  @override
+  String get libraryFolderName => 'Group name';
+
+  @override
+  String get libraryFolderNameHint => 'Give this bookshelf a name';
+
+  @override
+  String get libraryRenameFolder => 'Rename group';
+
+  @override
+  String get libraryDissolveFolder => 'Dissolve group';
+
+  @override
+  String get libraryDissolveFolderMessage =>
+      'Move books and subgroups up one level. Your books and reading data are kept.';
+
+  @override
+  String get libraryMoveToFolder => 'Move to group';
+
+  @override
+  String get libraryMoveHere => 'Move here';
+
+  @override
+  String get libraryBackToParent => 'Back up one level';
+
+  @override
+  String get libraryRootShelf => 'Main bookshelf';
+
+  @override
+  String get libraryFolderEmpty => 'This bookshelf is empty';
+
+  @override
+  String libraryFolderBooks(int count) {
+    return '$count books';
+  }
+
+  @override
+  String get libraryFolderCreateHint =>
+      'Selected books will move into this bookshelf.';
+
+  @override
+  String get libraryFolderOperationFailed =>
+      'Could not update the group. Please try again.';
+
+  @override
+  String get libraryFolderNameRequired => 'Enter a group name';
+
+  @override
+  String get libraryFolderNameTooLong => 'Use 60 characters or fewer';
+
+  @override
   String get accountBindEmailTitle => 'メールアドレスを確認';
 
   @override
   String get accountBindEmailHint =>
       'メールアドレスを確認し、このログイン方法を Origo アカウントに紐付けます。既存のアカウントのメールアドレスを使用してください。';
+
+  @override
+  String settingsLibraryGridColumnCount(int count) {
+    return '$count columns';
+  }
+
+  @override
+  String get settingsLibraryGridColumnsHint =>
+      'Narrow screens and larger text may use fewer columns to keep covers readable.';
+
+  @override
+  String get libraryFolderEmptyPreview => 'No books yet';
 }

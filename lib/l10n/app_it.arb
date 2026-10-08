@@ -952,8 +952,6 @@
   "settingsLibraryLayoutCard": "Schede",
   "settingsLibraryLayoutGrid": "Griglia",
   "settingsLibraryGridColumnsTitle": "Copertine per riga su telefoni",
-  "settingsLibraryGridTwoColumns": "2 colonne",
-  "settingsLibraryGridThreeColumns": "3 colonne",
   "settingsLibraryGridShowDetailsTitle": "Mostra titolo e avanzamento",
   "settingsLibraryGridShowDetailsSubtitle": "Aggiungi una riga col titolo e una barra compatta di avanzamento sotto ogni copertina",
   "settingsLibraryOpenAnimationTitle": "Animazione di apertura del libro",

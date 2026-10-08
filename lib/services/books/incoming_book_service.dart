@@ -39,6 +39,7 @@ class IncomingBookService {
 
   StreamSubscription<IncomingBookRequest>? _subscription;
   Future<void>? _drainFuture;
+  Completer<void>? _readyWaiter;
   bool _ready = false;
   bool _disposed = false;
 
@@ -63,8 +64,12 @@ class IncomingBookService {
 
   Future<void> setReady(bool ready) async {
     _ready = ready;
+    if (ready) _releaseReadyWaiter();
     _scheduleDrain();
-    await idle;
+    // Turning readiness off is a pause operation. An in-flight request may be
+    // waiting at the final routing boundary, so waiting for `idle` here would
+    // deadlock the caller that is responsible for restoring readiness.
+    if (ready) await idle;
   }
 
   Future<void> get idle => _drainFuture ?? Future<void>.value();
@@ -86,14 +91,20 @@ class IncomingBookService {
       final request = _queue.removeFirst();
       _onProcessing?.call(true);
       try {
-        await _handle(request);
-        await _completeWithoutMaskingFailure(request.requestId);
+        final routed = await _handle(request);
+        if (routed && !_disposed) {
+          await _completeWithoutMaskingFailure(request.requestId);
+        }
       } on IncomingBookFailure catch (failure) {
-        _onFailure?.call(failure);
-        await _completeWithoutMaskingFailure(request.requestId);
+        if (!_disposed) {
+          _onFailure?.call(failure);
+          await _completeWithoutMaskingFailure(request.requestId);
+        }
       } catch (error) {
-        _onFailure?.call(IncomingBookFailure('import_failed', cause: error));
-        await _completeWithoutMaskingFailure(request.requestId);
+        if (!_disposed) {
+          _onFailure?.call(IncomingBookFailure('import_failed', cause: error));
+          await _completeWithoutMaskingFailure(request.requestId);
+        }
       } finally {
         _onProcessing?.call(false);
       }
@@ -108,7 +119,7 @@ class IncomingBookService {
     }
   }
 
-  Future<void> _handle(IncomingBookRequest request) async {
+  Future<bool> _handle(IncomingBookRequest request) async {
     if (request.items.isEmpty) {
       throw IncomingBookFailure(_mapNativeFailure(request.errorCode));
     }
@@ -145,18 +156,35 @@ class IncomingBookService {
     }
 
     if (sources.length > 1) {
+      if (!await _waitUntilReady()) return false;
       await _openImportQueue(List<BookImportSource>.unmodifiable(sources));
-      return;
+      return true;
     }
     try {
       final result = await _importer.importFile(sources.single);
+      if (!await _waitUntilReady()) return false;
       await _openBook(result.book);
+      return true;
     } on BookImportFailure catch (failure) {
       throw IncomingBookFailure(
         _mapImportFailure(failure.code),
         cause: failure,
       );
     }
+  }
+
+  Future<bool> _waitUntilReady() async {
+    while (!_ready && !_disposed) {
+      final waiter = _readyWaiter ??= Completer<void>();
+      await waiter.future;
+    }
+    return _ready && !_disposed;
+  }
+
+  void _releaseReadyWaiter() {
+    final waiter = _readyWaiter;
+    _readyWaiter = null;
+    if (waiter != null && !waiter.isCompleted) waiter.complete();
   }
 
   String _mapImportFailure(String code) {
@@ -187,6 +215,7 @@ class IncomingBookService {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    _releaseReadyWaiter();
     await _subscription?.cancel();
     await idle;
     await _bridge.dispose();

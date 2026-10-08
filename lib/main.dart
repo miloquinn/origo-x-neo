@@ -27,6 +27,8 @@ import 'pages/reader/book_reader_launcher.dart';
 import 'pages/reader/native/native_reader_page.dart';
 import 'pages/library/import_book/import_book_page.dart';
 import 'pages/legal/user_agreement_page.dart';
+import 'pages/legal/legal_agreement_gate.dart';
+import 'services/legal/legal_document_repository.dart';
 import 'pages/reader/book_source/online_reader_factory.dart';
 import 'pages/book_sources/source_verification_page.dart';
 import 'services/books/book_services.dart';
@@ -120,11 +122,12 @@ void main(List<String> arguments) async {
             create: (_) => BookSourceMaintenanceCoordinator(),
           ),
           provider.ChangeNotifierProvider(
-            create: (_) => MemberAccountController()..synchronize(),
+            create: (_) => MemberAccountController(networkAllowed: false),
           ),
           provider.ChangeNotifierProvider(
             lazy: false,
             create: (context) => ReadingCloudController(
+              networkAllowed: false,
               account: provider.Provider.of<MemberAccountController>(
                 context,
                 listen: false,
@@ -203,10 +206,15 @@ class XxReadApp extends StatefulWidget {
     super.key,
     this.initialFilePaths = const [],
     this.sourceInteractionCoordinator,
+    this.legalRepository,
   });
 
   final List<String> initialFilePaths;
   final SourceInteractionCoordinator? sourceInteractionCoordinator;
+  final LegalDocumentRepository? legalRepository;
+
+  LegalDocumentRepository get _legalRepository =>
+      legalRepository ?? LegalDocumentRepository.instance;
 
   SourceInteractionCoordinator get _coordinator =>
       sourceInteractionCoordinator ?? SourceInteractionCoordinator.instance;
@@ -217,7 +225,9 @@ class XxReadApp extends StatefulWidget {
 
 class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final _legalNavigationObserver = LegalAgreementNavigationObserver();
   bool? _hasAcceptedAgreement;
+  bool _requiresUpdatedAgreement = false;
   bool _isBootstrapped = false;
   bool _showFirstHomeSupportAfterAgreement = false;
   _BootstrapError? _bootstrapError;
@@ -279,6 +289,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
   }
 
   Future<void> _showNextSourceInteraction() async {
+    if (!_isBootstrapped || _hasAcceptedAgreement != true) return;
     if (_showingSourceInteraction || _pendingSourceInteractions.isEmpty) return;
     final context = _navigatorKey.currentContext;
     if (context == null) {
@@ -393,19 +404,44 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
-      unawaited(
-        provider.Provider.of<ReadingCloudController>(
-          context,
-          listen: false,
-        ).synchronize(),
-      );
-      unawaited(
-        provider.Provider.of<MemberAccountController>(
-          context,
-          listen: false,
-        ).synchronize(),
-      );
+      unawaited(_resumeAuthorizedServices());
     }
+  }
+
+  Future<void> _resumeAuthorizedServices() async {
+    if (_hasAcceptedAgreement != true) return;
+    provider.Provider.of<MemberAccountController>(
+      context,
+      listen: false,
+    ).setNetworkAllowed(false);
+    provider.Provider.of<ReadingCloudController>(
+      context,
+      listen: false,
+    ).setNetworkAllowed(false);
+    await _refreshAgreementStatus();
+    if (!mounted || _hasAcceptedAgreement != true) return;
+    await _startAuthorizedServices();
+  }
+
+  Future<void> _startAuthorizedServices() async {
+    if (!mounted || _hasAcceptedAgreement != true) {
+      return;
+    }
+    final cloud = provider.Provider.of<ReadingCloudController>(
+      context,
+      listen: false,
+    );
+    final account = provider.Provider.of<MemberAccountController>(
+      context,
+      listen: false,
+    );
+    account.setNetworkAllowed(true);
+    cloud.setNetworkAllowed(true);
+    await account.synchronize();
+    if (!mounted || _hasAcceptedAgreement != true || !cloud.networkAllowed) {
+      return;
+    }
+    await cloud.initialize();
   }
 
   @override
@@ -473,26 +509,72 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
 
   /// 检查用户是否已同意协议
   Future<void> _checkAgreementStatus() async {
-    final hasAccepted = await UserAgreementService.hasUserAcceptedAgreement();
+    var hasAccepted = await UserAgreementService.hasUserAcceptedAgreement(
+      repository: widget._legalRepository,
+    );
+    var needsUpdatedAgreement = false;
+    if (hasAccepted) {
+      final latest = await widget._legalRepository.refresh(locale: 'en');
+      hasAccepted = await UserAgreementService.hasUserAcceptedAgreement(
+        catalog: latest.catalog,
+      );
+      needsUpdatedAgreement = !hasAccepted;
+    }
     if (!mounted) return;
     setState(() {
       _hasAcceptedAgreement = hasAccepted;
+      _requiresUpdatedAgreement = needsUpdatedAgreement;
     });
+    _legalNavigationObserver.required = needsUpdatedAgreement;
     _syncIncomingBookReadiness();
     unawaited(_openPendingNotificationTap());
     _scheduleResumeLastReading();
     debugPrint('📋 协议状态检查: ${hasAccepted ? "已同意" : "未同意"}');
+    if (hasAccepted) {
+      unawaited(_startAuthorizedServices());
+    }
+  }
+
+  Future<void> _refreshAgreementStatus() async {
+    final latest = await widget._legalRepository.refresh(locale: 'en');
+    if (!mounted || _hasAcceptedAgreement != true || latest.refreshError) {
+      return;
+    }
+    final accepted = await UserAgreementService.hasUserAcceptedAgreement(
+      catalog: latest.catalog,
+    );
+    if (!mounted || _hasAcceptedAgreement != true || accepted) return;
+    setState(() {
+      _hasAcceptedAgreement = false;
+      _requiresUpdatedAgreement = true;
+    });
+    _legalNavigationObserver.required = true;
+    provider.Provider.of<MemberAccountController>(
+      context,
+      listen: false,
+    ).setNetworkAllowed(false);
+    provider.Provider.of<ReadingCloudController>(
+      context,
+      listen: false,
+    ).setNetworkAllowed(false);
+    _syncIncomingBookReadiness();
   }
 
   /// 处理用户同意协议
   void _onAgreementAccepted() {
+    _legalNavigationObserver.required = false;
     setState(() {
       _hasAcceptedAgreement = true;
-      _showFirstHomeSupportAfterAgreement = true;
+      if (!_requiresUpdatedAgreement) {
+        _showFirstHomeSupportAfterAgreement = true;
+      }
+      _requiresUpdatedAgreement = false;
     });
     _syncIncomingBookReadiness();
     unawaited(_openPendingNotificationTap());
     _scheduleResumeLastReading();
+    unawaited(_showNextSourceInteraction());
+    unawaited(_startAuthorizedServices());
     debugPrint('✅ 用户协议已同意，进入主应用');
   }
 
@@ -527,7 +609,11 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     final context = _navigatorKey.currentContext;
     if (bookId == null || context == null) return;
     final book = await BookDao().getBookById(bookId);
-    if (book == null || !mounted || _navigatorKey.currentContext == null) {
+    if (!mounted || _hasAcceptedAgreement != true) {
+      _pendingNotificationTap ??= tap;
+      return;
+    }
+    if (book == null || _navigatorKey.currentContext == null) {
       return;
     }
     await BookReaderLauncher.openBook(_navigatorKey.currentContext!, book);
@@ -619,6 +705,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
               // 避免与阅读页面的全屏模式冲突
               return MaterialApp(
                 navigatorKey: _navigatorKey,
+                navigatorObservers: [_legalNavigationObserver],
                 onGenerateTitle: (context) => context.l10n.appTitle,
                 debugShowCheckedModeBanner: false,
                 // 🚀 启用高性能渲染，支持120Hz高刷新率
@@ -649,7 +736,16 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
                 ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: Builder(builder: (context) => _buildHome(context)),
-                builder: (context, child) => AppTextScale(child: child!),
+                builder: (context, child) => AppTextScale(
+                  child: LegalAgreementGate(
+                    required: _requiresUpdatedAgreement,
+                    navigationObserver: _legalNavigationObserver,
+                    repository: widget._legalRepository,
+                    onAgreed: _onAgreementAccepted,
+                    onDisagreed: _onAgreementRejected,
+                    child: child!,
+                  ),
+                ),
               );
             },
           ),
@@ -675,8 +771,9 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     }
 
     // 如果未同意协议，显示协议页面
-    if (!_hasAcceptedAgreement!) {
+    if (!_hasAcceptedAgreement! && !_requiresUpdatedAgreement) {
       return UserAgreementPage(
+        repository: widget._legalRepository,
         onAgreed: _onAgreementAccepted,
         onDisagreed: _onAgreementRejected,
       );

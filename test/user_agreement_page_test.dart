@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/legal/user_agreement_page.dart';
+import 'support/legal_fixture.dart';
+import 'package:xxread/services/legal/legal_document_repository.dart';
 
 void main() {
   setUp(() {
@@ -13,7 +17,7 @@ void main() {
   test(
     'updated terms require the current version and source acknowledgment',
     () async {
-      expect(UserAgreementService.currentAgreementVersion, '2026-07-19.2');
+      final catalog = legalFixtureCatalog();
 
       SharedPreferences.setMockInitialValues({
         'userAgreementAccepted': true,
@@ -21,15 +25,28 @@ void main() {
         'thirdPartySourceBoundaryAccepted': true,
       });
 
-      expect(await UserAgreementService.hasUserAcceptedAgreement(), isFalse);
+      expect(
+        await UserAgreementService.hasUserAcceptedAgreement(
+          catalog: legalFixtureCatalog(),
+        ),
+        isFalse,
+      );
 
-      await UserAgreementService.acceptAgreement(locale: 'en');
+      await UserAgreementService.acceptAgreement(
+        locale: 'en',
+        catalog: catalog,
+      );
 
-      expect(await UserAgreementService.hasUserAcceptedAgreement(), isTrue);
+      expect(
+        await UserAgreementService.hasUserAcceptedAgreement(
+          catalog: legalFixtureCatalog(),
+        ),
+        isTrue,
+      );
       final prefs = await SharedPreferences.getInstance();
       expect(
         prefs.getString('agreementAcceptedVersion'),
-        UserAgreementService.currentAgreementVersion,
+        catalog.bundleVersion,
       );
       expect(prefs.getString('agreementAcceptedLocale'), 'en');
       expect(prefs.getBool('thirdPartySourceBoundaryAccepted'), isTrue);
@@ -49,7 +66,10 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: UserAgreementPage(onAgreed: () => agreedCount++),
+        home: UserAgreementPage(
+          repository: legalFixtureRepository(),
+          onAgreed: () => agreedCount++,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -65,7 +85,12 @@ void main() {
     expect(find.byKey(const Key('agreementSourceDisclosure')), findsOneWidget);
     expect(find.byKey(const Key('agreementPrivacyDisclosure')), findsOneWidget);
     expect(find.text('Agree and continue'), findsOneWidget);
-    expect(await UserAgreementService.hasUserAcceptedAgreement(), isFalse);
+    expect(
+      await UserAgreementService.hasUserAcceptedAgreement(
+        catalog: legalFixtureCatalog(),
+      ),
+      isFalse,
+    );
 
     await tester.tap(find.byKey(const Key('welcomeNext')));
     await tester.tap(find.byKey(const Key('welcomeNext')));
@@ -73,7 +98,67 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(agreedCount, 1);
-    expect(await UserAgreementService.hasUserAcceptedAgreement(), isTrue);
+    expect(
+      await UserAgreementService.hasUserAcceptedAgreement(
+        catalog: legalFixtureCatalog(),
+      ),
+      isTrue,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a pending material update cannot accept an older snapshot', (
+    tester,
+  ) async {
+    final repository = _PendingLegalRepository();
+    var completions = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: UserAgreementPage(
+          repository: repository,
+          onAgreed: () => completions++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('welcomeSkip')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('welcomeNext')));
+    await tester.pump();
+    expect(completions, 0);
+    expect(
+      (await SharedPreferences.getInstance()).getString(
+        UserAgreementService.receiptKey,
+      ),
+      isNull,
+    );
+    repository.pending.complete(
+      LegalCatalogSnapshot(
+        catalog: legalFixtureCatalog(revision: '2026-10-08.2'),
+        source: LegalContentSource.network,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(completions, 0);
+    expect(
+      (await SharedPreferences.getInstance()).getString(
+        UserAgreementService.receiptKey,
+      ),
+      isNull,
+    );
+    await tester.tap(find.byKey(const Key('welcomeNext')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(completions, 1);
+    expect(
+      await UserAgreementService.hasUserAcceptedAgreement(
+        catalog: legalFixtureCatalog(revision: '2026-10-08.2'),
+      ),
+      isTrue,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -91,6 +176,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: UserAgreementPage(
+          repository: legalFixtureRepository(),
           onAgreed: () {},
           onDisagreed: () => disagreed = true,
         ),
@@ -115,7 +201,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(disagreed, isTrue);
-    expect(await UserAgreementService.hasUserAcceptedAgreement(), isFalse);
+    expect(
+      await UserAgreementService.hasUserAcceptedAgreement(
+        catalog: legalFixtureCatalog(),
+      ),
+      isFalse,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -132,7 +223,10 @@ void main() {
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: UserAgreementPage(onAgreed: () {}),
+          home: UserAgreementPage(
+            repository: legalFixtureRepository(),
+            onAgreed: () {},
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -144,4 +238,19 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'agreement in $locale');
     });
   }
+}
+
+class _PendingLegalRepository extends LegalDocumentRepository {
+  final pending = Completer<LegalCatalogSnapshot>();
+  @override
+  Future<LegalCatalogSnapshot> load({required String locale}) async =>
+      LegalCatalogSnapshot(
+        catalog: legalFixtureCatalog(),
+        source: LegalContentSource.bundled,
+      );
+  @override
+  Future<LegalCatalogSnapshot> refresh({
+    required String locale,
+    bool force = false,
+  }) => pending.future;
 }

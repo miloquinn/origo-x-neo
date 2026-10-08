@@ -1852,6 +1852,57 @@ void main() {
     }
   }
 
+  for (final (fontSize, lineHeight) in [(19.0, 1.75), (28.0, 2.0)]) {
+    testWidgets('continuous source chapters leave a body-scaled gap '
+        '(fontSize=$fontSize, lineHeight=$lineHeight)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: BookSourcePageMode.verticalScroll.name,
+        ReaderSettingsStore.scrollByChapterKey: false,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+        ReaderSettingsStore.fontSizeKey: fontSize,
+        ReaderSettingsStore.lineHeightKey: lineHeight,
+      });
+      final client = _ConfigurableBookSourceClient({
+        'chapter-1': '上一章的最后一段。',
+        'chapter-2': '下一章的第一段。',
+      });
+      addTearDown(client.close);
+      await tester.pumpWidget(_buildTabletSourceReader(client));
+      final nextPage = find.byWidgetPredicate(
+        (widget) =>
+            widget is ReaderAnnotatedTextPage &&
+            widget.chapterId == 'chapter-2' &&
+            widget.pageIndex == 0,
+      );
+      await _pumpUntilFound(tester, nextPage);
+      await tester.pumpAndSettle();
+      final previousPage = find.byWidgetPredicate(
+        (widget) =>
+            widget is ReaderAnnotatedTextPage &&
+            widget.chapterId == 'chapter-1' &&
+            widget.pageIndex == 0,
+      );
+      final nextHeading = find.descendant(
+        of: nextPage,
+        matching: find.byType(ReaderInlineChapterTitle),
+      );
+      expect(
+        tester.getTopLeft(nextHeading).dy -
+            tester.getBottomLeft(previousPage).dy,
+        closeTo(fontSize * lineHeight * 1.5, 0.5),
+      );
+      // The separator is layout only: canonical body offsets stay unchanged.
+      final next = tester.widget<ReaderAnnotatedTextPage>(nextPage);
+      expect(next.page.startOffset, 0);
+      expect(next.sourceText, '下一章的第一段。');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+  }
+
   testWidgets('vertical source text keeps its natural continuous height', (
     tester,
   ) async {
