@@ -24,6 +24,8 @@ Android/iOS 设置的帮助按钮及「关于与支持 → 问题反馈」进入
 
 自动摘要保留 30 天，反馈及附件保留 90 天，服务定期清理；注销账号级联删除关联在线记录。已上传资料不会因客户端关闭开关自动撤回。隐私正文唯一来源是平台 `app/legal/content.json`，本次隐私同意版本为 `2026-10-08.2`，同步包内快照而不覆盖历史修订。
 
+iOS `ios/Runner/PrivacyInfo.xcprivacy` 为本功能声明账号关联、非跟踪的客户支持、性能数据、其他诊断及用户 ID 类型。该声明与 Required Reason API、App Store Connect 隐私问卷分别维护；现有必要理由保留。此次交付是开发者直装，TestFlight/App Store 提交前还需同步问卷，并核对既有账号与云服务的数据类型，不能把本次窄修视为完整商店隐私审计。
+
 ## 验证与边界
 
 回归入口为 `test/diagnostics_*`、`test/support_*`、`test/account_support_*`，以及平台 `tests/test_support*` 和隐私发布回归。验证账号切换、关闭开关、供电、采样缺失、前后台、重试及幂等，widget 文件独立进程执行。正常两端产品构建与服务上线分别验证，真机安装与物理反馈/长时电量验收不能互相代替。
