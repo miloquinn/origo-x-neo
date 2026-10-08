@@ -4,9 +4,12 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:xxread/pages/home/widgets/home_bounce_navigation_item.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/ui_style.dart';
+import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
+import 'package:xxread/widgets/floating_pill_navigation_item.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
@@ -189,7 +192,7 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
   }
 }
 
-class _PreviewPage extends StatelessWidget {
+class _PreviewPage extends StatefulWidget {
   const _PreviewPage({
     required this.mode,
     required this.navigationOffsetX,
@@ -199,6 +202,31 @@ class _PreviewPage extends StatelessWidget {
   final _PreviewGlassMode mode;
   final double navigationOffsetX;
   final ValueChanged<_PreviewGlassMode> onModeChanged;
+
+  @override
+  State<_PreviewPage> createState() => _PreviewPageState();
+}
+
+class _PreviewPageState extends State<_PreviewPage> {
+  static const _navigationItems = [
+    FloatingPillNavigationItem(
+      icon: Icons.library_books_outlined,
+      selectedIcon: Icons.library_books_rounded,
+      label: '书架',
+    ),
+    FloatingPillNavigationItem(
+      icon: Icons.explore_outlined,
+      selectedIcon: Icons.explore_rounded,
+      label: '发现',
+    ),
+    FloatingPillNavigationItem(
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
+      label: '我的',
+    ),
+  ];
+
+  int _selectedNavigationIndex = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -243,8 +271,8 @@ class _PreviewPage extends StatelessWidget {
                       for (final value in _PreviewGlassMode.values)
                         ChoiceChip(
                           label: Text(value.label),
-                          selected: value == mode,
-                          onSelected: (_) => onModeChanged(value),
+                          selected: value == widget.mode,
+                          onSelected: (_) => widget.onModeChanged(value),
                         ),
                     ],
                   ),
@@ -253,7 +281,7 @@ class _PreviewPage extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _StatusChip(label: '当前：${mode.label}'),
+                      _StatusChip(label: '当前：${widget.mode.label}'),
                       _StatusChip(
                         label: ui.ImageFilter.isShaderFilterSupported
                             ? 'Shader：支持'
@@ -280,7 +308,7 @@ class _PreviewPage extends StatelessWidget {
                             .clamp(0.0, 350.0)
                             .toDouble();
                         return Transform.translate(
-                          offset: Offset(navigationOffsetX, 0),
+                          offset: Offset(widget.navigationOffsetX, 0),
                           child: RepaintBoundary(
                             key: const ValueKey(
                               'liquid-preview-navigation-boundary',
@@ -288,23 +316,24 @@ class _PreviewPage extends StatelessWidget {
                             child: FloatingPillNavigationSurface(
                               width: width,
                               height: 64,
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: const [
-                                  _NavigationItem(
-                                    icon: Icons.library_books_rounded,
-                                    label: '书架',
-                                    selected: true,
-                                  ),
-                                  _NavigationItem(
-                                    icon: Icons.explore_rounded,
-                                    label: '发现',
-                                  ),
-                                  _NavigationItem(
-                                    icon: Icons.person_rounded,
-                                    label: '我的',
-                                  ),
+                              child: ElasticPillNavigationBar(
+                                selectedIndex: _selectedNavigationIndex,
+                                onSelected: (index) => setState(
+                                  () => _selectedNavigationIndex = index,
+                                ),
+                                children: [
+                                  for (final (index, item)
+                                      in _navigationItems.indexed)
+                                    FloatingPillNavigationButton(
+                                      item: item,
+                                      isSelected:
+                                          index == _selectedNavigationIndex,
+                                      showLabel: true,
+                                      showSelectionIndicator: false,
+                                      onTap: () => setState(
+                                        () => _selectedNavigationIndex = index,
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
@@ -321,8 +350,11 @@ class _PreviewPage extends StatelessWidget {
                       Color(0xFF9B5DE5),
                       Color(0xFFFF6FB5),
                     ],
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
                       children: [
                         SizedBox.square(
                           dimension: 54,
@@ -349,6 +381,15 @@ class _PreviewPage extends StatelessWidget {
                                 ],
                               ),
                             ),
+                          ),
+                        ),
+                        SizedBox.square(
+                          dimension: 58,
+                          child: FloatingPillNavigationButton(
+                            item: _navigationItems.first,
+                            isSelected: true,
+                            showSelectionIndicator: true,
+                            onTap: () {},
                           ),
                         ),
                       ],
@@ -465,32 +506,6 @@ class _PatternStage extends StatelessWidget {
           Padding(padding: const EdgeInsets.only(top: 22), child: child),
         ],
       ),
-    );
-  }
-}
-
-class _NavigationItem extends StatelessWidget {
-  const _NavigationItem({
-    required this.icon,
-    required this.label,
-    this.selected = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected
-        ? Theme.of(context).colorScheme.primary
-        : Theme.of(context).colorScheme.onSurfaceVariant;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: color, size: 22),
-        Text(label, style: TextStyle(color: color, fontSize: 11)),
-      ],
     );
   }
 }

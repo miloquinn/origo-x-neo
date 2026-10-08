@@ -57,3 +57,22 @@
 - 来源、构建、覆盖安装、身份回读、启动与进程存活 JSON 在本地忽略目录 `build/device-ios/liquid-glass-20261008/`。这是本地 direct 渠道开发签名交付，没有上传 TestFlight/App Store。
 
 这是跨平台液态材质实验，保留毛玻璃作为默认选择。模拟器截图与单元测试不替代用户的物理视觉接受、滑动手感及 GPU 帧时间验收。Android/桌面真实 shader 路径和商店发布本次未验证。
+
+## 选中导航透镜适配
+
+用户的真机截图显示外层导航已经透明折射，但选中的书架按钮仍是一整块不透明的浅色。根因是共享弹性导航的 `ShapeDecoration` 仍使用 alpha=1 的主题 surface 混色，遮住外层的实时背景。
+
+- `lib/widgets/elastic_pill_navigation_bar.dart`：液态模式的共享选中透镜改用已有 `LiquidGlassSurface`，保持超椭圆 clip、独立主题 tint、边缘高光；选中图标在滤镜之后绘制。保留原定位、弹簧、拖动、RTL 与 IgnorePointer。
+- `lib/pages/home/widgets/home_bounce_navigation_item.dart`：独立选中指示器使用同一材质，使浮动导航设置预览一致。毛玻璃、关闭玻璃与 Material 3 继续原实色分支。
+- `lib/widgets/liquid_glass_surface.dart` 与 `shaders/liquid_glass.frag`：新增 visibility，底色、高光、边缘折射、中心放大及五采样偏移一起连续渐隐；0 时不创建 filter/rim，保留 child 和布局。直接更新材质参数，不给背景滤镜套 Opacity/saveLayer。奇异变换的轻模糊 fallback 也随 visibility 缩放。
+- `tool/preview_liquid_glass.dart`：用真实共享导航与按钮替代原来的静态图标 fixture，并加入独立选中按钮，避免预览遗漏这条实际绘制路径。
+
+本次逐文件独立回归共 42 项通过：`elastic_pill_navigation_bar_test` 9、`home_bounce_navigation_item_test` 9、`liquid_glass_surface_test` 5、`detailed_stats_page_test` 1、`settings_navigation_and_layout_pages_test` 2、`home_shell_system_bar_test` 4、`glass_control_surface_test` 4、`reader_control_chrome_test` 5、`settings_glass_style_test` 3。全仓 analyze 返回 0，仍为上述 3 条既有 info。
+
+独立审查确认 uniform 写入范围为 2–13，visibility 对边缘、中心及轻柔采样各乘一次，没有平方衰减。两层滤镜按外壳、选中透镜、前景图标的顺序绘制。Widget 测试仅覆盖 fallback 和交互合同；实际 shader 的视觉结果另以 Impeller 截图验证。嵌套选中透镜增加一个小范围 backdrop pass，真机帧时间仍需另行测量。
+
+实际 iOS Simulator Impeller 捕获 `selected-light.png`、`selected-dark.png` 与对应 `selected-*-moving.png`，均为 1320×2868。真实共享透镜与独立指示器可透背景，选中前景保持锐利；平移 20px 的截图中高光和折射同步移动，没有观察到错位或残影。截图保存在同一预览目录。
+
+首次真机构建与模拟器的 `xcodebuild clean build` 并行，共用 DerivedData 时出现 Swift 中间文件消失；停止并行构建后串行重建成功（105.4 秒，58.6 MB）。这是构建目录竞争，未修改产品代码来绕过。deep/strict 签名检查通过，shader 打包为 3888 字节。构建前后 670 个 lib/shader/资产/pubspec 文件无漂移；清单 SHA-256 为 `755bf738974c4915aef1d41506b89290ad4a2e774138a67ea9028b7fbcc1a290`，AOT SHA-256 为 `9aefd71088bae26eabe1744c07221cb6d32624be4785364542785bc6f4732856`。
+
+已对 SloanePro（iPhone 16 Pro）覆盖安装本次 direct 开发签名包，未卸载/清空数据。回读 `com.niki.xxread / 2.7.3 / 261008001`，前台启动成功，PID `12985` 与本次安装目录一致。收据保存在 `build/device-ios/liquid-glass-selection-20261008/`。用户随后认可液态玻璃视觉并要求在此基础上增加不透明度调节；这不构成 GPU 帧时间测量或商店分发验收。

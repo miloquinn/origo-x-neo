@@ -16,13 +16,17 @@ class LiquidGlassSurface extends StatefulWidget {
     required this.child,
     this.brightness,
     this.filterBackground = true,
-  });
+    this.visibility = 1,
+  }) : assert(visibility >= 0 && visibility <= 1);
 
   final OutlinedBorder shape;
   final Color color;
   final Widget child;
   final Brightness? brightness;
   final bool filterBackground;
+
+  /// Fades the tint, rim and refraction together without a backdrop saveLayer.
+  final double visibility;
 
   @override
   State<LiquidGlassSurface> createState() => _LiquidGlassSurfaceState();
@@ -95,6 +99,7 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.visibility == 0) return widget.child;
     final brightness = widget.brightness ?? Theme.of(context).brightness;
     final highContrast = MediaQuery.highContrastOf(context);
     final light = brightness == Brightness.light;
@@ -103,6 +108,7 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
         shape: widget.shape,
         light: light,
         textDirection: Directionality.of(context),
+        visibility: widget.visibility,
       ),
       child: DecoratedBox(
         decoration: ShapeDecoration(
@@ -115,8 +121,14 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
                 widget.color,
                 Colors.white,
                 light ? 0.35 : 0.12,
-              )!.withValues(alpha: highContrast ? 0.94 : (light ? 0.32 : 0.26)),
-              widget.color.withValues(alpha: highContrast ? 0.94 : 0.18),
+              )!.withValues(
+                alpha:
+                    (highContrast ? 0.94 : (light ? 0.32 : 0.26)) *
+                    widget.visibility,
+              ),
+              widget.color.withValues(
+                alpha: (highContrast ? 0.94 : 0.18) * widget.visibility,
+              ),
             ],
           ),
         ),
@@ -126,7 +138,10 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
     if (!widget.filterBackground) return surface;
     if (_shader == null || highContrast) {
       return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+        filter: ui.ImageFilter.blur(
+          sigmaX: 2.5 * widget.visibility,
+          sigmaY: 2.5 * widget.visibility,
+        ),
         child: surface,
       );
     }
@@ -135,6 +150,7 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
       shape: widget.shape,
       pixelRatio: MediaQuery.devicePixelRatioOf(context),
       strength: GlassEffectConfig.liquidRefractionStrength,
+      visibility: widget.visibility,
       textDirection: Directionality.of(context),
       child: surface,
     );
@@ -147,6 +163,7 @@ class _LiquidBackdrop extends SingleChildRenderObjectWidget {
     required this.shape,
     required this.pixelRatio,
     required this.strength,
+    required this.visibility,
     required this.textDirection,
     required super.child,
   });
@@ -155,11 +172,19 @@ class _LiquidBackdrop extends SingleChildRenderObjectWidget {
   final OutlinedBorder shape;
   final double pixelRatio;
   final double strength;
+  final double visibility;
   final TextDirection textDirection;
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderLiquidBackdrop(shader, shape, pixelRatio, strength, textDirection);
+      _RenderLiquidBackdrop(
+        shader,
+        shape,
+        pixelRatio,
+        strength,
+        visibility,
+        textDirection,
+      );
 
   @override
   void updateRenderObject(BuildContext context, _RenderLiquidBackdrop render) {
@@ -168,6 +193,7 @@ class _LiquidBackdrop extends SingleChildRenderObjectWidget {
       ..shape = shape
       ..pixelRatio = pixelRatio
       ..strength = strength
+      ..visibility = visibility
       ..textDirection = textDirection
       ..markNeedsPaint();
   }
@@ -179,6 +205,7 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
     this.shape,
     this.pixelRatio,
     this.strength,
+    this.visibility,
     this.textDirection,
   );
 
@@ -186,6 +213,7 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
   OutlinedBorder shape;
   double pixelRatio;
   double strength;
+  double visibility;
   TextDirection textDirection;
 
   @override
@@ -202,7 +230,10 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
     final transform = getTransformTo(null);
     final determinant = transform.invert();
     if (!determinant.isFinite || determinant.abs() < 0.000001) {
-      return ui.ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5);
+      return ui.ImageFilter.blur(
+        sigmaX: 2.5 * visibility,
+        sigmaY: 2.5 * visibility,
+      );
     }
     final origin = MatrixUtils.transformPoint(transform, Offset.zero);
     final x =
@@ -227,8 +258,9 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
       size.width * pixelRatio,
       size.height * pixelRatio,
       math.min(radius, size.shortestSide / 2) * pixelRatio,
-      strength * pixelRatio,
-      0.75 * pixelRatio,
+      strength * pixelRatio * visibility,
+      0.75 * pixelRatio * visibility,
+      visibility,
     ];
     for (var i = 0; i < values.length; i++) {
       shader.setFloat(i + 2, values[i]);
@@ -264,11 +296,13 @@ class _LiquidRimPainter extends CustomPainter {
     required this.shape,
     required this.light,
     required this.textDirection,
+    required this.visibility,
   });
 
   final OutlinedBorder shape;
   final bool light;
   final TextDirection textDirection;
+  final double visibility;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -282,10 +316,10 @@ class _LiquidRimPainter extends CustomPainter {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withValues(alpha: light ? 0.88 : 0.60),
-          Colors.white.withValues(alpha: 0.08),
-          Colors.white.withValues(alpha: light ? 0.06 : 0.03),
-          Colors.white.withValues(alpha: light ? 0.58 : 0.36),
+          Colors.white.withValues(alpha: (light ? 0.88 : 0.60) * visibility),
+          Colors.white.withValues(alpha: 0.08 * visibility),
+          Colors.white.withValues(alpha: (light ? 0.06 : 0.03) * visibility),
+          Colors.white.withValues(alpha: (light ? 0.58 : 0.36) * visibility),
         ],
         stops: const [0, 0.42, 0.65, 1],
       ).createShader(bounds);
@@ -296,5 +330,6 @@ class _LiquidRimPainter extends CustomPainter {
   bool shouldRepaint(_LiquidRimPainter old) =>
       old.shape != shape ||
       old.light != light ||
-      old.textDirection != textDirection;
+      old.textDirection != textDirection ||
+      old.visibility != visibility;
 }

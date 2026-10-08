@@ -45,6 +45,50 @@ void main() {
     },
   );
 
+  testWidgets('visibility scales tint and zero keeps only the laid out child', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _surfaceHost(filterBackground: true, visibility: 0.5),
+    );
+
+    final liquid = find.byType(LiquidGlassSurface);
+    final child = find.byKey(const ValueKey('liquid-surface-child'));
+    final visibleSize = tester.getSize(child);
+    final decoration =
+        tester
+                .widget<DecoratedBox>(
+                  find.descendant(
+                    of: liquid,
+                    matching: find.byType(DecoratedBox),
+                  ),
+                )
+                .decoration
+            as ShapeDecoration;
+    final gradient = decoration.gradient! as LinearGradient;
+    expect(gradient.colors.first.a, closeTo(0.16, 0.001));
+    expect(gradient.colors.last.a, closeTo(0.09, 0.001));
+    expect(find.byType(BackdropFilter), findsOneWidget);
+
+    await tester.pumpWidget(
+      _surfaceHost(filterBackground: true, visibility: 0),
+    );
+
+    expect(tester.getSize(child), visibleSize);
+    expect(
+      find.descendant(of: liquid, matching: find.byType(BackdropFilter)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: liquid, matching: find.byType(CustomPaint)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: liquid, matching: find.byType(DecoratedBox)),
+      findsNothing,
+    );
+  });
+
   testWidgets('disabled glass switches shared controls to a solid surface', (
     tester,
   ) async {
@@ -106,7 +150,7 @@ Future<void> _tapSharedSurfaces(
   expect(find.text('hits:$expectedHits'), findsOneWidget);
 }
 
-Widget _surfaceHost({required bool filterBackground}) {
+Widget _surfaceHost({required bool filterBackground, double visibility = 1}) {
   return MaterialApp(
     home: Scaffold(
       body: Center(
@@ -117,7 +161,11 @@ Widget _surfaceHost({required bool filterBackground}) {
             shape: const StadiumBorder(),
             color: Colors.indigo,
             filterBackground: filterBackground,
-            child: const Center(child: Text('Liquid')),
+            visibility: visibility,
+            child: const Center(
+              key: ValueKey('liquid-surface-child'),
+              child: Text('Liquid'),
+            ),
           ),
         ),
       ),

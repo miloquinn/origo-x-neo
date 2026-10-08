@@ -8,6 +8,7 @@ uniform vec2 uExtent;
 uniform float uRadius;
 uniform float uStrength;
 uniform float uSoftness;
+uniform float uVisibility;
 uniform sampler2D uInput;
 out vec4 fragColor;
 
@@ -37,7 +38,7 @@ void main() {
   float band = max(1.0, min(halfSize.x, halfSize.y) * 0.65);
   float rim = 1.0 - smoothstep(0.0, band, max(0.0, -distance));
   // Pull samples inward at the curved rim, leaving the centre almost clear.
-  vec2 localOffset = -normal * uStrength * rim * rim - p * 0.015;
+  vec2 localOffset = -normal * uStrength * rim * rim - p * 0.015 * uVisibility;
   // Convert the local displacement back to the filter's coordinate space.
   float determinant = uBasis.x * uBasis.w - uBasis.y * uBasis.z;
   if (abs(determinant) < 0.000001) {

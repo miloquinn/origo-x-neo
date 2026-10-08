@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/pages/home/widgets/home_bounce_navigation_item.dart';
+import 'package:xxread/utils/glass_config.dart';
+import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
+import 'package:xxread/widgets/liquid_glass_surface.dart';
 
 void main() {
+  setUp(() {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+  });
+
+  tearDown(() {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+  });
+
   testWidgets(
     'drag follows continuously and commits one destination on release',
     (tester) async {
@@ -96,10 +109,12 @@ void main() {
   });
 
   testWidgets(
-    'real navigation buttons dispatch one callback for tap and drag',
+    'liquid navigation buttons dispatch one callback for tap and drag',
     (tester) async {
+      GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
       final selections = <int>[];
       await tester.pumpWidget(_realButtonApp(selections));
+      expect(find.byType(LiquidGlassSurface), findsOneWidget);
 
       await tester.tap(find.text('Two'));
       await tester.pumpAndSettle();
@@ -119,6 +134,71 @@ void main() {
       expect(selections, [1, 2]);
     },
   );
+
+  for (final brightness in Brightness.values) {
+    testWidgets(
+      '${brightness.name} liquid lens stays translucent with a readable icon',
+      (tester) async {
+        GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
+        await tester.pumpWidget(
+          _realButtonApp(const [], brightness: brightness),
+        );
+
+        final lens = find.descendant(
+          of: find.byKey(const ValueKey('home-navigation-selection-lens')),
+          matching: find.byType(LiquidGlassSurface),
+        );
+        expect(lens, findsOneWidget);
+        final gradient = _liquidGradient(tester, lens);
+        expect(gradient.colors.every((color) => color.a < 1), isTrue);
+        expect(gradient.colors.any((color) => color.a > 0), isTrue);
+
+        final selectedIcon = tester.widget<Icon>(
+          find.descendant(
+            of: find.byKey(const ValueKey('home-nav-selected-One')),
+            matching: find.byIcon(Icons.circle),
+          ),
+        );
+        final scheme = Theme.of(
+          tester.element(find.byType(ElasticPillNavigationBar)),
+        ).colorScheme;
+        expect(selectedIcon.color, scheme.primary);
+      },
+    );
+  }
+
+  testWidgets('frosted, disabled, and Material 3 lenses stay non-liquid', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_testApp(selectedIndex: 0, onSelected: (_) {}));
+    expect(find.byType(LiquidGlassSurface), findsNothing);
+
+    GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
+    GlassEffectConfig.setDisableAllGlassEffects(true);
+    await tester.pumpWidget(_testApp(selectedIndex: 0, onSelected: (_) {}));
+    expect(find.byType(LiquidGlassSurface), findsNothing);
+
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    await tester.pumpWidget(
+      _testApp(
+        selectedIndex: 0,
+        onSelected: (_) {},
+        uiStyle: AppUiStyle.material3,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(LiquidGlassSurface), findsNothing);
+  });
+}
+
+LinearGradient _liquidGradient(WidgetTester tester, Finder liquidSurface) {
+  final decoratedBox = find.descendant(
+    of: liquidSurface,
+    matching: find.byType(DecoratedBox),
+  );
+  final decoration =
+      tester.widget<DecoratedBox>(decoratedBox).decoration as ShapeDecoration;
+  return decoration.gradient! as LinearGradient;
 }
 
 double _lensCenter(WidgetTester tester) =>
@@ -133,8 +213,10 @@ Widget _testApp({
   required ValueChanged<int> onSelected,
   bool disableAnimations = false,
   TextDirection textDirection = TextDirection.ltr,
+  AppUiStyle uiStyle = AppUiStyle.glass,
 }) {
   return MaterialApp(
+    theme: ThemeData(extensions: [UiStyleThemeExtension(style: uiStyle)]),
     builder: (context, child) =>
         Directionality(textDirection: textDirection, child: child!),
     home: MediaQuery(
@@ -160,8 +242,26 @@ Widget _testApp({
   );
 }
 
-Widget _realButtonApp(List<int> selections) {
-  return MaterialApp(home: _RealButtonHarness(selections: selections));
+Widget _realButtonApp(
+  List<int> selections, {
+  Brightness brightness = Brightness.light,
+}) {
+  return MaterialApp(
+    theme: ThemeData(
+      brightness: brightness,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.indigo,
+        brightness: brightness,
+      ),
+      extensions: const [
+        UiStyleThemeExtension(
+          style: AppUiStyle.glass,
+          glassStyle: GlassStyle.liquid,
+        ),
+      ],
+    ),
+    home: _RealButtonHarness(selections: selections),
+  );
 }
 
 class _RealButtonHarness extends StatefulWidget {

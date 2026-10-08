@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 
 import '../home_mobile_chrome.dart';
 import 'package:xxread/utils/ui_style.dart';
+import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
+import 'package:xxread/widgets/liquid_glass_surface.dart';
 
 import 'home_navigation_item.dart';
 
@@ -165,6 +167,8 @@ class _FloatingPillNavigationButtonState
     final selectedBorder = scheme.primary.withValues(
       alpha: isLightTheme ? 0.08 : 0.16,
     );
+    final usesLiquidGlass =
+        GlassEffectConfig.usesLiquidGlass && !isMaterial3Style;
 
     return Semantics(
       button: true,
@@ -230,6 +234,9 @@ class _FloatingPillNavigationButtonState
                         ((labeledIndicatorHeight - hiddenIndicatorHeight) *
                             labelProgress);
                     final indicatorRadius = indicatorHeight / 2;
+                    final indicatorShape = RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(indicatorRadius),
+                    );
 
                     return Stack(
                       fit: StackFit.expand,
@@ -248,26 +255,42 @@ class _FloatingPillNavigationButtonState
                                 ),
                                 width: indicatorWidth,
                                 height: indicatorHeight,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    color: Color.lerp(
-                                      selectedSurface.withValues(alpha: 0),
-                                      selectedSurface,
-                                      selection,
-                                    ),
-                                    borderRadius: BorderRadius.circular(
-                                      indicatorRadius,
-                                    ),
-                                    border: Border.all(
-                                      color: Color.lerp(
-                                        selectedBorder.withValues(alpha: 0),
-                                        selectedBorder,
-                                        selection,
-                                      )!,
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                ),
+                                child: usesLiquidGlass
+                                    ? ClipPath(
+                                        clipper: ShapeBorderClipper(
+                                          shape: indicatorShape,
+                                        ),
+                                        child: LiquidGlassSurface(
+                                          shape: indicatorShape,
+                                          color: selectedSurface,
+                                          visibility: selection,
+                                          child: const SizedBox.expand(),
+                                        ),
+                                      )
+                                    : DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Color.lerp(
+                                            selectedSurface.withValues(
+                                              alpha: 0,
+                                            ),
+                                            selectedSurface,
+                                            selection,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            indicatorRadius,
+                                          ),
+                                          border: Border.all(
+                                            color: Color.lerp(
+                                              selectedBorder.withValues(
+                                                alpha: 0,
+                                              ),
+                                              selectedBorder,
+                                              selection,
+                                            )!,
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                      ),
                               ),
                             ),
                           ),

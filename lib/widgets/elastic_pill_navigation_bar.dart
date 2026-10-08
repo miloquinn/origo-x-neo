@@ -3,8 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../utils/glass_config.dart';
 import '../utils/ui_style.dart';
 import 'elastic_motion.dart';
+import 'liquid_glass_surface.dart';
 
 /// A row of navigation destinations with one spring-driven selection lens.
 ///
@@ -166,6 +168,8 @@ class _ElasticPillNavigationBarState extends State<ElasticPillNavigationBar>
       scheme.primary,
       scheme.brightness == Brightness.light ? 0.13 : 0.24,
     )!;
+    final usesLiquidGlass =
+        GlassEffectConfig.usesLiquidGlass && !isMaterial3Style;
 
     return Listener(
       behavior: HitTestBehavior.opaque,
@@ -190,6 +194,9 @@ class _ElasticPillNavigationBarState extends State<ElasticPillNavigationBar>
                   final height =
                       (constraints.maxHeight + growth) * (1 - speedStretch / 2);
                   final centerX = (_lens.value + 0.5) * extent;
+                  final lensShape = RoundedSuperellipseBorder(
+                    borderRadius: BorderRadius.circular(height / 2),
+                  );
                   return PositionedDirectional(
                     key: const ValueKey('home-navigation-selection-lens'),
                     start: centerX - width / 2,
@@ -197,22 +204,34 @@ class _ElasticPillNavigationBarState extends State<ElasticPillNavigationBar>
                     width: width,
                     height: height,
                     child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: ShapeDecoration(
-                          color: selectedColor,
-                          shape: RoundedSuperellipseBorder(
-                            side: BorderSide(
-                              color: scheme.primary.withValues(
-                                alpha: scheme.brightness == Brightness.light
-                                    ? 0.08
-                                    : 0.16,
+                      child: usesLiquidGlass
+                          ? ClipPath(
+                              clipper: ShapeBorderClipper(shape: lensShape),
+                              child: LiquidGlassSurface(
+                                shape: lensShape,
+                                color: selectedColor,
+                                child: const SizedBox.expand(),
                               ),
-                              width: 0.8,
+                            )
+                          : DecoratedBox(
+                              decoration: ShapeDecoration(
+                                color: selectedColor,
+                                shape: RoundedSuperellipseBorder(
+                                  side: BorderSide(
+                                    color: scheme.primary.withValues(
+                                      alpha:
+                                          scheme.brightness == Brightness.light
+                                          ? 0.08
+                                          : 0.16,
+                                    ),
+                                    width: 0.8,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    height / 2,
+                                  ),
+                                ),
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(height / 2),
-                          ),
-                        ),
-                      ),
                     ),
                   );
                 },

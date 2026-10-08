@@ -3,6 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/models/home_navigation_destination.dart';
 import 'package:xxread/pages/home/widgets/home_bounce_navigation_item.dart';
 import 'package:xxread/pages/home/widgets/home_navigation_item.dart';
+import 'package:xxread/utils/glass_config.dart';
+import 'package:xxread/utils/ui_style.dart';
+import 'package:xxread/widgets/liquid_glass_surface.dart';
 
 void main() {
   const label = 'Library';
@@ -13,6 +16,16 @@ void main() {
     label: label,
     page: SizedBox.shrink(),
   );
+
+  setUp(() {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+  });
+
+  tearDown(() {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+  });
 
   testWidgets('renders an enlarged icon-only navigation item', (tester) async {
     final semantics = tester.ensureSemantics();
@@ -304,6 +317,55 @@ void main() {
     );
     expect(_indicatorCornerRadius(tester, label), 28);
   });
+
+  testWidgets(
+    'standalone liquid selection fades filter and rims with selection',
+    (tester) async {
+      GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
+      await tester.pumpWidget(_testApp(item: item, isSelected: true));
+
+      final indicator = find.byKey(
+        const ValueKey('home-nav-indicator-Library'),
+      );
+      var liquid = find.descendant(
+        of: indicator,
+        matching: find.byType(LiquidGlassSurface),
+      );
+      expect(tester.widget<LiquidGlassSurface>(liquid).visibility, 1);
+      expect(
+        find.descendant(of: indicator, matching: find.byType(BackdropFilter)),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(_testApp(item: item, isSelected: false));
+      await tester.pump(const Duration(milliseconds: 80));
+      liquid = find.descendant(
+        of: indicator,
+        matching: find.byType(LiquidGlassSurface),
+      );
+      final progress = tester.widget<LiquidGlassSurface>(liquid).visibility;
+      expect(progress, inExclusiveRange(0, 1));
+      expect(
+        find.descendant(of: indicator, matching: find.byType(BackdropFilter)),
+        findsOneWidget,
+      );
+
+      await tester.pumpAndSettle();
+      liquid = find.descendant(
+        of: indicator,
+        matching: find.byType(LiquidGlassSurface),
+      );
+      expect(tester.widget<LiquidGlassSurface>(liquid).visibility, 0);
+      expect(
+        find.descendant(of: indicator, matching: find.byType(BackdropFilter)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: indicator, matching: find.byType(CustomPaint)),
+        findsNothing,
+      );
+    },
+  );
 }
 
 double _selectedIconOpacity(WidgetTester tester, String label) {
@@ -385,8 +447,14 @@ Widget _testApp({
   double itemHeight = 48,
   VoidCallback? onTap,
   bool disableAnimations = false,
+  AppUiStyle uiStyle = AppUiStyle.glass,
 }) {
   return MaterialApp(
+    theme: ThemeData(
+      extensions: [
+        UiStyleThemeExtension(style: uiStyle, glassStyle: GlassStyle.liquid),
+      ],
+    ),
     home: Scaffold(
       body: MediaQuery(
         data: MediaQueryData(disableAnimations: disableAnimations),
