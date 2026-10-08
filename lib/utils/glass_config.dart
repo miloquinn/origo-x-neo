@@ -20,8 +20,19 @@ class GlassEffectConfig {
   static bool _reduceEffects = false;
   static bool _disableAllGlassEffects = false;
   static GlassStyle _glassStyle = GlassStyle.frosted;
+  static double _liquidGlassOpacity = 0;
 
   static void setGlassStyle(GlassStyle style) => _glassStyle = style;
+
+  static double get liquidGlassOpacity => _liquidGlassOpacity;
+
+  static void setLiquidGlassOpacity(double value) =>
+      _liquidGlassOpacity = normalizeLiquidGlassOpacity(value);
+
+  /// Zero preserves the original clear material; one adds a stronger base.
+  static double liquidTintOpacity(double clearOpacity, double amount) =>
+      clearOpacity +
+      (0.88 - clearOpacity) * normalizeLiquidGlassOpacity(amount);
 
   static bool get usesLiquidGlass =>
       !_disableAllGlassEffects && _glassStyle == GlassStyle.liquid;

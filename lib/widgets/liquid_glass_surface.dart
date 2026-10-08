@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../utils/glass_config.dart';
+import '../utils/ui_style.dart';
 
 /// A live refracting backdrop with a lightly tinted, readable foreground.
 /// Callers own clipping and shadows; content is painted after the filter.
@@ -103,6 +104,17 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
     final brightness = widget.brightness ?? Theme.of(context).brightness;
     final highContrast = MediaQuery.highContrastOf(context);
     final light = brightness == Brightness.light;
+    final opacity =
+        Theme.of(
+          context,
+        ).extension<UiStyleThemeExtension>()?.liquidGlassOpacity ??
+        GlassEffectConfig.liquidGlassOpacity;
+    final leadingAlpha = highContrast
+        ? 0.94
+        : GlassEffectConfig.liquidTintOpacity(light ? 0.32 : 0.26, opacity);
+    final trailingAlpha = highContrast
+        ? 0.94
+        : GlassEffectConfig.liquidTintOpacity(0.18, opacity);
     final surface = CustomPaint(
       foregroundPainter: _LiquidRimPainter(
         shape: widget.shape,
@@ -121,14 +133,8 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
                 widget.color,
                 Colors.white,
                 light ? 0.35 : 0.12,
-              )!.withValues(
-                alpha:
-                    (highContrast ? 0.94 : (light ? 0.32 : 0.26)) *
-                    widget.visibility,
-              ),
-              widget.color.withValues(
-                alpha: (highContrast ? 0.94 : 0.18) * widget.visibility,
-              ),
+              )!.withValues(alpha: leadingAlpha * widget.visibility),
+              widget.color.withValues(alpha: trailingAlpha * widget.visibility),
             ],
           ),
         ),

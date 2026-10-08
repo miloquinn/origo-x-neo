@@ -5,11 +5,25 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:xxread/utils/glass_config.dart';
+import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/glass_top_bar.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+    GlassEffectConfig.setLiquidGlassOpacity(0);
+  });
+
+  tearDown(() {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+    GlassEffectConfig.setLiquidGlassOpacity(0);
+  });
 
   testWidgets('scrolling detail stays smooth at the screen top edge', (
     tester,
@@ -397,6 +411,88 @@ void main() {
     }
     expect(find.byType(BackdropFilter), findsWidgets);
   });
+
+  testWidgets('liquid opacity adds a bounded tint above the clear tail', (
+    tester,
+  ) async {
+    GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
+    await tester.pumpWidget(
+      _TestScene(
+        boundaryKey: GlobalKey(),
+        blurEnabled: true,
+        pattern: _BackdropPattern.checker,
+        devicePixelRatio: 1,
+        liquidGlassOpacity: 0.5,
+      ),
+    );
+
+    final tint = find.byKey(
+      const ValueKey('gradient-top-backdrop-liquid-tint'),
+    );
+    expect(tint, findsOneWidget);
+    expect(tester.getSize(tint), const Size(320, _clearTailStart));
+    final decoration =
+        tester.widget<DecoratedBox>(tint).decoration as BoxDecoration;
+    final gradient = decoration.gradient! as LinearGradient;
+    expect(gradient.colors.first.a, closeTo(0.44, 0.001));
+    expect(gradient.colors[1].a, closeTo(0.275, 0.001));
+    expect(gradient.colors.last.a, 0);
+  });
+
+  testWidgets('clear, frosted, disabled, and Material 3 keep tint absent', (
+    tester,
+  ) async {
+    const tintKey = ValueKey('gradient-top-backdrop-liquid-tint');
+    GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
+    await tester.pumpWidget(
+      _TestScene(
+        boundaryKey: GlobalKey(),
+        blurEnabled: true,
+        pattern: _BackdropPattern.checker,
+        devicePixelRatio: 1,
+      ),
+    );
+    expect(find.byKey(tintKey), findsNothing);
+
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+    await tester.pumpWidget(
+      _TestScene(
+        boundaryKey: GlobalKey(),
+        blurEnabled: true,
+        pattern: _BackdropPattern.checker,
+        devicePixelRatio: 1,
+        liquidGlassOpacity: 1,
+      ),
+    );
+    expect(find.byKey(tintKey), findsNothing);
+
+    GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
+    GlassEffectConfig.setDisableAllGlassEffects(true);
+    await tester.pumpWidget(
+      _TestScene(
+        boundaryKey: GlobalKey(),
+        blurEnabled: true,
+        pattern: _BackdropPattern.checker,
+        devicePixelRatio: 1,
+        liquidGlassOpacity: 1,
+      ),
+    );
+    expect(find.byKey(tintKey), findsNothing);
+
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    await tester.pumpWidget(
+      _TestScene(
+        boundaryKey: GlobalKey(),
+        blurEnabled: true,
+        pattern: _BackdropPattern.checker,
+        devicePixelRatio: 1,
+        liquidGlassOpacity: 1,
+        uiStyle: AppUiStyle.material3,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(tintKey), findsNothing);
+  });
 }
 
 const _sceneSize = Size(320, 200);
@@ -581,6 +677,8 @@ class _TestScene extends StatelessWidget {
     this.fallbackBands = 32,
     this.verticalOffset = 0,
     this.glassTopBar = false,
+    this.uiStyle = AppUiStyle.glass,
+    this.liquidGlassOpacity = 0,
   });
 
   final GlobalKey boundaryKey;
@@ -591,6 +689,8 @@ class _TestScene extends StatelessWidget {
   final int fallbackBands;
   final int verticalOffset;
   final bool glassTopBar;
+  final AppUiStyle uiStyle;
+  final double liquidGlassOpacity;
 
   @override
   Widget build(BuildContext context) {
@@ -600,6 +700,13 @@ class _TestScene extends StatelessWidget {
           seedColor: Colors.blue,
           surface: Colors.white,
         ),
+        extensions: [
+          UiStyleThemeExtension(
+            style: uiStyle,
+            glassStyle: GlassStyle.liquid,
+            liquidGlassOpacity: liquidGlassOpacity,
+          ),
+        ],
       ),
       home: MediaQuery(
         data: MediaQueryData(

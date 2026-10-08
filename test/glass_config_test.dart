@@ -7,6 +7,7 @@ void main() {
   tearDown(() {
     GlassEffectConfig.setDisableAllGlassEffects(false);
     GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+    GlassEffectConfig.setLiquidGlassOpacity(0);
     GlassEffectConfig.applyPerformanceMode(reduceEffects: false);
   });
 
@@ -94,4 +95,20 @@ void main() {
       GlassEffectConfig.navigationBarBlur,
     );
   });
+
+  test(
+    'liquid tint opacity keeps the old clear baseline and rises below solid',
+    () {
+      const clearOpacity = 0.18;
+      final clear = GlassEffectConfig.liquidTintOpacity(clearOpacity, 0);
+      final middle = GlassEffectConfig.liquidTintOpacity(clearOpacity, 0.5);
+      final opaque = GlassEffectConfig.liquidTintOpacity(clearOpacity, 1);
+
+      expect(clear, clearOpacity);
+      expect(middle, greaterThan(clear));
+      expect(middle, lessThan(opaque));
+      expect(opaque, closeTo(0.88, 0.000001));
+      expect(opaque, lessThan(1));
+    },
+  );
 }

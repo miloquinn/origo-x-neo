@@ -88,6 +88,7 @@ extension _SettingsLayoutPart on _SettingsPageState {
       children: [
         _buildUiStyleSelector(themeNotifier),
         _buildGlassStyleVisibility(themeNotifier),
+        _buildLiquidGlassOpacityVisibility(themeNotifier),
         _buildThemeToggle(themeNotifier),
         _buildAccentColorSelector(themeNotifier),
         _buildAppFontSelector(appSettings),

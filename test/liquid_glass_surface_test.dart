@@ -12,10 +12,12 @@ void main() {
   setUp(() {
     GlassEffectConfig.setDisableAllGlassEffects(false);
     GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+    GlassEffectConfig.setLiquidGlassOpacity(0);
   });
   tearDown(() {
     GlassEffectConfig.setDisableAllGlassEffects(false);
     GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+    GlassEffectConfig.setLiquidGlassOpacity(0);
   });
 
   testWidgets('unsupported shader backend keeps a lightweight blur fallback', (
@@ -48,8 +50,13 @@ void main() {
   testWidgets('visibility scales tint and zero keeps only the laid out child', (
     tester,
   ) async {
+    var hits = 0;
     await tester.pumpWidget(
-      _surfaceHost(filterBackground: true, visibility: 0.5),
+      _surfaceHost(
+        filterBackground: true,
+        visibility: 0.5,
+        onTap: () => hits++,
+      ),
     );
 
     final liquid = find.byType(LiquidGlassSurface);
@@ -71,10 +78,12 @@ void main() {
     expect(find.byType(BackdropFilter), findsOneWidget);
 
     await tester.pumpWidget(
-      _surfaceHost(filterBackground: true, visibility: 0),
+      _surfaceHost(filterBackground: true, visibility: 0, onTap: () => hits++),
     );
 
     expect(tester.getSize(child), visibleSize);
+    await tester.tap(child);
+    expect(hits, 1);
     expect(
       find.descendant(of: liquid, matching: find.byType(BackdropFilter)),
       findsNothing,
@@ -87,6 +96,58 @@ void main() {
       find.descendant(of: liquid, matching: find.byType(DecoratedBox)),
       findsNothing,
     );
+  });
+
+  testWidgets(
+    'theme opacity raises liquid tint without changing size or hits',
+    (tester) async {
+      final leadingAlphas = <double>[];
+      final trailingAlphas = <double>[];
+      Size? expectedSize;
+      var hits = 0;
+
+      for (final opacity in const [0.0, 0.5, 1.0]) {
+        await tester.pumpWidget(
+          _surfaceHost(
+            filterBackground: false,
+            liquidGlassOpacity: opacity,
+            onTap: () => hits++,
+          ),
+        );
+        await tester.pumpAndSettle();
+        final child = find.byKey(const ValueKey('liquid-surface-child'));
+        expectedSize ??= tester.getSize(child);
+        expect(tester.getSize(child), expectedSize);
+        final gradient = _surfaceGradient(tester);
+        leadingAlphas.add(gradient.colors.first.a);
+        trailingAlphas.add(gradient.colors.last.a);
+        await tester.tap(child);
+        await tester.pump();
+      }
+
+      expect(hits, 3);
+      expect(leadingAlphas[0], closeTo(0.32, 0.001));
+      expect(trailingAlphas[0], closeTo(0.18, 0.001));
+      expect(leadingAlphas[1], greaterThan(leadingAlphas[0]));
+      expect(trailingAlphas[1], greaterThan(trailingAlphas[0]));
+      expect(leadingAlphas[2], closeTo(0.88, 0.001));
+      expect(trailingAlphas[2], closeTo(0.88, 0.001));
+      expect(leadingAlphas[2], lessThan(1));
+    },
+  );
+
+  testWidgets('high contrast keeps liquid tint at 0.94', (tester) async {
+    await tester.pumpWidget(
+      _surfaceHost(
+        filterBackground: false,
+        liquidGlassOpacity: 0,
+        highContrast: true,
+      ),
+    );
+
+    final gradient = _surfaceGradient(tester);
+    expect(gradient.colors.first.a, closeTo(0.94, 0.001));
+    expect(gradient.colors.last.a, closeTo(0.94, 0.001));
   });
 
   testWidgets('disabled glass switches shared controls to a solid surface', (
@@ -150,27 +211,61 @@ Future<void> _tapSharedSurfaces(
   expect(find.text('hits:$expectedHits'), findsOneWidget);
 }
 
-Widget _surfaceHost({required bool filterBackground, double visibility = 1}) {
+Widget _surfaceHost({
+  required bool filterBackground,
+  double visibility = 1,
+  double liquidGlassOpacity = 0,
+  bool highContrast = false,
+  VoidCallback? onTap,
+}) {
   return MaterialApp(
-    home: Scaffold(
-      body: Center(
-        child: SizedBox(
-          width: 160,
-          height: 64,
-          child: LiquidGlassSurface(
-            shape: const StadiumBorder(),
-            color: Colors.indigo,
-            filterBackground: filterBackground,
-            visibility: visibility,
-            child: const Center(
-              key: ValueKey('liquid-surface-child'),
-              child: Text('Liquid'),
+    theme: ThemeData(
+      extensions: [
+        UiStyleThemeExtension(
+          style: AppUiStyle.glass,
+          glassStyle: GlassStyle.liquid,
+          liquidGlassOpacity: liquidGlassOpacity,
+        ),
+      ],
+    ),
+    home: MediaQuery(
+      data: MediaQueryData(highContrast: highContrast),
+      child: Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 160,
+            height: 64,
+            child: LiquidGlassSurface(
+              shape: const StadiumBorder(),
+              color: Colors.indigo,
+              filterBackground: filterBackground,
+              visibility: visibility,
+              child: GestureDetector(
+                key: const ValueKey('liquid-surface-child'),
+                behavior: HitTestBehavior.opaque,
+                onTap: onTap,
+                child: const Center(child: Text('Liquid')),
+              ),
             ),
           ),
         ),
       ),
     ),
   );
+}
+
+LinearGradient _surfaceGradient(WidgetTester tester) {
+  final decoration =
+      tester
+              .widget<DecoratedBox>(
+                find.descendant(
+                  of: find.byType(LiquidGlassSurface),
+                  matching: find.byType(DecoratedBox),
+                ),
+              )
+              .decoration
+          as ShapeDecoration;
+  return decoration.gradient! as LinearGradient;
 }
 
 Widget _controlHost() {

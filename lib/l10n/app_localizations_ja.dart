@@ -3175,6 +3175,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsGlassStyleLiquidSubtitle => '透明感のある屈折とエッジのハイライト';
 
   @override
+  String get settingsLiquidGlassOpacityTitle => 'リキッドガラスの不透明度';
+
+  @override
+  String get settingsLiquidGlassOpacityHelper =>
+      '右へスライドするとテーマ色が濃くなり、文字とアイコンのコントラストが上がります';
+
+  @override
+  String get settingsLiquidGlassOpacityTransparent => '透明';
+
+  @override
+  String get settingsLiquidGlassOpacityOpaque => 'より不透明';
+
+  @override
   String get settingsHideNavigationLabelsTitle => '下部ナビゲーションの文字を隠す';
 
   @override

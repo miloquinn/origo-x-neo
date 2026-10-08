@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 
 enum AppUiStyle { glass, material3 }
 
+double normalizeLiquidGlassOpacity(double value) =>
+    value.isFinite ? value.clamp(0.0, 1.0).toDouble() : 0;
+
 enum GlassStyle {
   frosted,
   liquid;
@@ -54,19 +57,26 @@ AppUiStyle appUiStyleFromStorage(String? value) {
 class UiStyleThemeExtension extends ThemeExtension<UiStyleThemeExtension> {
   final AppUiStyle style;
   final GlassStyle glassStyle;
+  final double liquidGlassOpacity;
 
   const UiStyleThemeExtension({
     required this.style,
     this.glassStyle = GlassStyle.frosted,
+    this.liquidGlassOpacity = 0,
   });
 
   bool get isMaterial3Style => style == AppUiStyle.material3;
 
   @override
-  UiStyleThemeExtension copyWith({AppUiStyle? style, GlassStyle? glassStyle}) {
+  UiStyleThemeExtension copyWith({
+    AppUiStyle? style,
+    GlassStyle? glassStyle,
+    double? liquidGlassOpacity,
+  }) {
     return UiStyleThemeExtension(
       style: style ?? this.style,
       glassStyle: glassStyle ?? this.glassStyle,
+      liquidGlassOpacity: liquidGlassOpacity ?? this.liquidGlassOpacity,
     );
   }
 
@@ -76,6 +86,11 @@ class UiStyleThemeExtension extends ThemeExtension<UiStyleThemeExtension> {
     double t,
   ) {
     if (other is! UiStyleThemeExtension) return this;
-    return t < 0.5 ? this : other;
+    final selected = t < 0.5 ? this : other;
+    return selected.copyWith(
+      liquidGlassOpacity:
+          liquidGlassOpacity +
+          (other.liquidGlassOpacity - liquidGlassOpacity) * t,
+    );
   }
 }

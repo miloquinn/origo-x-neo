@@ -76,3 +76,38 @@
 首次真机构建与模拟器的 `xcodebuild clean build` 并行，共用 DerivedData 时出现 Swift 中间文件消失；停止并行构建后串行重建成功（105.4 秒，58.6 MB）。这是构建目录竞争，未修改产品代码来绕过。deep/strict 签名检查通过，shader 打包为 3888 字节。构建前后 670 个 lib/shader/资产/pubspec 文件无漂移；清单 SHA-256 为 `755bf738974c4915aef1d41506b89290ad4a2e774138a67ea9028b7fbcc1a290`，AOT SHA-256 为 `9aefd71088bae26eabe1744c07221cb6d32624be4785364542785bc6f4732856`。
 
 已对 SloanePro（iPhone 16 Pro）覆盖安装本次 direct 开发签名包，未卸载/清空数据。回读 `com.niki.xxread / 2.7.3 / 261008001`，前台启动成功，PID `12985` 与本次安装目录一致。收据保存在 `build/device-ios/liquid-glass-selection-20261008/`。用户随后认可液态玻璃视觉并要求在此基础上增加不透明度调节；这不构成 GPU 帧时间测量或商店分发验收。
+
+## 连续不透明度调节
+
+按用户要求先保存选中态修复为 `4206f660` 并推送，再增加调节功能。参考用户提供的苹果设置截图及 [Apple 官方操作说明](https://support.apple.com/en-lamr/guide/iphone/iphd6804774e/ios)：向右增加 tint，向左更通透。
+
+- 设置选择液态玻璃后，在玻璃样式下面展开「液态玻璃不透明度」连续滑杆，物理左端保留当前视觉，右端更不透明；标题与说明按用户语言排列，滑杆方向固定为用户要求的左到右增加。仅玻璃开启且液态选中时可见。
+- `ThemeNotifier` 保存归一化的 `liquid_glass_opacity`（0–1）。0 表示在当前最通透基线之上不增加 tint，并非原始 alpha=0。缺失、非数值、非有限值和越界值安全归一；关开玻璃或切换毛玻璃不丢失选择。
+- 拖动先即时更新状态，松手后保存，避免每帧写入偏好。同值最终保存仍执行；当前 SharedPreferences 单例、同步 cache 更新及 platform channel FIFO 保证最后值落盘。`UiStyleThemeExtension` 连续插值 opacity 并传给所有页面。
+- `LiquidGlassSurface` 统一把浅色 `.32/.18`、深色 `.26/.18` 基底向两端 `.88` 插值，0 精确保留原材质，最大档接近不透明。高对比保持 `.94`；visibility 继续控制选中淡出。折射 shader、轮廓和 rim 强度不改。
+- `GradientTopBackdrop` 仅在液态、不透明度大于 0 时叠加一次主题底色，并在 clear tail 前渐变至透明；0 保留纯 blur，毛玻璃/关闭/Material 3 不受影响。没有修改共用毛玻璃的 `chromeOpacityFor`，避免重复调色。
+- 改动文件包括设置 appearance/layout/hub、ThemeNotifier/main/UiStyleThemeExtension、共享 renderer/顶部 backdrop、10 个 locale 及生成文件，以及相关测试/真实组件预览；没有新增依赖。
+
+本轮共 79 项独立进程回归通过：
+
+| 文件 | 数量 |
+| --- | ---: |
+| `app_theme_accent_test.dart` | 11 |
+| `ui_style_test.dart` | 6 |
+| `glass_config_test.dart` | 5 |
+| `liquid_glass_surface_test.dart` | 7 |
+| `gradient_top_backdrop_test.dart` | 13 |
+| `settings_glass_style_test.dart` | 6 |
+| `elastic_pill_navigation_bar_test.dart` | 9 |
+| `home_bounce_navigation_item_test.dart` | 9 |
+| `reader_control_chrome_test.dart` | 5 |
+| `glass_control_surface_test.dart` | 4 |
+| `home_shell_system_bar_test.dart` | 4 |
+
+日志保存在 `build/validation/liquid-glass-opacity/`。全仓 analyze 返回 0，仍为 3 条既有 info。独立只读审查未发现阻断问题。
+
+iOS Simulator Impeller 的浅/深主题各捕获 0、0.5、1 三档，共六张 `opacity-{light,dark}-{0,0.5,1}.png`。背景折射与前景锐度保持，底色单调加浓，顶部渐变正常；最大档导航外壳和镜片一同加浓，选中通过主题色和 rim 保持区分。外壳与选中镜片最大档叠色接近不透明是刻意的右端效果；连续滑杆可保留中间通透程度。
+
+完整 iOS release/direct 包串行构建成功（93.4 秒，58.7 MB），deep/strict 签名检查通过。670 个 lib/shader/资产/pubspec 文件构建前后无漂移；清单 SHA-256 `f3236de86fe506e181652a56528a340e99f3b731186755a3702e4c3cd167afbf`，AOT SHA-256 `a737452d1faeefde1fe22659d8a4eadcb706116594ae695b0be26bc46c4cd8ae`。
+
+SloanePro（iPhone 16 Pro）已覆盖安装并前台启动，保留原数据。回读 `com.niki.xxread / 2.7.3 / 261008001`，PID `13228` 与本次安装目录一致。收据在 `build/device-ios/liquid-glass-opacity-20261008/`。这是本地 direct 开发签名交付，未上传 TestFlight/App Store；默认仍为原通透程度，用户可用新滑杆选择中间或更浓的效果。真机滑杆触感/视觉接受与 GPU 帧时间仍由实际验收确认。

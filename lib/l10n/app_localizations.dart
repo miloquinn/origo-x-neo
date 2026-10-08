@@ -5848,6 +5848,30 @@ abstract class AppLocalizations {
   /// **'Clear refraction and edge highlights'**
   String get settingsGlassStyleLiquidSubtitle;
 
+  /// No description provided for @settingsLiquidGlassOpacityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquid glass opacity'**
+  String get settingsLiquidGlassOpacityTitle;
+
+  /// No description provided for @settingsLiquidGlassOpacityHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide right to add more theme color and improve contrast'**
+  String get settingsLiquidGlassOpacityHelper;
+
+  /// No description provided for @settingsLiquidGlassOpacityTransparent.
+  ///
+  /// In en, this message translates to:
+  /// **'Transparent'**
+  String get settingsLiquidGlassOpacityTransparent;
+
+  /// No description provided for @settingsLiquidGlassOpacityOpaque.
+  ///
+  /// In en, this message translates to:
+  /// **'More opaque'**
+  String get settingsLiquidGlassOpacityOpaque;
+
   /// Title of the mobile bottom navigation label visibility toggle
   ///
   /// In en, this message translates to:

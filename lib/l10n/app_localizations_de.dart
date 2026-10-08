@@ -3332,6 +3332,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Klare Lichtbrechung und Kantenlichter';
 
   @override
+  String get settingsLiquidGlassOpacityTitle => 'Deckkraft des Flüssigglases';
+
+  @override
+  String get settingsLiquidGlassOpacityHelper =>
+      'Nach rechts schieben, um mehr Themenfarbe und Kontrast hinzuzufügen';
+
+  @override
+  String get settingsLiquidGlassOpacityTransparent => 'Transparent';
+
+  @override
+  String get settingsLiquidGlassOpacityOpaque => 'Deckender';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Beschriftungen der unteren Navigation ausblenden';
 

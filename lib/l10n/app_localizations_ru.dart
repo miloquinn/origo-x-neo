@@ -3321,6 +3321,19 @@ class AppLocalizationsRu extends AppLocalizations {
       'Чистое преломление и подсветка краёв';
 
   @override
+  String get settingsLiquidGlassOpacityTitle => 'Непрозрачность жидкого стекла';
+
+  @override
+  String get settingsLiquidGlassOpacityHelper =>
+      'Сдвиньте вправо, чтобы усилить цвет темы и контраст';
+
+  @override
+  String get settingsLiquidGlassOpacityTransparent => 'Прозрачно';
+
+  @override
+  String get settingsLiquidGlassOpacityOpaque => 'Более непрозрачно';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Скрыть подписи нижней навигации';
 

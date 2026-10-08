@@ -3343,6 +3343,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Réfraction nette et reflets sur les bords';
 
   @override
+  String get settingsLiquidGlassOpacityTitle => 'Opacité du verre liquide';
+
+  @override
+  String get settingsLiquidGlassOpacityHelper =>
+      'Faites glisser vers la droite pour renforcer la couleur du thème et le contraste';
+
+  @override
+  String get settingsLiquidGlassOpacityTransparent => 'Transparent';
+
+  @override
+  String get settingsLiquidGlassOpacityOpaque => 'Plus opaque';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Masquer les libellés de la barre de navigation inférieure';
 

@@ -3128,6 +3128,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsGlassStyleLiquidSubtitle => '清透折射与边缘高光';
 
   @override
+  String get settingsLiquidGlassOpacityTitle => '液态玻璃不透明度';
+
+  @override
+  String get settingsLiquidGlassOpacityHelper => '向右滑动可增加主题底色，提升文字与图标对比度';
+
+  @override
+  String get settingsLiquidGlassOpacityTransparent => '通透';
+
+  @override
+  String get settingsLiquidGlassOpacityOpaque => '更不透明';
+
+  @override
   String get settingsHideNavigationLabelsTitle => '隐藏底部导航文字';
 
   @override
@@ -10474,6 +10486,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsGlassStyleLiquidSubtitle => '清透折射與邊緣高光';
+
+  @override
+  String get settingsLiquidGlassOpacityTitle => '液態玻璃不透明度';
+
+  @override
+  String get settingsLiquidGlassOpacityHelper => '向右滑動可增加主題底色，提升文字與圖示對比度';
+
+  @override
+  String get settingsLiquidGlassOpacityTransparent => '通透';
+
+  @override
+  String get settingsLiquidGlassOpacityOpaque => '更不透明';
 
   @override
   String get settingsHideNavigationLabelsTitle => '隱藏底部導覽文字';

@@ -12,6 +12,7 @@ class ThemeNotifier extends ChangeNotifier {
   static const String _themeModePrefKey = 'isDarkMode';
   static const String _uiStylePrefKey = 'ui_style_mode';
   static const String _glassStylePrefKey = 'glass_style_mode';
+  static const String _liquidGlassOpacityPrefKey = 'liquid_glass_opacity';
   static const String _accentColorPrefKey = 'appAccentColorV2';
 
   // 仅用于从旧版“双层主题 + 强调色”设置迁移。
@@ -28,6 +29,7 @@ class ThemeNotifier extends ChangeNotifier {
   );
   AppUiStyle _uiStyle = AppUiStyle.glass;
   GlassStyle _glassStyle = GlassStyle.frosted;
+  double _liquidGlassOpacity = 0;
 
   ThemeMode get themeMode => _themeMode;
   bool get isInitialized => _isInitialized;
@@ -35,6 +37,7 @@ class ThemeNotifier extends ChangeNotifier {
   AppTheme get currentAppTheme => _currentAppTheme;
   AppUiStyle get uiStyle => _uiStyle;
   GlassStyle get glassStyle => _glassStyle;
+  double get liquidGlassOpacity => _liquidGlassOpacity;
   bool get isGlassEffectsEnabled => _uiStyle == AppUiStyle.glass;
   bool get shouldDisableGlassEffects => _uiStyle == AppUiStyle.material3;
 
@@ -47,6 +50,10 @@ class ThemeNotifier extends ChangeNotifier {
     final isDarkMode = prefs.getBool(_themeModePrefKey);
     _uiStyle = appUiStyleFromStorage(prefs.getString(_uiStylePrefKey));
     _glassStyle = GlassStyle.fromStorage(prefs.getString(_glassStylePrefKey));
+    final storedOpacity = prefs.get(_liquidGlassOpacityPrefKey);
+    _liquidGlassOpacity = normalizeLiquidGlassOpacity(
+      storedOpacity is num ? storedOpacity.toDouble() : 0,
+    );
     await prefs.remove('disable_glass_effects');
     final storedAccentColor = prefs.getInt(_accentColorPrefKey);
 
@@ -158,9 +165,26 @@ class ThemeNotifier extends ChangeNotifier {
     await prefs.setString(_glassStylePrefKey, style.storageValue);
   }
 
+  Future<void> setLiquidGlassOpacity(
+    double value, {
+    bool persist = true,
+  }) async {
+    final opacity = normalizeLiquidGlassOpacity(value);
+    if (_liquidGlassOpacity != opacity) {
+      _liquidGlassOpacity = opacity;
+      _syncGlassEffectState();
+      notifyListeners();
+    }
+    if (!persist) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_liquidGlassOpacityPrefKey, _liquidGlassOpacity);
+  }
+
   void _syncGlassEffectState() {
     GlassEffectConfig.setDisableAllGlassEffects(shouldDisableGlassEffects);
     GlassEffectConfig.setGlassStyle(_glassStyle);
+    GlassEffectConfig.setLiquidGlassOpacity(_liquidGlassOpacity);
     GlassEffectConfig.applyPerformanceMode(
       reduceEffects: shouldDisableGlassEffects,
     );

@@ -50,6 +50,7 @@ Future<ThemeNotifier> _pumpGlassSettings(
   WidgetTester tester, {
   Size surfaceSize = const Size(390, 900),
   double textScaleFactor = 1,
+  TextDirection textDirection = TextDirection.ltr,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = surfaceSize;
@@ -75,12 +76,15 @@ Future<ThemeNotifier> _pumpGlassSettings(
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(textScaleFactor),
-            disableAnimations: true,
+        builder: (context, child) => Directionality(
+          textDirection: textDirection,
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(textScaleFactor),
+              disableAnimations: true,
+            ),
+            child: child!,
           ),
-          child: child!,
         ),
         home: SettingsPage(
           category: SettingsCategory.preferences,
@@ -132,6 +136,98 @@ void main() {
     expect(theme.glassStyle, GlassStyle.liquid);
     expect(find.byKey(const ValueKey('glass-style-liquid')), findsNothing);
     expect(find.text('液态玻璃'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-liquid-glass-opacity')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('liquid opacity is visible only for enabled liquid glass', (
+    tester,
+  ) async {
+    final theme = await _pumpGlassSettings(tester);
+    final setting = find.byKey(const ValueKey('settings-liquid-glass-opacity'));
+
+    expect(setting, findsNothing);
+    await theme.setGlassStyle(GlassStyle.liquid);
+    await tester.pump();
+    expect(setting, findsOneWidget);
+
+    await theme.setGlassEffectsEnabled(false);
+    await tester.pump();
+    expect(setting, findsNothing);
+
+    await theme.setGlassEffectsEnabled(true);
+    await theme.setGlassStyle(GlassStyle.frosted);
+    await tester.pump();
+    expect(setting, findsNothing);
+  });
+
+  testWidgets('physical right on the slider increases opacity in RTL', (
+    tester,
+  ) async {
+    final theme = await _pumpGlassSettings(
+      tester,
+      textDirection: TextDirection.rtl,
+    );
+    await theme.setGlassStyle(GlassStyle.liquid);
+    await tester.pump();
+
+    final sliderFinder = find.byKey(
+      const ValueKey('liquid-glass-opacity-slider'),
+    );
+    final sliderRect = tester.getRect(sliderFinder);
+    await tester.tapAt(Offset(sliderRect.left + 36, sliderRect.center.dy));
+    await tester.pump();
+    final leftValue = theme.liquidGlassOpacity;
+
+    await tester.tapAt(Offset(sliderRect.right - 36, sliderRect.center.dy));
+    await tester.pump();
+
+    expect(theme.liquidGlassOpacity, greaterThan(leftValue));
+    expect(tester.widget<Slider>(sliderFinder).value, theme.liquidGlassOpacity);
+    final prefs = await SharedPreferences.getInstance();
+    expect(
+      prefs.getDouble('liquid_glass_opacity'),
+      closeTo(theme.liquidGlassOpacity, 0.001),
+    );
+  });
+
+  testWidgets('hiding liquid opacity preserves its selected value', (
+    tester,
+  ) async {
+    final theme = await _pumpGlassSettings(tester);
+    await theme.setGlassStyle(GlassStyle.liquid);
+    await theme.setLiquidGlassOpacity(0.68);
+    await tester.pump();
+
+    await theme.setGlassEffectsEnabled(false);
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('settings-liquid-glass-opacity')),
+      findsNothing,
+    );
+    expect(theme.liquidGlassOpacity, closeTo(0.68, 0.001));
+
+    await theme.setGlassEffectsEnabled(true);
+    await theme.setGlassStyle(GlassStyle.frosted);
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('settings-liquid-glass-opacity')),
+      findsNothing,
+    );
+    expect(theme.liquidGlassOpacity, closeTo(0.68, 0.001));
+
+    await theme.setGlassStyle(GlassStyle.liquid);
+    await tester.pump();
+    expect(
+      tester
+          .widget<Slider>(
+            find.byKey(const ValueKey('liquid-glass-opacity-slider')),
+          )
+          .value,
+      closeTo(0.68, 0.001),
+    );
   });
 
   testWidgets('glass style picker fits a small screen with large text', (
@@ -148,6 +244,14 @@ void main() {
 
     expect(find.text('毛玻璃'), findsWidgets);
     expect(find.text('液态玻璃'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('glass-style-liquid')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('settings-liquid-glass-opacity')),
+      findsOneWidget,
+    );
+    expect(find.text('通透'), findsOneWidget);
+    expect(find.text('更不透明'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

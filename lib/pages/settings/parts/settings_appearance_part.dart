@@ -47,6 +47,124 @@ extension _SettingsAppearancePart on _SettingsPageState {
     );
   }
 
+  Widget _buildLiquidGlassOpacityVisibility(ThemeNotifier themeNotifier) {
+    final child =
+        themeNotifier.isGlassEffectsEnabled &&
+            themeNotifier.glassStyle == GlassStyle.liquid
+        ? _buildLiquidGlassOpacitySetting(themeNotifier)
+        : const SizedBox.shrink();
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: child,
+    );
+  }
+
+  Widget _buildLiquidGlassOpacitySetting(ThemeNotifier themeNotifier) {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      key: const ValueKey('settings-liquid-glass-opacity'),
+      margin: const EdgeInsets.fromLTRB(14, 4, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(
+                  Icons.opacity_rounded,
+                  size: 18,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.settingsLiquidGlassOpacityTitle,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.settingsLiquidGlassOpacityHelper,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 6),
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SliderTheme(
+              data: Theme.of(context).sliderTheme.copyWith(
+                trackHeight: 4,
+                activeTrackColor: scheme.primary,
+                inactiveTrackColor: scheme.outlineVariant,
+                thumbColor: scheme.primary,
+                overlayColor: scheme.primary.withValues(alpha: 0.12),
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
+                showValueIndicator: ShowValueIndicator.never,
+              ),
+              child: Slider(
+                key: const ValueKey('liquid-glass-opacity-slider'),
+                value: themeNotifier.liquidGlassOpacity.clamp(0.0, 1.0),
+                min: 0,
+                max: 1,
+                semanticFormatterCallback: (value) =>
+                    '${(value * 100).round()}%',
+                onChanged: (value) => unawaited(
+                  themeNotifier.setLiquidGlassOpacity(value, persist: false),
+                ),
+                onChangeEnd: (value) =>
+                    unawaited(themeNotifier.setLiquidGlassOpacity(value)),
+              ),
+            ),
+          ),
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.settingsLiquidGlassOpacityTransparent,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    l10n.settingsLiquidGlassOpacityOpaque,
+                    textAlign: TextAlign.end,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _glassStyleLabel(GlassStyle style) {
     return switch (style) {
       GlassStyle.frosted => context.l10n.settingsGlassStyleFrostedTitle,

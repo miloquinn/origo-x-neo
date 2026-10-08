@@ -3290,6 +3290,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Clear refraction and edge highlights';
 
   @override
+  String get settingsLiquidGlassOpacityTitle => 'Liquid glass opacity';
+
+  @override
+  String get settingsLiquidGlassOpacityHelper =>
+      'Slide right to add more theme color and improve contrast';
+
+  @override
+  String get settingsLiquidGlassOpacityTransparent => 'Transparent';
+
+  @override
+  String get settingsLiquidGlassOpacityOpaque => 'More opaque';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Hide bottom navigation labels';
 

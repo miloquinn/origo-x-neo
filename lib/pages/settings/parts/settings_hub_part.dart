@@ -207,6 +207,7 @@ extension _SettingsHubPart on _SettingsPageState {
           theme.accentColor,
           theme.uiStyle,
           theme.glassStyle,
+          theme.liquidGlassOpacity,
         ),
       );
       // Project displayed values, not freshly allocated FontOption instances.

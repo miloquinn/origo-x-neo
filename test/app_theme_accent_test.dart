@@ -39,6 +39,7 @@ void main() {
       addTearDown(notifier.dispose);
 
       expect(notifier.accentColor, AppThemes.defaultAccentColor);
+      expect(notifier.liquidGlassOpacity, 0);
       expect(
         notifier.currentAppTheme.lightColorScheme,
         ColorScheme.fromSeed(
@@ -149,12 +150,81 @@ void main() {
     addTearDown(notifier.dispose);
 
     await notifier.setGlassStyle(GlassStyle.liquid);
+    await notifier.setLiquidGlassOpacity(0.64);
     await notifier.setGlassEffectsEnabled(false);
     expect(notifier.uiStyle, AppUiStyle.material3);
     expect(notifier.glassStyle, GlassStyle.liquid);
+    expect(notifier.liquidGlassOpacity, 0.64);
 
     await notifier.setGlassEffectsEnabled(true);
     expect(notifier.uiStyle, AppUiStyle.glass);
     expect(notifier.glassStyle, GlassStyle.liquid);
+    expect(notifier.liquidGlassOpacity, 0.64);
+  });
+
+  test('liquid opacity persists across notifier recreation', () async {
+    final notifier = await _loadNotifier();
+    await notifier.setLiquidGlassOpacity(0.57);
+    notifier.dispose();
+
+    final restored = await _loadNotifier();
+    addTearDown(restored.dispose);
+
+    expect(restored.liquidGlassOpacity, 0.57);
+  });
+
+  test('invalid stored liquid opacity normalizes to a safe value', () async {
+    final cases = <Object?, double>{
+      null: 0,
+      'invalid': 0,
+      double.nan: 0,
+      -0.4: 0,
+      1.4: 1,
+    };
+
+    for (final entry in cases.entries) {
+      SharedPreferences.setMockInitialValues({
+        if (entry.key != null) 'liquid_glass_opacity': entry.key!,
+      });
+      final notifier = await _loadNotifier();
+      expect(
+        notifier.liquidGlassOpacity,
+        entry.value,
+        reason: 'stored value ${entry.key}',
+      );
+      notifier.dispose();
+    }
+  });
+
+  test(
+    'preview updates immediately and the matching final value persists',
+    () async {
+      final notifier = await _loadNotifier();
+      addTearDown(notifier.dispose);
+
+      await notifier.setLiquidGlassOpacity(0.62, persist: false);
+      var prefs = await SharedPreferences.getInstance();
+      expect(notifier.liquidGlassOpacity, 0.62);
+      expect(prefs.containsKey('liquid_glass_opacity'), isFalse);
+
+      await notifier.setLiquidGlassOpacity(0.62);
+      prefs = await SharedPreferences.getInstance();
+      expect(prefs.getDouble('liquid_glass_opacity'), 0.62);
+    },
+  );
+
+  test('rapid concurrent opacity setters persist the final value', () async {
+    final notifier = await _loadNotifier();
+    addTearDown(notifier.dispose);
+
+    await Future.wait([
+      notifier.setLiquidGlassOpacity(0.2),
+      notifier.setLiquidGlassOpacity(0.7),
+      notifier.setLiquidGlassOpacity(0.91),
+    ]);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(notifier.liquidGlassOpacity, 0.91);
+    expect(prefs.getDouble('liquid_glass_opacity'), 0.91);
   });
 }

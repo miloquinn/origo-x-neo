@@ -3279,6 +3279,10 @@
   "settingsGlassStyleFrostedSubtitle": "Soft blur",
   "settingsGlassStyleLiquidTitle": "Liquid glass",
   "settingsGlassStyleLiquidSubtitle": "Clear refraction and edge highlights",
+  "settingsLiquidGlassOpacityTitle": "Liquid glass opacity",
+  "settingsLiquidGlassOpacityHelper": "Slide right to add more theme color and improve contrast",
+  "settingsLiquidGlassOpacityTransparent": "Transparent",
+  "settingsLiquidGlassOpacityOpaque": "More opaque",
   "settingsHideNavigationLabelsTitle": "Hide bottom navigation labels",
   "@settingsHideNavigationLabelsTitle": {
     "description": "Title of the mobile bottom navigation label visibility toggle"

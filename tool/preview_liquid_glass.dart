@@ -12,22 +12,33 @@ import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
+import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 
 // flutter run -t tool/preview_liquid_glass.dart \
 //   --dart-define=PREVIEW_GLASS_STYLE=liquid \
 //   --dart-define=PREVIEW_DARK=false \
 //   --dart-define=PREVIEW_TEXT_SCALE=1.0 \
-//   --dart-define=PREVIEW_CAPTURE=true
+//   --dart-define=PREVIEW_LIQUID_OPACITY=0.0 \
+//   --dart-define=PREVIEW_CAPTURE=true \
+//   --dart-define=PREVIEW_CAPTURE_SET=opacity
 const _initialStyle = String.fromEnvironment(
   'PREVIEW_GLASS_STYLE',
   defaultValue: 'liquid',
 );
 const _initialDark = bool.fromEnvironment('PREVIEW_DARK');
 const _captureEnabled = bool.fromEnvironment('PREVIEW_CAPTURE');
+const _captureSet = String.fromEnvironment(
+  'PREVIEW_CAPTURE_SET',
+  defaultValue: 'styles',
+);
 const _initialTextScale = String.fromEnvironment(
   'PREVIEW_TEXT_SCALE',
   defaultValue: '1.0',
+);
+const _initialLiquidOpacity = String.fromEnvironment(
+  'PREVIEW_LIQUID_OPACITY',
+  defaultValue: '0.0',
 );
 
 void main() {
@@ -45,6 +56,8 @@ class LiquidGlassPreviewApp extends StatefulWidget {
 class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
   final _previewBoundaryKey = GlobalKey();
   late _PreviewGlassMode _mode;
+  late double _liquidOpacity;
+  late bool _dark;
   double _navigationOffsetX = 0;
   bool _captureStarted = false;
 
@@ -52,6 +65,10 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
   void initState() {
     super.initState();
     _mode = _PreviewGlassMode.fromEnvironment(_initialStyle);
+    _dark = _initialDark;
+    _liquidOpacity = (double.tryParse(_initialLiquidOpacity) ?? 0)
+        .clamp(0.0, 1.0)
+        .toDouble();
     _syncGlassConfig();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_captureEnabled && !_captureStarted) {
@@ -68,14 +85,22 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
     });
   }
 
+  void _setLiquidOpacity(double value) {
+    setState(() {
+      _liquidOpacity = value.clamp(0.0, 1.0).toDouble();
+      _syncGlassConfig();
+    });
+  }
+
   void _syncGlassConfig() {
     GlassEffectConfig.setGlassStyle(_mode.glassStyle);
+    GlassEffectConfig.setLiquidGlassOpacity(_liquidOpacity);
     GlassEffectConfig.setDisableAllGlassEffects(_mode == _PreviewGlassMode.off);
   }
 
   @override
   Widget build(BuildContext context) {
-    final brightness = _initialDark ? Brightness.dark : Brightness.light;
+    final brightness = _dark ? Brightness.dark : Brightness.light;
     final scheme = ColorScheme.fromSeed(
       seedColor: const Color(0xFF5067D9),
       brightness: brightness,
@@ -90,6 +115,7 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
               ? AppUiStyle.material3
               : AppUiStyle.glass,
           glassStyle: _mode.glassStyle,
+          liquidGlassOpacity: _liquidOpacity,
         ),
       ],
     );
@@ -106,8 +132,10 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
       ),
       home: _PreviewPage(
         mode: _mode,
+        liquidOpacity: _liquidOpacity,
         navigationOffsetX: _navigationOffsetX,
         onModeChanged: _setMode,
+        onLiquidOpacityChanged: _setLiquidOpacity,
       ),
     );
   }
@@ -121,18 +149,15 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
       stdout.writeln(
         '[liquid-glass-preview] capture-start '
         'shader-supported=${ui.ImageFilter.isShaderFilterSupported} '
+        'capture-set=$_captureSet '
         'directory=${directory.path}',
       );
       await Future<void>.delayed(const Duration(seconds: 2));
 
-      for (final mode in _PreviewGlassMode.values) {
-        await _setCaptureState(mode: mode);
-        await _captureRoot(directory, mode.name);
-        if (mode == _PreviewGlassMode.liquid) {
-          await _setCaptureState(mode: mode, navigationOffsetX: 20);
-          await _captureRoot(directory, 'liquid-navigation-moving');
-          await _setCaptureState(mode: mode, navigationOffsetX: 0);
-        }
+      if (_captureSet.trim().toLowerCase() == 'opacity') {
+        await _captureOpacitySet(directory);
+      } else {
+        await _captureStyleSet(directory);
       }
       stdout.writeln('[liquid-glass-preview] capture-complete');
     } catch (error, stackTrace) {
@@ -147,23 +172,62 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
     }
   }
 
+  Future<void> _captureStyleSet(Directory directory) async {
+    for (final mode in _PreviewGlassMode.values) {
+      await _setCaptureState(mode: mode);
+      await _captureRoot(directory, mode.name);
+      if (mode == _PreviewGlassMode.liquid) {
+        await _setCaptureState(mode: mode, navigationOffsetX: 20);
+        await _captureRoot(directory, 'liquid-navigation-moving');
+        await _setCaptureState(mode: mode, navigationOffsetX: 0);
+      }
+    }
+  }
+
+  Future<void> _captureOpacitySet(Directory directory) async {
+    for (final dark in [false, true]) {
+      for (final opacity in [0.0, 0.5, 1.0]) {
+        await _setCaptureState(
+          mode: _PreviewGlassMode.liquid,
+          liquidOpacity: opacity,
+          dark: dark,
+        );
+        await _captureRoot(directory, 'opacity-${_opacityLabel(opacity)}');
+      }
+    }
+  }
+
   Future<void> _setCaptureState({
     required _PreviewGlassMode mode,
     double navigationOffsetX = 0,
+    double? liquidOpacity,
+    bool? dark,
   }) async {
     if (!mounted) return;
     setState(() {
       _mode = mode;
       _navigationOffsetX = navigationOffsetX;
+      if (liquidOpacity != null) {
+        _liquidOpacity = liquidOpacity.clamp(0.0, 1.0).toDouble();
+      }
+      if (dark != null) _dark = dark;
       _syncGlassConfig();
     });
     stdout.writeln(
       '[liquid-glass-preview] stage=${mode.name} '
+      'brightness=${_dark ? 'dark' : 'light'} '
+      'liquid-opacity=${_liquidOpacity.toStringAsFixed(2)} '
       'navigation-offset-x=$navigationOffsetX',
     );
     await WidgetsBinding.instance.endOfFrame;
     await Future<void>.delayed(const Duration(seconds: 1));
     await WidgetsBinding.instance.endOfFrame;
+  }
+
+  String _opacityLabel(double opacity) {
+    if (opacity == 0) return '0';
+    if (opacity == 1) return '1';
+    return opacity.toStringAsFixed(1);
   }
 
   Future<void> _captureRoot(Directory directory, String name) async {
@@ -179,7 +243,7 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
     try {
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       if (bytes == null) throw StateError('PNG encoding returned no bytes');
-      final brightness = _initialDark ? 'dark' : 'light';
+      final brightness = _dark ? 'dark' : 'light';
       final file = File('${directory.path}/$brightness-$name.png');
       await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
       stdout.writeln(
@@ -195,13 +259,17 @@ class _LiquidGlassPreviewAppState extends State<LiquidGlassPreviewApp> {
 class _PreviewPage extends StatefulWidget {
   const _PreviewPage({
     required this.mode,
+    required this.liquidOpacity,
     required this.navigationOffsetX,
     required this.onModeChanged,
+    required this.onLiquidOpacityChanged,
   });
 
   final _PreviewGlassMode mode;
+  final double liquidOpacity;
   final double navigationOffsetX;
   final ValueChanged<_PreviewGlassMode> onModeChanged;
+  final ValueChanged<double> onLiquidOpacityChanged;
 
   @override
   State<_PreviewPage> createState() => _PreviewPageState();
@@ -276,6 +344,26 @@ class _PreviewPageState extends State<_PreviewPage> {
                         ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 104,
+                        child: Text(
+                          '液态浓度 ${(widget.liquidOpacity * 100).round()}%',
+                          style: theme.textTheme.labelLarge,
+                        ),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: widget.liquidOpacity,
+                          min: 0,
+                          max: 1,
+                          onChanged: widget.onLiquidOpacityChanged,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
@@ -297,6 +385,7 @@ class _PreviewPageState extends State<_PreviewPage> {
                   const SizedBox(height: 22),
                   _PatternStage(
                     title: '共享导航胶囊',
+                    showTopBackdrop: true,
                     colors: const [
                       Color(0xFFFF6B6B),
                       Color(0xFFFFC857),
@@ -442,11 +531,13 @@ class _PatternStage extends StatelessWidget {
     required this.title,
     required this.colors,
     required this.child,
+    this.showTopBackdrop = false,
   });
 
   final String title;
   final List<Color> colors;
   final Widget child;
+  final bool showTopBackdrop;
 
   @override
   Widget build(BuildContext context) {
@@ -491,6 +582,17 @@ class _PatternStage extends StatelessWidget {
               ),
             ),
           ),
+          if (showTopBackdrop)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: GradientTopBackdrop(
+                height: 82,
+                maxSigma: 18,
+                clearTail: 14,
+              ),
+            ),
           Positioned(
             top: 12,
             left: 14,

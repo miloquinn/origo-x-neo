@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../utils/glass_config.dart';
+import '../utils/ui_style.dart';
 
 /// Full-width, top-aligned backdrop with a Gaussian radius that decreases with y.
 /// Callers paint controls above this filter so they stay sharp.
@@ -128,6 +129,15 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
     );
     final enabled =
         widget.blurEnabled && !GlassEffectConfig.shouldDisableBlur && sigma > 0;
+    final appearance = Theme.of(context).extension<UiStyleThemeExtension>();
+    final opacity = normalizeLiquidGlassOpacity(
+      appearance?.liquidGlassOpacity ?? GlassEffectConfig.liquidGlassOpacity,
+    );
+    final tintEnabled =
+        enabled &&
+        GlassEffectConfig.usesLiquidGlass &&
+        appearance?.isMaterial3Style != true &&
+        opacity > 0;
     Widget? filter;
     if (enabled && !_loadFailed && _vertical != null && _horizontal != null) {
       final pixelRatio = MediaQuery.devicePixelRatioOf(context);
@@ -187,7 +197,45 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
       child: SizedBox(
         width: double.infinity,
         height: widget.height,
-        child: filter,
+        child: tintEnabled
+            ? Stack(
+                children: [
+                  if (filter != null) Positioned.fill(child: filter),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: clearHeight,
+                    child: DecoratedBox(
+                      key: const ValueKey('gradient-top-backdrop-liquid-tint'),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            GlassEffectConfig.chromeSurfaceColor(
+                              context,
+                            ).withValues(
+                              alpha: GlassEffectConfig.liquidTintOpacity(
+                                0,
+                                opacity,
+                              ),
+                            ),
+                            GlassEffectConfig.chromeSurfaceColor(
+                              context,
+                            ).withValues(alpha: 0.55 * opacity),
+                            GlassEffectConfig.chromeSurfaceColor(
+                              context,
+                            ).withValues(alpha: 0),
+                          ],
+                          stops: const [0, 0.45, 1],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : filter,
       ),
     );
   }
