@@ -10,10 +10,14 @@ extension _SettingsHubPart on _SettingsPageState {
       };
 
   void _openCategory(SettingsCategory category) {
+    final useRailNavigation =
+        NavigationContext.of(context)?.useRailNavigation ?? false;
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => SettingsPage(
           category: category,
+          libraryController: widget.libraryController,
+          libraryUsesRailLayout: useRailNavigation,
           cacheManager: _cacheManager,
           preferencesStore: _preferencesStore,
           aiService: _aiService,

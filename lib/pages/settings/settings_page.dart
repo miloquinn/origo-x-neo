@@ -20,6 +20,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/book_sources/book_source_management_page.dart';
 import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
+import 'package:xxread/pages/library/library_page.dart';
 import 'package:xxread/pages/settings/about/changelog_page.dart';
 import 'package:xxread/pages/settings/about/open_source_licenses_page.dart';
 import 'package:xxread/pages/settings/ai_settings_page.dart';
@@ -81,6 +82,8 @@ class SettingsPage extends StatefulWidget {
   const SettingsPage({
     super.key,
     this.controller,
+    this.libraryController,
+    this.libraryUsesRailLayout,
     this.category,
     this.cacheManager,
     this.preferencesStore,
@@ -88,6 +91,8 @@ class SettingsPage extends StatefulWidget {
   });
 
   final SettingsPageController? controller;
+  final LibraryPageController? libraryController;
+  final bool? libraryUsesRailLayout;
   final SettingsCategory? category;
   final AppCacheManager? cacheManager;
   final SettingsPagePreferencesStore? preferencesStore;

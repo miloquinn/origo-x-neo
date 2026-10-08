@@ -3,6 +3,22 @@
     "entries": [
         {
             "version": "2.7.3",
+            "buildNumber": "261008006",
+            "notes": {
+                "zh": [
+                    "书库网格列数选项按实际可用宽度、字号和分组文字调整，只展示当前能使用的列数。",
+                    "最多容纳 4 列时仅提供 2、3、4；能容纳 5 列时才显示 5 列选项。",
+                    "保留已保存的列数偏好，屏幕变宽或字号调小时可以恢复；手动选择新列数后保存新的偏好。"
+                ],
+                "en": [
+                    "Library grid column choices now reflect the available width, text size, and visible folder labels.",
+                    "Displays only 2, 3, and 4 columns when five cannot fit; offers five only when supported.",
+                    "Keeps your saved density when space changes, and saves a new preference only when you select one."
+                ]
+            }
+        },
+        {
+            "version": "2.7.3",
             "buildNumber": "261008005",
             "notes": {
                 "zh": [

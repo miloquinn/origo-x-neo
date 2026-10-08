@@ -81,6 +81,19 @@ enum _LibraryFilter { all, reading, finished }
 class LibraryPageController {
   _LibraryPageState? _state;
 
+  /// Visible folder metadata from the mounted shelf snapshot. `null` means
+  /// the shelf has not finished loading (or its latest load failed).
+  bool? get hasVisibleFolders {
+    final state = _state;
+    if (state == null ||
+        !state.mounted ||
+        state._isInitialLoading ||
+        state._loadError != null) {
+      return null;
+    }
+    return state._visibleFolders.isNotEmpty;
+  }
+
   /// 当前是否有生效的筛选（非“全部”）。顶栏据此点亮筛选按钮。
   final ValueNotifier<bool> filterActive = ValueNotifier<bool>(false);
   final ValueNotifier<String?> folderName = ValueNotifier<String?>(null);

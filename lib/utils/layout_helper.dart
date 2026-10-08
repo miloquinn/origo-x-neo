@@ -43,6 +43,28 @@ class LayoutHelper {
   /// 兼容纯封面网格原有命名。
   static const BoxFit coverOnlyGridFit = bookCoverFit;
 
+  static const double coverOnlyGridMobilePadding = 12;
+  static const double coverOnlyGridWidePadding = 28;
+  static const double coverOnlyGridMobileSpacing = 10;
+  static const double coverOnlyGridWideSpacing = 14;
+  static const double coverOnlyGridMinimumCoverWidth = 64;
+
+  static double coverOnlyGridHorizontalPadding({
+    required bool usesTabletLayout,
+    required bool usesRailLayout,
+  }) => usesTabletLayout
+      ? coverOnlyGridWidePadding
+      : usesRailLayout
+      ? 16
+      : coverOnlyGridMobilePadding;
+
+  static double coverOnlyGridSpacing({
+    required bool usesTabletLayout,
+    required bool usesRailLayout,
+  }) => usesTabletLayout || usesRailLayout
+      ? coverOnlyGridWideSpacing
+      : coverOnlyGridMobileSpacing;
+
   // 判断是否为普通手机
   static bool isSmallMobile(BuildContext context) {
     return MediaQuery.of(context).size.width < largeMobileBreakpoint;
@@ -174,6 +196,7 @@ class LayoutHelper {
     double width, {
     required int mobileColumns,
     bool? usesWideLayout,
+    bool? limitToTabletContentWidth,
     double? horizontalPadding,
     double? spacing,
     bool showDetails = false,
@@ -182,16 +205,23 @@ class LayoutHelper {
   }) {
     final preferredColumns = mobileColumns.clamp(2, 5).toInt();
     final wide = usesWideLayout ?? width >= tabletBreakpoint;
-    final resolvedPadding = horizontalPadding ?? (wide ? 32.0 : 12.0);
-    final resolvedSpacing = spacing ?? (wide ? 14.0 : 10.0);
-    final availableWidth = (width - resolvedPadding * 2).clamp(
+    final resolvedPadding =
+        horizontalPadding ??
+        (wide ? coverOnlyGridWidePadding : coverOnlyGridMobilePadding);
+    final resolvedSpacing =
+        spacing ??
+        (wide ? coverOnlyGridWideSpacing : coverOnlyGridMobileSpacing);
+    final viewportWidth = (limitToTabletContentWidth ?? wide)
+        ? width.clamp(0.0, tabletContentMaxWidth).toDouble()
+        : width;
+    final availableWidth = (viewportWidth - resolvedPadding * 2).clamp(
       0.0,
       double.infinity,
     );
     final accessibleScale = textScaleFactor < 1 ? 1.0 : textScaleFactor;
     final minimumCoverWidth = showDetails || hasFolders
-        ? 64.0 + (accessibleScale - 1) * 32.0
-        : 64.0;
+        ? coverOnlyGridMinimumCoverWidth + (accessibleScale - 1) * 32.0
+        : coverOnlyGridMinimumCoverWidth;
     final fittingColumns =
         ((availableWidth + resolvedSpacing) /
                 (minimumCoverWidth + resolvedSpacing))
@@ -219,6 +249,48 @@ class LayoutHelper {
             .round()
             .toInt();
     return densityColumns.clamp(1, fittingColumns).toInt();
+  }
+
+  /// Largest user-selectable cover-grid density that the current shelf can
+  /// actually render without shrinking covers below their minimum width.
+  static int coverOnlyGridCapacityForWidth(
+    double width, {
+    bool? usesWideLayout,
+    bool? limitToTabletContentWidth,
+    double? horizontalPadding,
+    double? spacing,
+    bool showDetails = false,
+    bool hasFolders = false,
+    double textScaleFactor = 1,
+  }) => coverOnlyGridColumnsForWidth(
+    width,
+    mobileColumns: 5,
+    usesWideLayout: usesWideLayout,
+    limitToTabletContentWidth: limitToTabletContentWidth,
+    horizontalPadding: horizontalPadding,
+    spacing: spacing,
+    showDetails: showDetails,
+    hasFolders: hasFolders,
+    textScaleFactor: textScaleFactor,
+  ).clamp(1, 5).toInt();
+
+  /// Width of the shelf viewport represented by a settings page opened from
+  /// the home shell. Rail layouts reserve the same navigation width as the
+  /// shell before applying the shared 1200dp shelf content ceiling.
+  static double libraryViewportWidthForContext(
+    BuildContext context, {
+    required bool usesRailLayout,
+    bool? usesTabletLayout,
+  }) {
+    var width = MediaQuery.sizeOf(context).width;
+    if (usesRailLayout) {
+      width -= getValue(context, mobile: 80.0, tablet: 200.0, desktop: 250.0);
+      width -= MediaQuery.viewPaddingOf(context).horizontal;
+    }
+    if (usesTabletLayout ?? LayoutHelper.usesTabletLayout(context)) {
+      width = width.clamp(0.0, tabletContentMaxWidth).toDouble();
+    }
+    return width.clamp(0.0, double.infinity).toDouble();
   }
 
   // 判断是否应该显示双页布局

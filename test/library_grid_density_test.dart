@@ -2,9 +2,14 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/l10n/app_localizations.dart';
@@ -36,6 +41,7 @@ Widget _app({
   required AppSettingsNotifier settings,
   required Widget home,
   double textScale = 1,
+  bool previewFont = false,
 }) {
   return ChangeNotifierProvider.value(
     value: settings,
@@ -43,6 +49,7 @@ Widget _app({
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      theme: previewFont ? ThemeData(fontFamily: 'GridColumnPreview') : null,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(
           context,
@@ -92,6 +99,116 @@ Future<int> _pumpLibrary(
   return (grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount)
       .crossAxisCount;
 }
+
+Future<void> _pumpLayoutSettings(
+  WidgetTester tester, {
+  required AppSettingsNotifier settings,
+  required Size size,
+  double textScale = 1,
+  bool hasFolders = false,
+  String? captureName,
+}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  final previewFont = await _loadPreviewFontsIfRequested(tester);
+  final captureKey = GlobalKey(debugLabel: captureName);
+  await tester.pumpWidget(
+    _app(
+      settings: settings,
+      textScale: textScale,
+      previewFont: previewFont,
+      home: RepaintBoundary(
+        key: captureKey,
+        child: LibraryLayoutSettingsPage(hasFolders: hasFolders),
+      ),
+    ),
+  );
+  await tester.pump();
+  expect(tester.takeException(), isNull);
+  await _captureSettingsIfRequested(tester, captureKey, captureName);
+}
+
+bool _previewFontsLoaded = false;
+
+Future<bool> _loadPreviewFontsIfRequested(WidgetTester tester) async {
+  final captureDirectory = Platform.environment['GRID_COLUMN_CAPTURE_DIR'];
+  if (captureDirectory == null || captureDirectory.isEmpty) return false;
+  if (_previewFontsLoaded) return true;
+  await tester.runAsync(() async {
+    final font = FontLoader('GridColumnPreview');
+    font.addFont(
+      File(
+        '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+      ).readAsBytes().then(ByteData.sublistView),
+    );
+    await font.load();
+    final icons = FontLoader('MaterialIcons');
+    icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+    await icons.load();
+  });
+  _previewFontsLoaded = true;
+  return true;
+}
+
+Future<void> _captureSettingsIfRequested(
+  WidgetTester tester,
+  GlobalKey captureKey,
+  String? captureName,
+) async {
+  final captureDirectory = Platform.environment['GRID_COLUMN_CAPTURE_DIR'];
+  if (captureDirectory == null ||
+      captureDirectory.isEmpty ||
+      captureName == null) {
+    return;
+  }
+  if (!path.isAbsolute(captureDirectory)) {
+    throw ArgumentError.value(
+      captureDirectory,
+      'GRID_COLUMN_CAPTURE_DIR',
+      'must be an absolute path',
+    );
+  }
+  if (captureName.contains('large-text-folder')) {
+    final selector = find.byKey(
+      const ValueKey('settings-library-grid-columns'),
+    );
+    await Scrollable.ensureVisible(tester.element(selector), alignment: 0.18);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(tester.getRect(selector).top, greaterThanOrEqualTo(110));
+  }
+  await tester.runAsync(() async {
+    final boundary =
+        captureKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 2);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    final directory = Directory(captureDirectory);
+    await directory.create(recursive: true);
+    final bytes = data!.buffer.asUint8List(
+      data.offsetInBytes,
+      data.lengthInBytes,
+    );
+    await File(
+      path.join(captureDirectory, '$captureName.png'),
+    ).writeAsBytes(bytes);
+    image.dispose();
+  });
+}
+
+List<int> _visibleColumnChoices(WidgetTester tester) => [
+  for (final columns in const [2, 3, 4, 5])
+    if (find
+        .byKey(ValueKey('settings-library-grid-columns-$columns'))
+        .evaluate()
+        .isNotEmpty)
+      columns,
+];
+
+bool _columnChoiceIsSelected(WidgetTester tester, int columns) => tester
+    .widget<ChoiceChip>(
+      find.byKey(ValueKey('settings-library-grid-columns-$columns')),
+    )
+    .selected;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -160,6 +277,18 @@ void main() {
     );
   });
 
+  test('capacity reports one column when only one cover fits', () {
+    expect(
+      LayoutHelper.coverOnlyGridCapacityForWidth(
+        80,
+        usesWideLayout: false,
+        horizontalPadding: 12,
+        spacing: 10,
+      ),
+      1,
+    );
+  });
+
   testWidgets('LibraryPage applies adaptive 5-column density', (tester) async {
     addTearDown(() {
       tester.view.resetPhysicalSize();
@@ -197,6 +326,26 @@ void main() {
         textScale: 2,
       ),
       3,
+    );
+    expect(settings.libraryGridColumns, 5);
+  });
+
+  testWidgets('LibraryPage caps a wide shelf at eight columns', (tester) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() => settings.setLibraryGridColumns(5));
+
+    expect(
+      await _pumpLibrary(
+        tester,
+        settings: settings,
+        size: const Size(1200, 900),
+      ),
+      8,
     );
     expect(settings.libraryGridColumns, 5);
   });
@@ -249,7 +398,188 @@ void main() {
     expect(settings.libraryGridShowDetails, isFalse);
   });
 
-  testWidgets('settings offers 2 through 5 columns and wraps at large text', (
+  testWidgets('settings hides 5 columns when the current shelf fits only 4', (
+    tester,
+  ) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(true);
+    });
+
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(360, 780),
+      captureName: 'settings-360-details-columns-2-3-4',
+    );
+
+    expect(_visibleColumnChoices(tester), [2, 3, 4]);
+  });
+
+  testWidgets('settings offers 5 columns when the shelf can render 5', (
+    tester,
+  ) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(true);
+    });
+
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(390, 844),
+      captureName: 'settings-390-details-columns-2-3-4-5',
+    );
+
+    expect(_visibleColumnChoices(tester), [2, 3, 4, 5]);
+  });
+
+  testWidgets('narrow shelf preserves a saved 5-column preference', (
+    tester,
+  ) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(true);
+    });
+
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(360, 780),
+    );
+
+    expect(_columnChoiceIsSelected(tester, 4), isTrue);
+    expect(settings.libraryGridColumns, 5);
+
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(390, 844),
+    );
+
+    expect(_columnChoiceIsSelected(tester, 5), isTrue);
+    expect(settings.libraryGridColumns, 5);
+  });
+
+  testWidgets('selecting an achievable column count updates the preference', (
+    tester,
+  ) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(true);
+    });
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(360, 780),
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('settings-library-grid-columns-4')),
+    );
+    await tester.pump();
+
+    expect(settings.libraryGridColumns, 4);
+    expect(_columnChoiceIsSelected(tester, 4), isTrue);
+  });
+
+  testWidgets('large text reduces column choices when details are visible', (
+    tester,
+  ) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(true);
+    });
+
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(390, 844),
+      textScale: 2,
+    );
+
+    expect(_visibleColumnChoices(tester), [2, 3]);
+  });
+
+  testWidgets('hidden details keep 5 columns available without folders', (
+    tester,
+  ) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(false);
+    });
+
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(390, 844),
+      textScale: 3,
+    );
+
+    expect(_visibleColumnChoices(tester), [2, 3, 4, 5]);
+  });
+
+  testWidgets('visible folders reduce choices at large text', (tester) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(false);
+    });
+
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(390, 844),
+      textScale: 3,
+      hasFolders: true,
+      captureName: 'settings-390-large-text-folder-columns-2',
+    );
+
+    expect(_visibleColumnChoices(tester), [2]);
+  });
+
+  testWidgets('settings route reads visible folders from the live shelf', (
     tester,
   ) async {
     addTearDown(() {
@@ -257,49 +587,110 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
     tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(320, 700);
+    tester.view.physicalSize = const Size(390, 844);
     final settings = (await tester.runAsync(_loadSettings))!;
     addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(false);
+    });
+    final controller = LibraryPageController();
+    addTearDown(controller.dispose);
+    final folder = ShelfFolder(
+      id: 'root-folder',
+      name: 'Root Shelf',
+      parentId: null,
+      createdAt: DateTime.utc(2026, 10, 8),
+    );
 
     await tester.pumpWidget(
       _app(
         settings: settings,
-        textScale: 2,
-        home: const LibraryLayoutSettingsPage(),
+        textScale: 3,
+        home: LibraryPage(
+          controller: controller,
+          foldersLoader: () async => [folder],
+          booksLoader: () async => _books(),
+        ),
       ),
     );
     await tester.pump();
+    await tester.pumpAndSettle();
+    expect(controller.hasVisibleFolders, isTrue);
+
+    unawaited(
+      Navigator.of(tester.element(find.byType(LibraryPage))).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              LibraryLayoutSettingsPage(libraryController: controller),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(_visibleColumnChoices(tester), [2]);
+    expect(controller.hasVisibleFolders, isTrue);
+    expect(settings.libraryGridColumns, 5);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('settings uses shelf viewport width outside its inner padding', (
+    tester,
+  ) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final settings = (await tester.runAsync(_loadSettings))!;
+    addTearDown(settings.dispose);
+    await tester.runAsync(() async {
+      await settings.setLibraryGridColumns(5);
+      await settings.setLibraryGridShowDetails(true);
+    });
+
+    await _pumpLayoutSettings(
+      tester,
+      settings: settings,
+      size: const Size(390, 844),
+    );
 
     final selector = find.byKey(
       const ValueKey('settings-library-grid-columns'),
     );
-    expect(selector, findsOneWidget);
-    expect(
-      find.descendant(of: selector, matching: find.byType(ChoiceChip)),
-      findsNWidgets(4),
-    );
-    expect(
-      tester
-          .getTopLeft(
-            find.byKey(const ValueKey('settings-library-grid-columns-5')),
-          )
-          .dy,
-      greaterThan(
-        tester
-            .getTopLeft(
-              find.byKey(const ValueKey('settings-library-grid-columns-2')),
-            )
-            .dy,
-      ),
-    );
-    expect(tester.takeException(), isNull);
-
-    final fiveColumns = tester.widget<ChoiceChip>(
-      find.byKey(const ValueKey('settings-library-grid-columns-5')),
-    );
-    fiveColumns.onSelected!(true);
-    await tester.pump();
-    expect(settings.libraryGridColumns, 5);
-    expect(tester.takeException(), isNull);
+    expect(tester.getSize(selector).width, lessThan(390));
+    expect(_visibleColumnChoices(tester), [2, 3, 4, 5]);
   });
+
+  testWidgets(
+    'phone landscape settings match the rendered grid capacity',
+    (tester) async {
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      final settings = (await tester.runAsync(_loadSettings))!;
+      addTearDown(settings.dispose);
+      await tester.runAsync(() async {
+        await settings.setLibraryGridColumns(5);
+        await settings.setLibraryGridShowDetails(true);
+      });
+
+      await _pumpLayoutSettings(
+        tester,
+        settings: settings,
+        size: const Size(800, 390),
+      );
+      expect(_visibleColumnChoices(tester), [2, 3, 4, 5]);
+
+      expect(
+        await _pumpLibrary(
+          tester,
+          settings: settings,
+          size: const Size(800, 390),
+        ),
+        5,
+      );
+    },
+    variant: TargetPlatformVariant(<TargetPlatform>{TargetPlatform.android}),
+  );
 }

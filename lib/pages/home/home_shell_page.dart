@@ -228,7 +228,10 @@ class _HomeShellPageState extends State<HomeShellPage> {
         icon: Icons.person_outline_rounded,
         selectedIcon: Icons.person_rounded,
         label: l10n.navMe,
-        page: SettingsPage(controller: _settingsController),
+        page: SettingsPage(
+          controller: _settingsController,
+          libraryController: _libraryController,
+        ),
       ),
     };
     final items = navigationOrder

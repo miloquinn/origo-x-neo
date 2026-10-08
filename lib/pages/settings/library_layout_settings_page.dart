@@ -7,232 +7,342 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/pages/home/home_shell_page.dart';
+import 'package:xxread/pages/library/library_page.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
+import 'package:xxread/services/library/shelf_folder_dao.dart';
+import 'package:xxread/utils/layout_helper.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_transitions.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 
-class LibraryLayoutSettingsPage extends StatelessWidget {
-  const LibraryLayoutSettingsPage({super.key});
+class LibraryLayoutSettingsPage extends StatefulWidget {
+  const LibraryLayoutSettingsPage({
+    super.key,
+    this.libraryController,
+    this.hasFolders,
+    this.libraryUsesRailLayout,
+  });
+
+  final LibraryPageController? libraryController;
+  final bool? hasFolders;
+  final bool? libraryUsesRailLayout;
+
+  @override
+  State<LibraryLayoutSettingsPage> createState() =>
+      _LibraryLayoutSettingsPageState();
+}
+
+class _LibraryLayoutSettingsPageState extends State<LibraryLayoutSettingsPage> {
+  bool? _hasFolders;
+  Object? _folderLoadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasFolders =
+        widget.hasFolders ?? widget.libraryController?.hasVisibleFolders;
+    if (_hasFolders == null && widget.libraryController != null) {
+      unawaited(_loadRootFolderMetadata());
+    } else {
+      _hasFolders ??= false;
+    }
+  }
+
+  Future<void> _loadRootFolderMetadata() async {
+    try {
+      final folders = await ShelfFolderDao().getAll();
+      if (!mounted) return;
+      setState(() {
+        _hasFolders = folders.any((folder) => folder.parentId == null);
+        _folderLoadError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _folderLoadError = error);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final useRailNavigation =
+        NavigationContext.of(context)?.useRailNavigation ?? false;
+    final usesRailLayout = widget.libraryUsesRailLayout ?? useRailNavigation;
+    final usesTabletLayout = LayoutHelper.usesTabletLayout(context);
+    final usesWideLayout = usesRailLayout || usesTabletLayout;
+    final viewportWidth = LayoutHelper.libraryViewportWidthForContext(
+      context,
+      usesRailLayout: usesRailLayout,
+      usesTabletLayout: usesTabletLayout,
+    );
+    final horizontalPadding = LayoutHelper.coverOnlyGridHorizontalPadding(
+      usesTabletLayout: usesTabletLayout,
+      usesRailLayout: usesRailLayout,
+    );
+    final spacing = LayoutHelper.coverOnlyGridSpacing(
+      usesTabletLayout: usesTabletLayout,
+      usesRailLayout: usesRailLayout,
+    );
     return FloatingSubpageScaffold(
       title: l10n.settingsLibraryLayoutTitle,
       body: Consumer<AppSettingsNotifier>(
-        builder: (context, settings, _) => ListView(
-          padding: floatingSubpagePadding(context),
-          children: [
-            Text(
-              l10n.settingsLibraryLayoutSubtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                height: 1.4,
+        builder: (context, settings, _) {
+          final columnCapacity = LayoutHelper.coverOnlyGridCapacityForWidth(
+            viewportWidth,
+            usesWideLayout: usesWideLayout,
+            limitToTabletContentWidth: usesTabletLayout,
+            horizontalPadding: horizontalPadding,
+            spacing: spacing,
+            showDetails: settings.libraryGridShowDetails,
+            // While metadata is loading or failed, retain enough room for a
+            // folder label rather than exposing an option that may not fit.
+            hasFolders: _hasFolders ?? true,
+            textScaleFactor: MediaQuery.textScalerOf(context).scale(1),
+          );
+          final effectiveColumns = settings.libraryGridColumns <= columnCapacity
+              ? settings.libraryGridColumns
+              : columnCapacity;
+          return ListView(
+            padding: floatingSubpagePadding(context),
+            children: [
+              Text(
+                l10n.settingsLibraryLayoutSubtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            _SettingsSurface(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<LibraryLayoutMode>(
-                      key: const ValueKey('settings-library-layout-selector'),
-                      showSelectedIcon: false,
-                      expandedInsets: EdgeInsets.zero,
-                      segments: [
-                        ButtonSegment(
-                          value: LibraryLayoutMode.card,
-                          icon: const Icon(Icons.view_agenda_outlined),
-                          label: Text(l10n.settingsLibraryLayoutCard),
+              const SizedBox(height: 16),
+              _SettingsSurface(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: SegmentedButton<LibraryLayoutMode>(
+                        key: const ValueKey('settings-library-layout-selector'),
+                        showSelectedIcon: false,
+                        expandedInsets: EdgeInsets.zero,
+                        segments: [
+                          ButtonSegment(
+                            value: LibraryLayoutMode.card,
+                            icon: const Icon(Icons.view_agenda_outlined),
+                            label: Text(l10n.settingsLibraryLayoutCard),
+                          ),
+                          ButtonSegment(
+                            value: LibraryLayoutMode.grid,
+                            icon: const Icon(Icons.grid_view_rounded),
+                            label: Text(l10n.settingsLibraryLayoutGrid),
+                          ),
+                        ],
+                        selected: {settings.libraryLayoutMode},
+                        onSelectionChanged: (selection) {
+                          if (selection.isEmpty) return;
+                          unawaited(
+                            settings.setLibraryLayoutMode(selection.first),
+                          );
+                        },
+                      ),
+                    ),
+                    if (settings.libraryLayoutMode ==
+                        LibraryLayoutMode.grid) ...[
+                      const SizedBox(height: 22),
+                      Text(
+                        l10n.settingsLibraryGridColumnsTitle,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
-                        ButtonSegment(
-                          value: LibraryLayoutMode.grid,
-                          icon: const Icon(Icons.grid_view_rounded),
-                          label: Text(l10n.settingsLibraryLayoutGrid),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        key: const ValueKey('settings-library-grid-columns'),
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (
+                            var columns = 2;
+                            columns <= columnCapacity;
+                            columns++
+                          )
+                            ChoiceChip(
+                              key: ValueKey(
+                                'settings-library-grid-columns-$columns',
+                              ),
+                              showCheckmark: false,
+                              label: Text(
+                                l10n.settingsLibraryGridColumnCount(columns),
+                              ),
+                              selected: effectiveColumns == columns,
+                              onSelected: (_) => unawaited(
+                                settings.setLibraryGridColumns(columns),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.settingsLibraryGridColumnsHint,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                      if (_folderLoadError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.error,
+                          key: const ValueKey(
+                            'settings-library-folder-metadata-error',
+                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                         ),
                       ],
-                      selected: {settings.libraryLayoutMode},
-                      onSelectionChanged: (selection) {
-                        if (selection.isEmpty) return;
-                        unawaited(
-                          settings.setLibraryLayoutMode(selection.first),
-                        );
-                      },
-                    ),
-                  ),
-                  if (settings.libraryLayoutMode == LibraryLayoutMode.grid) ...[
-                    const SizedBox(height: 22),
+                      const SizedBox(height: 8),
+                      SwitchListTile.adaptive(
+                        key: const ValueKey(
+                          'settings-library-grid-show-details',
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          l10n.settingsLibraryGridShowDetailsTitle,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          l10n.settingsLibraryGridShowDetailsSubtitle,
+                        ),
+                        value: settings.libraryGridShowDetails,
+                        onChanged: (value) => unawaited(
+                          settings.setLibraryGridShowDetails(value),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _SettingsSurface(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      l10n.settingsLibraryGridColumnsTitle,
+                      l10n.settingsLibraryOpenAnimationTitle,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      key: const ValueKey('settings-library-grid-columns'),
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final columns in const [2, 3, 4, 5])
-                          ChoiceChip(
-                            key: ValueKey(
-                              'settings-library-grid-columns-$columns',
-                            ),
-                            showCheckmark: false,
-                            label: Text(
-                              l10n.settingsLibraryGridColumnCount(columns),
-                            ),
-                            selected: settings.libraryGridColumns == columns,
-                            onSelected: (_) => unawaited(
-                              settings.setLibraryGridColumns(columns),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Text(
-                      l10n.settingsLibraryGridColumnsHint,
+                      l10n.settingsLibraryOpenAnimationSubtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        height: 1.35,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    SwitchListTile.adaptive(
-                      key: const ValueKey('settings-library-grid-show-details'),
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        l10n.settingsLibraryGridShowDetailsTitle,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                    RadioGroup<LibraryBookOpenAnimation>(
+                      groupValue: settings.libraryBookOpenAnimation,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        unawaited(settings.setLibraryBookOpenAnimation(value));
+                      },
+                      child: Column(
+                        children: [
+                          for (final animation
+                              in LibraryBookOpenAnimation.values) ...[
+                            RadioListTile<LibraryBookOpenAnimation>(
+                              key: ValueKey(
+                                'settings-library-open-animation-${animation.name}',
+                              ),
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              value: animation,
+                              title: Text(_animationTitle(l10n, animation)),
+                              subtitle: Text(
+                                _animationSubtitle(l10n, animation),
+                              ),
+                            ),
+                            if (settings.libraryBookOpenAnimation == animation)
+                              Padding(
+                                key: ValueKey(
+                                  'settings-library-open-animation-pace-${animation.name}',
+                                ),
+                                padding: const EdgeInsets.fromLTRB(
+                                  40,
+                                  0,
+                                  0,
+                                  12,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.settingsLibraryOpenAnimationPaceTitle,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: SegmentedButton<LibraryBookOpenAnimationPace>(
+                                        key: const ValueKey(
+                                          'settings-library-open-animation-pace-selector',
+                                        ),
+                                        showSelectedIcon: false,
+                                        expandedInsets: EdgeInsets.zero,
+                                        segments: [
+                                          ButtonSegment(
+                                            value: LibraryBookOpenAnimationPace
+                                                .fast,
+                                            label: Text(
+                                              l10n.settingsLibraryOpenAnimationFast,
+                                            ),
+                                          ),
+                                          ButtonSegment(
+                                            value: LibraryBookOpenAnimationPace
+                                                .elegant,
+                                            label: Text(
+                                              l10n.settingsLibraryOpenAnimationElegant,
+                                            ),
+                                          ),
+                                        ],
+                                        selected: {
+                                          settings.libraryBookOpenAnimationPace,
+                                        },
+                                        onSelectionChanged: (selection) {
+                                          if (selection.isEmpty) return;
+                                          unawaited(
+                                            settings
+                                                .setLibraryBookOpenAnimationPace(
+                                                  selection.first,
+                                                ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ],
                       ),
-                      subtitle: Text(
-                        l10n.settingsLibraryGridShowDetailsSubtitle,
-                      ),
-                      value: settings.libraryGridShowDetails,
-                      onChanged: (value) =>
-                          unawaited(settings.setLibraryGridShowDetails(value)),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            _SettingsSurface(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.settingsLibraryOpenAnimationTitle,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.settingsLibraryOpenAnimationSubtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  RadioGroup<LibraryBookOpenAnimation>(
-                    groupValue: settings.libraryBookOpenAnimation,
-                    onChanged: (value) {
-                      if (value == null) return;
-                      unawaited(settings.setLibraryBookOpenAnimation(value));
-                    },
-                    child: Column(
-                      children: [
-                        for (final animation
-                            in LibraryBookOpenAnimation.values) ...[
-                          RadioListTile<LibraryBookOpenAnimation>(
-                            key: ValueKey(
-                              'settings-library-open-animation-${animation.name}',
-                            ),
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
-                            value: animation,
-                            title: Text(_animationTitle(l10n, animation)),
-                            subtitle: Text(_animationSubtitle(l10n, animation)),
-                          ),
-                          if (settings.libraryBookOpenAnimation == animation)
-                            Padding(
-                              key: ValueKey(
-                                'settings-library-open-animation-pace-${animation.name}',
-                              ),
-                              padding: const EdgeInsets.fromLTRB(40, 0, 0, 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.settingsLibraryOpenAnimationPaceTitle,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: SegmentedButton<LibraryBookOpenAnimationPace>(
-                                      key: const ValueKey(
-                                        'settings-library-open-animation-pace-selector',
-                                      ),
-                                      showSelectedIcon: false,
-                                      expandedInsets: EdgeInsets.zero,
-                                      segments: [
-                                        ButtonSegment(
-                                          value:
-                                              LibraryBookOpenAnimationPace.fast,
-                                          label: Text(
-                                            l10n.settingsLibraryOpenAnimationFast,
-                                          ),
-                                        ),
-                                        ButtonSegment(
-                                          value: LibraryBookOpenAnimationPace
-                                              .elegant,
-                                          label: Text(
-                                            l10n.settingsLibraryOpenAnimationElegant,
-                                          ),
-                                        ),
-                                      ],
-                                      selected: {
-                                        settings.libraryBookOpenAnimationPace,
-                                      },
-                                      onSelectionChanged: (selection) {
-                                        if (selection.isEmpty) return;
-                                        unawaited(
-                                          settings
-                                              .setLibraryBookOpenAnimationPace(
-                                                selection.first,
-                                              ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }

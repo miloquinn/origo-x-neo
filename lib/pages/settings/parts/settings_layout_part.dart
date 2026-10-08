@@ -105,7 +105,10 @@ extension _SettingsLayoutPart on _SettingsPageState {
           ),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => const LibraryLayoutSettingsPage(),
+              builder: (_) => LibraryLayoutSettingsPage(
+                libraryController: widget.libraryController,
+                libraryUsesRailLayout: widget.libraryUsesRailLayout,
+              ),
             ),
           ),
           icon: Icons.view_module_outlined,

@@ -13,7 +13,10 @@ extension _LibraryPageCollection on _LibraryPageState {
   }) {
     final useRail = NavigationContext.of(context)?.useRailNavigation ?? false;
     final usesTabletLayout = LayoutHelper.usesTabletLayout(context);
-    final spacing = useRail || usesTabletLayout ? 14.0 : 10.0;
+    final spacing = LayoutHelper.coverOnlyGridSpacing(
+      usesTabletLayout: usesTabletLayout,
+      usesRailLayout: useRail,
+    );
     final mobileChrome = HomeMobileChromeScope.of(context);
     final bottomPadding = useRail
         ? MediaQuery.viewPaddingOf(context).bottom +
@@ -25,15 +28,15 @@ extension _LibraryPageCollection on _LibraryPageState {
     return LayoutBuilder(
       builder: (context, constraints) {
         final textScaler = MediaQuery.textScalerOf(context);
-        final horizontalPadding = usesTabletLayout
-            ? LayoutHelper.tabletPagePadding
-            : useRail
-            ? 16.0
-            : 12.0;
+        final horizontalPadding = LayoutHelper.coverOnlyGridHorizontalPadding(
+          usesTabletLayout: usesTabletLayout,
+          usesRailLayout: useRail,
+        );
         final crossAxisCount = LayoutHelper.coverOnlyGridColumnsForWidth(
           constraints.maxWidth,
           mobileColumns: mobileColumns,
           usesWideLayout: useRail || usesTabletLayout,
+          limitToTabletContentWidth: usesTabletLayout,
           horizontalPadding: horizontalPadding,
           spacing: spacing,
           showDetails: showDetails,
