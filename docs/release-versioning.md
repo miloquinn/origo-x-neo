@@ -46,6 +46,14 @@ publishing build `260908001`; future server deployments must preserve this
 contract. The website release identity includes the package build number so
 same-version builds can coexist without replacing immutable downloads.
 
+The website service's `GITHUB_REPOSITORY` must identify the public distribution
+repository used by the import manifest, not the private repository that builds
+the app. The importer verifies that repository identity before publishing any
+asset. If a mirror fails because these identities differ, repair the service
+configuration and import the already-published, checksum-verified bytes; keep
+the product tag and packages unchanged. Record manual recovery separately from
+the original workflow result.
+
 Android split-per-ABI APKs have a package `versionCode` offset added by Flutter.
 The Android bridge exposes the unmodified release build separately: update
 selection, the About page and changelog use that shared release build; APK
