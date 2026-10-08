@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/widgets/elastic_press.dart';
 
 void main() {
+  const contentKey = Key('elastic-content');
   final painted = find.byWidgetPredicate(
     (widget) => widget.runtimeType.toString() == '_PressPaint',
   );
@@ -17,6 +18,7 @@ void main() {
                 child: ElasticPress(
                   edgePullOnly: true,
                   child: ColoredBox(
+                    key: contentKey,
                     color: Colors.transparent,
                     child: SizedBox(width: 300, height: 56),
                   ),
@@ -32,12 +34,14 @@ void main() {
   ) async {
     await pumpPress(tester);
     final anchor = tester.getRect(painted);
+    final contentAnchor = tester.getRect(find.byKey(contentKey));
     final dynamic paint = tester.renderObject(painted);
     final gesture = await tester.startGesture(anchor.center);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 180));
     expect(paint.lift, greaterThan(0));
     expect(tester.getRect(painted), anchor);
+    expect(tester.getRect(find.byKey(contentKey)), contentAnchor);
     await gesture.moveTo(anchor.center + const Offset(80, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -47,6 +51,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect((paint.pull as Offset).dx, greaterThan(0));
     expect(tester.getRect(painted), anchor);
+    expect(tester.getRect(find.byKey(contentKey)), contentAnchor);
     await gesture.cancel();
     await tester.pumpAndSettle();
     expect(paint.pull, Offset.zero);

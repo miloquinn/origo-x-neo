@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/widgets/app_menu.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
+import 'package:xxread/widgets/elastic_press.dart';
 
 void main() {
   Finder morphSurface() => find.byKey(const ValueKey('app-menu-morph-surface'));
@@ -31,6 +32,7 @@ void main() {
     ThemeMode themeMode = ThemeMode.light,
     String? initialValue,
     Color? menuColor,
+    Widget? child,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -69,6 +71,7 @@ void main() {
               onCanceled: onCanceled,
               initialValue: initialValue,
               color: menuColor,
+              child: child,
               itemBuilder: (_) =>
                   items ??
                   const [
@@ -81,6 +84,64 @@ void main() {
       ),
     );
   }
+
+  testWidgets('custom menu triggers retain enabled button semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      for (final enabled in [true, false]) {
+        await pumpMenu(
+          tester,
+          enabled: enabled,
+          child: const SizedBox.square(
+            dimension: 44,
+            child: Icon(Icons.more_horiz_rounded),
+          ),
+        );
+        final data = tester
+            .getSemantics(find.byIcon(Icons.more_horiz_rounded))
+            .getSemanticsData();
+        expect(data.flagsCollection.isButton, isTrue);
+        expect(
+          data.flagsCollection.isEnabled,
+          enabled ? ui.Tristate.isTrue : ui.Tristate.isFalse,
+        );
+        expect(data.hasAction(ui.SemanticsAction.tap), enabled);
+      }
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('menu projection preserves explicit ListTile foreground colors', (
+    tester,
+  ) async {
+    await pumpMenu(
+      tester,
+      items: const [
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            iconColor: Colors.red,
+            textColor: Colors.blue,
+            leading: Icon(Icons.edit_rounded),
+            title: Text('Edit'),
+          ),
+        ),
+      ],
+    );
+    await tester.tap(find.byKey(const ValueKey('menu-anchor')));
+    await tester.pumpAndSettle();
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.descendant(of: find.text('Edit'), matching: find.byType(RichText)),
+    );
+    expect(paragraph.text.style?.color, Colors.blue);
+    expect(
+      IconTheme.of(tester.element(find.byIcon(Icons.edit_rounded))).color,
+      Colors.red,
+    );
+  });
 
   testWidgets(
     'row menus use plain dots unless a circular surface is requested',
@@ -107,6 +168,54 @@ void main() {
         ),
       );
       expect(find.byType(GlassControlSurface), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a circular menu has one spring and morphs from its resting anchor',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: AppPopupMenuButton<String>(
+                key: const ValueKey('spring-menu'),
+                buttonStyle: AppMenuButtonStyle.circular,
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      final trigger = find.byKey(const ValueKey('spring-menu'));
+      expect(
+        find.descendant(of: trigger, matching: find.byType(ElasticPress)),
+        findsOneWidget,
+      );
+      final anchor = tester.getRect(trigger);
+      final native = find.descendant(
+        of: trigger,
+        matching: find.byType(IconButton),
+      );
+      final nativeAnchor = tester.getRect(native);
+      final gesture = await tester.startGesture(anchor.center);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 220));
+      await gesture.moveBy(const Offset(10, 4));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.getRect(trigger), anchor);
+      expect(tester.getRect(native), nativeAnchor);
+      await gesture.up();
+      await tester.pump();
+      final clip = currentClip(tester).getBounds();
+      expect(clip.size.width, closeTo(anchor.width, 0.01));
+      expect(clip.size.height, closeTo(anchor.height, 0.01));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
     },
   );
 

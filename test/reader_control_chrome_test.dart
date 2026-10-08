@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/core/reader/reader_leaf_status.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/glass_control_surface.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 
 void main() {
@@ -34,6 +36,89 @@ void main() {
     );
     expect(_iconBackground(tester).a, 1);
     expect(_iconBackground(tester), ReaderThemes.day.controlFill);
+  });
+
+  testWidgets('reader actions use the shared 44px spring glass control', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReaderControlBar(
+            palette: ReaderThemes.day,
+            isTopBar: true,
+            child: ReaderControlIconButton(
+              palette: ReaderThemes.day,
+              onPressed: () => taps += 1,
+              tooltip: 'Back',
+              icon: Icons.arrow_back_rounded,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getSize(find.byType(GlassIconButton)), const Size.square(44));
+    final surface = tester.widget<GlassControlSurface>(
+      find.descendant(
+        of: find.byType(ReaderControlIconButton),
+        matching: find.byType(GlassControlSurface),
+      ),
+    );
+    expect(surface.blurBackground, isFalse);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pump();
+    expect(taps, 1);
+  });
+
+  testWidgets('reader border ignores a divergent outer app palette', (
+    tester,
+  ) async {
+    final palette = ReaderThemes.pureBlack;
+    for (final glassEnabled in [true, false]) {
+      GlassEffectConfig.setDisableAllGlassEffects(!glassEnabled);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.orange,
+            ).copyWith(outlineVariant: Colors.pink),
+          ),
+          home: Scaffold(
+            body: Center(
+              child: ReaderControlIconButton(
+                palette: palette,
+                onPressed: () {},
+                tooltip: 'Back',
+                icon: Icons.arrow_back,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final decoration =
+          tester
+                  .widget<AnimatedContainer>(find.byType(AnimatedContainer))
+                  .decoration
+              as ShapeDecoration;
+      final expectedBorder = glassEnabled
+          ? Color.lerp(
+              palette.border,
+              Colors.white,
+              0.12,
+            )!.withValues(alpha: 0.48)
+          : palette.border;
+      expect((decoration.shape as OutlinedBorder).side.color, expectedBorder);
+      expect((decoration.shape as OutlinedBorder).side.width, 0.8);
+      expect(tester.getSize(find.byType(IconButton)), const Size.square(44));
+      expect(
+        tester.getCenter(find.byType(Icon)),
+        tester.getCenter(find.byType(ReaderControlIconButton)),
+      );
+    }
   });
 
   testWidgets('moving control bars keep glass outside opacity layers', (
@@ -291,6 +376,11 @@ LinearGradient _panelGradient(WidgetTester tester) {
 }
 
 Color _iconBackground(WidgetTester tester) {
-  final button = tester.widget<IconButton>(find.byType(IconButton));
-  return button.style!.backgroundColor!.resolve(const <WidgetState>{})!;
+  final surface = tester.widget<GlassControlSurface>(
+    find.descendant(
+      of: find.byType(ReaderControlIconButton).first,
+      matching: find.byType(GlassControlSurface),
+    ),
+  );
+  return surface.color!;
 }

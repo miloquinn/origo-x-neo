@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 
 /// The single control overlay used by every comic reading direction.
@@ -101,28 +102,19 @@ class ImageReaderChrome extends StatelessWidget {
                           ),
                         ),
                       ),
-                      InkWell(
-                        onTap: () => unawaited(_showJumpDialog(context)),
-                        borderRadius: BorderRadius.circular(99),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 11,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: palette.controlFill.withValues(alpha: 0.58),
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Text(
-                            '$_displayPage / $pageCount',
-                            style: TextStyle(
-                              color: palette.secondaryText,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
+                      GlassTextButton(
+                        onPressed: () => unawaited(_showJumpDialog(context)),
+                        blurBackground: false,
+                        color: palette.controlFill.withValues(alpha: 0.58),
+                        foregroundColor: palette.secondaryText,
+                        brightness: palette.brightness,
+                        border: BorderSide(color: palette.border),
+                        child: Text(
+                          '$_displayPage / $pageCount',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: [FontFeature.tabularFigures()],
                           ),
                         ),
                       ),
@@ -340,30 +332,30 @@ class _ImageReaderChromeAction extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return InkResponse(
-      onTap: onTap,
-      radius: 26,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: palette.text, size: 20),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: palette.secondaryText,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+  Widget build(BuildContext context) => GlassTextButton(
+    onPressed: onTap,
+    blurBackground: false,
+    color: palette.controlFill.withValues(alpha: 0.58),
+    foregroundColor: palette.text,
+    brightness: palette.brightness,
+    border: BorderSide(color: palette.border),
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: palette.text, size: 20),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: palette.secondaryText,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
 }

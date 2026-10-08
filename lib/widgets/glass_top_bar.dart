@@ -22,7 +22,6 @@ class GlassTopBar extends StatelessWidget {
     this.titleFontSize = 34,
     this.titleFontWeight = FontWeight.w700,
     this.horizontalPadding = 16,
-    this.centerTitleSideInset = 56,
   });
 
   final String title;
@@ -34,7 +33,6 @@ class GlassTopBar extends StatelessWidget {
   final double titleFontSize;
   final FontWeight titleFontWeight;
   final double horizontalPadding;
-  final double centerTitleSideInset;
 
   @override
   Widget build(BuildContext context) {
@@ -83,30 +81,20 @@ class GlassTopBar extends StatelessWidget {
           6,
         ),
         child: centerTitle
-            ? Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: centerTitleSideInset,
-                        ),
-                        child: Center(
-                          child: Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: titleStyle,
-                          ),
-                        ),
-                      ),
-                    ),
+            ? NavigationToolbar(
+                centerMiddle: true,
+                middleSpacing: 16,
+                leading: leading,
+                trailing: trailing,
+                middle: IgnorePointer(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: titleStyle,
                   ),
-                  Align(alignment: Alignment.centerLeft, child: leading),
-                  Align(alignment: Alignment.centerRight, child: trailing),
-                ],
+                ),
               )
             : Row(
                 children: [

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/txt_edit_service.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
 import 'txt_editor_copy.dart';
@@ -276,15 +277,13 @@ class _TxtChapterEditorPageState extends State<TxtChapterEditorPage> {
                 tooltip: copy.versionHistory,
                 onPressed: _busy ? null : _showHistory,
               ),
-              SizedBox.square(
-                dimension: 48,
-                child: TextButton(
-                  onPressed: chapter == null || _busy
-                      ? null
-                      : () => _save(chapter),
-                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                  child: Text(copy.save),
-                ),
+              GlassTextButton(
+                minimumHeight: 48,
+                blurBackground: false,
+                onPressed: chapter == null || _busy
+                    ? null
+                    : () => _save(chapter),
+                child: Text(copy.save),
               ),
             ],
             body: chapter == null

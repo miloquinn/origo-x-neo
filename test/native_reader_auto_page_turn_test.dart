@@ -15,6 +15,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/reader/native/native_reader_page.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
+import 'package:xxread/widgets/reader_control_chrome.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -373,7 +374,7 @@ void main() {
     );
     final pixelsBeforeStop = wholeBookScrollable.position.pixels;
     tester
-        .widget<IconButton>(
+        .widget<ReaderControlIconButton>(
           find.byKey(const ValueKey('reader-auto-page-turn-stop')),
         )
         .onPressed!();

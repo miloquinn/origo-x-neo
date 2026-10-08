@@ -7,7 +7,8 @@ import 'package:flutter/services.dart';
 
 import 'elastic_motion.dart';
 import 'elastic_press.dart';
-import 'glass_control_surface.dart';
+import 'glass_buttons.dart';
+import 'glass_top_bar.dart';
 
 /// Trigger appearance is independent of the shared menu surface and motion.
 enum AppMenuButtonStyle { plain, circular }
@@ -105,18 +106,29 @@ class _AppPopupMenuButtonState<T> extends State<AppPopupMenuButton<T>> {
     final trigger = widget.child != null
         ? Tooltip(
             message: tooltip,
-            child: InkWell(
+            child: Semantics(
+              button: true,
+              enabled: widget.enabled,
               onTap: widget.enabled ? _show : null,
-              borderRadius: BorderRadius.circular(widget.anchorRadius ?? 24),
-              child: widget.child,
+              child: InkWell(
+                excludeFromSemantics: true,
+                onTap: widget.enabled ? _show : null,
+                borderRadius: BorderRadius.circular(widget.anchorRadius ?? 24),
+                child: widget.child,
+              ),
             ),
           )
         : widget.buttonStyle == AppMenuButtonStyle.circular
-        ? GlassControlSurface(
-            color: Theme.of(context).colorScheme.surfaceContainerHigh,
-            shape: const CircleBorder(),
-            enabled: widget.enabled,
-            child: iconButton,
+        ? GlassIconButton(
+            icon: widget.icon ?? const Icon(Icons.more_vert_rounded),
+            iconSize: widget.iconSize,
+            padding: widget.padding,
+            tooltip: tooltip,
+            onPressed: widget.enabled ? _show : null,
+            blurBackground:
+                context.findAncestorWidgetOfExactType<GlassTopBar>() == null,
+            // The route owns the trigger's single spring and visibility below.
+            animatePress: false,
           )
         : iconButton;
     // Retain the trigger's layout and focus while the route owns its surface.
@@ -421,6 +433,13 @@ class _AppMenuTile<T> extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final content = item.child;
     final tile = content is ListTile ? content : null;
+    final tileTheme = ListTileTheme.of(context);
+    final iconColor = tile == null
+        ? scheme.onSurfaceVariant
+        : tile.iconColor ?? tileTheme.iconColor ?? scheme.onSurfaceVariant;
+    final textColor = tile == null
+        ? scheme.onSurface
+        : tile.textColor ?? tileTheme.textColor ?? scheme.onSurface;
     return Semantics(
       selected: selected,
       enabled: item.enabled,
@@ -444,10 +463,10 @@ class _AppMenuTile<T> extends StatelessWidget {
                   vertical: 10,
                 ),
                 child: IconTheme.merge(
-                  data: IconThemeData(color: scheme.onSurfaceVariant, size: 21),
+                  data: IconThemeData(color: iconColor, size: 21),
                   child: DefaultTextStyle.merge(
                     style: TextStyle(
-                      color: scheme.onSurface,
+                      color: textColor,
                       fontSize: 14,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     ),

@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,11 +12,153 @@ import 'package:xxread/core/reader/reader_text_layout.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book_note.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/widgets/app_menu.dart';
+import 'package:xxread/widgets/elastic_press.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/glass_control_surface.dart';
 import 'package:xxread/widgets/reader_annotated_text_page.dart';
 import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_tap_observer.dart';
 
 void main() {
+  testWidgets('selection actions keep reader glass roles at large text scale', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      var highlights = 0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(320, 300));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
+              body: Stack(
+                children: [
+                  ReaderSelectionToolbar(
+                    palette: ReaderThemes.pureBlack,
+                    anchors: const TextSelectionToolbarAnchors(
+                      primaryAnchor: Offset(160, 150),
+                    ),
+                    onHighlight: () => highlights += 1,
+                    onNote: () {},
+                    onCopy: null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        IconTheme.of(tester.element(find.byIcon(Icons.more_vert))).color,
+        ReaderThemes.pureBlack.text,
+      );
+      expect(find.byType(GlassTextButton), findsAtLeastNWidgets(2));
+      for (final element in find.byType(GlassTextButton).evaluate()) {
+        final size = tester.getSize(
+          find.byElementPredicate((candidate) => candidate == element),
+        );
+        expect(size.width, greaterThanOrEqualTo(72));
+        expect(size.height, greaterThanOrEqualTo(44));
+      }
+
+      await tester.binding.setSurfaceSize(const Size(800, 300));
+      await tester.pumpAndSettle();
+      expect(find.byType(GlassTextButton), findsNWidgets(3));
+      final firstAction = find.byType(GlassTextButton).first;
+      expect(
+        find.descendant(of: firstAction, matching: find.byType(ElasticPress)),
+        findsOneWidget,
+      );
+      final actionSurface = tester.widget<GlassControlSurface>(
+        find.descendant(
+          of: firstAction,
+          matching: find.byType(GlassControlSurface),
+        ),
+      );
+      expect(actionSurface.blurBackground, isFalse);
+      expect(actionSurface.brightness, ReaderThemes.pureBlack.brightness);
+      expect(actionSurface.border?.color, ReaderThemes.pureBlack.border);
+      final copyButton = tester.widget<TextButton>(
+        find.ancestor(
+          of: find.text(
+            MaterialLocalizations.of(
+              tester.element(find.byType(ReaderSelectionToolbar)),
+            ).copyButtonLabel,
+          ),
+          matching: find.byType(TextButton),
+        ),
+      );
+      expect(copyButton.onPressed, isNull);
+      final copyIcon = tester.widget<Icon>(
+        find.byIcon(Icons.content_copy_rounded),
+      );
+      final copyLabel = tester.widget<Text>(
+        find.text(
+          MaterialLocalizations.of(
+            tester.element(find.byType(ReaderSelectionToolbar)),
+          ).copyButtonLabel,
+        ),
+      );
+      expect(copyIcon.color?.a, closeTo(0.38, 0.001));
+      expect(copyLabel.style?.color?.a, closeTo(0.38, 0.001));
+      final copySurface = tester
+          .widgetList<GlassControlSurface>(
+            find.descendant(
+              of: find.byType(GlassTextButton),
+              matching: find.byType(GlassControlSurface),
+            ),
+          )
+          .singleWhere((surface) => !surface.enabled);
+      expect(copySurface.enabled, isFalse);
+      await tester.tap(find.text('高亮'));
+      expect(highlights, 1);
+
+      final more = find.byKey(const ValueKey('reader-selection-more'));
+      final moreSemantics = tester
+          .getSemantics(find.byIcon(Icons.more_horiz_rounded))
+          .getSemanticsData();
+      expect(moreSemantics.flagsCollection.isButton, isTrue);
+      expect(moreSemantics.flagsCollection.isEnabled, ui.Tristate.isTrue);
+      expect(
+        find.descendant(of: more, matching: find.byType(ElasticPress)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: more, matching: find.byType(GlassControlSurface)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: more, matching: find.byType(GlassTextButton)),
+        findsNothing,
+      );
+      expect(tester.widget<AppPopupMenuButton<String>>(more).child, isNotNull);
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      expect(find.text('分享'), findsOneWidget);
+      final shareParagraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.text('分享'), matching: find.byType(RichText)),
+      );
+      expect(shareParagraph.text.style?.color, ReaderThemes.pureBlack.text);
+      expect(
+        IconTheme.of(
+          tester.element(find.byIcon(Icons.ios_share_rounded)),
+        ).color,
+        ReaderThemes.pureBlack.text,
+      );
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('sentence tap consumes page tap on either half of a glyph', (
     tester,
   ) async {

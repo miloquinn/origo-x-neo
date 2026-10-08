@@ -5,7 +5,7 @@ import '../utils/page_style_helper.dart';
 import '../utils/system_ui_helper.dart';
 import 'glass_top_bar.dart';
 import 'app_menu.dart';
-import 'glass_control_surface.dart';
+import 'glass_buttons.dart';
 
 /// Shared navigation shell for pushed secondary pages.
 ///
@@ -71,8 +71,6 @@ class FloatingSubpageScaffold extends StatelessWidget {
       systemTopInset: systemTopInset,
       contentHeight: chromeContentHeight,
       titleFontSize: 22,
-      centerTitleSideInset:
-          ((actions.isEmpty ? 1 : actions.length) * 48).toDouble() + 16,
       leading: canPop
           ? FloatingSubpageAction(
               key: const ValueKey('floating-subpage-back'),
@@ -231,30 +229,15 @@ class FloatingSubpageAction extends StatelessWidget {
   final double iconSize;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return SizedBox.square(
-      dimension: 48,
-      child: GlassControlSurface(
-        color: scheme.surfaceContainerHigh,
-        blurBackground:
-            context.findAncestorWidgetOfExactType<GlassTopBar>() == null,
-        shape: const CircleBorder(),
-        enabled: onPressed != null,
-        child: IconButton(
-          tooltip: tooltip,
-          onPressed: onPressed,
-          icon: Icon(icon),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            disabledBackgroundColor: Colors.transparent,
-            shape: const CircleBorder(),
-            iconSize: iconSize,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => GlassIconButton(
+    dimension: 48,
+    icon: Icon(icon),
+    iconSize: iconSize,
+    tooltip: tooltip,
+    onPressed: onPressed,
+    blurBackground:
+        context.findAncestorWidgetOfExactType<GlassTopBar>() == null,
+  );
 }
 
 class FloatingSubpageMenuAction<T> extends StatelessWidget {

@@ -14,6 +14,8 @@ import 'package:xxread/models/book_note.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/app_menu.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/glass_control_surface.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_text_page_content.dart';
@@ -420,24 +422,31 @@ class ReaderSelectionToolbar extends StatelessWidget {
     return TextSelectionToolbar(
       anchorAbove: anchors.primaryAnchor,
       anchorBelow: anchors.secondaryAnchor ?? anchors.primaryAnchor,
-      toolbarBuilder: (context, child) => ReaderControlBar(
-        palette: palette,
-        isTopBar: true,
-        child: Material(
-          key: const ValueKey('reader-selection-toolbar'),
-          color: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          child: child,
+      toolbarBuilder: (context, child) => IconButtonTheme(
+        data: IconButtonThemeData(
+          style: IconButton.styleFrom(foregroundColor: palette.text),
+        ),
+        child: ReaderControlBar(
+          palette: palette,
+          isTopBar: true,
+          child: Material(
+            key: const ValueKey('reader-selection-toolbar'),
+            color: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            child: child,
+          ),
         ),
       ),
       children: [
         _ReaderSelectionAction(
+          palette: palette,
           icon: Icons.auto_awesome_rounded,
           label: context.l10n.highlights,
           color: palette.accent,
           onPressed: onHighlight,
         ),
         _ReaderSelectionAction(
+          palette: palette,
           icon: Icons.mode_comment_outlined,
           label: context.l10n.notes,
           color: palette.text,
@@ -445,6 +454,7 @@ class ReaderSelectionToolbar extends StatelessWidget {
         ),
         if (onSearch != null)
           _ReaderSelectionAction(
+            palette: palette,
             icon: Icons.search_rounded,
             label: '搜索',
             color: palette.text,
@@ -452,6 +462,7 @@ class ReaderSelectionToolbar extends StatelessWidget {
           ),
         if (onPurify != null)
           _ReaderSelectionAction(
+            palette: palette,
             icon: Icons.auto_fix_high_rounded,
             label: context.l10n.readerPurifySelection,
             color: palette.text,
@@ -459,12 +470,14 @@ class ReaderSelectionToolbar extends StatelessWidget {
           ),
         if (onAskAi != null)
           _ReaderSelectionAction(
+            palette: palette,
             icon: Icons.auto_awesome_outlined,
             label: context.l10n.readerAskAi,
             color: palette.text,
             onPressed: onAskAi,
           ),
         _ReaderSelectionAction(
+          palette: palette,
           icon: Icons.content_copy_rounded,
           label: material.copyButtonLabel,
           color: palette.text,
@@ -483,53 +496,76 @@ class _ReaderSelectionMoreAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppPopupMenuButton<String>(
-      key: const ValueKey('reader-selection-more'),
-      tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
-      color: palette.background,
-      icon: Icon(Icons.more_horiz_rounded, color: palette.text),
-      itemBuilder: (context) => const [
-        PopupMenuItem(
-          value: 'share',
-          child: ListTile(
-            leading: Icon(Icons.ios_share_rounded),
-            title: Text('分享'),
+    return ListTileTheme.merge(
+      textColor: palette.text,
+      iconColor: palette.text,
+      child: AppPopupMenuButton<String>(
+        key: const ValueKey('reader-selection-more'),
+        tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+        color: palette.background,
+        anchorRadius: 22,
+        child: SizedBox.square(
+          dimension: 44,
+          child: GlassControlSurface(
+            shape: const CircleBorder(),
+            color: palette.controlFill.withValues(alpha: 0.58),
+            brightness: palette.brightness,
+            border: BorderSide(color: palette.border),
+            blurBackground: false,
+            child: Center(
+              child: Icon(
+                Icons.more_horiz_rounded,
+                color: palette.text,
+                size: 22,
+              ),
+            ),
           ),
         ),
-        PopupMenuItem(
-          value: 'translate',
-          child: ListTile(
-            leading: Icon(Icons.translate_rounded),
-            title: Text('翻译'),
+        itemBuilder: (context) => const [
+          PopupMenuItem(
+            value: 'share',
+            child: ListTile(
+              leading: Icon(Icons.ios_share_rounded),
+              title: Text('分享'),
+            ),
           ),
-        ),
-        PopupMenuItem(
-          value: 'read',
-          child: ListTile(
-            leading: Icon(Icons.volume_up_outlined),
-            title: Text('朗读'),
+          PopupMenuItem(
+            value: 'translate',
+            child: ListTile(
+              leading: Icon(Icons.translate_rounded),
+              title: Text('翻译'),
+            ),
           ),
-        ),
-        PopupMenuItem(
-          value: 'feedback',
-          child: ListTile(
-            leading: Icon(Icons.flag_outlined),
-            title: Text('反馈'),
+          PopupMenuItem(
+            value: 'read',
+            child: ListTile(
+              leading: Icon(Icons.volume_up_outlined),
+              title: Text('朗读'),
+            ),
           ),
-        ),
-      ],
+          PopupMenuItem(
+            value: 'feedback',
+            child: ListTile(
+              leading: Icon(Icons.flag_outlined),
+              title: Text('反馈'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _ReaderSelectionAction extends StatelessWidget {
   const _ReaderSelectionAction({
+    required this.palette,
     required this.icon,
     required this.label,
     required this.color,
     required this.onPressed,
   });
 
+  final ReaderThemePalette palette;
   final IconData icon;
   final String label;
   final Color color;
@@ -537,38 +573,36 @@ class _ReaderSelectionAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 72, minHeight: 44),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: onPressed == null
-                    ? color.withValues(alpha: 0.38)
-                    : color,
+    final contentColor = onPressed == null
+        ? color.withValues(alpha: 0.38)
+        : color;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 72),
+      child: GlassTextButton(
+        onPressed: onPressed,
+        blurBackground: false,
+        color: palette.controlFill.withValues(alpha: 0.58),
+        foregroundColor: contentColor,
+        brightness: palette.brightness,
+        border: BorderSide(color: palette.border),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: contentColor),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: contentColor,
+                fontSize: 12,
+                height: 1,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: onPressed == null
-                      ? color.withValues(alpha: 0.38)
-                      : color,
-                  fontSize: 12,
-                  height: 1,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

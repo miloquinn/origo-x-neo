@@ -9,6 +9,7 @@ import 'package:xxread/widgets/reader_settings_controls.dart';
 import 'package:xxread/widgets/reader_theme_background.dart';
 import 'package:xxread/widgets/side_toast.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
 
 class ReaderCustomThemePage extends StatefulWidget {
   const ReaderCustomThemePage({
@@ -152,7 +153,9 @@ class _ReaderCustomThemePageState extends State<ReaderCustomThemePage> {
         backgroundColor: palette.background,
         decoration: BoxDecoration(color: palette.background),
         actions: [
-          TextButton(
+          GlassTextButton(
+            minimumHeight: 48,
+            blurBackground: false,
             onPressed: _resetTheme,
             child: Text(context.l10n.readerCustomThemeReset),
           ),

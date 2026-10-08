@@ -49,6 +49,7 @@ import 'package:xxread/widgets/app_menu.dart';
 import 'package:xxread/widgets/generated_book_cover.dart';
 import 'package:xxread/widgets/scrolling_text.dart';
 import 'package:xxread/widgets/side_toast.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/source_cover_image.dart';
 
 import 'import_book/import_book_page.dart';

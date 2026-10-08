@@ -160,10 +160,10 @@ extension _LibraryPageChrome on _LibraryPageState {
       child: Row(
         children: [
           if (_selection.isActive) ...[
-            IconButton(
+            GlassToolbarButton(
               tooltip: context.l10n.cancel,
               onPressed: _exitSelectionMode,
-              icon: const Icon(Icons.close_rounded),
+              icon: Icons.close_rounded,
             ),
             const SizedBox(width: 4),
           ],
@@ -185,7 +185,7 @@ extension _LibraryPageChrome on _LibraryPageState {
             ),
           ),
           if (_selection.isActive)
-            TextButton(
+            GlassTextButton(
               onPressed: _selectAllVisibleBooks,
               child: Text(context.l10n.librarySelectAll),
             )
@@ -212,24 +212,22 @@ extension _LibraryPageChrome on _LibraryPageState {
             const SizedBox(width: 8),
             _LibraryFilterButton(
               active: _selectedFilter != _LibraryFilter.all,
-              decoration: (active) => _panelDecoration(
-                radius: 22,
-                stronger: true,
-                color: active
-                    ? scheme.primaryContainer
-                    : (_isMaterial3Style
-                          ? scheme.surfaceContainer
-                          : palette.card),
-              ),
+              color: _selectedFilter != _LibraryFilter.all
+                  ? scheme.primaryContainer
+                  : (_isMaterial3Style
+                        ? scheme.surfaceContainer
+                        : palette.card),
               iconColor: _selectedFilter != _LibraryFilter.all
                   ? scheme.onPrimaryContainer
                   : palette.iconMuted,
               onTapWithRect: _showFilterMenu,
             ),
             const SizedBox(width: 8),
-            InkWell(
-              borderRadius: BorderRadius.circular(22),
-              onTap: () async {
+            GlassToolbarButton(
+              icon: Icons.add_rounded,
+              foregroundColor: palette.iconMuted,
+              color: _isMaterial3Style ? scheme.surfaceContainer : palette.card,
+              onPressed: () async {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -240,18 +238,6 @@ extension _LibraryPageChrome on _LibraryPageState {
                   _loadBooks();
                 }
               },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: _panelDecoration(
-                  radius: 22,
-                  stronger: true,
-                  color: _isMaterial3Style
-                      ? scheme.surfaceContainer
-                      : palette.card,
-                ),
-                child: Icon(Icons.add_rounded, color: palette.iconMuted),
-              ),
             ),
           ],
         ],
@@ -296,27 +282,15 @@ extension _LibraryPageChrome on _LibraryPageState {
   }) {
     final palette = PageStyleHelper.palette(context);
     final scheme = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: onTap,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: _panelDecoration(
-            radius: 22,
-            stronger: true,
-            color: active
-                ? scheme.primaryContainer
-                : (_isMaterial3Style ? scheme.surfaceContainer : palette.card),
-          ),
-          child: Icon(
-            icon,
-            color: active ? scheme.onPrimaryContainer : palette.iconMuted,
-          ),
-        ),
-      ),
+    return GlassToolbarButton(
+      icon: icon,
+      tooltip: tooltip,
+      onPressed: onTap,
+      highlighted: active,
+      color: active
+          ? scheme.primaryContainer
+          : (_isMaterial3Style ? scheme.surfaceContainer : palette.card),
+      foregroundColor: active ? scheme.onPrimaryContainer : palette.iconMuted,
     );
   }
 

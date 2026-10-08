@@ -2,8 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
 
 void main() {
+  testWidgets('header reserves the measured width of text actions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FloatingSubpageScaffold(
+          title: 'A long reader configuration title',
+          actions: [
+            GlassTextButton(
+              onPressed: () {},
+              minimumHeight: 48,
+              blurBackground: false,
+              child: const Text('Reset settings'),
+            ),
+          ],
+          body: const SizedBox.shrink(),
+        ),
+      ),
+    );
+    final title = tester.getRect(
+      find.text('A long reader configuration title'),
+    );
+    final action = tester.getRect(find.byType(GlassTextButton));
+    final back = tester.getRect(
+      find.byKey(const ValueKey('floating-subpage-back')),
+    );
+    expect(action.width, greaterThan(48));
+    expect(title.left, greaterThanOrEqualTo(back.right + 16));
+    expect(title.right, lessThanOrEqualTo(action.left - 16));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('content extends behind the gesture area with safe scroll end', (
     tester,
   ) async {

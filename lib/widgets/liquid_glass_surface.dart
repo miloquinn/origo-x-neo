@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 
 import '../utils/glass_config.dart';
 import '../utils/ui_style.dart';
+import 'liquid_glass_transform.dart';
 
 /// A live refracting backdrop with a lightly tinted, readable foreground.
 /// Callers own clipping and shadows; content is painted after the filter.
@@ -228,14 +229,14 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
   @override
   void paint(PaintingContext context, Offset offset) {
     if (size.isEmpty) return;
-    layer ??= _LiquidBackdropLayer(this);
+    layer ??= _LiquidBackdropLayer(this, offset);
+    (layer! as _LiquidBackdropLayer).paintOffset = offset;
     context.pushLayer(layer!, super.paint, offset);
   }
 
-  ui.ImageFilter _resolveFilter() {
-    final transform = getTransformTo(null);
-    final determinant = transform.invert();
-    if (!determinant.isFinite || determinant.abs() < 0.000001) {
+  ui.ImageFilter _resolveFilter(Matrix4 localToScene) {
+    final transform = invertLiquidGlassSceneTransform(localToScene, pixelRatio);
+    if (transform == null) {
       return ui.ImageFilter.blur(
         sigmaX: 2.5 * visibility,
         sigmaY: 2.5 * visibility,
@@ -259,8 +260,8 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
       y.dx,
       x.dy,
       y.dy,
-      origin.dx * pixelRatio,
-      origin.dy * pixelRatio,
+      origin.dx,
+      origin.dy,
       size.width * pixelRatio,
       size.height * pixelRatio,
       math.min(radius, size.shortestSide / 2) * pixelRatio,
@@ -279,17 +280,22 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
 /// Transform animations and scrolling can reuse a clean RepaintBoundary.
 /// Refresh uniforms when the scene is composed, even without child painting.
 class _LiquidBackdropLayer extends ContainerLayer {
-  _LiquidBackdropLayer(this.render);
+  _LiquidBackdropLayer(this.render, this.paintOffset);
 
   final _RenderLiquidBackdrop render;
+  Offset paintOffset;
 
   @override
   bool get alwaysNeedsAddToScene => true;
 
   @override
   void addToScene(ui.SceneBuilder builder) {
+    final localToScene = collectLiquidGlassLocalToSceneTransform(
+      this,
+      paintOffset,
+    );
     engineLayer = builder.pushBackdropFilter(
-      render._resolveFilter(),
+      render._resolveFilter(localToScene),
       oldLayer: engineLayer as ui.BackdropFilterEngineLayer?,
     );
     addChildrenToScene(builder);

@@ -12,6 +12,8 @@ class GlassControlSurface extends StatelessWidget {
     required this.child,
     this.shape = const StadiumBorder(),
     this.color,
+    this.brightness,
+    this.border,
     this.enabled = true,
     this.emphasized = false,
     this.useGlass = true,
@@ -23,6 +25,8 @@ class GlassControlSurface extends StatelessWidget {
   final Widget child;
   final OutlinedBorder shape;
   final Color? color;
+  final Brightness? brightness;
+  final BorderSide? border;
   final bool enabled;
   final bool emphasized;
   final bool useGlass;
@@ -43,7 +47,7 @@ class GlassControlSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final brightness = scheme.brightness;
+    final brightness = this.brightness ?? scheme.brightness;
     final glassEnabled = usesGlass(context, useGlass: useGlass);
     final baseColor = color ?? scheme.secondaryContainer;
     if (glassEnabled && GlassEffectConfig.usesLiquidGlass) {
@@ -53,6 +57,7 @@ class GlassControlSurface extends StatelessWidget {
         child: LiquidGlassSurface(
           shape: shape,
           color: baseColor,
+          brightness: brightness,
           filterBackground: blurBackground,
           child: Padding(
             // The frosted ShapeDecoration reserves its one-pixel border.
@@ -63,13 +68,15 @@ class GlassControlSurface extends StatelessWidget {
       );
     }
     final resolvedShape = shape.copyWith(
-      side: BorderSide(
-        color: _borderColor(
-          scheme: scheme,
-          brightness: brightness,
-          glassEnabled: glassEnabled,
-        ),
-      ),
+      side:
+          border ??
+          BorderSide(
+            color: _borderColor(
+              scheme: scheme,
+              brightness: brightness,
+              glassEnabled: glassEnabled,
+            ),
+          ),
     );
     final decoration = glassEnabled
         ? _glassDecoration(

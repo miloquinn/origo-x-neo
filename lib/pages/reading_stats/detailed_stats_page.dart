@@ -16,6 +16,7 @@ import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/generated_book_cover.dart';
+import 'package:xxread/widgets/glass_control_surface.dart';
 
 import '../home/home_mobile_chrome.dart';
 import '../home/widgets/home_bounce_navigation_item.dart';
@@ -403,32 +404,35 @@ class _DetailedStatsPageState extends State<DetailedStatsPage>
             ),
           )
           .toList(),
-      child: Container(
-        height: 42,
-        padding: EdgeInsets.symmetric(horizontal: compact ? 11 : 13),
-        decoration: BoxDecoration(
-          color: palette.softAccent,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: palette.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.calendar_today_rounded, color: palette.accent, size: 16),
-            if (!compact) ...[
-              const SizedBox(width: 7),
-              Text(
-                _timeRangeLabel(_selectedTimeRange),
-                style: TextStyle(
-                  color: palette.accent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
+      child: GlassControlSurface(
+        color: palette.softAccent,
+        blurBackground: false,
+        child: Container(
+          height: 42,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 11 : 13),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_today_rounded,
+                color: palette.accent,
+                size: 16,
               ),
+              if (!compact) ...[
+                const SizedBox(width: 7),
+                Text(
+                  _timeRangeLabel(_selectedTimeRange),
+                  style: TextStyle(
+                    color: palette.accent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              const SizedBox(width: 2),
+              Icon(Icons.expand_more_rounded, color: palette.accent, size: 18),
             ],
-            const SizedBox(width: 2),
-            Icon(Icons.expand_more_rounded, color: palette.accent, size: 18),
-          ],
+          ),
         ),
       ),
     );

@@ -540,8 +540,9 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
           tooltip: context.l10n.cancel,
           onTap: _libraryController.exitSelection,
         );
-        trailing = TextButton(
+        trailing = GlassTextButton(
           onPressed: _libraryController.selectAllVisible,
+          blurBackground: false,
           child: Text(context.l10n.librarySelectAll),
         );
       } else {
@@ -571,18 +572,6 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
               valueListenable: _libraryController.filterActive,
               builder: (context, active, _) => _LibraryTopBarFilterButton(
                 active: active,
-                buildButton:
-                    ({
-                      required IconData icon,
-                      required VoidCallback onTap,
-                      String? tooltip,
-                      bool highlighted = false,
-                    }) => _buildTopBarActionButton(
-                      icon: icon,
-                      onTap: onTap,
-                      tooltip: tooltip,
-                      highlighted: highlighted,
-                    ),
                 onTapWithRect: _libraryController.showFilterMenu,
               ),
             ),
@@ -695,41 +684,19 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
   }) {
     final scheme = Theme.of(context).colorScheme;
     final palette = PageStyleHelper.palette(context);
-    final button = InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: highlighted
-              ? scheme.primaryContainer
-              : (_isMaterial3Style
-                    ? scheme.surfaceContainer
-                    : palette.cardStrong),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: highlighted
-                ? scheme.primary.withValues(alpha: 0.35)
-                : scheme.outline.withValues(
-                    alpha: _isMaterial3Style ? 0.22 : 0.12,
-                  ),
-            width: 0.6,
-          ),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: highlighted
-              ? scheme.onPrimaryContainer
-              : scheme.onSurface.withValues(alpha: 0.78),
-        ),
-      ),
+    return GlassToolbarButton(
+      icon: icon,
+      tooltip: tooltip,
+      onPressed: onTap,
+      highlighted: highlighted,
+      blurBackground: false,
+      color: highlighted
+          ? scheme.primaryContainer
+          : (_isMaterial3Style ? scheme.surfaceContainer : palette.cardStrong),
+      foregroundColor: highlighted
+          ? scheme.onPrimaryContainer
+          : scheme.onSurface.withValues(alpha: 0.78),
     );
-    if (tooltip == null || tooltip.isEmpty) {
-      return button;
-    }
-    return Tooltip(message: tooltip, child: button);
   }
 
   Future<void> _switchToTab(int index) async {
@@ -886,29 +853,22 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
 /// 书库筛选按钮：把按钮的屏幕位置传给筛选菜单，菜单贴着按钮弹出。
 class _LibraryTopBarFilterButton extends StatelessWidget {
   final bool active;
-  final Widget Function({
-    required IconData icon,
-    required VoidCallback onTap,
-    String? tooltip,
-    bool highlighted,
-  })
-  buildButton;
   final Future<void> Function(Rect anchor) onTapWithRect;
 
   const _LibraryTopBarFilterButton({
     required this.active,
-    required this.buildButton,
     required this.onTapWithRect,
   });
 
   @override
   Widget build(BuildContext context) {
     return Builder(
-      builder: (buttonContext) => buildButton(
+      builder: (buttonContext) => GlassToolbarButton(
         icon: active ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
         tooltip: buttonContext.l10n.libraryFilterTooltip,
         highlighted: active,
-        onTap: () {
+        blurBackground: false,
+        onPressed: () {
           final box = buttonContext.findRenderObject()! as RenderBox;
           final rect = box.localToGlobal(Offset.zero) & box.size;
           unawaited(onTapWithRect(rect));

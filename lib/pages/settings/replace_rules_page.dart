@@ -336,11 +336,11 @@ class _ReplaceRulesPageState extends State<ReplaceRulesPage> {
       title: l10n.replaceRulesTitle,
       actions: [
         if (_selectionMode)
-          IconButton(
+          FloatingSubpageAction(
             key: const ValueKey('replaceRulesCloseSelection'),
+            icon: Icons.close_rounded,
             tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
             onPressed: () => setState(_exitSelectionMode),
-            icon: const Icon(Icons.close_rounded),
           )
         else
           FloatingSubpageMenuButton<_ReplaceRulesMenuAction>(

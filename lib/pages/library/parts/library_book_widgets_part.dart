@@ -376,39 +376,31 @@ Map<String, String> _sourceCoverHeaders(Book book) {
 /// 顶栏筛选按钮：点击时把自身在屏幕上的位置传给菜单定位。
 class _LibraryFilterButton extends StatelessWidget {
   final bool active;
-  final BoxDecoration Function(bool active) decoration;
+  final Color color;
   final Color iconColor;
   final Future<void> Function(Rect anchor) onTapWithRect;
 
   const _LibraryFilterButton({
     required this.active,
-    required this.decoration,
+    required this.color,
     required this.iconColor,
     required this.onTapWithRect,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: context.l10n.libraryFilterTooltip,
-      child: Builder(
-        builder: (buttonContext) => InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: () {
-            final box = buttonContext.findRenderObject()! as RenderBox;
-            final rect = box.localToGlobal(Offset.zero) & box.size;
-            unawaited(onTapWithRect(rect));
-          },
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: decoration(active),
-            child: Icon(
-              active ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
-              color: iconColor,
-            ),
-          ),
-        ),
+    return Builder(
+      builder: (buttonContext) => GlassToolbarButton(
+        icon: active ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
+        tooltip: context.l10n.libraryFilterTooltip,
+        highlighted: active,
+        color: color,
+        foregroundColor: iconColor,
+        onPressed: () {
+          final box = buttonContext.findRenderObject()! as RenderBox;
+          final rect = box.localToGlobal(Offset.zero) & box.size;
+          unawaited(onTapWithRect(rect));
+        },
       ),
     );
   }

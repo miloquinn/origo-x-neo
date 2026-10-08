@@ -142,8 +142,8 @@ class _SourceDebugPageState extends State<SourceDebugPage> {
     return FloatingSubpageScaffold(
       title: context.l10n.sourceDebugTitle,
       actions: [
-        IconButton(
-          icon: const Icon(Icons.delete_sweep_rounded),
+        FloatingSubpageAction(
+          icon: Icons.delete_sweep_rounded,
           tooltip: context.l10n.sourceDebugClear,
           onPressed: _events.isEmpty ? null : _clear,
         ),

@@ -471,19 +471,13 @@ extension _NativeReaderShell on _NativeReaderPageState {
                 Positioned(
                   left: 20,
                   top: 10,
-                  child: Material(
-                    color: _readerTheme.surface.withValues(alpha: 0.88),
-                    shape: const CircleBorder(),
-                    child: IconButton(
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).backButtonTooltip,
-                      onPressed: () => unawaited(_exitReader()),
-                      icon: Icon(
-                        Icons.arrow_back_rounded,
-                        color: _readerTheme.text,
-                      ),
-                    ),
+                  child: ReaderControlIconButton(
+                    palette: _readerTheme,
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).backButtonTooltip,
+                    onPressed: () => unawaited(_exitReader()),
+                    icon: Icons.arrow_back_rounded,
                   ),
                 ),
             ],

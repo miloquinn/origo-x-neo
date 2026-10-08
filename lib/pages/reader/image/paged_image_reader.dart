@@ -21,6 +21,7 @@ import 'package:xxread/pages/reader/image/image_reader_chrome.dart';
 import 'package:xxread/utils/book_open_transition.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/widgets/reader_control_chrome.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
 import 'package:xxread/widgets/reader_theme_background.dart';
 
@@ -934,16 +935,13 @@ class PagedReaderMessageScaffold extends StatelessWidget {
                 Positioned(
                   left: 20,
                   top: 10,
-                  child: Material(
-                    color: palette.surface.withValues(alpha: 0.88),
-                    shape: const CircleBorder(),
-                    child: IconButton(
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).backButtonTooltip,
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: Icon(Icons.arrow_back_rounded, color: palette.text),
-                    ),
+                  child: ReaderControlIconButton(
+                    palette: palette,
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).backButtonTooltip,
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: Icons.arrow_back_rounded,
                   ),
                 ),
               ],

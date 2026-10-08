@@ -199,11 +199,11 @@ class _SourceEditPageState extends State<SourceEditPage>
         title: copy.edit,
         onBack: _back,
         actions: [
-          IconButton(
+          FloatingSubpageAction(
             key: const Key('sourceEditDebug'),
+            icon: Icons.bug_report_outlined,
             tooltip: copy.debug,
             onPressed: _loadFailed || _saving ? null : _debug,
-            icon: const Icon(Icons.bug_report_outlined),
           ),
         ],
         bottomNavigationBar: _loadFailed

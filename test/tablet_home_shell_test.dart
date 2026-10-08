@@ -18,6 +18,7 @@ import 'package:xxread/pages/home/widgets/home_bounce_navigation_item.dart';
 import 'package:xxread/pages/home/widgets/home_navigation_item.dart';
 import 'package:xxread/pages/home/widgets/home_tablet_toolbar.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/services/library/download_task_controller.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
@@ -594,13 +595,22 @@ void main() {
       of: toolbar,
       matching: find.byIcon(Icons.downloading_rounded),
     );
-    final inactiveColor = tester.widget<Icon>(downloadIcon).color;
+    final downloadButton = find.ancestor(
+      of: downloadIcon,
+      matching: find.byType(GlassToolbarButton),
+    );
+    final inactiveColor = tester
+        .widget<GlassToolbarButton>(downloadButton)
+        .foregroundColor;
     final inactiveBackdrop = tester.widget<GradientTopBackdrop>(backdropFinder);
     downloads.reportActivity(true);
     await tester.pump();
     final activeBackdrop = tester.widget<GradientTopBackdrop>(backdropFinder);
     expect(activeBackdrop, isNot(same(inactiveBackdrop)));
-    expect(tester.widget<Icon>(downloadIcon).color, isNot(inactiveColor));
+    expect(
+      tester.widget<GlassToolbarButton>(downloadButton).foregroundColor,
+      isNot(inactiveColor),
+    );
     for (var progress = 0; progress < 3; progress++) {
       downloads.reportActivity(true);
       await tester.pump();
@@ -611,12 +621,19 @@ void main() {
     }
     downloads.reportActivity(false);
     await tester.pump();
-    expect(tester.widget<Icon>(downloadIcon).color, inactiveColor);
+    expect(
+      tester.widget<GlassToolbarButton>(downloadButton).foregroundColor,
+      inactiveColor,
+    );
 
     final libraryGrid = tester.widget<GridView>(
       find.byKey(const ValueKey('library-cover-grid')),
     );
     final libraryPadding = libraryGrid.padding! as EdgeInsets;
+    expect(
+      find.descendant(of: toolbar, matching: find.byType(GlassToolbarButton)),
+      findsNWidgets(4),
+    );
     final libraryTitle = find.descendant(
       of: find.byType(HomeTabletToolbar),
       matching: find.text('书架'),
@@ -648,6 +665,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('library-delete-selected')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: toolbar, matching: find.byType(GlassToolbarButton)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: toolbar, matching: find.byType(GlassTextButton)),
       findsOneWidget,
     );
     expect(tester.getTopLeft(toolbar).dy, lessThan(50));

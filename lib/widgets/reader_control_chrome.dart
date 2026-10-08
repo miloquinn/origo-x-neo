@@ -8,6 +8,7 @@ import '../core/reader/reader_auto_page_turn_controller.dart';
 import '../utils/glass_config.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
+import 'glass_buttons.dart';
 import 'reader_top_information_bar.dart';
 import 'liquid_glass_surface.dart';
 
@@ -219,15 +220,13 @@ class ReaderChromeOverlay extends StatelessWidget {
                                 : Icons.bookmark_border_rounded,
                           ),
                           if (onBookSettings != null)
-                            IconButton(
+                            ReaderControlIconButton(
                               key: const ValueKey('reader-more-menu'),
+                              palette: palette,
                               tooltip: MaterialLocalizations.of(
                                 context,
                               ).moreButtonTooltip,
-                              icon: Icon(
-                                Icons.more_horiz_rounded,
-                                color: palette.text,
-                              ),
+                              icon: Icons.more_horiz_rounded,
                               onPressed: onBookSettings,
                             ),
                         ],
@@ -327,38 +326,18 @@ class ReaderChromeOverlay extends StatelessWidget {
               ignoring: !visible || !readAloudActive,
               child: ExcludeSemantics(
                 excluding: !visible || !readAloudActive,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: palette.controlBar.withValues(alpha: 0.8),
-                    border: Border.all(
-                      color: palette.text.withValues(alpha: 0.1),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    key: const ValueKey('reader-aloud-locate'),
-                    tooltip: switch (Localizations.localeOf(
-                      context,
-                    ).languageCode) {
-                      'en' => 'Locate reading position',
-                      'ja' => '読み上げ位置に移動',
-                      _ => '定位朗读',
-                    },
-                    onPressed: onLocateReadAloud,
-                    color: palette.text,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 44,
-                      height: 44,
-                    ),
-                    icon: const Icon(Icons.my_location_rounded, size: 22),
-                  ),
+                child: ReaderControlIconButton(
+                  key: const ValueKey('reader-aloud-locate'),
+                  palette: palette,
+                  tooltip: switch (Localizations.localeOf(
+                    context,
+                  ).languageCode) {
+                    'en' => 'Locate reading position',
+                    'ja' => '読み上げ位置に移動',
+                    _ => '定位朗读',
+                  },
+                  onPressed: onLocateReadAloud,
+                  icon: Icons.my_location_rounded,
                 ),
               ),
             ),
@@ -580,33 +559,29 @@ class _ReaderAutoPageTurnControlState extends State<_ReaderAutoPageTurnControl>
                       ),
                     ),
                   ),
-                  IconButton(
+                  ReaderControlIconButton(
                     key: ValueKey(
                       controller.isRunning
                           ? 'reader-auto-page-turn-pause'
                           : 'reader-auto-page-turn-resume',
                     ),
+                    palette: widget.palette,
                     onPressed: controller.isRunning
                         ? () => controller.pause(smooth: true)
                         : (widget.onResume ?? controller.start),
                     tooltip: controller.isRunning
                         ? context.l10n.pause
                         : context.l10n.readerAutoPageTurnResume,
-                    icon: Icon(
-                      controller.isRunning
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                    ),
-                    color: widget.palette.text,
-                    visualDensity: VisualDensity.compact,
+                    icon: controller.isRunning
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
                   ),
-                  IconButton(
+                  ReaderControlIconButton(
                     key: const ValueKey('reader-auto-page-turn-stop'),
+                    palette: widget.palette,
                     onPressed: controller.stop,
                     tooltip: context.l10n.stop,
-                    icon: const Icon(Icons.stop_rounded),
-                    color: widget.palette.text,
-                    visualDensity: VisualDensity.compact,
+                    icon: Icons.stop_rounded,
                   ),
                 ],
               ),
@@ -644,44 +619,31 @@ class _ReaderAutoPageTurnShortcut extends StatelessWidget {
       final duration = MediaQuery.disableAnimationsOf(context)
           ? Duration.zero
           : const Duration(milliseconds: 280);
-      return AnimatedContainer(
-        duration: duration,
-        curve: Curves.easeOutCubic,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: palette.controlBar.withValues(alpha: running ? 0.96 : 0.8),
-          border: Border.all(
-            color: palette.text.withValues(alpha: running ? 0.22 : 0.1),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
+      return GlassIconButton(
+        key: const ValueKey('reader-auto-page-turn-shortcut'),
+        tooltip: running
+            ? context.l10n.pause
+            : controller.isActive
+            ? context.l10n.readerAutoPageTurnResume
+            : context.l10n.readerAutoPageTurnStart,
+        onPressed: running
+            ? () => controller.pause(smooth: true)
+            : (onResume ?? controller.start),
+        color: palette.controlBar.withValues(alpha: running ? 0.96 : 0.8),
+        foregroundColor: palette.text,
+        brightness: palette.brightness,
+        highlighted: running,
+        border: BorderSide(
+          color: palette.text.withValues(alpha: running ? 0.22 : 0.1),
         ),
-        child: IconButton(
-          key: const ValueKey('reader-auto-page-turn-shortcut'),
-          tooltip: running
-              ? context.l10n.pause
-              : controller.isActive
-              ? context.l10n.readerAutoPageTurnResume
-              : context.l10n.readerAutoPageTurnStart,
-          onPressed: running
-              ? () => controller.pause(smooth: true)
-              : (onResume ?? controller.start),
-          color: palette.text,
-          constraints: const BoxConstraints.tightFor(width: 44, height: 44),
-          icon: AnimatedSwitcher(
-            duration: duration,
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            child: Icon(
-              running ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              key: ValueKey(running),
-              size: 22,
-            ),
+        icon: AnimatedSwitcher(
+          duration: duration,
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: Icon(
+            running ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            key: ValueKey(running),
+            size: 22,
           ),
         ),
       );
@@ -842,29 +804,26 @@ class ReaderControlIconButton extends StatelessWidget {
             lightBlend: 0.22,
           )
         : palette.controlFill;
-    return IconButton.filledTonal(
+    return GlassIconButton(
       onPressed: onPressed,
       tooltip: tooltip,
       icon: Icon(icon, size: 22),
-      style: IconButton.styleFrom(
-        foregroundColor: palette.text,
-        backgroundColor: cleanControlFill.withValues(
-          alpha: glassEnabled
-              ? (palette.brightness == Brightness.light ? 0.76 : 0.58)
-              : 1.0,
-        ),
-        minimumSize: const Size.square(44),
-        maximumSize: const Size.square(44),
-        padding: EdgeInsets.zero,
-        side: BorderSide(
-          color: glassEnabled
-              ? Color.lerp(palette.border, Colors.white, 0.12)!.withValues(
-                  alpha: palette.brightness == Brightness.light ? 0.28 : 0.48,
-                )
-              : palette.border,
-          width: 0.8,
-        ),
-        shape: const CircleBorder(),
+      foregroundColor: palette.text,
+      brightness: palette.brightness,
+      border: BorderSide(
+        color: glassEnabled
+            ? Color.lerp(palette.border, Colors.white, 0.12)!.withValues(
+                alpha: palette.brightness == Brightness.light ? 0.28 : 0.48,
+              )
+            : palette.border,
+        width: 0.8,
+      ),
+      blurBackground:
+          context.findAncestorWidgetOfExactType<ReaderControlBar>() == null,
+      color: cleanControlFill.withValues(
+        alpha: glassEnabled
+            ? (palette.brightness == Brightness.light ? 0.76 : 0.58)
+            : 1.0,
       ),
     );
   }
