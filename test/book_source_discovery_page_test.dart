@@ -929,7 +929,12 @@ void main() {
       final row = find.byKey(const Key('bookSourceListReveal-source-20'));
       final reveal = find.descendant(
         of: row,
-        matching: find.byType(AnimatedBuilder),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is AnimatedBuilder &&
+              widget.animation is Animation<double>,
+          description: 'scalar list reveal animation',
+        ),
       );
       expect(reveal, findsOneWidget);
       final revealAnimation =
