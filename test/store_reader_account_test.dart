@@ -30,6 +30,151 @@ void main() {
     AppDistribution.debugReset();
   });
 
+  test(
+    'store startup displays cache before auth and config without StoreKit work',
+    () async {
+      AppDistribution.debugOverride(
+        channel: AppDistributionChannel.appleStore,
+        readerLicenseRequired: true,
+      );
+      const summaryCache = MemberAccountSummaryCache();
+      const membershipCache = MemberMembershipCache();
+      await summaryCache.save(
+        const MemberAccountSummary(
+          userId: _userId,
+          username: 'reader',
+          effectiveName: 'Reader',
+          premium: true,
+        ),
+      );
+      await membershipCache.save(
+        _userId,
+        const MemberMembership(
+          userId: _userId,
+          premium: true,
+          features: {},
+          entitlements: [],
+        ),
+      );
+      final authGate = Completer<void>();
+      final configGate = Completer<void>();
+      final localReady = Completer<void>();
+      final membershipApplied = Completer<void>();
+      var configRequests = 0;
+      final store = _TestStore();
+      final tokens = _Tokens(access: 'access', refresh: 'refresh');
+      final dio = Dio()
+        ..httpClientAdapter = _Adapter((request) async {
+          if (request.uri.path.endsWith('/config')) {
+            configRequests++;
+            await configGate.future;
+          }
+          if (request.uri.path == '/api/v1/auth/me') {
+            await authGate.future;
+            return _json(_session());
+          }
+          return _routes(request, access: 'lifetime');
+        });
+      final account = MemberAccountController(
+        api: MemberAccountApiClient(dio: dio, tokenStore: tokens),
+        summaryCache: summaryCache,
+        membershipCache: membershipCache,
+        purchaseStore: store,
+      );
+      account.addListener(() {
+        if (account.initialized && !localReady.isCompleted) {
+          localReady.complete();
+        }
+        if (account.membership != null && !membershipApplied.isCompleted) {
+          membershipApplied.complete();
+        }
+      });
+      final initialization = account.initialize();
+      addTearDown(() async {
+        if (!authGate.isCompleted) authGate.complete();
+        if (!configGate.isCompleted) configGate.complete();
+        await initialization.catchError((_) {});
+        account.dispose();
+        await store.close();
+      });
+
+      await localReady.future.timeout(const Duration(seconds: 5));
+      expect(AppDistribution.usesAppleBilling, isTrue);
+      expect(account.loading, isTrue);
+      expect(account.isAuthenticated, isFalse);
+      expect(account.premiumForDisplay, isTrue);
+      expect(account.hasPremiumAccess, isFalse);
+      expect(store.isAvailableCalls, 0);
+      expect(store.queryProductDetailsCalls, 0);
+      expect(store.restoreCalls, 0);
+
+      authGate.complete();
+      await membershipApplied.future.timeout(const Duration(seconds: 5));
+      expect(configRequests, 2);
+      expect(configGate.isCompleted, isFalse);
+      expect(account.isAuthenticated, isTrue);
+      expect(account.premiumForDisplay, isFalse);
+      expect(store.isAvailableCalls, 0);
+      expect(store.queryProductDetailsCalls, 0);
+
+      configGate.complete();
+      await initialization;
+      expect(account.storeBillingReady, isTrue);
+      expect(account.hasPermanentReaderAccess, isTrue);
+      expect(store.isAvailableCalls, 0);
+      expect(store.queryProductDetailsCalls, 0);
+      expect(store.restoreCalls, 0);
+    },
+  );
+
+  test(
+    'failed anonymous reader startup stays retryable until passive sync succeeds',
+    () async {
+      var readerAvailable = false;
+      var readerRequests = 0;
+      var configRequests = 0;
+      final dio = Dio()
+        ..httpClientAdapter = _Adapter((request) {
+          if (request.uri.path.endsWith('/config')) configRequests++;
+          if (request.uri.path == '/api/v1/membership/reader/status') {
+            readerRequests++;
+            if (!readerAvailable) {
+              return _json({
+                'detail': 'temporarily unavailable',
+              }, statusCode: 503);
+            }
+          }
+          return _routes(request, access: 'lifetime');
+        });
+      final account = MemberAccountController(
+        api: MemberAccountApiClient(dio: dio, tokenStore: _Tokens()),
+        // Keep recovery deterministic: this test exercises a passive lifecycle
+        // sync, rather than waiting for the scheduled retry timer.
+        membershipRetryDelay: const Duration(hours: 1),
+        accountSyncInterval: const Duration(minutes: 5),
+      );
+      addTearDown(account.dispose);
+
+      await account.initialize();
+      expect(account.initialized, isTrue);
+      expect(account.isAuthenticated, isFalse);
+      expect(configRequests, 2);
+      expect(readerRequests, 1);
+      expect(account.hasReaderAccess, isFalse);
+
+      readerAvailable = true;
+      await account.synchronize();
+      expect(readerRequests, 2);
+      expect(account.hasReaderAccess, isTrue);
+      expect(account.hasPermanentReaderAccess, isTrue);
+
+      final requestsAfterSuccess = configRequests;
+      await account.synchronize();
+      expect(readerRequests, 2);
+      expect(configRequests, requestsAfterSuccess);
+    },
+  );
+
   test('an expired trial cannot be offered again', () async {
     final fixture = _Fixture((request) {
       if (request.uri.path.endsWith('/reader/status')) {
@@ -1344,6 +1489,8 @@ class _TestStore implements PurchaseStore {
   final List<String> restoreProducts;
   PurchaseParam? lastPurchase;
   int restoreCalls = 0;
+  int isAvailableCalls = 0;
+  int queryProductDetailsCalls = 0;
   final _stream = StreamController<List<PurchaseDetails>>.broadcast();
   Future<void> close() => _stream.close();
   void emit(String product, String id) => _stream.add([
@@ -1362,23 +1509,30 @@ class _TestStore implements PurchaseStore {
   @override
   Stream<List<PurchaseDetails>> get purchaseStream => _stream.stream;
   @override
-  Future<bool> isAvailable() async => true;
+  Future<bool> isAvailable() async {
+    isAvailableCalls++;
+    return true;
+  }
+
   @override
-  Future<ProductDetailsResponse> queryProductDetails(Set<String> ids) async =>
-      ProductDetailsResponse(
-        productDetails: [
-          for (final id in ids)
-            ProductDetails(
-              id: id,
-              title: id,
-              description: id,
-              price: r'$8.99',
-              rawPrice: 8.99,
-              currencyCode: 'USD',
-            ),
-        ],
-        notFoundIDs: [],
-      );
+  Future<ProductDetailsResponse> queryProductDetails(Set<String> ids) async {
+    queryProductDetailsCalls++;
+    return ProductDetailsResponse(
+      productDetails: [
+        for (final id in ids)
+          ProductDetails(
+            id: id,
+            title: id,
+            description: id,
+            price: r'$8.99',
+            rawPrice: 8.99,
+            currencyCode: 'USD',
+          ),
+      ],
+      notFoundIDs: [],
+    );
+  }
+
   @override
   Future<bool> buyNonConsumable({required PurchaseParam purchaseParam}) async {
     lastPurchase = purchaseParam;

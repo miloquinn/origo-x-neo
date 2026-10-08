@@ -360,6 +360,65 @@ void main() {
     },
   );
 
+  testWidgets(
+    'cached Explore presentation suppresses pending text and repeat purchase',
+    (tester) async {
+      _usePlatform(TargetPlatform.iOS);
+      addTearDown(_resetPlatform);
+      final store = _FakeAppleStore();
+      final account = _CachedDisplayPremiumAccount(store: store);
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+      await _pumpPage(tester, account: account);
+      await tester.pumpAndSettle();
+
+      expect(account.hasPremiumAccess, isFalse);
+      expect(account.membership, isNull);
+      expect(find.byKey(const ValueKey('premium-active')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('premium-membership-source')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('premium-sync-failed')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('account-apple-purchase')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('premium-active-footer')),
+        findsOneWidget,
+      );
+      _resetPlatform();
+    },
+  );
+
+  testWidgets('account refresh does not impersonate StoreKit loading', (
+    tester,
+  ) async {
+    _usePlatform(TargetPlatform.iOS);
+    addTearDown(_resetPlatform);
+    final store = _FakeAppleStore();
+    final account = _AccountRefreshingAccount(store: store);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+    await _pumpPage(tester, account: account);
+    await tester.pump();
+
+    final purchase = find.byKey(const ValueKey('account-apple-purchase'));
+    expect(purchase, findsOneWidget);
+    expect(tester.widget<FilledButton>(purchase).onPressed, isNull);
+    expect(
+      find.descendant(
+        of: purchase,
+        matching: find.byType(CupertinoActivityIndicator),
+      ),
+      findsNothing,
+    );
+    final l10n = AppLocalizations.of(tester.element(purchase));
+    expect(find.text(l10n.accountAppleProductLoading), findsNothing);
+    _resetPlatform();
+  });
+
   for (final ready in [true, false]) {
     testWidgets('Google Play shows only native payment actions, ready=$ready', (
       tester,
@@ -490,6 +549,39 @@ void main() {
     _resetPlatform();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'open page prepares store after account and billing config become ready',
+    (tester) async {
+      _usePlatform(TargetPlatform.iOS);
+      addTearDown(_resetPlatform);
+      final store = _FakeAppleStore();
+      final account = _DeferredStoreReadinessAccount(store: store);
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+      await _pumpPage(tester, account: account);
+      await tester.pump();
+
+      expect(account.initializeStoreCalls, 0);
+      account.restoreAccount();
+      await tester.pump();
+      expect(account.initializeStoreCalls, 0);
+
+      account.enableBilling();
+      await tester.pump();
+      expect(account.initializeStoreCalls, 1);
+
+      account.notifyUnchanged();
+      await tester.pump();
+      expect(account.initializeStoreCalls, 1);
+
+      account.switchAccount();
+      await tester.pump();
+      expect(account.initializeStoreCalls, 2);
+      _resetPlatform();
+    },
+  );
+
   tearDown(() {
     AppDistribution.debugReset();
     _resetPlatform();
@@ -1433,6 +1525,9 @@ class _TestAccount extends MemberAccountController {
   );
 
   @override
+  MemberMembership? get membershipForDisplay => membership;
+
+  @override
   bool get isAuthenticated => authenticated;
 
   @override
@@ -1465,6 +1560,37 @@ class _SandboxPremiumAccount extends _TestAccount {
   MemberMembership? get membership => null;
 }
 
+class _CachedDisplayPremiumAccount extends _TestAccount {
+  _CachedDisplayPremiumAccount({required super.store}) : super(premium: false);
+
+  @override
+  MemberMembership? get membership => null;
+
+  @override
+  MemberMembership get membershipForDisplay => MemberMembership(
+    premium: true,
+    features: const {},
+    entitlements: [
+      MemberEntitlement(
+        featureKey: 'premium',
+        source: 'card',
+        status: 'active',
+        grantedAt: _TestAccount._createdAt,
+      ),
+    ],
+  );
+
+  @override
+  bool get premiumForDisplay => true;
+}
+
+class _AccountRefreshingAccount extends _TestAccount {
+  _AccountRefreshingAccount({required super.store}) : super(premium: false);
+
+  @override
+  bool get loading => true;
+}
+
 class _SignInReturnAccount extends _TestAccount {
   _SignInReturnAccount({required super.store})
     : super(authenticated: true, permanentReader: false);
@@ -1492,6 +1618,57 @@ class _SignInReturnAccount extends _TestAccount {
 
   void completeSignIn() {
     _signedIn = true;
+    notifyListeners();
+  }
+}
+
+class _DeferredStoreReadinessAccount extends _TestAccount {
+  _DeferredStoreReadinessAccount({required super.store})
+    : super(authenticated: false);
+
+  bool _signedIn = false;
+  bool _billingReady = false;
+  String _owner = 'reader-1';
+  int initializeStoreCalls = 0;
+
+  @override
+  bool get isAuthenticated => _signedIn;
+
+  @override
+  bool get storeBillingReady => _billingReady;
+
+  @override
+  MemberUser? get user => _signedIn
+      ? MemberUser(
+          id: _owner,
+          email: 'reader@example.com',
+          emailVerified: true,
+          username: 'reader',
+          effectiveName: '阅读者',
+          authMethods: const ['apple'],
+          createdAt: _TestAccount._createdAt,
+        )
+      : null;
+
+  @override
+  Future<void> initializeStorePurchases() async {
+    initializeStoreCalls += 1;
+  }
+
+  void restoreAccount() {
+    _signedIn = true;
+    notifyListeners();
+  }
+
+  void enableBilling() {
+    _billingReady = true;
+    notifyListeners();
+  }
+
+  void notifyUnchanged() => notifyListeners();
+
+  void switchAccount() {
+    _owner = 'reader-2';
     notifyListeners();
   }
 }

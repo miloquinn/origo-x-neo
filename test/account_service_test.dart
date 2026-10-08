@@ -896,11 +896,189 @@ void main() {
     expect(restored?.membership.features['private_network_sources'], isTrue);
   });
 
-  test('cold start never authorizes mutable cached membership', () async {
+  test(
+    'cold start displays matching cache while auth and config are pending',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      const cache = MemberMembershipCache();
+      const summaryCache = MemberAccountSummaryCache();
+      const accountId = '6e29be31-ffeb-4699-bf69-8b37afe15504';
+      await summaryCache.save(
+        const MemberAccountSummary(
+          userId: accountId,
+          username: 'reader',
+          effectiveName: 'Reader',
+          premium: true,
+        ),
+      );
+      await cache.save(
+        accountId,
+        const MemberMembership(
+          userId: accountId,
+          premium: true,
+          features: {},
+          entitlements: [],
+        ),
+      );
+      final authConfigResponse = Completer<ResponseBody>();
+      final membershipConfigResponse = Completer<ResponseBody>();
+      final authResponse = Completer<ResponseBody>();
+      final membershipStarted = Completer<void>();
+      final membershipResponse = Completer<ResponseBody>();
+      final store = _AccountAppleStore();
+      final controller = MemberAccountController(
+        summaryCache: summaryCache,
+        membershipCache: cache,
+        purchaseStore: store,
+        api: _client(
+          _AsyncRouteAdapter((options) async {
+            return switch (options.uri.path) {
+              '/api/v1/auth/config' => authConfigResponse.future,
+              '/api/v1/membership/config' => membershipConfigResponse.future,
+              '/api/v1/auth/me' => authResponse.future,
+              '/api/v1/membership' => () {
+                if (!membershipStarted.isCompleted) {
+                  membershipStarted.complete();
+                }
+                return membershipResponse.future;
+              }(),
+              '/api/v1/membership/referral' => _json({
+                'invite_code': 'TEST',
+                'invite_url': 'https://example.test/invite',
+              }),
+              _ => throw StateError('Unexpected route ${options.uri.path}'),
+            };
+          }),
+          _MemoryTokenStore(accessToken: 'access', refreshToken: 'refresh'),
+        ),
+      );
+      late final Future<void> initialization;
+      addTearDown(() async {
+        _completeIfPending(authConfigResponse, _json({'providers': {}}));
+        _completeIfPending(
+          membershipConfigResponse,
+          _json({'product': 'premium_lifetime', 'features': []}),
+        );
+        _completeIfPending(authResponse, _json({'user': _user()}));
+        _completeIfPending(
+          membershipResponse,
+          _json({
+            'user_id': accountId,
+            'premium': false,
+            'features': {},
+            'entitlements': [],
+          }),
+        );
+        await initialization.catchError((_) {});
+        controller.dispose();
+        await store.close();
+      });
+
+      initialization = controller.initialize();
+      await _waitUntil(() => controller.initialized);
+      expect(controller.isAuthenticated, isFalse);
+      expect(controller.hasPremiumAccess, isFalse);
+      expect(controller.membershipForDisplay?.premium, isTrue);
+      expect(controller.premiumForDisplay, isTrue);
+      expect(membershipStarted.isCompleted, isFalse);
+
+      authResponse.complete(_json({'user': _user()}));
+      await membershipStarted.future.timeout(const Duration(seconds: 1));
+      expect(authConfigResponse.isCompleted, isFalse);
+      expect(membershipConfigResponse.isCompleted, isFalse);
+
+      membershipResponse.complete(
+        _json({
+          'user_id': accountId,
+          'premium': false,
+          'features': {},
+          'entitlements': [],
+        }),
+      );
+      await _waitUntil(() => controller.membershipForDisplay?.premium == false);
+      expect(controller.hasPremiumAccess, isFalse);
+      expect(controller.premiumForDisplay, isFalse);
+
+      authConfigResponse.complete(_json({'providers': {}}));
+      membershipConfigResponse.complete(
+        _json({'product': 'premium_lifetime', 'features': []}),
+      );
+      await initialization;
+      expect(store.isAvailableCalls, 0);
+      expect(store.queryProductDetailsCalls, 0);
+      expect(store.restoreCalls, 0);
+    },
+  );
+
+  test(
+    'wrong-account and MFA sessions never display membership cache',
+    () async {
+      const accountId = '6e29be31-ffeb-4699-bf69-8b37afe15504';
+      for (final scenario in ['wrong account', 'MFA pending']) {
+        SharedPreferences.setMockInitialValues({});
+        const summaryCache = MemberAccountSummaryCache();
+        const membershipCache = MemberMembershipCache();
+        await summaryCache.save(
+          const MemberAccountSummary(
+            userId: accountId,
+            username: 'reader',
+            effectiveName: 'Reader',
+            premium: true,
+          ),
+        );
+        await membershipCache.save(
+          scenario == 'wrong account' ? 'another-account' : accountId,
+          MemberMembership(
+            userId: scenario == 'wrong account' ? 'another-account' : accountId,
+            premium: true,
+            features: const {},
+            entitlements: const [],
+          ),
+        );
+        final controller = MemberAccountController(
+          summaryCache: summaryCache,
+          membershipCache: membershipCache,
+          api: _client(
+            _RouteAdapter((_) => throw const SocketException('offline')),
+            _MemoryTokenStore(
+              accessToken: 'access',
+              refreshToken: 'refresh',
+              mfaPending: scenario == 'MFA pending',
+            ),
+          ),
+        );
+
+        try {
+          await expectLater(
+            controller.initialize(),
+            throwsA(isA<MemberAccountException>()),
+            reason: scenario,
+          );
+          expect(controller.initialized, isTrue, reason: scenario);
+          expect(controller.membershipForDisplay, isNull, reason: scenario);
+          expect(controller.premiumForDisplay, isFalse, reason: scenario);
+          expect(controller.hasPremiumAccess, isFalse, reason: scenario);
+        } finally {
+          controller.dispose();
+        }
+      }
+    },
+  );
+
+  test('transient startup failure preserves matching display cache', () async {
     SharedPreferences.setMockInitialValues({});
-    const cache = MemberMembershipCache();
     const accountId = '6e29be31-ffeb-4699-bf69-8b37afe15504';
-    await cache.save(
+    const summaryCache = MemberAccountSummaryCache();
+    const membershipCache = MemberMembershipCache();
+    await summaryCache.save(
+      const MemberAccountSummary(
+        userId: accountId,
+        username: 'reader',
+        effectiveName: 'Reader',
+        premium: true,
+      ),
+    );
+    await membershipCache.save(
       accountId,
       const MemberMembership(
         userId: accountId,
@@ -909,49 +1087,250 @@ void main() {
         entitlements: [],
       ),
     );
-    final membershipResponse = Completer<ResponseBody>();
     final controller = MemberAccountController(
-      membershipCache: cache,
+      summaryCache: summaryCache,
+      membershipCache: membershipCache,
       api: _client(
-        _AsyncRouteAdapter((options) async {
-          return switch (options.uri.path) {
+        _RouteAdapter(
+          (options) => switch (options.uri.path) {
             '/api/v1/auth/config' => _json({'providers': {}}),
             '/api/v1/membership/config' => _json({
               'product': 'premium_lifetime',
               'features': [],
             }),
             '/api/v1/auth/me' => _json({'user': _user()}),
-            '/api/v1/membership' => membershipResponse.future,
+            '/api/v1/membership' => _json({
+              'message': 'temporarily unavailable',
+            }, status: 503),
             '/api/v1/membership/referral' => _json({
               'invite_code': 'TEST',
               'invite_url': 'https://example.test/invite',
             }),
             _ => throw StateError('Unexpected route ${options.uri.path}'),
-          };
-        }),
+          },
+        ),
         _MemoryTokenStore(accessToken: 'access', refreshToken: 'refresh'),
       ),
     );
     addTearDown(controller.dispose);
 
-    final initialization = controller.initialize();
-    for (
-      var attempt = 0;
-      attempt < 20 && !controller.isAuthenticated;
-      attempt++
-    ) {
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
+    await controller.initialize();
+
     expect(controller.isAuthenticated, isTrue);
     expect(controller.hasPremiumAccess, isFalse);
-
-    membershipResponse.complete(
-      _json({'premium': true, 'features': {}, 'entitlements': []}),
-    );
-    await initialization;
-    expect(controller.hasPremiumAccess, isTrue);
-    expect((await cache.load())?.membership.premium, isTrue);
+    expect(controller.membershipSyncFailed, isTrue);
+    expect(controller.membershipForDisplay?.premium, isTrue);
+    expect(controller.premiumForDisplay, isTrue);
+    expect((await membershipCache.load())?.membership.premium, isTrue);
   });
+
+  test(
+    'passive synchronization uses TTL while force and explicit refresh',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      var membershipReads = 0;
+      final controller = MemberAccountController(
+        accountSyncInterval: const Duration(minutes: 5),
+        api: _client(
+          _RouteAdapter((options) {
+            return switch (options.uri.path) {
+              '/api/v1/auth/password/login' => _json(
+                _session(
+                  access: 'access',
+                  refresh: 'refresh',
+                  userId: _memberAccountId,
+                ),
+              ),
+              '/api/v1/membership' => () {
+                membershipReads++;
+                return _json({
+                  'user_id': _memberAccountId,
+                  'premium': true,
+                  'features': <String, bool>{},
+                  'entitlements': <Object>[],
+                });
+              }(),
+              '/api/v1/membership/referral' => _json({
+                'invite_code': 'TEST',
+                'invite_url': 'https://example.test/invite',
+              }),
+              '/api/v1/membership/reader/account-status' =>
+                _accountReaderStatus(options),
+              _ => _json({}),
+            };
+          }),
+          _MemoryTokenStore(),
+        ),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.loginPassword('reader@example.com', 'secret');
+      expect(membershipReads, 1);
+
+      await controller.synchronize(force: true);
+      expect(membershipReads, 2);
+      await controller.synchronize();
+      await controller.synchronize();
+      expect(membershipReads, 2);
+
+      await controller.synchronize(force: true);
+      expect(membershipReads, 3);
+      await controller.loadMembership();
+      expect(membershipReads, 4);
+    },
+  );
+
+  test(
+    'reader outage keeps the next passive synchronization eligible',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      var readerAvailable = false;
+      var membershipReads = 0;
+      var readerReads = 0;
+      final controller = MemberAccountController(
+        accountSyncInterval: const Duration(minutes: 5),
+        membershipRetryDelay: const Duration(days: 1),
+        api: _client(
+          _RouteAdapter((options) {
+            return switch (options.uri.path) {
+              '/api/v1/auth/config' => _json({'providers': {}}),
+              '/api/v1/membership/config' => _json({
+                'product': 'premium_lifetime',
+                'features': [],
+              }),
+              '/api/v1/auth/me' => _json({'user': _user(id: _memberAccountId)}),
+              '/api/v1/membership' => () {
+                membershipReads++;
+                return _json({
+                  'user_id': _memberAccountId,
+                  'premium': true,
+                  'features': <String, bool>{},
+                  'entitlements': <Object>[],
+                });
+              }(),
+              '/api/v1/membership/referral' => _json({
+                'invite_code': 'TEST',
+                'invite_url': 'https://example.test/invite',
+              }),
+              '/api/v1/membership/reader/account-status' => () {
+                readerReads++;
+                return readerAvailable
+                    ? _accountReaderStatus(options)
+                    : _json({
+                        'message': 'temporarily unavailable',
+                      }, status: 503);
+              }(),
+              _ => throw StateError('Unexpected route ${options.uri.path}'),
+            };
+          }),
+          _MemoryTokenStore(accessToken: 'access', refreshToken: 'refresh'),
+        ),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.initialize();
+      expect(membershipReads, 1);
+      expect(readerReads, 1);
+      expect(controller.hasPremiumAccess, isTrue);
+
+      readerAvailable = true;
+      await controller.synchronize();
+      expect(membershipReads, 2);
+      expect(readerReads, 2);
+
+      await controller.synchronize();
+      expect(membershipReads, 2);
+      expect(readerReads, 2);
+    },
+  );
+
+  test(
+    'display-only cached premium expires while the network is held',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      const accountId = '6e29be31-ffeb-4699-bf69-8b37afe15504';
+      const summaryCache = MemberAccountSummaryCache();
+      const membershipCache = MemberMembershipCache();
+      final expiresAt = DateTime.now().add(const Duration(milliseconds: 500));
+      await summaryCache.save(
+        const MemberAccountSummary(
+          userId: accountId,
+          username: 'reader',
+          effectiveName: 'Reader',
+          premium: true,
+        ),
+      );
+      await membershipCache.save(
+        accountId,
+        MemberMembership(
+          userId: accountId,
+          premium: true,
+          features: const {},
+          entitlements: [
+            MemberEntitlement(
+              featureKey: 'premium',
+              source: 'promotion',
+              status: 'active',
+              grantedAt: DateTime.now().subtract(const Duration(days: 1)),
+              expiresAt: expiresAt,
+            ),
+          ],
+        ),
+      );
+      final authConfigResponse = Completer<ResponseBody>();
+      final membershipConfigResponse = Completer<ResponseBody>();
+      final authResponse = Completer<ResponseBody>();
+      final controller = MemberAccountController(
+        summaryCache: summaryCache,
+        membershipCache: membershipCache,
+        api: _client(
+          _AsyncRouteAdapter((options) async {
+            return switch (options.uri.path) {
+              '/api/v1/auth/config' => authConfigResponse.future,
+              '/api/v1/membership/config' => membershipConfigResponse.future,
+              '/api/v1/auth/me' => authResponse.future,
+              '/api/v1/membership' => _json({
+                'user_id': accountId,
+                'premium': false,
+                'features': {},
+                'entitlements': [],
+              }),
+              '/api/v1/membership/referral' => _json({
+                'invite_code': 'TEST',
+                'invite_url': 'https://example.test/invite',
+              }),
+              _ => throw StateError('Unexpected route ${options.uri.path}'),
+            };
+          }),
+          _MemoryTokenStore(accessToken: 'access', refreshToken: 'refresh'),
+        ),
+      );
+      late final Future<void> initialization;
+      addTearDown(() async {
+        _completeIfPending(authConfigResponse, _json({'providers': {}}));
+        _completeIfPending(
+          membershipConfigResponse,
+          _json({'product': 'premium_lifetime', 'features': []}),
+        );
+        _completeIfPending(authResponse, _json({'user': _user()}));
+        await initialization.catchError((_) {});
+        controller.dispose();
+      });
+
+      initialization = controller.initialize();
+      await _waitUntil(() => controller.initialized);
+      expect(controller.hasPremiumAccess, isFalse);
+      expect(controller.premiumForDisplay, isTrue);
+
+      await _waitUntil(
+        () => !controller.premiumForDisplay,
+        timeout: const Duration(seconds: 2),
+      );
+      expect(controller.hasPremiumAccess, isFalse);
+      expect(controller.membershipForDisplay, isNotNull);
+      expect(controller.premiumForDisplay, isFalse);
+    },
+  );
 
   test(
     'password login stores the rotated session without exposing secrets',
@@ -3146,6 +3525,23 @@ void main() {
   });
 }
 
+Future<void> _waitUntil(
+  bool Function() condition, {
+  Duration timeout = const Duration(seconds: 1),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      throw TimeoutException('Condition was not met before $timeout.');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+}
+
+void _completeIfPending<T>(Completer<T> completer, T value) {
+  if (!completer.isCompleted) completer.complete(value);
+}
+
 MemberAccountApiClient _client(
   HttpClientAdapter adapter,
   MemberTokenStore storage, {
@@ -3309,6 +3705,9 @@ class _ControlledOfflineReaderLicenseStore extends OfflineReaderLicenseStore {
 class _AccountAppleStore implements PurchaseStore {
   final _stream = StreamController<List<PurchaseDetails>>.broadcast();
   int completed = 0;
+  int isAvailableCalls = 0;
+  int queryProductDetailsCalls = 0;
+  int restoreCalls = 0;
   PurchaseParam? purchaseParam;
 
   void emit() {
@@ -3329,23 +3728,31 @@ class _AccountAppleStore implements PurchaseStore {
   @override
   Stream<List<PurchaseDetails>> get purchaseStream => _stream.stream;
   @override
-  Future<bool> isAvailable() async => true;
+  Future<bool> isAvailable() async {
+    isAvailableCalls++;
+    return true;
+  }
+
   @override
   Future<ProductDetailsResponse> queryProductDetails(
     Set<String> identifiers,
-  ) async => ProductDetailsResponse(
-    productDetails: [
-      ProductDetails(
-        id: MemberAccountController.appleProductId,
-        title: 'Premium',
-        description: 'Lifetime Premium',
-        price: '¥28',
-        rawPrice: 28,
-        currencyCode: 'CNY',
-      ),
-    ],
-    notFoundIDs: const [],
-  );
+  ) async {
+    queryProductDetailsCalls++;
+    return ProductDetailsResponse(
+      productDetails: [
+        ProductDetails(
+          id: MemberAccountController.appleProductId,
+          title: 'Premium',
+          description: 'Lifetime Premium',
+          price: '¥28',
+          rawPrice: 28,
+          currencyCode: 'CNY',
+        ),
+      ],
+      notFoundIDs: const [],
+    );
+  }
+
   @override
   Future<bool> buyNonConsumable({required PurchaseParam purchaseParam}) async {
     this.purchaseParam = purchaseParam;
@@ -3356,7 +3763,11 @@ class _AccountAppleStore implements PurchaseStore {
   Future<Set<String>?> restorePurchases({
     String? applicationUserName,
     Set<String>? productIds,
-  }) async => null;
+  }) async {
+    restoreCalls++;
+    return null;
+  }
+
   @override
   Future<void> completePurchase(PurchaseDetails purchase) async {
     completed++;

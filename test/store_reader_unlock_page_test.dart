@@ -980,5 +980,5 @@ class _UnlockAccount extends MemberAccountController {
   Future<void> loadStoreProducts() async {}
 
   @override
-  Future<void> synchronize() async {}
+  Future<void> synchronize({bool force = false}) async {}
 }

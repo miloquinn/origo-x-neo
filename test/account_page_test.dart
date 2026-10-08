@@ -1213,6 +1213,29 @@ void main() {
     },
   );
 
+  testWidgets('signed-in header keeps cached Explore presentation', (
+    tester,
+  ) async {
+    final controller = _CachedDisplayPremiumAccount();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<MemberAccountController>.value(
+        value: controller,
+        child: const MaterialApp(
+          locale: Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: AccountPage(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(controller.hasPremiumAccess, isFalse);
+    expect(find.text('探元'), findsOneWidget);
+    expect(find.byKey(const ValueKey('account-support')), findsOneWidget);
+  });
+
   testWidgets('profile cannot be dismissed while a save request is open', (
     tester,
   ) async {
@@ -2659,4 +2682,29 @@ class _CachedOnlyAccount extends MemberAccountController {
     effectiveName: 'Reader',
     premium: true,
   );
+}
+
+class _CachedDisplayPremiumAccount extends MemberAccountController {
+  @override
+  bool get initialized => true;
+
+  @override
+  bool get hasPremiumAccess => false;
+
+  @override
+  bool get premiumForDisplay => true;
+
+  @override
+  MemberUser get user => MemberUser(
+    id: 'reader-1',
+    email: 'reader@example.com',
+    emailVerified: true,
+    username: 'reader',
+    effectiveName: 'Reader',
+    authMethods: const ['password'],
+    createdAt: DateTime.utc(2026, 1, 1),
+  );
+
+  @override
+  Future<void> initialize({bool force = false}) async {}
 }

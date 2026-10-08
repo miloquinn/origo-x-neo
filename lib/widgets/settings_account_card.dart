@@ -21,8 +21,8 @@ class SettingsAccountCard extends StatelessWidget {
         effectiveName: summary?.effectiveName,
         username: summary?.username,
         avatarUrl: summary?.avatarUrl,
-        loading: account.loading,
-        premium: account.hasPremiumAccess,
+        loading: account.loading && summary == null,
+        premium: account.premiumForDisplay,
         storeReader: account.hasStoreReaderEntitlement,
         permanentReader: account.hasPermanentReaderAccess,
       );

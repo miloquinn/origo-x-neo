@@ -298,7 +298,7 @@ class _CountingAccount extends MemberAccountController {
   int synchronizeCalls = 0;
 
   @override
-  Future<void> synchronize() async {
+  Future<void> synchronize({bool force = false}) async {
     synchronizeCalls++;
   }
 }

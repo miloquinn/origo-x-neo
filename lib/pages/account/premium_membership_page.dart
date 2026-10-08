@@ -66,6 +66,8 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
   ]);
   String? _message;
   bool _messageIsError = false;
+  String? _preparedStoreOwner;
+  Future<void>? _storePreparation;
 
   bool get _usesAppleBilling => AppDistribution.usesAppleBilling;
   bool get _usesStoreBilling => AppDistribution.usesStoreBilling;
@@ -75,11 +77,10 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    widget.account.addListener(_handleAccountChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (_usesStoreBilling && widget.account.isAuthenticated) {
-        unawaited(_initializeStore());
-      }
+      _prepareStoreIfReady();
       if (widget.focusBilling) {
         final footerContext = _footerKey.currentContext;
         if (footerContext != null) {
@@ -95,6 +96,31 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     } catch (error) {
       debugPrint('Premium products unavailable: $error');
     }
+  }
+
+  void _handleAccountChanged() => _prepareStoreIfReady();
+
+  void _prepareStoreIfReady() {
+    final account = widget.account;
+    final owner = account.user?.id;
+    if (!_usesStoreBilling ||
+        !account.isAuthenticated ||
+        !account.storeBillingReady ||
+        owner == null ||
+        owner == _preparedStoreOwner ||
+        _storePreparation != null) {
+      return;
+    }
+    _preparedStoreOwner = owner;
+    final preparation = _initializeStore();
+    _storePreparation = preparation;
+    unawaited(
+      preparation.whenComplete(() {
+        if (!mounted || !identical(_storePreparation, preparation)) return;
+        _storePreparation = null;
+        _prepareStoreIfReady();
+      }),
+    );
   }
 
   @override
@@ -153,9 +179,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     await Navigator.of(
       context,
     ).push<void>(MaterialPageRoute(builder: (_) => const AccountPage()));
-    if (mounted && _usesStoreBilling && widget.account.isAuthenticated) {
-      unawaited(_initializeStore());
-    }
+    if (mounted) _prepareStoreIfReady();
   }
 
   Future<void> _openUrl(
@@ -175,6 +199,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    widget.account.removeListener(_handleAccountChanged);
     _redemptionCode.dispose();
     super.dispose();
   }
@@ -228,8 +253,8 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
           ),
         ],
         pinFooter:
-            !account.hasPremiumAccess ||
-            account.membership?.premiumExpiresAt != null,
+            !account.premiumForDisplay ||
+            account.membershipForDisplay?.premiumExpiresAt != null,
         body: _summary(account),
         footer: KeyedSubtree(key: _footerKey, child: _footer(account)),
       );
@@ -238,7 +263,8 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
 
   Widget _summary(MemberAccountController account) {
     final l10n = context.l10n;
-    final premium = account.hasPremiumAccess;
+    final membership = account.membershipForDisplay;
+    final premium = account.premiumForDisplay;
     final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -259,7 +285,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
         ),
         if (premium) ...[
           const SizedBox(height: 16),
-          if (account.membership?.premiumExpiresAt != null)
+          if (membership?.premiumExpiresAt != null)
             DecoratedBox(
               key: const ValueKey('premium-trial-status'),
               decoration: BoxDecoration(
@@ -282,7 +308,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _membershipSourceMessage(context, account),
+                        _membershipSourceMessage(context, membership),
                         key: const ValueKey('premium-membership-source'),
                         style: TextStyle(
                           color: colors.onSurfaceVariant,
@@ -297,7 +323,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
             )
           else
             Text(
-              _membershipSourceMessage(context, account),
+              _membershipSourceMessage(context, membership),
               key: const ValueKey('premium-membership-source'),
               style: TextStyle(
                 color: colors.onSurfaceVariant,
@@ -307,7 +333,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
             ),
         ],
         if (account.membershipSyncFailed ||
-            (account.isAuthenticated && account.membership == null)) ...[
+            (account.isAuthenticated && membership == null)) ...[
           const SizedBox(height: 8),
           Text(
             account.membershipSyncFailed
@@ -396,10 +422,11 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
   Widget _footer(MemberAccountController account) {
     final l10n = context.l10n;
     final colors = Theme.of(context).colorScheme;
-    final premium = account.hasPremiumAccess;
+    final premium = account.premiumForDisplay;
     final upgradeEligible = account.hasAccountReaderUpgradeEligibility;
-    final busy = account.premiumPurchaseLoading || account.loading;
-    final expiring = account.membership?.premiumExpiresAt != null;
+    final purchaseLoading = account.premiumPurchaseLoading;
+    final actionBusy = purchaseLoading || account.loading;
+    final expiring = account.membershipForDisplay?.premiumExpiresAt != null;
     final status = account.isAuthenticated
         ? _message ?? _purchaseStatus(context, account)
         : null;
@@ -472,7 +499,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                     : 'account-google-purchase',
               ),
               style: _footerButtonStyle,
-              onPressed: busy
+              onPressed: actionBusy
                   ? null
                   : () => _perform(
                       (upgradeEligible
@@ -486,7 +513,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                           : account.purchaseStorePremiumBundle,
                       usePurchaseStatus: true,
                     ),
-              child: busy
+              child: purchaseLoading
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
@@ -522,7 +549,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                       ? 'account-apple-restore'
                       : 'account-google-restore',
                 ),
-                onPressed: busy
+                onPressed: actionBusy
                     ? null
                     : () => _perform(
                         account.restoreStorePremiumPurchases,
@@ -545,7 +572,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
               ),
               TextButton(
                 key: const ValueKey('premium-redeem-entry'),
-                onPressed: busy
+                onPressed: actionBusy
                     ? null
                     : () => Navigator.of(context).push<void>(
                         MaterialPageRoute(
@@ -571,7 +598,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
           FilledButton(
             key: const ValueKey('account-redeem-premium'),
             style: _footerButtonStyle,
-            onPressed: busy ? null : _redeem,
+            onPressed: actionBusy ? null : _redeem,
             child: Text(l10n.accountRedeemPremium),
           ),
           if (AppDistribution.allowsExternalSupport)
@@ -712,7 +739,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
                 l10n.premiumBenefitsTitle,
                 l10n.premiumSourceNotice,
               ),
-              if (account.hasPremiumAccess)
+              if (account.premiumForDisplay)
                 _detailsSection(
                   l10n.premiumAccountBindingTitle,
                   l10n.premiumSetupHint,
@@ -818,10 +845,10 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
 
   String _membershipSourceMessage(
     BuildContext context,
-    MemberAccountController account,
+    MemberMembership? membership,
   ) {
     final l10n = context.l10n;
-    final expiresAt = account.membership?.premiumExpiresAt;
+    final expiresAt = membership?.premiumExpiresAt;
     if (expiresAt != null) {
       final local = expiresAt.toLocal();
       return l10n.premiumTrialExpiresAt(
@@ -829,7 +856,7 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
         '${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(local), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}',
       );
     }
-    final sources = account.membership?.activePremiumSources ?? <String>{};
+    final sources = membership?.activePremiumSources ?? <String>{};
     if (sources.any(
       {'admin', 'manual', 'promotion', 'referral_card'}.contains,
     )) {

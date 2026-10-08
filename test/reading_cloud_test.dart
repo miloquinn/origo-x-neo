@@ -371,7 +371,7 @@ class TestReadingAccount extends MemberAccountController {
   @override
   MemberAccountApiClient get readingApi => api;
   @override
-  Future<void> synchronize() async {}
+  Future<void> synchronize({bool force = false}) async {}
   @override
   MemberUser? get user => currentId == null
       ? null

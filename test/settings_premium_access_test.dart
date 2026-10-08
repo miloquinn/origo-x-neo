@@ -14,6 +14,7 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/core/core_services.dart';
 import 'package:xxread/services/backup/webdav_backup_controller.dart';
+import 'package:xxread/widgets/settings_account_card.dart';
 
 class _TieredTestAccount extends MemberAccountController {
   bool _explore = false;
@@ -30,6 +31,25 @@ class _TieredTestAccount extends MemberAccountController {
     _explore = explore;
     notifyListeners();
   }
+}
+
+class _CachedDisplayAccount extends MemberAccountController {
+  @override
+  bool get loading => true;
+
+  @override
+  bool get hasPremiumAccess => false;
+
+  @override
+  bool get premiumForDisplay => true;
+
+  @override
+  MemberAccountSummary get summary => const MemberAccountSummary(
+    userId: 'reader-1',
+    username: 'reader',
+    effectiveName: 'Reader',
+    premium: true,
+  );
 }
 
 class _FakeCacheManager extends AppCacheManager {
@@ -72,6 +92,42 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
   });
+
+  testWidgets(
+    'cached Explore stays visible without a global account loading spinner',
+    (tester) async {
+      final account = _CachedDisplayAccount();
+      addTearDown(account.dispose);
+      await tester.pumpWidget(
+        ChangeNotifierProvider<MemberAccountController>.value(
+          value: account,
+          child: const MaterialApp(
+            locale: Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: SettingsAccountCard()),
+          ),
+        ),
+      );
+
+      expect(account.hasPremiumAccess, isFalse);
+      expect(
+        find.byKey(const ValueKey('settings-account-premium-badge')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('settings-membership-offer')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('settings-account-card')),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   for (final width in [430.0, 1280.0]) {
     testWidgets(

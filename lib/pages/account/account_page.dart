@@ -659,7 +659,7 @@ class _AccountPageState extends State<AccountPage> {
     MemberAccountController account,
     MemberUser user,
   ) => [
-    _SignedInHeader(user: user, supporter: account.hasPremiumAccess),
+    _SignedInHeader(user: user, supporter: account.premiumForDisplay),
     const SizedBox(height: 16),
     _AccountActionsCard(
       user: user,

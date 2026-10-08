@@ -246,7 +246,7 @@ class _Account extends MemberAccountController {
   );
 
   @override
-  Future<void> synchronize() async {
+  Future<void> synchronize({bool force = false}) async {
     synchronizeCalls++;
   }
 
