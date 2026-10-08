@@ -3,16 +3,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/core/reader/reader_leaf_status.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 
 void main() {
-  tearDown(() {
+  setUp(() {
     GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+    GlassEffectConfig.setLiquidGlassOpacity(0);
   });
 
-  testWidgets('reader chrome follows the global glass effect switch', (
+  tearDown(() {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(defaultGlassStyle);
+    GlassEffectConfig.setLiquidGlassOpacity(defaultLiquidGlassOpacity);
+  });
+
+  testWidgets('frosted reader chrome follows the global glass effect switch', (
     tester,
   ) async {
     GlassEffectConfig.setDisableAllGlassEffects(false);
@@ -73,7 +82,7 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('reader border ignores a divergent outer app palette', (
+  testWidgets('frosted reader border ignores a divergent outer app palette', (
     tester,
   ) async {
     final palette = ReaderThemes.pureBlack;
@@ -121,7 +130,7 @@ void main() {
     }
   });
 
-  testWidgets('moving control bars keep glass outside opacity layers', (
+  testWidgets('moving frosted control bars keep glass outside opacity layers', (
     tester,
   ) async {
     final visible = ValueNotifier(false);
@@ -237,7 +246,7 @@ void main() {
     );
   });
 
-  testWidgets('reader chrome preserves the selected reading theme color', (
+  testWidgets('frosted reader chrome preserves the reading theme color', (
     tester,
   ) async {
     await tester.pumpWidget(

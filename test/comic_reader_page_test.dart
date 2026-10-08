@@ -1045,17 +1045,14 @@ void main() {
 
       await tester.tapAt(const Offset(400, 450));
       await tester.pump(const Duration(milliseconds: 300));
-      final button = tester.widget<Widget>(
-        find.byKey(ContinuousImageReader.settingsButtonKey),
-      );
-      expect(button, isNotNull);
-      final settingsTap = tester.widget<InkResponse>(
-        find.descendant(
-          of: find.byKey(ContinuousImageReader.settingsButtonKey),
-          matching: find.byType(InkResponse),
-        ),
-      );
-      settingsTap.onTap!.call();
+      tester
+          .widget<TextButton>(
+            find.descendant(
+              of: find.byKey(ContinuousImageReader.settingsButtonKey),
+              matching: find.byType(TextButton),
+            ),
+          )
+          .onPressed!();
       await tester.pumpAndSettle();
 
       expect(
@@ -1128,13 +1125,13 @@ void main() {
         contains('"fake-settings":"ltr"'),
       );
 
-      final directionTap = tester.widget<InkResponse>(
+      final directionTap = tester.widget<TextButton>(
         find.ancestor(
           of: find.text('Left to right'),
-          matching: find.byType(InkResponse),
+          matching: find.byType(TextButton),
         ),
       );
-      directionTap.onTap!.call();
+      directionTap.onPressed!.call();
       await tester.pumpAndSettle();
       expect(find.byType(PagedImageReader), findsNothing);
       expect(find.byType(ContinuousImageReader), findsOneWidget);
@@ -1169,14 +1166,13 @@ void main() {
     await tester.tapAt(const Offset(400, 450));
     await tester.pump(const Duration(milliseconds: 300));
     tester
-        .widget<InkResponse>(
+        .widget<TextButton>(
           find.ancestor(
             of: find.text('Table of Contents'),
-            matching: find.byType(InkResponse),
+            matching: find.byType(TextButton),
           ),
         )
-        .onTap!
-        .call();
+        .onPressed!();
     await tester.pumpAndSettle();
 
     final sheet = tester.getRect(
@@ -1203,13 +1199,13 @@ void main() {
     await tester.tapAt(const Offset(400, 450));
     await tester.pump(const Duration(milliseconds: 300));
     tester
-        .widget<InkResponse>(
+        .widget<TextButton>(
           find.ancestor(
             of: find.text('Table of Contents'),
-            matching: find.byType(InkResponse),
+            matching: find.byType(TextButton),
           ),
         )
-        .onTap!
+        .onPressed!
         .call();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Three'));

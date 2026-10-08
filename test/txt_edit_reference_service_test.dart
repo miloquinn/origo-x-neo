@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:xxread/core/reader/canonical_locator.dart';
+import 'package:xxread/data/migration/shelf_folder_schema_migration.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/txt_edit_reference_service.dart';
 import 'package:xxread/services/books/txt_edit_service.dart';
@@ -27,6 +28,7 @@ void main() {
         source_kind TEXT, source_locator TEXT, source_modified_time INTEGER
       )
     ''');
+    await ShelfFolderSchemaMigration.migrate(database);
     await database.execute('''
       CREATE TABLE book_notes (
         id INTEGER PRIMARY KEY, book_id INTEGER, content TEXT, cfi TEXT,

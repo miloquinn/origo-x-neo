@@ -13,6 +13,7 @@ import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 
 import 'support/reader_cache_test_utils.dart';
 import 'support/book_source_progress_test_utils.dart';
+import 'support/no_shelf_book_source_service.dart';
 
 late ReplaceRuleService _replaceRules;
 late BookSourceProgressTestFixture _progress;
@@ -182,6 +183,7 @@ Widget _buildReader(_AdjacentPreviewClient client) => MaterialApp(
       categories: [],
     ),
     client: client,
+    shelfService: NoShelfBookSourceService(client),
   ),
 );
 

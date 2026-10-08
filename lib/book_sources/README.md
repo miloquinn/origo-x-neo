@@ -73,7 +73,7 @@ Focused tests cover facade routing, owned/borrowed resources, runtime ports,
 request/response handling, rule/script parity, immutable controllers, page
 ownership, and the HTTP end-to-end reading flow. The architecture guard in
 `test/book_source_architecture_test.dart` prevents production files from
-exceeding 800 lines, importing compatibility barrels or root rule/script
+reaching 800 lines, importing compatibility barrels or root rule/script
 shims internally, or keeping cache/network-policy files on the old
 `services/` paths.
 
@@ -114,7 +114,18 @@ Regression fixtures cover the reading-source compatibility contracts around
   indentation, image options, and entities; `Jsoup.text()` returns plain text.
 
 The scripting bridge is split into encoding, Java-class adapters, DOM, text,
-and crypto modules. Character conversion covers UTF-8, GBK/GB2312, GB18030, UTF-16,
+and crypto modules. `scripting/source_script_bootstrap.dart` prepares source
+libraries and composes the invocation program in
+`source_script_bootstrap_program.dart`; the existing `source_script_state.dart`
+owns the embedded invocation-state adapters for source values, login/cache
+aliases and origin-scoped browser localStorage. The fragment remains in its
+original lexical position, sharing the invocation payload and host bridge;
+its generated JavaScript and compatibility behavior must remain unchanged.
+Regression entry points are `test/source_script_bootstrap_preparation_test.dart`,
+`test/source_browser_storage_test.dart`, and
+`test/source_script_session_cache_contract_test.dart`.
+
+Character conversion covers UTF-8, GBK/GB2312, GB18030, UTF-16,
 ASCII, and Latin-1; unsupported charset names fail explicitly. Supported Java
 adapters include String, Base64, URL form encoding, ArrayList/Map convenience
 methods, MessageDigest, and the existing cipher/HMAC operations. Class/package

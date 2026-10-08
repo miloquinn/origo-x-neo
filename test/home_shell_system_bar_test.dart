@@ -11,6 +11,7 @@ import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
 import 'package:xxread/utils/book_open_transition.dart';
+import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/ui_style.dart';
 
 void main() {
@@ -122,9 +123,17 @@ void main() {
     expect(find.byType(GradientTopBackdrop), findsNothing);
   });
 
-  testWidgets('mobile glass top bar uses the shared gradient backdrop', (
+  testWidgets('mobile liquid glass top bar uses the shared gradient backdrop', (
     tester,
   ) async {
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
+    GlassEffectConfig.setLiquidGlassOpacity(0.5);
+    addTearDown(() {
+      GlassEffectConfig.setDisableAllGlassEffects(false);
+      GlassEffectConfig.setGlassStyle(defaultGlassStyle);
+      GlassEffectConfig.setLiquidGlassOpacity(defaultLiquidGlassOpacity);
+    });
     await tester.pumpWidget(
       const MaterialApp(
         home: MediaQuery(
@@ -142,8 +151,12 @@ void main() {
     );
     expect(backdrop.height, 84);
     expect(backdrop.clearTail, 4);
-    expect(backdrop.maxSigma, closeTo(68 / 3, 0.001));
+    expect(backdrop.maxSigma, closeTo(12.75, 0.001));
     expect(backdrop.fallbackBands, 16);
+    expect(
+      find.byKey(const ValueKey('gradient-top-backdrop-liquid-tint')),
+      findsOneWidget,
+    );
     expect(tester.getSize(find.byType(GlassTopBar)).height, 84);
   });
 

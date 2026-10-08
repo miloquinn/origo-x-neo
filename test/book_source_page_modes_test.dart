@@ -595,9 +595,9 @@ void main() {
       );
       final status = tester.widget<ReaderProgressFooter>(statusFinder);
       expect(status.chapterLabel, contains('1/2'));
-      // The first layout part is the chapter-title page. Initial restoration
-      // anchors the first visible text at the viewport, so its page is 2 / 2.
-      expect(status.pageLabel, '2 / 2');
+      // A chapter-start restore stays on the title page instead of advancing
+      // to the first body page, so the visible status starts at page 1.
+      expect(status.pageLabel, '1 / 2');
     },
   );
 }
@@ -642,7 +642,7 @@ Widget _testApp({
       categories: [],
     ),
     client: client ?? _PageModeClient(),
-    shelfService: shelfService,
+    shelfService: shelfService ?? _FakeShelfService(),
   ),
 );
 
