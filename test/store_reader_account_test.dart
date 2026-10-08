@@ -1677,8 +1677,9 @@ class _TestStore implements PurchaseStore {
   @override
   Stream<List<PurchaseDetails>> get purchaseStream {
     purchaseStreamReads++;
-    if (streamUnavailable)
+    if (streamUnavailable) {
       throw StateError('Store transaction stream unavailable');
+    }
     return _stream.stream;
   }
 
