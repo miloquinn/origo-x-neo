@@ -3271,6 +3271,14 @@
   "@settingsGlassEffectSubtitle": {
     "description": "Description of the glass effect toggle"
   },
+  "settingsGlassStyleTitle": "Glass style",
+  "@settingsGlassStyleTitle": {
+    "description": "Title of the glass style setting and picker"
+  },
+  "settingsGlassStyleFrostedTitle": "Frosted glass",
+  "settingsGlassStyleFrostedSubtitle": "Soft blur",
+  "settingsGlassStyleLiquidTitle": "Liquid glass",
+  "settingsGlassStyleLiquidSubtitle": "Clear refraction and edge highlights",
   "settingsHideNavigationLabelsTitle": "Hide bottom navigation labels",
   "@settingsHideNavigationLabelsTitle": {
     "description": "Title of the mobile bottom navigation label visibility toggle"

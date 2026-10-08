@@ -24,6 +24,207 @@ extension _SettingsAppearancePart on _SettingsPageState {
     );
   }
 
+  Widget _buildGlassStyleVisibility(ThemeNotifier themeNotifier) {
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final child = themeNotifier.isGlassEffectsEnabled
+        ? KeyedSubtree(
+            key: const ValueKey('settings-glass-style'),
+            child: _buildActionSetting(
+              title: context.l10n.settingsGlassStyleTitle,
+              subtitle: _glassStyleLabel(themeNotifier.glassStyle),
+              onTap: () => _showGlassStyleModal(themeNotifier),
+              icon: Icons.water_drop_outlined,
+            ),
+          )
+        : const SizedBox.shrink();
+    if (disableAnimations) return child;
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: child,
+    );
+  }
+
+  String _glassStyleLabel(GlassStyle style) {
+    return switch (style) {
+      GlassStyle.frosted => context.l10n.settingsGlassStyleFrostedTitle,
+      GlassStyle.liquid => context.l10n.settingsGlassStyleLiquidTitle,
+    };
+  }
+
+  void _showGlassStyleModal(ThemeNotifier themeNotifier) {
+    final l10n = context.l10n;
+    final options =
+        <({GlassStyle style, String label, String hint, IconData icon})>[
+          (
+            style: GlassStyle.frosted,
+            label: l10n.settingsGlassStyleFrostedTitle,
+            hint: l10n.settingsGlassStyleFrostedSubtitle,
+            icon: Icons.blur_on_rounded,
+          ),
+          (
+            style: GlassStyle.liquid,
+            label: l10n.settingsGlassStyleLiquidTitle,
+            hint: l10n.settingsGlassStyleLiquidSubtitle,
+            icon: Icons.water_drop_outlined,
+          ),
+        ];
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(modalContext).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 14),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      modalContext,
+                    ).colorScheme.onSurface.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 2, 24, 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.layers_outlined,
+                        color: Theme.of(modalContext).colorScheme.primary,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.settingsGlassStyleTitle,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(modalContext).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (final item in options)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        key: ValueKey('glass-style-${item.style.name}'),
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () {
+                          unawaited(themeNotifier.setGlassStyle(item.style));
+                          Navigator.of(modalContext).pop();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: themeNotifier.glassStyle == item.style
+                                  ? Theme.of(modalContext).colorScheme.primary
+                                  : Theme.of(modalContext).colorScheme.outline
+                                        .withValues(alpha: 0.35),
+                              width: themeNotifier.glassStyle == item.style
+                                  ? 1.6
+                                  : 1,
+                            ),
+                            color: themeNotifier.glassStyle == item.style
+                                ? Theme.of(
+                                    modalContext,
+                                  ).colorScheme.primary.withValues(alpha: 0.08)
+                                : Colors.transparent,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                item.icon,
+                                color: themeNotifier.glassStyle == item.style
+                                    ? Theme.of(modalContext).colorScheme.primary
+                                    : Theme.of(modalContext)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.75),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.label,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            themeNotifier.glassStyle ==
+                                                item.style
+                                            ? Theme.of(
+                                                modalContext,
+                                              ).colorScheme.primary
+                                            : Theme.of(
+                                                modalContext,
+                                              ).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      item.hint,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(modalContext)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.62),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (themeNotifier.glassStyle == item.style)
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Theme.of(
+                                    modalContext,
+                                  ).colorScheme.primary,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAccentColorSelector(ThemeNotifier themeNotifier) {
     final l10n = context.l10n;
     final accentColor = themeNotifier.accentColor;

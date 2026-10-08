@@ -11,6 +11,7 @@ import 'package:xxread/utils/ui_style.dart';
 class ThemeNotifier extends ChangeNotifier {
   static const String _themeModePrefKey = 'isDarkMode';
   static const String _uiStylePrefKey = 'ui_style_mode';
+  static const String _glassStylePrefKey = 'glass_style_mode';
   static const String _accentColorPrefKey = 'appAccentColorV2';
 
   // 仅用于从旧版“双层主题 + 强调色”设置迁移。
@@ -26,12 +27,14 @@ class ThemeNotifier extends ChangeNotifier {
     AppThemes.defaultAccentColor,
   );
   AppUiStyle _uiStyle = AppUiStyle.glass;
+  GlassStyle _glassStyle = GlassStyle.frosted;
 
   ThemeMode get themeMode => _themeMode;
   bool get isInitialized => _isInitialized;
   Color get accentColor => _accentColor;
   AppTheme get currentAppTheme => _currentAppTheme;
   AppUiStyle get uiStyle => _uiStyle;
+  GlassStyle get glassStyle => _glassStyle;
   bool get isGlassEffectsEnabled => _uiStyle == AppUiStyle.glass;
   bool get shouldDisableGlassEffects => _uiStyle == AppUiStyle.material3;
 
@@ -43,6 +46,7 @@ class ThemeNotifier extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final isDarkMode = prefs.getBool(_themeModePrefKey);
     _uiStyle = appUiStyleFromStorage(prefs.getString(_uiStylePrefKey));
+    _glassStyle = GlassStyle.fromStorage(prefs.getString(_glassStylePrefKey));
     await prefs.remove('disable_glass_effects');
     final storedAccentColor = prefs.getInt(_accentColorPrefKey);
 
@@ -144,8 +148,19 @@ class ThemeNotifier extends ChangeNotifier {
     return setUiStyle(enabled ? AppUiStyle.glass : AppUiStyle.material3);
   }
 
+  Future<void> setGlassStyle(GlassStyle style) async {
+    if (_glassStyle == style) return;
+    _glassStyle = style;
+    _syncGlassEffectState();
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_glassStylePrefKey, style.storageValue);
+  }
+
   void _syncGlassEffectState() {
     GlassEffectConfig.setDisableAllGlassEffects(shouldDisableGlassEffects);
+    GlassEffectConfig.setGlassStyle(_glassStyle);
     GlassEffectConfig.applyPerformanceMode(
       reduceEffects: shouldDisableGlassEffects,
     );

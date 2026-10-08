@@ -202,8 +202,12 @@ extension _SettingsHubPart on _SettingsPageState {
     final appSettings = context.read<AppSettingsNotifier>();
     if (widget.category == SettingsCategory.preferences) {
       context.select(
-        (ThemeNotifier theme) =>
-            (theme.themeMode, theme.accentColor, theme.uiStyle),
+        (ThemeNotifier theme) => (
+          theme.themeMode,
+          theme.accentColor,
+          theme.uiStyle,
+          theme.glassStyle,
+        ),
       );
       // Project displayed values, not freshly allocated FontOption instances.
       context.select(

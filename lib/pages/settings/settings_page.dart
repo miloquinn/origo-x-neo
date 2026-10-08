@@ -328,9 +328,10 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
 
-    final isMaterial3Style = context.select<ThemeNotifier, bool>(
-      (theme) => theme.uiStyle == AppUiStyle.material3,
+    final themeStyle = context.select<ThemeNotifier, (AppUiStyle, GlassStyle)>(
+      (theme) => (theme.uiStyle, theme.glassStyle),
     );
+    final isMaterial3Style = themeStyle.$1 == AppUiStyle.material3;
     // 检查是否在侧边导航栏模式下
     final navContext = NavigationContext.of(context);
     final useRailNavigation = navContext?.useRailNavigation ?? false;

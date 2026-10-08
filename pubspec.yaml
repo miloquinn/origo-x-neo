@@ -120,6 +120,7 @@ flutter:
   shaders:
     - shaders/reader_classic_page_fold.frag
     - shaders/top_variable_gaussian.frag
+    - shaders/liquid_glass.frag
 
   # To add assets to your application, add an assets section, like this:
   assets:

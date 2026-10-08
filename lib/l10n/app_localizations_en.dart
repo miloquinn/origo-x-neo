@@ -3274,6 +3274,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use translucent surfaces, background blur, and floating depth';
 
   @override
+  String get settingsGlassStyleTitle => 'Glass style';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => 'Frosted glass';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => 'Soft blur';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => 'Liquid glass';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle =>
+      'Clear refraction and edge highlights';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Hide bottom navigation labels';
 

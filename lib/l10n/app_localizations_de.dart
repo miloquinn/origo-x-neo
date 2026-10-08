@@ -3316,6 +3316,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Transluzente Flächen, Hintergrund-Weichzeichnung und schwebende Tiefe verwenden';
 
   @override
+  String get settingsGlassStyleTitle => 'Glasstil';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => 'Milchglas';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => 'Weiche Unschärfe';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => 'Flüssigglas';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle =>
+      'Klare Lichtbrechung und Kantenlichter';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Beschriftungen der unteren Navigation ausblenden';
 

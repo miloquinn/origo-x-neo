@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/utils/glass_config.dart';
+import 'package:xxread/utils/ui_style.dart';
 
 void main() {
   tearDown(() {
     GlassEffectConfig.setDisableAllGlassEffects(false);
+    GlassEffectConfig.setGlassStyle(GlassStyle.frosted);
+    GlassEffectConfig.applyPerformanceMode(reduceEffects: false);
+  });
+
+  test('liquid chrome stays lighter and remembers style while disabled', () {
+    final frostedBlur = GlassEffectConfig.appBarBlur;
+    GlassEffectConfig.setGlassStyle(GlassStyle.liquid);
+    expect(GlassEffectConfig.usesLiquidGlass, isTrue);
+    expect(GlassEffectConfig.appBarBlur, lessThan(frostedBlur));
+    GlassEffectConfig.setDisableAllGlassEffects(true);
+    expect(GlassEffectConfig.usesLiquidGlass, isFalse);
+    expect(GlassEffectConfig.appBarBlur, 0);
+    GlassEffectConfig.setDisableAllGlassEffects(false);
+    expect(GlassEffectConfig.usesLiquidGlass, isTrue);
   });
 
   testWidgets('light chrome follows the active theme tint', (tester) async {

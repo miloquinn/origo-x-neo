@@ -87,6 +87,7 @@ extension _SettingsLayoutPart on _SettingsPageState {
       icon: Icons.palette_outlined,
       children: [
         _buildUiStyleSelector(themeNotifier),
+        _buildGlassStyleVisibility(themeNotifier),
         _buildThemeToggle(themeNotifier),
         _buildAccentColorSelector(themeNotifier),
         _buildAppFontSelector(appSettings),

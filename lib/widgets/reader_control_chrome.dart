@@ -9,6 +9,7 @@ import '../utils/glass_config.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'reader_top_information_bar.dart';
+import 'liquid_glass_surface.dart';
 
 typedef ReaderStatusBuilder =
     Widget Function(BuildContext context, TextStyle? style, Key? key);
@@ -706,6 +707,7 @@ class ReaderControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveBorderRadius = borderRadius ?? BorderRadius.circular(999);
     final blurEnabled = !GlassEffectConfig.shouldDisableBlur;
+    final liquid = blurEnabled && GlassEffectConfig.usesLiquidGlass;
     final surfaceOpacity = blurEnabled
         ? GlassEffectConfig.chromeOpacityFor(palette.brightness)
         : 1.0;
@@ -726,42 +728,51 @@ class ReaderControlBar extends StatelessWidget {
             palette.brightness == Brightness.dark ? 0.06 : 0.1,
           )!
         : cleanSurface;
-    final panel = DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: effectiveBorderRadius,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            highlight.withValues(
-              alpha: (surfaceOpacity + (blurEnabled ? 0.08 : 0.0)).clamp(
-                0.0,
-                1.0,
+    final panel = liquid
+        ? LiquidGlassSurface(
+            shape: RoundedRectangleBorder(borderRadius: effectiveBorderRadius),
+            color: cleanSurface,
+            brightness: palette.brightness,
+            child: Material(color: Colors.transparent, child: child),
+          )
+        : DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: effectiveBorderRadius,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  highlight.withValues(
+                    alpha: (surfaceOpacity + (blurEnabled ? 0.08 : 0.0)).clamp(
+                      0.0,
+                      1.0,
+                    ),
+                  ),
+                  cleanSurface.withValues(
+                    alpha: (surfaceOpacity - (blurEnabled ? 0.02 : 0.0)).clamp(
+                      0.0,
+                      1.0,
+                    ),
+                  ),
+                ],
+              ),
+              border: Border.all(
+                color: blurEnabled
+                    ? Color.lerp(
+                        palette.border,
+                        Colors.white,
+                        palette.brightness == Brightness.dark ? 0.16 : 0.14,
+                      )!.withValues(
+                        alpha: palette.brightness == Brightness.light
+                            ? 0.28
+                            : 0.54,
+                      )
+                    : palette.border,
+                width: 1,
               ),
             ),
-            cleanSurface.withValues(
-              alpha: (surfaceOpacity - (blurEnabled ? 0.02 : 0.0)).clamp(
-                0.0,
-                1.0,
-              ),
-            ),
-          ],
-        ),
-        border: Border.all(
-          color: blurEnabled
-              ? Color.lerp(
-                  palette.border,
-                  Colors.white,
-                  palette.brightness == Brightness.dark ? 0.16 : 0.14,
-                )!.withValues(
-                  alpha: palette.brightness == Brightness.light ? 0.28 : 0.54,
-                )
-              : palette.border,
-          width: 1,
-        ),
-      ),
-      child: Material(color: Colors.transparent, child: child),
-    );
+            child: Material(color: Colors.transparent, child: child),
+          );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -796,7 +807,7 @@ class ReaderControlBar extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: effectiveBorderRadius,
-        child: blurEnabled
+        child: blurEnabled && !liquid
             ? BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
                 child: panel,

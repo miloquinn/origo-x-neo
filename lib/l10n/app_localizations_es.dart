@@ -3320,6 +3320,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Usa superficies translúcidas, desenfoque de fondo y profundidad flotante';
 
   @override
+  String get settingsGlassStyleTitle => 'Estilo de cristal';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => 'Cristal esmerilado';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => 'Desenfoque suave';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => 'Cristal líquido';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle =>
+      'Refracción clara y brillos en los bordes';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Ocultar etiquetas de la navegación inferior';
 

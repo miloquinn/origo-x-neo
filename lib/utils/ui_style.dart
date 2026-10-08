@@ -5,6 +5,30 @@ import 'package:flutter/material.dart';
 
 enum AppUiStyle { glass, material3 }
 
+enum GlassStyle {
+  frosted,
+  liquid;
+
+  String get storageValue {
+    switch (this) {
+      case GlassStyle.frosted:
+        return 'frosted';
+      case GlassStyle.liquid:
+        return 'liquid';
+    }
+  }
+
+  static GlassStyle fromStorage(String? value) {
+    switch (value) {
+      case 'liquid':
+        return GlassStyle.liquid;
+      case 'frosted':
+      default:
+        return GlassStyle.frosted;
+    }
+  }
+}
+
 extension AppUiStyleX on AppUiStyle {
   String get storageValue {
     switch (this) {
@@ -29,14 +53,21 @@ AppUiStyle appUiStyleFromStorage(String? value) {
 @immutable
 class UiStyleThemeExtension extends ThemeExtension<UiStyleThemeExtension> {
   final AppUiStyle style;
+  final GlassStyle glassStyle;
 
-  const UiStyleThemeExtension({required this.style});
+  const UiStyleThemeExtension({
+    required this.style,
+    this.glassStyle = GlassStyle.frosted,
+  });
 
   bool get isMaterial3Style => style == AppUiStyle.material3;
 
   @override
-  UiStyleThemeExtension copyWith({AppUiStyle? style}) {
-    return UiStyleThemeExtension(style: style ?? this.style);
+  UiStyleThemeExtension copyWith({AppUiStyle? style, GlassStyle? glassStyle}) {
+    return UiStyleThemeExtension(
+      style: style ?? this.style,
+      glassStyle: glassStyle ?? this.glassStyle,
+    );
   }
 
   @override

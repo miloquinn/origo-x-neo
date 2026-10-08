@@ -5,6 +5,7 @@
 // 集中管理所有界面的毛玻璃效果和透明度设置
 
 import 'package:flutter/material.dart';
+import 'ui_style.dart';
 
 class GlassEffectConfig {
   // ============ 模糊强度配置 (sigmaX/sigmaY) ============
@@ -18,6 +19,14 @@ class GlassEffectConfig {
   static double _blurScale = 0.85;
   static bool _reduceEffects = false;
   static bool _disableAllGlassEffects = false;
+  static GlassStyle _glassStyle = GlassStyle.frosted;
+
+  static void setGlassStyle(GlassStyle style) => _glassStyle = style;
+
+  static bool get usesLiquidGlass =>
+      !_disableAllGlassEffects && _glassStyle == GlassStyle.liquid;
+
+  static double get liquidRefractionStrength => _reduceEffects ? 3 : 6;
 
   static void applyPerformanceMode({required bool reduceEffects}) {
     _reduceEffects = reduceEffects;
@@ -40,10 +49,11 @@ class GlassEffectConfig {
   static double _scaled(double value) => value * _blurScale;
 
   // 顶部应用栏 (AppBar)
-  static double get appBarBlur => _scaled(_chromeBlurBase);
+  static double get appBarBlur =>
+      _scaled(_chromeBlurBase) * (usesLiquidGlass ? 0.5 : 1);
 
   // 导航栏
-  static double get navigationBarBlur => _scaled(_chromeBlurBase);
+  static double get navigationBarBlur => appBarBlur;
 
   // 阅读页面控制栏（与顶栏/导航栏保持一致）
   static double get readingTopBarBlur => appBarBlur;

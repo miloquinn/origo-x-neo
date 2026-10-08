@@ -5818,6 +5818,36 @@ abstract class AppLocalizations {
   /// **'Use translucent surfaces, background blur, and floating depth'**
   String get settingsGlassEffectSubtitle;
 
+  /// Title of the glass style setting and picker
+  ///
+  /// In en, this message translates to:
+  /// **'Glass style'**
+  String get settingsGlassStyleTitle;
+
+  /// No description provided for @settingsGlassStyleFrostedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frosted glass'**
+  String get settingsGlassStyleFrostedTitle;
+
+  /// No description provided for @settingsGlassStyleFrostedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft blur'**
+  String get settingsGlassStyleFrostedSubtitle;
+
+  /// No description provided for @settingsGlassStyleLiquidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquid glass'**
+  String get settingsGlassStyleLiquidTitle;
+
+  /// No description provided for @settingsGlassStyleLiquidSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear refraction and edge highlights'**
+  String get settingsGlassStyleLiquidSubtitle;
+
   /// Title of the mobile bottom navigation label visibility toggle
   ///
   /// In en, this message translates to:

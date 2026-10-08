@@ -3324,6 +3324,22 @@ class AppLocalizationsIt extends AppLocalizations {
       'Usa superfici traslucide, sfocatura dello sfondo e profondità flottante';
 
   @override
+  String get settingsGlassStyleTitle => 'Stile vetro';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => 'Vetro smerigliato';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => 'Sfocatura morbida';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => 'Vetro liquido';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle =>
+      'Rifrazione nitida e riflessi sui bordi';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Nascondi etichette della barra di navigazione inferiore';
 

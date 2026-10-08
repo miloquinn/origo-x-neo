@@ -3305,6 +3305,22 @@ class AppLocalizationsRu extends AppLocalizations {
       'Полупрозрачные поверхности, размытие фона и эффект парения';
 
   @override
+  String get settingsGlassStyleTitle => 'Стиль стекла';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => 'Матовое стекло';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => 'Мягкое размытие';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => 'Жидкое стекло';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle =>
+      'Чистое преломление и подсветка краёв';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Скрыть подписи нижней навигации';
 

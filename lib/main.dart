@@ -629,11 +629,13 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
                   themeNotifier.currentAppTheme,
                   appFontFamily,
                   themeNotifier.uiStyle,
+                  themeNotifier.glassStyle,
                 ),
                 darkTheme: _buildDarkTheme(
                   themeNotifier.currentAppTheme,
                   appFontFamily,
                   themeNotifier.uiStyle,
+                  themeNotifier.glassStyle,
                 ),
                 themeMode: themeNotifier.themeMode,
                 locale: locale,
@@ -788,12 +790,14 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     AppTheme appTheme,
     String? appFontFamily,
     AppUiStyle uiStyle,
+    GlassStyle glassStyle,
   ) {
     return _buildThemeData(
       colorScheme: appTheme.lightColorScheme,
       brightness: Brightness.light,
       appFontFamily: appFontFamily,
       uiStyle: uiStyle,
+      glassStyle: glassStyle,
     );
   }
 
@@ -801,12 +805,14 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     AppTheme appTheme,
     String? appFontFamily,
     AppUiStyle uiStyle,
+    GlassStyle glassStyle,
   ) {
     return _buildThemeData(
       colorScheme: appTheme.darkColorScheme,
       brightness: Brightness.dark,
       appFontFamily: appFontFamily,
       uiStyle: uiStyle,
+      glassStyle: glassStyle,
     );
   }
 
@@ -815,6 +821,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     required Brightness brightness,
     required String? appFontFamily,
     required AppUiStyle uiStyle,
+    required GlassStyle glassStyle,
   }) {
     final isDark = brightness == Brightness.dark;
     final isMaterial3Style = uiStyle == AppUiStyle.material3;
@@ -862,7 +869,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
         thickness: 0.7,
       ),
       extensions: <ThemeExtension<dynamic>>[
-        UiStyleThemeExtension(style: uiStyle),
+        UiStyleThemeExtension(style: uiStyle, glassStyle: glassStyle),
       ],
     );
   }

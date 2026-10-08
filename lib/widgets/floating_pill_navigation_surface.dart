@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../utils/glass_config.dart';
 import '../utils/ui_style.dart';
 import 'elastic_press.dart';
+import 'liquid_glass_surface.dart';
 
 /// Visual surface shared by the home navigation and page-level floating tabs.
 class FloatingPillNavigationSurface extends StatelessWidget {
@@ -86,7 +87,13 @@ class FloatingPillNavigationSurface extends StatelessWidget {
               Positioned.fill(
                 child: ClipPath(
                   clipper: ShapeBorderClipper(shape: shape),
-                  child: disableBlur
+                  child: !disableBlur && GlassEffectConfig.usesLiquidGlass
+                      ? LiquidGlassSurface(
+                          shape: shape,
+                          color: GlassEffectConfig.chromeSurfaceColor(context),
+                          child: SizedBox(width: width, height: height),
+                        )
+                      : disableBlur
                       ? surface
                       : BackdropFilter(
                           filter: ImageFilter.blur(

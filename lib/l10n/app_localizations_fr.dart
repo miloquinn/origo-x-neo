@@ -3327,6 +3327,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'Utiliser des surfaces translucides, un flou d\'arrière-plan et une profondeur flottante';
 
   @override
+  String get settingsGlassStyleTitle => 'Style de verre';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => 'Verre dépoli';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => 'Flou doux';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => 'Verre liquide';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle =>
+      'Réfraction nette et reflets sur les bords';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Masquer les libellés de la barre de navigation inférieure';
 

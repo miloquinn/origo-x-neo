@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/services/core/theme_notifier.dart';
 import 'package:xxread/utils/app_themes.dart';
+import 'package:xxread/utils/ui_style.dart';
 
 Future<ThemeNotifier> _loadNotifier() async {
   final notifier = ThemeNotifier();
@@ -117,5 +118,43 @@ void main() {
       namedNotifier.accentColor,
       AppThemes.accentColorForLegacyTheme('purple'),
     );
+  });
+
+  test('missing glass style keeps the existing glass UI style', () async {
+    SharedPreferences.setMockInitialValues({'ui_style_mode': 'glass'});
+
+    final notifier = await _loadNotifier();
+    addTearDown(notifier.dispose);
+
+    expect(notifier.uiStyle, AppUiStyle.glass);
+    expect(notifier.glassStyle, GlassStyle.frosted);
+    expect(GlassStyle.fromStorage('unknown'), GlassStyle.frosted);
+  });
+
+  test('glass style persists across notifier recreation', () async {
+    final notifier = await _loadNotifier();
+    await notifier.setGlassStyle(GlassStyle.liquid);
+    notifier.dispose();
+
+    final restored = await _loadNotifier();
+    addTearDown(restored.dispose);
+
+    expect(restored.glassStyle, GlassStyle.liquid);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('glass_style_mode'), 'liquid');
+  });
+
+  test('disabling and re-enabling glass remembers its style', () async {
+    final notifier = await _loadNotifier();
+    addTearDown(notifier.dispose);
+
+    await notifier.setGlassStyle(GlassStyle.liquid);
+    await notifier.setGlassEffectsEnabled(false);
+    expect(notifier.uiStyle, AppUiStyle.material3);
+    expect(notifier.glassStyle, GlassStyle.liquid);
+
+    await notifier.setGlassEffectsEnabled(true);
+    expect(notifier.uiStyle, AppUiStyle.glass);
+    expect(notifier.glassStyle, GlassStyle.liquid);
   });
 }

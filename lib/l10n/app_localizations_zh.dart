@@ -3113,6 +3113,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsGlassEffectSubtitle => '开启半透明、背景模糊和悬浮层次效果';
 
   @override
+  String get settingsGlassStyleTitle => '玻璃样式';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => '毛玻璃';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => '柔和模糊';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => '液态玻璃';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle => '清透折射与边缘高光';
+
+  @override
   String get settingsHideNavigationLabelsTitle => '隐藏底部导航文字';
 
   @override
@@ -10444,6 +10459,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsGlassEffectSubtitle => '開啟半透明、背景模糊和懸浮層次效果';
+
+  @override
+  String get settingsGlassStyleTitle => '玻璃樣式';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => '毛玻璃';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => '柔和模糊';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => '液態玻璃';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle => '清透折射與邊緣高光';
 
   @override
   String get settingsHideNavigationLabelsTitle => '隱藏底部導覽文字';

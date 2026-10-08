@@ -3312,6 +3312,22 @@ class AppLocalizationsPt extends AppLocalizations {
       'Usar superfícies translúcidas, desfoque de fundo e profundidade flutuante';
 
   @override
+  String get settingsGlassStyleTitle => 'Estilo de vidro';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => 'Vidro fosco';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => 'Desfoque suave';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => 'Vidro líquido';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle =>
+      'Refração nítida e realces nas bordas';
+
+  @override
   String get settingsHideNavigationLabelsTitle =>
       'Ocultar rótulos da navegação inferior';
 

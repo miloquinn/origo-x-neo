@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../utils/glass_config.dart';
 import '../utils/ui_style.dart';
+import 'liquid_glass_surface.dart';
 
 class GlassControlSurface extends StatelessWidget {
   const GlassControlSurface({
@@ -45,6 +46,22 @@ class GlassControlSurface extends StatelessWidget {
     final brightness = scheme.brightness;
     final glassEnabled = usesGlass(context, useGlass: useGlass);
     final baseColor = color ?? scheme.secondaryContainer;
+    if (glassEnabled && GlassEffectConfig.usesLiquidGlass) {
+      return ClipPath(
+        clipper: ShapeBorderClipper(shape: shape),
+        clipBehavior: Clip.antiAlias,
+        child: LiquidGlassSurface(
+          shape: shape,
+          color: baseColor,
+          filterBackground: blurBackground,
+          child: Padding(
+            // The frosted ShapeDecoration reserves its one-pixel border.
+            padding: shape.copyWith(side: const BorderSide()).dimensions,
+            child: Opacity(opacity: enabled ? 1 : 0.58, child: child),
+          ),
+        ),
+      );
+    }
     final resolvedShape = shape.copyWith(
       side: BorderSide(
         color: _borderColor(

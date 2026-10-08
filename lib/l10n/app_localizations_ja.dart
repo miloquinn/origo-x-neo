@@ -3160,6 +3160,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsGlassEffectSubtitle => '半透明・背景ぼかし・浮遊感のあるレイヤー効果を有効にします';
 
   @override
+  String get settingsGlassStyleTitle => 'ガラススタイル';
+
+  @override
+  String get settingsGlassStyleFrostedTitle => 'すりガラス';
+
+  @override
+  String get settingsGlassStyleFrostedSubtitle => 'やわらかなぼかし';
+
+  @override
+  String get settingsGlassStyleLiquidTitle => 'リキッドガラス';
+
+  @override
+  String get settingsGlassStyleLiquidSubtitle => '透明感のある屈折とエッジのハイライト';
+
+  @override
   String get settingsHideNavigationLabelsTitle => '下部ナビゲーションの文字を隠す';
 
   @override
