@@ -141,14 +141,25 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
     required bool wholeBook,
   }) {
     if (!_restorePagedPosition) return;
+    final generation = _catalogGeneration;
+    final loadSerial = _chapterLoadSerial;
+    bool isCurrent() =>
+        mounted &&
+        generation == _catalogGeneration &&
+        loadSerial == _chapterLoadSerial;
     _autoScrollRestoring = true;
     final chapterIndex = _chapterIndex;
     final textLength = _readableChapterText[chapterIndex]?.length ?? 0;
     final restoreOffset =
         _restoreTextOffset ?? (_restorePageProgress * textLength).round();
-    final restoreCentered = _autoRestoreCentered || restoreOffset > 0;
+    final restoresChapterStart =
+        _restoreTextOffset == null && restoreOffset == 0;
+    final restoreCentered =
+        !restoresChapterStart && (_autoRestoreCentered || restoreOffset > 0);
     _autoRestoreCentered = false;
-    final pageIndex = bookSourcePageIndexForOffset(layout.pages, restoreOffset);
+    final pageIndex = restoresChapterStart
+        ? 0
+        : bookSourcePageIndexForOffset(layout.pages, restoreOffset);
     final partKey = _verticalPartKey(chapterIndex, pageIndex);
     _verticalPageCount = layout.pages.length;
     _verticalPageIndex = pageIndex;
@@ -160,7 +171,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
         ? (restoreOffset / textLength).clamp(0.0, 1.0)
         : _restorePageProgress;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!isCurrent()) return;
       _scrollProgress.value = restoredProgress;
       if (!wholeBook && _verticalPageScrollController.isAttached) {
         _verticalPageScrollController.jumpTo(index: pageIndex);
@@ -168,7 +179,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
         _verticalChapterScrollController.jumpTo(index: chapterIndex);
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+        if (!isCurrent()) return;
         final targetContext = partKey.currentContext;
         if (targetContext == null) {
           _updateReaderState(() => _autoScrollRestoring = false);
@@ -182,7 +193,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
           ),
         );
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
+          if (!isCurrent()) return;
           final caretOffset = _verticalCaretOffset(
             chapterIndex,
             pageIndex,
@@ -194,7 +205,9 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
               ? null
               : Scrollable.maybeOf(currentTarget);
           _updateReaderState(() => _autoScrollRestoring = false);
-          if (caretOffset != null && scrollable != null) {
+          if (!restoresChapterStart &&
+              caretOffset != null &&
+              scrollable != null) {
             final paragraph = readerParagraphForKey(partKey);
             final adjustment = restoreCentered && paragraph != null
                 ? paragraph.localToGlobal(Offset(0, caretOffset)).dy -
@@ -214,6 +227,9 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
 
   void _onVerticalPagePositionsChanged() {
     if (!mounted ||
+        _loadingCatalog ||
+        _loadingContent ||
+        _error != null ||
         _restorePagedPosition ||
         _autoScrollRestoring ||
         _pageMode != BookSourcePageMode.verticalScroll ||
@@ -250,6 +266,9 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
 
   void _onVerticalChapterPositionsChanged() {
     if (!mounted ||
+        _loadingCatalog ||
+        _loadingContent ||
+        _error != null ||
         _restorePagedPosition ||
         _autoScrollRestoring ||
         _pageMode != BookSourcePageMode.verticalScroll ||
@@ -267,7 +286,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
     final nextChapter = primary.index.clamp(0, _chapters.length - 1);
     final content = _prefetchedContent[nextChapter];
     if (content == null) {
-      unawaited(_continuousContentFor(nextChapter));
+      unawaited(_loadVisibleVerticalChapter(nextChapter));
       return;
     }
     final layout = _verticalLayoutFor(
@@ -316,54 +335,110 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
     _scheduleProgressSave();
   }
 
+  Future<void> _loadVisibleVerticalChapter(int index) async {
+    final generation = _catalogGeneration;
+    final loadSerial = _chapterLoadSerial;
+    try {
+      await _continuousContentFor(index);
+    } catch (_) {
+      if (!mounted ||
+          generation != _catalogGeneration ||
+          loadSerial != _chapterLoadSerial ||
+          _loadingCatalog ||
+          _loadingContent ||
+          _error != null) {
+        return;
+      }
+      final primary = pickPrimaryReaderItem(
+        _verticalChapterPositionsListener.itemPositions.value.map(
+          readerVisibleItemPositionFromItemPosition,
+        ),
+      );
+      if (primary?.index != index) return;
+      // This chapter is now visible, so failed speculative content becomes
+      // a foreground load with the same recovery and error handling as turns.
+      await _loadChapter(index);
+    }
+  }
+
   Widget _buildAnnotatedTextPage(
     BookSourceTextPage page, {
     required int chapterIndex,
     required int pageIndex,
     required BookSourceChapterContent content,
     bool fillAvailableSpace = true,
-  }) {
-    final chapterTitle = _chapters[chapterIndex].title;
-    final sourceText =
-        _readableChapterText[chapterIndex] ??
-        readableBookSourceChapterText(
-          content,
-          fallbackTitle: _chapters[chapterIndex].title,
-        );
-    return ReaderAnnotatedTextPage(
-      key: ValueKey(
-        'source-annotated-page:${_chapters[chapterIndex].id}:$pageIndex:'
-        '${page.startOffset}:${page.endOffset}',
-      ),
-      page: page,
-      sourceText: sourceText,
-      chapterId: _chapters[chapterIndex].id,
-      chapterTitle: chapterTitle,
-      chapterIndex: chapterIndex,
-      pageIndex: pageIndex,
-      bookId: _shelfBookId,
-      format: content.contentType == 'text/html'
-          ? BookFormat.html
-          : BookFormat.txt,
-      renderer: ReaderRendererType.flutterNative,
-      palette: _readerTheme,
-      bodyStyle: _bodyTextStyle,
-      flowStyle: _bodyTextFlowStyle(),
-      annotations: _annotations,
-      spokenHighlight: _readerAloudHighlight,
-      onSaveTextAnnotation: _saveTextAnnotation,
-      onAnnotationUnavailable: () => _ensureAnnotationBook(),
-      onAskAiSelection: _askAiAboutSelection,
-      onSearchSelection: (selection) =>
-          _showFullTextSearch(initialQuery: selection.selectedText),
-      fillAvailableSpace: fillAvailableSpace,
-      onInteractionChanged: (active) {
-        if (!mounted || _annotationInteractionActive == active) return;
-        if (active) _pauseAutoPageTurn();
-        _updateReaderState(() => _annotationInteractionActive = active);
-      },
-    );
-  }
+  }) => Builder(
+    builder: (context) {
+      final chapterTitle = _chapters[chapterIndex].title;
+      final tapToSeek = context.select<ReaderAloudService?, bool>(
+        (service) => service?.tapToSeek ?? false,
+      );
+      final listening = context
+          .select<ReaderAloudSession?, ReaderAloudController?>(
+            (session) =>
+                session?.sourceId ==
+                        'source:${widget.source.id}:${widget.book.id}' &&
+                    session!.isActive
+                ? session.controller
+                : null,
+          );
+      final sourceText =
+          _readableChapterText[chapterIndex] ??
+          readableBookSourceChapterText(
+            content,
+            fallbackTitle: _chapters[chapterIndex].title,
+          );
+      return ReaderAnnotatedTextPage(
+        key: ValueKey(
+          'source-annotated-page:${_chapters[chapterIndex].id}:$pageIndex:'
+          '${page.startOffset}:${page.endOffset}',
+        ),
+        page: page,
+        sourceText: sourceText,
+        chapterId: _chapters[chapterIndex].id,
+        chapterTitle: chapterTitle,
+        chapterIndex: chapterIndex,
+        pageIndex: pageIndex,
+        bookId: _shelfBookId,
+        format: content.contentType == 'text/html'
+            ? BookFormat.html
+            : BookFormat.txt,
+        renderer: ReaderRendererType.flutterNative,
+        palette: _readerTheme,
+        bodyStyle: _bodyTextStyle,
+        flowStyle: _bodyTextFlowStyle(),
+        annotations: _annotations,
+        spokenHighlight: _readerAloudHighlight,
+        onPlayFromOffset: tapToSeek && listening != null
+            ? (offset) {
+                final controller = _ensureReaderAloudController();
+                if (controller == null) return;
+                _stopAutoPageTurn();
+                unawaited(
+                  controller.playFromOffset(
+                    ReaderAloudPosition(
+                      chapterIndex: chapterIndex,
+                      offset: offset,
+                    ),
+                  ),
+                );
+              }
+            : null,
+        onSaveTextAnnotation: _saveTextAnnotation,
+        onAnnotationUnavailable: () => _ensureAnnotationBook(),
+        onAskAiSelection: _askAiAboutSelection,
+        onSearchSelection: (selection) =>
+            _showFullTextSearch(initialQuery: selection.selectedText),
+        onPurifySelection: _purifySelection,
+        fillAvailableSpace: fillAvailableSpace,
+        onInteractionChanged: (active) {
+          if (!mounted || _annotationInteractionActive == active) return;
+          if (active) _pauseAutoPageTurn();
+          _updateReaderState(() => _annotationInteractionActive = active);
+        },
+      );
+    },
+  );
 
   Widget _buildVerticalPageCell(
     BookSourceTextPage page,
@@ -417,17 +492,31 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
     final cached = _prefetchedContent[chapterIndex];
     Widget buildContent(BookSourceChapterContent content) {
       final layout = _verticalLayoutFor(chapterIndex, content, viewport);
-      return Column(
-        children: [
-          for (var pageIndex = 0; pageIndex < layout.pages.length; pageIndex++)
-            _buildVerticalPageCell(
-              layout.pages[pageIndex],
-              viewport,
-              chapterIndex: chapterIndex,
-              pageIndex: pageIndex,
-              content: content,
-            ),
-        ],
+      return ConstrainedBox(
+        // A short final chapter must still be able to align at the top.
+        // Otherwise the viewport center remains in the previous chapter and
+        // its position callback immediately overwrites a successful retry.
+        constraints: BoxConstraints(
+          minHeight: chapterIndex == _chapters.length - 1
+              ? _verticalPageExtentFor(viewport)
+              : 0,
+        ),
+        child: Column(
+          children: [
+            for (
+              var pageIndex = 0;
+              pageIndex < layout.pages.length;
+              pageIndex++
+            )
+              _buildVerticalPageCell(
+                layout.pages[pageIndex],
+                viewport,
+                chapterIndex: chapterIndex,
+                pageIndex: pageIndex,
+                content: content,
+              ),
+          ],
+        ),
       );
     }
 
@@ -435,6 +524,9 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
       return buildContent(cached);
     }
     return FutureBuilder<BookSourceChapterContent>(
+      key: ValueKey(
+        'source-chapter-load:$_catalogGeneration:${_chapters[chapterIndex].id}',
+      ),
       future: _continuousContentFor(chapterIndex),
       builder: (context, snapshot) {
         final content = snapshot.data;
@@ -444,11 +536,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
             height: _verticalPageExtentFor(viewport),
             child: Center(
               child: TextButton.icon(
-                onPressed: () {
-                  _updateReaderState(
-                    () => _continuousContentLoads.remove(chapterIndex),
-                  );
-                },
+                onPressed: () => _loadChapter(chapterIndex, saveCurrent: false),
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text(context.l10n.retry),
               ),
@@ -486,7 +574,8 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
       onHorizontalDragEnd: _handleHorizontalSwipe,
       child: ScrollablePositionedList.builder(
         key: ValueKey(
-          'source-vertical-pages:$_chapterIndex:${layout.fingerprint}',
+          'source-vertical-pages:$_catalogGeneration:$_chapterIndex:'
+          '${layout.fingerprint}',
         ),
         itemScrollController: _verticalPageScrollController,
         scrollOffsetController: _verticalPageOffsetController,
@@ -533,7 +622,8 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
       surfaceKey: const ValueKey('book-source-reader-surface'),
       child: ScrollablePositionedList.builder(
         key: ValueKey(
-          'source-vertical-book:${viewport.width.toStringAsFixed(1)}:'
+          'source-vertical-book:$_catalogGeneration:'
+          '${viewport.width.toStringAsFixed(1)}:'
           '${viewport.height.toStringAsFixed(1)}:'
           '${_fontSize.toStringAsFixed(1)}:$_fontWeight:'
           '${_lineHeight.toStringAsFixed(2)}:'

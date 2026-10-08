@@ -5,42 +5,198 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     int index, {
     double restoreProgress = 0,
     bool saveCurrent = true,
+    bool Function()? shouldApply,
   }) async {
+    if (!(shouldApply?.call() ?? true)) return;
     if (index < 0 || index >= _chapters.length) return;
     if (saveCurrent && index > _chapterIndex) _sessionPagesRead++;
     if (saveCurrent && _content != null) unawaited(_saveProgress());
     if (!mounted) return;
     final loadSerial = ++_chapterLoadSerial;
+    var catalogGeneration = _catalogGeneration;
+    var targetIndex = index;
+    bool isCurrent() =>
+        mounted &&
+        loadSerial == _chapterLoadSerial &&
+        catalogGeneration == _catalogGeneration &&
+        (shouldApply?.call() ?? true);
     _updateReaderState(() {
       _loadingContent = true;
+      // This load owns the next restore; old frame callbacks are now stale.
+      _autoScrollRestoring = false;
       _requestedChapterIndex = index;
       _error = null;
     });
     try {
-      final contentFuture = _continuousContentFor(index);
-      final content = await contentFuture;
-      if (!mounted || loadSerial != _chapterLoadSerial) return;
-      if (await _deferChapterApplyForOpeningFlight(index)) {
-        if (!mounted || loadSerial != _chapterLoadSerial) return;
+      final loaded = await _chapterContentWithRecovery(
+        index,
+        shouldApply: () =>
+            mounted &&
+            loadSerial == _chapterLoadSerial &&
+            (shouldApply?.call() ?? true),
+        onCatalogChanged: (mappedIndex) {
+          targetIndex = mappedIndex;
+          catalogGeneration = _catalogGeneration;
+        },
+      );
+      if (loaded == null) return;
+      targetIndex = loaded.index;
+      final content = loaded.content;
+      catalogGeneration = _catalogGeneration;
+      if (!isCurrent()) return;
+      if (await _deferChapterApplyForOpeningFlight(targetIndex)) {
+        if (!isCurrent()) return;
       }
-      while (mounted &&
-          loadSerial == _chapterLoadSerial &&
+      while (isCurrent() &&
           _pageMode != BookSourcePageMode.verticalScroll &&
           !_pagedViewportSize.isEmpty &&
-          _cachedPagedLayoutFor(index, content, _pagedViewportSize) == null) {
-        await _warmPagedLayout(index);
+          _cachedPagedLayoutFor(targetIndex, content, _pagedViewportSize) ==
+              null) {
+        await _warmPagedLayout(targetIndex);
       }
-      if (!mounted || loadSerial != _chapterLoadSerial) return;
-      _applyLoadedChapter(index, content, restoreProgress: restoreProgress);
+      if (!isCurrent()) return;
+      _applyLoadedChapter(
+        targetIndex,
+        content,
+        restoreProgress: restoreProgress,
+      );
     } catch (error) {
-      if (!mounted || loadSerial != _chapterLoadSerial) return;
+      if (!isCurrent()) return;
       _updateReaderState(() {
         _loadingContent = false;
-        _requestedChapterIndex = null;
+        _requestedChapterIndex = targetIndex;
         _error = error;
         _controlsVisible = true;
       });
+    } finally {
+      // Only this load may clear its cancelled loading surface; a newer load
+      // retains ownership of its own requested chapter and restore anchor.
+      if (mounted &&
+          loadSerial == _chapterLoadSerial &&
+          !(shouldApply?.call() ?? true)) {
+        _updateReaderState(() {
+          _loadingContent = false;
+          _requestedChapterIndex = null;
+          _restoreTextOffset = null;
+        });
+      }
     }
+  }
+
+  Future<({int index, BookSourceChapterContent content})?>
+  _chapterContentWithRecovery(
+    int index, {
+    required bool Function() shouldApply,
+    void Function(int index)? onCatalogChanged,
+  }) async {
+    var generation = _catalogGeneration;
+    bool isCurrent() =>
+        mounted && generation == _catalogGeneration && shouldApply();
+    if (!isCurrent()) return null;
+    BookSourceChapterContent content;
+    var targetIndex = index;
+    try {
+      content = await _continuousContentFor(index);
+    } on BookSourceProtocolException catch (error) {
+      if (!isCurrent()) return null;
+      if (!error.isMissingChapter) rethrow;
+      final mapped = await _refreshCatalogChapter(
+        index,
+        shouldApply: isCurrent,
+      );
+      if (mapped == null) {
+        if (!isCurrent()) return null;
+        rethrow;
+      }
+      targetIndex = mapped;
+      generation = _catalogGeneration;
+      onCatalogChanged?.call(targetIndex);
+      // Only one recovery attempt; surface a second failure to the caller.
+      content = await _continuousContentFor(targetIndex);
+    }
+    if (!isCurrent()) return null;
+    return (index: targetIndex, content: content);
+  }
+
+  Future<int?> _refreshCatalogChapter(
+    int index, {
+    required bool Function() shouldApply,
+    bool following = false,
+  }) async {
+    final generation = _catalogGeneration;
+    final targetChapter = _chapters[index];
+    final targetTitle = _sourceChapterTitle(index);
+    bool isCurrent() =>
+        mounted && generation == _catalogGeneration && shouldApply();
+    final rawChapters = [
+      ...await _client.getChaptersForDownload(
+        widget.source,
+        widget.book.id,
+        sourceVariables: widget.book.sourceVariables,
+      ),
+    ]..sort((a, b) => a.order.compareTo(b.order));
+    if (!isCurrent()) return null;
+    if (rawChapters.isEmpty ||
+        rawChapters.map((chapter) => chapter.id).toSet().length !=
+            rawChapters.length) {
+      return null;
+    }
+    var mappedIndex = _chapterIndexInCatalog(
+      rawChapters,
+      id: targetChapter.id,
+      title: targetTitle,
+    );
+    if (mappedIndex == null) return null;
+    if (following) mappedIndex++;
+    if (mappedIndex >= rawChapters.length) return null;
+    final chapters = await _withReplacedChapterTitles(rawChapters);
+    if (!isCurrent()) return null;
+    // Listening can refresh the catalog without turning the visible page yet.
+    // Keep that page readable if the next content request is slow or cancelled.
+    final visibleContent = _loadingContent ? null : _content;
+    final visibleIndex = visibleContent == null
+        ? null
+        : _chapterIndexInCatalog(
+            rawChapters,
+            id: _chapters[_chapterIndex].id,
+            title: _sourceChapterTitle(_chapterIndex),
+          );
+    final visibleText = _readableChapterText[_chapterIndex];
+    final visibleOffset = _currentTextOffset;
+    final visibleProgress = _currentReadingProgress;
+    _updateReaderState(() {
+      _replaceChapterCatalog(chapters, {
+        for (final chapter in rawChapters) chapter.id: chapter.title,
+      });
+      if (visibleContent != null && visibleIndex != null) {
+        _chapterIndex = visibleIndex;
+        _content = visibleContent;
+        _prefetchedContent[visibleIndex] = visibleContent;
+        if (visibleText != null) {
+          _readableChapterText[visibleIndex] = visibleText;
+        }
+        _restoreTextOffset = visibleOffset;
+        _restorePageProgress = visibleProgress;
+        _restorePagedPosition = true;
+      }
+      if (_loadingContent) _requestedChapterIndex = mappedIndex;
+    });
+    return mappedIndex;
+  }
+
+  int? _chapterIndexInCatalog(
+    List<BookSourceChapter> chapters, {
+    required String id,
+    required String title,
+  }) {
+    final byId = chapters.indexWhere((chapter) => chapter.id == id);
+    if (byId >= 0) return byId;
+    final normalizedTitle = normalizeChapterTitle(title);
+    if (normalizedTitle.isEmpty) return null;
+    final matches = chapters.indexed.where(
+      (entry) => normalizeChapterTitle(entry.$2.title) == normalizedTitle,
+    );
+    return matches.length == 1 ? matches.single.$1 : null;
   }
 
   void _applyLoadedChapter(
@@ -134,10 +290,12 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
   }
 
   Future<void> _preloadAround(int index) async {
+    final generation = _catalogGeneration;
     // The next chapter is the only cache entry needed for a forward turn.
     // Load and lay it out before competing for a source connection with the
     // backwards preview or the farther look-ahead chapter.
     await _preloadChapter(index + 1);
+    if (!mounted || generation != _catalogGeneration) return;
     for (final chapterIndex in <int>[index - 1, index + 2]) {
       unawaited(_preloadChapter(chapterIndex));
     }
@@ -145,8 +303,10 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
 
   Future<void> _preloadChapter(int index) async {
     if (index < 0 || index >= _chapters.length) return;
+    final generation = _catalogGeneration;
     try {
       await _continuousContentFor(index);
+      if (!mounted || generation != _catalogGeneration) return;
       _schedulePagedLayoutWarm(index);
     } catch (_) {
       // Adjacent content is opportunistic and can be retried on demand.
@@ -160,17 +320,25 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     }
     final inFlight = _continuousContentLoads[index];
     if (inFlight != null) return inFlight;
+    final generation = _catalogGeneration;
+    final chapter = _chapters[index];
+    final chapterTitle = _sourceChapterTitle(index);
+    bool isCurrent() =>
+        mounted &&
+        generation == _catalogGeneration &&
+        index < _chapters.length &&
+        _chapters[index].id == chapter.id;
     late final Future<BookSourceChapterContent> future;
     final contentFuture = cached != null
         ? Future<BookSourceChapterContent>.value(cached)
         : _client.getChapterContent(
             widget.source,
             bookId: widget.book.id,
-            chapterId: _chapters[index].id,
+            chapterId: chapter.id,
             sourceVariables: {
               ...widget.book.sourceVariables,
               'chapterIndex': '$index',
-              'chapterTitle': _sourceChapterTitle(index),
+              'chapterTitle': chapterTitle,
               'bookName': widget.book.title,
               'bookAuthor': widget.book.author,
               'bookType': '${widget.book.type}',
@@ -178,23 +346,39 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
           );
     future = contentFuture
         .then((content) async {
-          _readableChapterText.remove(index);
+          if (!isCurrent()) return content;
           final readable = isImageOnlyBookSourceChapter(content)
               ? ''
               : await readableBookSourceChapterTextAsync(
                   content,
-                  fallbackTitle: _sourceChapterTitle(index),
+                  fallbackTitle: chapterTitle,
                 );
-          _readableChapterText[index] = await _replaceRules.applyAsync(
-            readable,
+          if (!isCurrent()) return content;
+          final replacement = await _replaceRules.applyBatchAsync(
+            <String>[readable],
             bookTitle: widget.book.title,
             sourceName: widget.source.name,
+            sourceUrl: _replaceRuleSourceUrl,
+            bookId: _replaceRuleBookId,
+            eligibleByDefault: _replaceRulesEligibleByDefault,
           );
+          if (!isCurrent()) return content;
+          final replacedText = replacement.values.single;
+          _effectiveReplaceRuleIdsByChapter[index] = replacement
+              .effectiveRuleIds
+              .toSet();
+          if (index == _chapterIndex) {
+            _effectiveReplaceRuleIds = Set<String>.unmodifiable(
+              _effectiveReplaceRuleIdsByChapter[index]!,
+            );
+          }
+          _readableChapterText[index] = replacedText;
           while (_readableChapterText.length >
               _bookSourceReadableChapterTextLimit) {
             _readableChapterText.remove(_readableChapterText.keys.first);
           }
           await _loadOnlinePagination(index);
+          if (!isCurrent()) return content;
           _prefetchedContent[index] = content;
           _trimChapterMemoryCaches();
           if (!mounted) {
@@ -312,6 +496,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     if (cached != null) return Future.value(cached);
     final existing = _pagedLayoutWarms[index];
     if (existing != null) return existing;
+    final generation = _catalogGeneration;
     late final Future<_BookSourcePagedLayout?> future;
     future = Future<void>.value()
         .then((_) async {
@@ -340,11 +525,12 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
             viewport,
             yieldBetweenPages: _yieldForPagedLayout,
             isCurrent: () =>
+                generation == _catalogGeneration &&
                 identical(_pagedLayoutWarms[index], future) &&
                 _pagedViewportSize == viewport &&
                 identical(_prefetchedContent[index], content),
           );
-          if (result != null && mounted) {
+          if (result != null && mounted && generation == _catalogGeneration) {
             final leading = _slideLeadingPageCount(_chapterIndex);
             final needsSlideRebase =
                 _pageMode == BookSourcePageMode.horizontalSlide &&
@@ -410,10 +596,32 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     int index, {
     int? textOffset,
     double progress = 0,
+    bool Function()? shouldApply,
   }) async {
+    if (!(shouldApply?.call() ?? true)) return;
     if (index < 0 || index >= _chapters.length) return;
-    final content = await _continuousContentFor(index);
-    if (!mounted) return;
+    final loadSerial = _chapterLoadSerial + 1;
+    _restoreTextOffset = textOffset;
+    await _loadChapter(
+      index,
+      restoreProgress: progress,
+      shouldApply: shouldApply,
+    );
+    if (!mounted ||
+        !(shouldApply?.call() ?? true) ||
+        loadSerial != _chapterLoadSerial ||
+        _error != null ||
+        _content == null) {
+      return;
+    }
+    index = _chapterIndex;
+    final content = _content!;
+    final generation = _catalogGeneration;
+    bool isCurrent() =>
+        mounted &&
+        generation == _catalogGeneration &&
+        loadSerial == _chapterLoadSerial &&
+        (shouldApply?.call() ?? true);
     var targetPage = 0;
     _BookSourceVerticalLayout? layout;
     if (!_verticalViewportSize.isEmpty) {
@@ -435,7 +643,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
         ? 0
         : targetPage / (_verticalPageCount - 1);
     await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) return;
+    if (!isCurrent()) return;
     if (_effectiveScrollByChapter) {
       if (_verticalPageScrollController.isAttached) {
         await _verticalPageScrollController.scrollTo(
@@ -444,7 +652,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
           curve: Curves.easeOutCubic,
         );
       }
-      unawaited(_preloadAround(index));
+      if (!isCurrent()) return;
       _scheduleProgressSave();
       return;
     }
@@ -454,15 +662,14 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
       duration: const Duration(milliseconds: 320),
       curve: Curves.easeOutCubic,
     );
-    if (!mounted) return;
+    if (!isCurrent()) return;
     if (targetPage > 0) {
       await _verticalChapterOffsetController.animateScroll(
         offset: targetPage * _verticalPageExtentFor(_verticalViewportSize),
         duration: const Duration(milliseconds: 1),
       );
-      if (!mounted) return;
+      if (!isCurrent()) return;
     }
-    unawaited(_preloadAround(index));
     _scheduleProgressSave();
   }
 }

@@ -64,8 +64,11 @@ extension _BookSourceReaderAutoPageTurning on _BookSourceReaderPageState {
           !_readableChapterText.containsKey(index)) {
         ready = false;
         final pending = index;
+        final generation = _catalogGeneration;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) unawaited(_prepareAutoChapter(pending));
+          if (mounted && generation == _catalogGeneration) {
+            unawaited(_prepareAutoChapter(pending));
+          }
         });
       }
     }
@@ -81,16 +84,19 @@ extension _BookSourceReaderAutoPageTurning on _BookSourceReaderPageState {
         !_autoPreparingChapters.add(index)) {
       return;
     }
+    final generation = _catalogGeneration;
     try {
       final content = await _continuousContentFor(index);
-      if (!mounted) return;
+      if (!mounted || generation != _catalogGeneration) return;
       if (isImageOnlyBookSourceChapter(content)) _stopAutoPageTurn();
       _updateReaderState(() {});
     } catch (error) {
-      if (mounted) _pauseAutoPageTurn();
+      if (mounted && generation == _catalogGeneration) _pauseAutoPageTurn();
       debugPrint('Automatic reading chapter preparation failed: $error');
     } finally {
-      _autoPreparingChapters.remove(index);
+      if (generation == _catalogGeneration) {
+        _autoPreparingChapters.remove(index);
+      }
     }
   }
 

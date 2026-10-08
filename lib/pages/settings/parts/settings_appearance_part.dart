@@ -20,6 +20,7 @@ extension _SettingsAppearancePart on _SettingsPageState {
       value: themeNotifier.isGlassEffectsEnabled,
       onChanged: themeNotifier.setGlassEffectsEnabled,
       icon: Icons.blur_on_rounded,
+      persistPageSettings: false,
     );
   }
 
@@ -372,11 +373,12 @@ extension _SettingsAppearancePart on _SettingsPageState {
 
   Widget _buildCustomFontsManager(AppSettingsNotifier appSettings) {
     final l10n = context.l10n;
+    final count = appSettings.customFonts.length;
     return _buildActionSetting(
       title: l10n.customFonts,
-      subtitle: appSettings.customFonts.isEmpty
+      subtitle: count == 0
           ? l10n.customFontsEmpty
-          : l10n.customFontsCount(appSettings.customFonts.length),
+          : l10n.customFontsCount(count),
       icon: Icons.folder_copy_outlined,
       onTap: () => Navigator.of(
         context,

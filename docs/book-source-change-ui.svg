@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="900" viewBox="0 0 980 900">
+  <rect width="980" height="900" fill="#eef2f7"/>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif; fill: #172333; }
+    .caption { font-size: 22px; font-weight: 700; }
+    .title { font-size: 21px; font-weight: 700; }
+    .body { font-size: 16px; }
+    .small { font-size: 13px; fill: #687789; }
+    .label { font-size: 14px; font-weight: 700; }
+    .accent { fill: #2563b3; }
+    .white { fill: white; }
+  </style>
+  <text x="65" y="58" class="caption">01 · 找来源</text>
+  <text x="525" y="58" class="caption">02 · 确认切换</text>
+
+  <rect x="55" y="82" width="400" height="754" rx="30" fill="#fff" stroke="#d5dee9" stroke-width="2"/>
+  <text x="82" y="130" class="body accent">‹</text>
+  <text x="220" y="130" class="title" text-anchor="middle">换源</text>
+  <line x1="55" x2="455" y1="154" y2="154" stroke="#e4e9ef"/>
+  <text x="78" y="191" class="title">三体</text>
+  <text x="78" y="218" class="small">刘慈欣 · 当前：书源 A · 读到第 86 章</text>
+  <rect x="77" y="244" width="356" height="52" rx="14" fill="#f6f8fb" stroke="#cdd8e6"/>
+  <text x="95" y="277" class="body" fill="#687789">⌕  三体</text>
+  <text x="403" y="277" class="body accent">↻</text>
+  <rect x="77" y="311" width="104" height="34" rx="17" fill="#e8f0fb"/>
+  <text x="91" y="334" class="small accent">✓ 校验作者</text>
+  <text x="77" y="380" class="label">快速查找 24 / 60</text>
+  <text x="270" y="380" class="small">共 238 个可用书源</text>
+  <rect x="77" y="391" width="356" height="5" rx="3" fill="#e6edf6"/>
+  <rect x="77" y="391" width="143" height="5" rx="3" fill="#2563b3"/>
+  <text x="77" y="422" class="small accent">停止查找</text>
+  <rect x="77" y="443" width="356" height="92" rx="17" fill="#f8fafc" stroke="#dce5f0"/>
+  <circle cx="104" cy="474" r="15" fill="#e7f0fb"/>
+  <text x="104" y="479" text-anchor="middle" class="small accent">◉</text>
+  <text x="130" y="481" class="body" font-weight="700">书源 B</text>
+  <rect x="335" y="459" width="69" height="26" rx="13" fill="#e7f5ee"/>
+  <text x="346" y="477" class="small" fill="#20734f">同作者</text>
+  <text x="130" y="509" class="small">三体 · 刘慈欣 · 最新第 112 章</text>
+  <rect x="77" y="547" width="356" height="92" rx="17" fill="#f8fafc" stroke="#dce5f0"/>
+  <circle cx="104" cy="578" r="15" fill="#e7f0fb"/>
+  <text x="104" y="583" text-anchor="middle" class="small accent">◉</text>
+  <text x="130" y="585" class="body" font-weight="700">书源 C</text>
+  <rect x="320" y="563" width="84" height="26" rx="13" fill="#fff0dc"/>
+  <text x="329" y="581" class="small" fill="#9a5a00">作者不同</text>
+  <text x="130" y="613" class="small">三体 · 另一作者</text>
+  <text x="77" y="684" class="small">已找到 8 个，暂停查找</text>
+  <rect x="77" y="706" width="356" height="54" rx="15" fill="#e8f0fb"/>
+  <text x="255" y="740" text-anchor="middle" class="label accent">继续查找其余来源</text>
+
+  <rect x="515" y="82" width="400" height="754" rx="30" fill="#fff" stroke="#d5dee9" stroke-width="2"/>
+  <text x="542" y="130" class="body accent">‹</text>
+  <text x="715" y="130" class="title" text-anchor="middle">确认切换</text>
+  <line x1="515" x2="915" y1="154" y2="154" stroke="#e4e9ef"/>
+  <text x="538" y="192" class="title">三体</text>
+  <text x="538" y="219" class="small">书源 A  →  书源 B</text>
+  <rect x="537" y="244" width="356" height="135" rx="17" fill="#f8fafc" stroke="#dce5f0"/>
+  <text x="557" y="278" class="label">检查新来源</text>
+  <text x="557" y="310" class="body" fill="#20734f">✓ 详情    ✓ 目录    ✓ 正文</text>
+  <text x="557" y="341" class="small">当前章节可读 · 112 章 · 850 ms</text>
+  <rect x="537" y="393" width="356" height="170" rx="17" fill="#f8fafc" stroke="#dce5f0"/>
+  <text x="557" y="429" class="label">阅读位置</text>
+  <text x="557" y="465" class="body">原：第 86 章 · 黑暗森林</text>
+  <text x="557" y="497" class="body">新：第 87 章 · 黑暗森林</text>
+  <text x="557" y="535" class="small accent">按章节标题匹配</text>
+  <rect x="537" y="578" width="356" height="83" rx="17" fill="#f3f7fc"/>
+  <text x="557" y="609" class="label">切换后</text>
+  <text x="557" y="637" class="small">更新书架关联与阅读位置</text>
+  <line x1="515" x2="915" y1="703" y2="703" stroke="#e4e9ef"/>
+  <rect x="537" y="721" width="356" height="54" rx="15" fill="#2563b3"/>
+  <text x="715" y="755" text-anchor="middle" class="label white">确认换到书源 B</text>
+  <text x="490" y="873" text-anchor="middle" class="small">结构示意 · 具体颜色随应用主题变化 · 失败与超时状态见交互文档</text>
+</svg>

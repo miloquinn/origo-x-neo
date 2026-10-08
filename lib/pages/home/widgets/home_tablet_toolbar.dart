@@ -22,6 +22,7 @@ class HomeTabletToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final heading = Row(
       children: [
         if (leading != null) ...[leading!, const SizedBox(width: 8)],
@@ -34,15 +35,15 @@ class HomeTabletToolbar extends StatelessWidget {
               fontSize: leading == null ? 30 : 22,
               fontWeight: FontWeight.w700,
               height: 1,
-              color: Theme.of(context).colorScheme.onSurface,
-              shadows: [
-                Shadow(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.surface.withValues(alpha: 0.9),
-                  blurRadius: 10,
-                ),
-              ],
+              color: scheme.onSurface,
+              shadows: scheme.brightness == Brightness.dark
+                  ? [
+                      Shadow(
+                        color: scheme.surface.withValues(alpha: 0.9),
+                        blurRadius: 10,
+                      ),
+                    ]
+                  : null,
             ),
           ),
         ),

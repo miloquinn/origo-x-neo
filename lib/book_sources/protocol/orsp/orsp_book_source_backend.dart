@@ -325,6 +325,12 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
     sourceId: source.id,
     sourceRevision: source.apiBaseUrl.toString(),
     bookId: bookId,
+    // A persisted catalog cannot prove that the source still accepts its IDs.
+    // Refresh before handing an online catalog to a new reading session.
+    refreshAfter: Duration.zero,
+    staleWhileRevalidate: false,
+    staleErrorTest: _pipeline.canUseStaleResponse,
+    requestScope: #interactive,
     loader: () => _fetchAllChapters(
       OrspHttpPipeline.apiUri(
         source.apiBaseUrl,
@@ -332,7 +338,8 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
       ),
       pageSize: _chapterPageSizeFor(source),
       maxBytes: OrspHttpPipeline.maxResponseBytes,
-      receiveTimeout: null,
+      receiveTimeout: const Duration(seconds: 6),
+      retryRequests: false,
     ),
   );
 
@@ -347,6 +354,7 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
     bookId: bookId,
     refreshAfter: Duration.zero,
     staleWhileRevalidate: false,
+    requestScope: cancellation ?? #download,
     loader: () => _fetchAllChapters(
       OrspHttpPipeline.apiUri(
         source.apiBaseUrl,
@@ -500,6 +508,7 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
     required int maxBytes,
     required Duration? receiveTimeout,
     BookDownloadCancellation? cancellation,
+    bool retryRequests = true,
   }) async {
     const maxPageRequests = 1000;
     final maxPages = ((_maxChapters / pageSize).ceil()).clamp(
@@ -517,7 +526,7 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
           'pageSize': '$pageSize',
         },
       );
-      final result = await _pipeline.withRetries(() async {
+      Future<BookSourceChapterPage> requestPage() async {
         final json = decodeBookSourceJson(
           await _pipeline.getBounded(
             pageUri,
@@ -527,7 +536,21 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
           ),
         );
         return BookSourceChapterPage.fromJson(json);
-      }, cancellation: cancellation);
+      }
+
+      late final BookSourceChapterPage result;
+      if (retryRequests) {
+        result = await _pipeline.withRetries(
+          requestPage,
+          cancellation: cancellation,
+        );
+      } else {
+        try {
+          result = await requestPage();
+        } on DioException catch (error) {
+          throw _pipeline.mapDioException(error);
+        }
+      }
       if (result.items.length > _maxChapters - chapters.length) {
         throw const BookSourceProtocolException(
           'Book source chapter catalog exceeds the supported limit.',

@@ -2761,7 +2761,7 @@
   "replaceRulesDeleteValue": "刪除",
   "replaceRulesCreate": "新增規則",
   "replaceRulesEmptyTitle": "還沒有替換規則",
-  "replaceRulesEmptyBody": "可以匯入閱讀書源 JSON，或新增一條正則規則。",
+  "replaceRulesEmptyBody": "可以匯入淨化規則 JSON，或新增文字、正則規則。",
   "replaceRulesNoSearchResults": "沒有符合的規則",
   "replaceRulesCreateTitle": "新增替換規則",
   "replaceRulesEditTitle": "編輯替換規則",
@@ -2774,7 +2774,7 @@
   "replaceRulesScopeContentLabel": "套用於正文",
   "replaceRulesGroupLabel": "群組（選填）",
   "replaceRulesScopeLabel": "作用範圍（選填）",
-  "replaceRulesScopeHelper": "多個書名或書源名稱請用分號分隔",
+  "replaceRulesScopeHelper": "多個書名、書源 URL 或名稱請用分號分隔",
   "replaceRulesExcludeScopeLabel": "排除範圍（選填）",
   "replaceRulesDeleteConfirmTitle": "刪除這條規則？",
   "replaceRulesDeleteConfirmBody": "這條規則將從目前裝置移除。",
@@ -3419,6 +3419,33 @@
   "welcomeStartReading": "開始閱讀",
   "welcomeTagline": "好故事，慢慢讀。",
   "settingsWelcomeGuide": "歡迎導覽",
+  "replaceRulesDefaultEnabledLabel": "預設對所有書籍啟用",
+  "replaceRulesBookEnabledLabel": "為《{bookTitle}》啟用",
+  "replaceRulesEffectiveLabel": "目前生效",
+  "replaceRulesGroupAll": "全部群組",
+  "replaceRulesSelectionMode": "批次選取",
+  "replaceRulesSelectedCount": "已選取 {count} 條",
+  "replaceRulesSelectAll": "全選",
+  "replaceRulesEnableSelected": "啟用",
+  "replaceRulesDisableSelected": "停用",
+  "replaceRulesDeleteSelected": "刪除",
+  "replaceRulesDeleteSelectedConfirmTitle": "刪除所選規則？",
+  "replaceRulesDeleteSelectedConfirmBody": "將刪除 {count} 條規則。",
+  "replaceRulesExportSelected": "匯出",
+  "replaceRulesCopyJson": "複製 JSON",
+  "replaceRulesPasteJson": "貼上 JSON",
+  "replaceRulesCopied": "已複製規則 JSON",
+  "replaceRulesPasted": "已貼上規則",
+  "replaceRulesMoveTop": "置頂",
+  "replaceRulesMoveBottom": "置底",
+  "replaceRulesTimeoutLabel": "逾時時間（毫秒）",
+  "replaceRulesTimeoutHelper": "單條規則最多執行多久",
+  "replaceRulesTimeoutInvalid": "請輸入大於 0 的逾時時間",
+  "replaceRulesMissingTarget": "請至少選擇章節標題或正文",
+  "replaceRulesContextSubtitle": "{bookTitle} · {sourceName}",
+  "replaceRulesUnsupportedReplacement": "目前環境不支援 JavaScript 淨化替換，請使用文字或正則替換。",
+  "replaceRulesTimeoutNotice": "此規則執行逾時，已停用。請修改規則後重新啟用。",
+  "readerPurifySelection": "淨化所選文字",
   "accountInviteUnavailable": "目前邀請活動載入失敗，請重試。",
   "accountInviteActiveProgress": "有效新使用者",
   "accountInvitePaidProgress": "首次付費好友",
@@ -3485,5 +3512,34 @@
         "type": "int"
       }
     }
-  }
+  },
+  "activityCenterTitle": "活動中心",
+  "activityCenterSubtitle": "探索近期活動，查看你的參與進度。",
+  "activityCenterEmptyTitle": "暫時沒有活動",
+  "activityCenterEmptyMessage": "有新活動時，會在這裡顯示。",
+  "activityCenterLoadError": "活動載入失敗，請稍後重試。",
+  "activityCenterOpenError": "無法開啟活動詳情，請稍後重試。",
+  "activityCenterLearnMore": "瞭解活動",
+  "activityCenterProgress": "我的邀請進度",
+  "activityCenterUpcoming": "即將開始",
+  "activityCenterPaused": "已暫停",
+  "activityCenterEnded": "已結束",
+  "activityCenterActive": "進行中",
+  "activityCenterStartsOn": "{date} 開始",
+  "@activityCenterStartsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterEndsOn": "{date} 截止",
+  "@activityCenterEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterRefresh": "重新整理"
 }

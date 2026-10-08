@@ -43,6 +43,7 @@ class _AccountActionsCard extends StatelessWidget {
     required this.onEditProfile,
     required this.onOpenSecurity,
     required this.onOpenReferral,
+    required this.onOpenActivities,
     required this.onOpenSupport,
   });
 
@@ -50,6 +51,7 @@ class _AccountActionsCard extends StatelessWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenSecurity;
   final VoidCallback onOpenReferral;
+  final VoidCallback onOpenActivities;
   final VoidCallback onOpenSupport;
 
   @override
@@ -90,6 +92,13 @@ class _AccountActionsCard extends StatelessWidget {
                   onTap: onOpenReferral,
                 ),
               ],
+              const Divider(height: 1),
+              _AccountActionTile(
+                key: const ValueKey('account-activities'),
+                icon: Icons.local_activity_outlined,
+                title: context.l10n.activityCenterTitle,
+                onTap: onOpenActivities,
+              ),
               const Divider(height: 1),
               _AccountActionTile(
                 key: const ValueKey('account-support'),

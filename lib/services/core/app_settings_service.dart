@@ -80,6 +80,7 @@ class AppSettingsNotifier extends ChangeNotifier {
   LibraryBookOpenAnimationPace _libraryBookOpenAnimationPace =
       LibraryBookOpenAnimationPace.fast;
   final MemberAccountController? _account;
+  late bool _lastAdvancedFeaturesUnlocked;
   bool _additionalSourceProtocolsEnabled = true;
   bool _showDiscoverSourceFilters = true;
   bool _privateBookSourceNetworkEnabled = true;
@@ -101,6 +102,7 @@ class AppSettingsNotifier extends ChangeNotifier {
        _onlineFontService = onlineFontService ?? OnlineFontService(),
        _displayRefreshRateController =
            displayRefreshRateController ?? DisplayRefreshRateController() {
+    _lastAdvancedFeaturesUnlocked = advancedFeaturesUnlocked;
     _account?.addListener(_handleMembershipChanged);
     _syncAdvancedFeatureAccess();
     _loadSettings();
@@ -158,6 +160,9 @@ class AppSettingsNotifier extends ChangeNotifier {
   }
 
   void _handleMembershipChanged() {
+    final unlocked = advancedFeaturesUnlocked;
+    if (unlocked == _lastAdvancedFeaturesUnlocked) return;
+    _lastAdvancedFeaturesUnlocked = unlocked;
     _syncAdvancedFeatureAccess();
     notifyListeners();
   }

@@ -5663,7 +5663,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get replaceRulesEmptyBody =>
-      'Importez un fichier JSON de source de lecture ou créez une règle d\'expression régulière.';
+      'Importez des règles de remplacement JSON ou créez une règle de texte ou d’expression régulière.';
 
   @override
   String get replaceRulesNoSearchResults => 'Aucune règle correspondante';
@@ -5706,7 +5706,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get replaceRulesScopeHelper =>
-      'Séparez les titres de livres ou noms de sources par des points-virgules';
+      'Séparez les titres, les URL ou les noms de sources par des points-virgules';
 
   @override
   String get replaceRulesExcludeScopeLabel => 'Portée exclue (facultatif)';
@@ -7692,6 +7692,100 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWelcomeGuide => 'Guide de bienvenue';
 
   @override
+  String get replaceRulesDefaultEnabledLabel =>
+      'Activer par défaut pour tous les livres';
+
+  @override
+  String replaceRulesBookEnabledLabel(String bookTitle) {
+    return 'Activer pour « $bookTitle »';
+  }
+
+  @override
+  String get replaceRulesEffectiveLabel => 'Appliquées actuellement';
+
+  @override
+  String get replaceRulesGroupAll => 'Tous les groupes';
+
+  @override
+  String get replaceRulesSelectionMode => 'Sélectionner des règles';
+
+  @override
+  String replaceRulesSelectedCount(int count) {
+    return '$count sélectionnées';
+  }
+
+  @override
+  String get replaceRulesSelectAll => 'Tout sélectionner';
+
+  @override
+  String get replaceRulesEnableSelected => 'Activer';
+
+  @override
+  String get replaceRulesDisableSelected => 'Désactiver';
+
+  @override
+  String get replaceRulesDeleteSelected => 'Supprimer';
+
+  @override
+  String get replaceRulesDeleteSelectedConfirmTitle =>
+      'Supprimer les règles sélectionnées ?';
+
+  @override
+  String replaceRulesDeleteSelectedConfirmBody(int count) {
+    return '$count règles seront supprimées.';
+  }
+
+  @override
+  String get replaceRulesExportSelected => 'Exporter';
+
+  @override
+  String get replaceRulesCopyJson => 'Copier le JSON';
+
+  @override
+  String get replaceRulesPasteJson => 'Coller le JSON';
+
+  @override
+  String get replaceRulesCopied => 'JSON de la règle copié';
+
+  @override
+  String get replaceRulesPasted => 'Règle collée';
+
+  @override
+  String get replaceRulesMoveTop => 'Déplacer en haut';
+
+  @override
+  String get replaceRulesMoveBottom => 'Déplacer en bas';
+
+  @override
+  String get replaceRulesTimeoutLabel => 'Délai maximal (millisecondes)';
+
+  @override
+  String get replaceRulesTimeoutHelper => 'Durée maximale par règle';
+
+  @override
+  String get replaceRulesTimeoutInvalid => 'Saisissez un délai supérieur à 0';
+
+  @override
+  String get replaceRulesMissingTarget =>
+      'Sélectionnez les titres de chapitres ou le contenu';
+
+  @override
+  String replaceRulesContextSubtitle(String bookTitle, String sourceName) {
+    return '$bookTitle · $sourceName';
+  }
+
+  @override
+  String get replaceRulesUnsupportedReplacement =>
+      'Les remplacements JavaScript ne sont pas pris en charge ici. Utilisez du texte ou des expressions régulières.';
+
+  @override
+  String get replaceRulesTimeoutNotice =>
+      'Cette règle a été désactivée après un dépassement du délai. Modifiez-la, puis réactivez-la.';
+
+  @override
+  String get readerPurifySelection => 'Nettoyer le texte sélectionné';
+
+  @override
   String get accountInviteUnavailable =>
       'Impossible de charger la campagne actuelle. Réessayez.';
 
@@ -7779,4 +7873,56 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get accountInviteRecordsTitle => 'Historique des invitations';
+
+  @override
+  String get activityCenterTitle => 'Activités';
+
+  @override
+  String get activityCenterSubtitle =>
+      'Découvrez les activités et suivez votre progression.';
+
+  @override
+  String get activityCenterEmptyTitle => 'Aucune activité pour le moment';
+
+  @override
+  String get activityCenterEmptyMessage =>
+      'Revenez bientôt découvrir de nouvelles activités.';
+
+  @override
+  String get activityCenterLoadError => 'Impossible de charger les activités.';
+
+  @override
+  String get activityCenterOpenError =>
+      'Impossible d’ouvrir cette activité. Réessayez.';
+
+  @override
+  String get activityCenterLearnMore => 'À propos de cette activité';
+
+  @override
+  String get activityCenterProgress => 'Mes invitations';
+
+  @override
+  String get activityCenterUpcoming => 'À venir';
+
+  @override
+  String get activityCenterPaused => 'En pause';
+
+  @override
+  String get activityCenterEnded => 'Terminée';
+
+  @override
+  String get activityCenterActive => 'En cours';
+
+  @override
+  String activityCenterStartsOn(String date) {
+    return 'Début : $date';
+  }
+
+  @override
+  String activityCenterEndsOn(String date) {
+    return 'Fin : $date';
+  }
+
+  @override
+  String get activityCenterRefresh => 'Actualiser';
 }

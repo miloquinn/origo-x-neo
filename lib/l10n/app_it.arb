@@ -1568,7 +1568,7 @@
   "replaceRulesDeleteValue": "Rimuovi",
   "replaceRulesCreate": "Nuova regola",
   "replaceRulesEmptyTitle": "Nessuna regola di sostituzione",
-  "replaceRulesEmptyBody": "Importa un file JSON di sorgente di lettura o crea una regola con espressione regolare.",
+  "replaceRulesEmptyBody": "Importa regole di sostituzione JSON o crea una regola di testo o espressione regolare.",
   "replaceRulesNoSearchResults": "Nessuna regola corrispondente",
   "replaceRulesCreateTitle": "Nuova regola di sostituzione",
   "replaceRulesEditTitle": "Modifica regola di sostituzione",
@@ -1581,7 +1581,7 @@
   "replaceRulesScopeContentLabel": "Applica ai contenuti dei capitoli",
   "replaceRulesGroupLabel": "Gruppo (facoltativo)",
   "replaceRulesScopeLabel": "Ambito (facoltativo)",
-  "replaceRulesScopeHelper": "Separa i titoli dei libri o i nomi delle sorgenti con punti e virgola",
+  "replaceRulesScopeHelper": "Separa titoli, URL o nomi delle fonti con punti e virgola",
   "replaceRulesExcludeScopeLabel": "Ambito escluso (facoltativo)",
   "replaceRulesDeleteConfirmTitle": "Eliminare questa regola?",
   "replaceRulesDeleteConfirmBody": "La regola verrà rimossa da questo dispositivo.",
@@ -2123,6 +2123,33 @@
   "welcomeStartReading": "Inizia a leggere",
   "welcomeTagline": "Belle storie. Senza fretta.",
   "settingsWelcomeGuide": "Guida introduttiva",
+  "readerPurifySelection": "Ripulisci il testo selezionato",
+  "replaceRulesDefaultEnabledLabel": "Attiva per impostazione predefinita per tutti i libri",
+  "replaceRulesBookEnabledLabel": "Attiva per “{bookTitle}”",
+  "replaceRulesEffectiveLabel": "Attive ora",
+  "replaceRulesGroupAll": "Tutti i gruppi",
+  "replaceRulesSelectionMode": "Seleziona regole",
+  "replaceRulesSelectedCount": "{count} selezionate",
+  "replaceRulesSelectAll": "Seleziona tutte",
+  "replaceRulesEnableSelected": "Attiva",
+  "replaceRulesDisableSelected": "Disattiva",
+  "replaceRulesDeleteSelected": "Elimina",
+  "replaceRulesDeleteSelectedConfirmTitle": "Eliminare le regole selezionate?",
+  "replaceRulesDeleteSelectedConfirmBody": "Verranno eliminate {count} regole.",
+  "replaceRulesExportSelected": "Esporta",
+  "replaceRulesCopyJson": "Copia JSON",
+  "replaceRulesPasteJson": "Incolla JSON",
+  "replaceRulesCopied": "JSON della regola copiato",
+  "replaceRulesPasted": "Regola incollata",
+  "replaceRulesMoveTop": "Sposta all’inizio",
+  "replaceRulesMoveBottom": "Sposta alla fine",
+  "replaceRulesTimeoutLabel": "Tempo limite (millisecondi)",
+  "replaceRulesTimeoutHelper": "Tempo massimo di esecuzione per regola",
+  "replaceRulesTimeoutInvalid": "Inserisci un tempo limite maggiore di 0",
+  "replaceRulesMissingTarget": "Seleziona i titoli dei capitoli o il contenuto",
+  "replaceRulesContextSubtitle": "{bookTitle} · {sourceName}",
+  "replaceRulesUnsupportedReplacement": "Le sostituzioni JavaScript non sono supportate qui. Usa testo o espressioni regolari.",
+  "replaceRulesTimeoutNotice": "Questa regola è stata disattivata per timeout. Modificala, poi riattivala.",
   "accountInviteUnavailable": "Impossibile caricare la campagna attuale. Riprova.",
   "accountInviteActiveProgress": "Nuovi utenti attivi",
   "accountInvitePaidProgress": "Amici al primo acquisto",
@@ -2189,5 +2216,34 @@
         "type": "int"
       }
     }
-  }
+  },
+  "activityCenterTitle": "Attività",
+  "activityCenterSubtitle": "Scopri le attività e segui i tuoi progressi.",
+  "activityCenterEmptyTitle": "Nessuna attività al momento",
+  "activityCenterEmptyMessage": "Torna presto per scoprire nuove attività.",
+  "activityCenterLoadError": "Impossibile caricare le attività.",
+  "activityCenterOpenError": "Impossibile aprire questa attività. Riprova.",
+  "activityCenterLearnMore": "Informazioni sull’attività",
+  "activityCenterProgress": "Le mie invitazioni",
+  "activityCenterUpcoming": "In arrivo",
+  "activityCenterPaused": "In pausa",
+  "activityCenterEnded": "Terminata",
+  "activityCenterActive": "In corso",
+  "activityCenterStartsOn": "Inizia il {date}",
+  "@activityCenterStartsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterEndsOn": "Termina il {date}",
+  "@activityCenterEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterRefresh": "Aggiorna"
 }

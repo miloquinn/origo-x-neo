@@ -1,4 +1,5 @@
 import '../../../widgets/source_cover_image.dart';
+import '../../../widgets/reader_exit_shelf_dialog.dart';
 import '../book_settings_page.dart';
 import '../../../widgets/generated_book_cover.dart';
 import 'dart:async';
@@ -26,7 +27,9 @@ import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/book_sources/services/source_book_update_service.dart';
 import 'package:xxread/book_sources/services/book_source_text_paginator.dart';
+import 'package:xxread/book_sources/source_engine/source_config.dart';
 import 'package:xxread/core/reader/canonical_locator.dart';
+import 'package:xxread/pages/reader/reader_replacement_anchor.dart';
 import 'package:xxread/core/reader/platform_reader_aloud_media_session.dart';
 import 'package:xxread/core/reader/native_text_paginator.dart';
 import 'package:xxread/core/reader/reader_annotation.dart';
@@ -54,6 +57,7 @@ import 'package:xxread/models/book_note.dart';
 import 'package:xxread/pages/book_sources/book_source_change_page.dart';
 import 'package:xxread/pages/export/reading_data_export_dialog.dart';
 import 'package:xxread/pages/settings/font_selection_sheet.dart';
+import 'package:xxread/pages/settings/replace_rules_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/books/book_note_dao.dart';
 import 'package:xxread/services/books/bookmark_dao.dart';
@@ -105,6 +109,7 @@ part 'book_source_reader_pagination_rendering.dart';
 part 'book_source_reader_basic_turning.dart';
 part 'book_source_reader_curl_rendering.dart';
 part 'book_source_reader_catalog_loading.dart';
+part 'book_source_reader_replacement.dart';
 part 'book_source_reader_chapter_loading.dart';
 part 'book_source_reader_pagination_cache.dart';
 part 'book_source_reader_navigation.dart';
@@ -261,6 +266,14 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   String? _paginationKey;
   List<BookSourceTextPage> _paginatedPages = const [];
   int _chapterLoadSerial = 0;
+  int _catalogLoadSerial = 0;
+  int _catalogGeneration = 0;
+  int _replaceRuleRefreshSerial = 0;
+  ({String chapterId, TextAnchor anchor, int textLength, double progress})?
+  _replacementPosition;
+  int _observedReplaceRuleRevision = -1;
+  Set<String> _effectiveReplaceRuleIds = const <String>{};
+  final Map<int, Set<String>> _effectiveReplaceRuleIdsByChapter = {};
   final Map<int, BookSourceChapterContent> _prefetchedContent = {};
   final Map<int, String> _readableChapterText = {};
   final Map<int, Future<BookSourceChapterContent>> _continuousContentLoads = {};
@@ -429,6 +442,7 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
       onAdvance: _advanceAutoPageTurn,
     );
     _autoPageTurnController.addListener(_onAutoPageTurnChanged);
+    _replaceRules.addListener(_onReplaceRulesChanged);
     unawaited(_autoPageTurnController.loadInterval());
     unawaited(_replaceRules.load());
     _showOpeningLoader = widget.initialTheme == null;
@@ -574,6 +588,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
 
   @override
   void dispose() {
+    _replaceRules.removeListener(_onReplaceRulesChanged);
+    ++_replaceRuleRefreshSerial;
     WidgetsBinding.instance.removeObserver(this);
     _desktopResizeController.dispose();
     _openingLoaderTimer?.cancel();

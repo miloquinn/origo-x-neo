@@ -1,6 +1,45 @@
 part of 'book_source_reader_page.dart';
 
 extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
+  Future<ReaderAloudChapter?> _loadReaderAloudChapter(
+    int index, {
+    bool Function()? isCurrent,
+  }) async {
+    bool shouldApply() => isCurrent?.call() ?? true;
+    if (!shouldApply() || index < 0 || _chapters.isEmpty) return null;
+    if (index == _chapters.length) {
+      if (!mounted) return null;
+      final next = await _refreshCatalogChapter(
+        index - 1,
+        following: true,
+        shouldApply: shouldApply,
+      );
+      if (next == null || !shouldApply()) return null;
+      index = next;
+    }
+    if (index >= _chapters.length) return null;
+    final loaded = mounted
+        ? await _chapterContentWithRecovery(index, shouldApply: shouldApply)
+        : (index: index, content: await _continuousContentFor(index));
+    if (loaded == null || !shouldApply()) return null;
+    index = loaded.index;
+    final generation = _catalogGeneration;
+    final chapter = _chapters[index];
+    final text =
+        _readableChapterText[index] ??
+        await readableBookSourceChapterTextAsync(
+          loaded.content,
+          fallbackTitle: chapter.title,
+        );
+    if (!shouldApply() || generation != _catalogGeneration) return null;
+    return ReaderAloudChapter(
+      index: index,
+      id: chapter.id,
+      title: chapter.title,
+      text: text,
+    );
+  }
+
   void _markReaderAloudForManualPageTurn() {
     final controller = _readerAloudController;
     _restartReaderAloudAfterManualPageTurn =
@@ -23,6 +62,18 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
         unawaited(controller.start());
       }
     });
+  }
+
+  void _attachExistingReaderAloudSession() {
+    final session = context.read<ReaderAloudSession?>();
+    if (_chapters.isEmpty ||
+        session?.sourceId != 'source:${widget.source.id}:${widget.book.id}' ||
+        session?.isActive != true) {
+      return;
+    }
+    if (_ensureReaderAloudController() == null) return;
+    _onReaderAloudChanged();
+    unawaited(_locateReaderAloud());
   }
 
   void _onReaderAloudChanged() {
@@ -50,18 +101,12 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
 
   Future<void> _locateReaderAloud() async {
     final session = context.read<ReaderAloudSession?>();
-    if (session?.sourceId != 'source:${widget.source.id}:${widget.book.id}')
+    if (session?.sourceId != 'source:${widget.source.id}:${widget.book.id}') {
       return;
-    final controller = session?.controller;
+    }
+    final controller = _ensureReaderAloudController();
     final highlight = controller?.highlight;
     if (controller == null || highlight == null) return;
-    // A reopened reader must subscribe to the existing session, not acquire a
-    // new one or use reveal callbacks captured by a disposed reader route.
-    if (_readerAloudController != controller) {
-      _readerAloudController?.removeListener(_onReaderAloudChanged);
-      _readerAloudController = controller;
-      controller.addListener(_onReaderAloudChanged);
-    }
     _onReaderAloudChanged();
     try {
       await _revealReaderAloudPosition(
@@ -69,9 +114,11 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
           chapterIndex: highlight.chapterIndex,
           offset: highlight.startOffset,
         ),
+        isCurrent: () =>
+            controller.isActive && controller.highlight == highlight,
       );
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         showSideToast(context, switch (Localizations.localeOf(
           context,
         ).languageCode) {
@@ -79,20 +126,30 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
           'ja' => '読み上げ位置に移動できませんでした。再試行してください。',
           _ => '定位朗读失败，请重试',
         }, kind: SideToastKind.error);
+      }
     }
   }
 
-  Future<void> _revealReaderAloudPosition(ReaderAloudPosition position) async {
-    if (!mounted || _chapters.isEmpty) return;
+  Future<void> _revealReaderAloudPosition(
+    ReaderAloudPosition position, {
+    bool Function()? isCurrent,
+  }) async {
+    final generation = _catalogGeneration;
+    bool shouldApply() =>
+        mounted &&
+        generation == _catalogGeneration &&
+        (isCurrent?.call() ?? true);
+    if (!shouldApply() || _chapters.isEmpty) return;
     final chapterIndex = position.chapterIndex.clamp(0, _chapters.length - 1);
     final content = await _continuousContentFor(chapterIndex);
-    if (!mounted) return;
+    if (!shouldApply()) return;
     final text =
         _readableChapterText[chapterIndex] ??
         await readableBookSourceChapterTextAsync(
           content,
           fallbackTitle: _chapters[chapterIndex].title,
         );
+    if (!shouldApply()) return;
     final offset = position.offset.clamp(0, text.length);
     final progress = text.isEmpty ? 0.0 : offset / text.length;
 
@@ -101,11 +158,16 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
         chapterIndex,
         textOffset: offset,
         progress: progress,
+        shouldApply: shouldApply,
       );
       return;
     }
     if (chapterIndex != _chapterIndex || _pagedViewportSize.isEmpty) {
-      await _loadChapter(chapterIndex, restoreProgress: progress);
+      await _loadChapter(
+        chapterIndex,
+        restoreProgress: progress,
+        shouldApply: shouldApply,
+      );
       return;
     }
     final layout = _pagedLayoutFor(chapterIndex, content, _pagedViewportSize);
@@ -116,7 +178,16 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
 
   Future<void> _persistReaderAloudPosition(ReaderAloudPosition position) async {
     if (_chapters.isEmpty) return;
-    final chapterIndex = position.chapterIndex.clamp(0, _chapters.length - 1);
+    final aloudChapter = _readerAloudController?.currentChapter;
+    final mappedIndex = aloudChapter?.index == position.chapterIndex
+        ? _chapterIndexInCatalog(
+            _chapters,
+            id: aloudChapter!.id,
+            title: aloudChapter.title,
+          )
+        : null;
+    final chapterIndex =
+        mappedIndex ?? position.chapterIndex.clamp(0, _chapters.length - 1);
     final content = await _continuousContentFor(chapterIndex);
     final text =
         _readableChapterText[chapterIndex] ??

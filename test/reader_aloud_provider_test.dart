@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
@@ -42,6 +43,40 @@ void main() {
   final mimo = readerAloudProviderPresets
       .firstWhere((p) => p.provider == ReaderAloudCloudProvider.mimo)
       .settings;
+  for (final settings in [doubao, minimax, mimo]) {
+    test(
+      '${settings.provider.name} cancellation exits streamed response reading',
+      () async {
+        final adapter = _PendingProviderAdapter();
+        final dio = Dio()..httpClientAdapter = adapter;
+        final token = CancelToken();
+        final c = OpenAiCompatibleReaderAloudCloudClient(dio: dio);
+        final synthesis = c.synthesizeCancellable(
+          settings: settings,
+          apiKey: 'key',
+          text: '朗读正文',
+          speed: 1,
+          cancelToken: token,
+        );
+        final cancelled = expectLater(
+          synthesis,
+          throwsA(
+            isA<DioException>().having(
+              (e) => CancelToken.isCancel(e),
+              'cancelled',
+              isTrue,
+            ),
+          ),
+        );
+        await adapter.listening.future;
+        expect(adapter.request.cancelToken, same(token));
+        token.cancel('New sentence');
+        await cancelled;
+        await adapter.cancelled.future;
+      },
+    );
+  }
+
   test(
     'MiMo V2.5 uses chat audio protocol and separate speech instructions',
     () async {
@@ -286,4 +321,28 @@ void main() {
       );
     },
   );
+}
+
+class _PendingProviderAdapter implements HttpClientAdapter {
+  late RequestOptions request;
+  final listening = Completer<void>();
+  final cancelled = Completer<void>();
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    request = options;
+    final body = StreamController<Uint8List>(
+      onListen: () => listening.complete(),
+      onCancel: () => cancelled.complete(),
+    );
+    body.add(Uint8List.fromList([123])); // Partial JSON; leave the body open.
+    return ResponseBody(body.stream, 200);
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

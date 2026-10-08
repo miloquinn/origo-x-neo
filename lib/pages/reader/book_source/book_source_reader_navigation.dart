@@ -56,6 +56,8 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
     switch (action) {
       case BookSettingsAction.changeSource:
         await _changeBookSource();
+      case BookSettingsAction.replaceRules:
+        await _showReplaceRules();
       case BookSettingsAction.readingSettings:
         _showReadingSettings();
       default:
@@ -183,19 +185,9 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
 
     final shouldAdd = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.bookSourceExitAddTitle),
-        content: Text(context.l10n.bookSourceExitAddMessage(widget.book.title)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(context.l10n.bookSourceNotNow),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(context.l10n.bookSourceAddToShelf),
-          ),
-        ],
+      builder: (dialogContext) => ReaderExitShelfDialog(
+        bookTitle: widget.book.title,
+        palette: _readerTheme,
       ),
     );
     _exitPromptVisible = false;

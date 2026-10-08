@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import 'package:xxread/core/reader/canonical_locator.dart';
 import 'package:xxread/core/reader/native_text_paginator.dart';
@@ -16,6 +17,7 @@ import 'package:xxread/widgets/app_menu.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_text_page_content.dart';
+import 'package:xxread/widgets/reader_tap_observer.dart';
 
 typedef ReaderTextAnnotationSaveCallback =
     Future<void> Function(
@@ -51,6 +53,8 @@ class ReaderAnnotatedTextPage extends StatefulWidget {
     this.onInteractionChanged,
     this.onAskAiSelection,
     this.onSearchSelection,
+    this.onPurifySelection,
+    this.onPlayFromOffset,
     this.fillAvailableSpace = true,
   });
 
@@ -76,7 +80,10 @@ class ReaderAnnotatedTextPage extends StatefulWidget {
   onAskAiSelection;
   final Future<void> Function(ReaderSelectionSnapshot selection)?
   onSearchSelection;
+  final Future<void> Function(ReaderSelectionSnapshot selection)?
+  onPurifySelection;
   final bool fillAvailableSpace;
+  final ValueChanged<int>? onPlayFromOffset;
 
   @override
   State<ReaderAnnotatedTextPage> createState() =>
@@ -87,6 +94,59 @@ class _ReaderAnnotatedTextPageState extends State<ReaderAnnotatedTextPage> {
   final SelectionListenerNotifier _selectionNotifier =
       SelectionListenerNotifier();
   final Map<String, TapGestureRecognizer> _noteRecognizers = {};
+  final GlobalKey _textKey = GlobalKey();
+  final GlobalKey<SelectionAreaState> _selectionKey = GlobalKey();
+
+  void _handleTextTap(Offset localPosition) {
+    final callback = widget.onPlayFromOffset;
+    if (callback == null || widget.page.isChapterTitle) return;
+    final paragraph = _textKey.currentContext?.findRenderObject();
+    if (paragraph is! RenderParagraph) return;
+    final caretOffset = paragraph.getPositionForOffset(localPosition).offset;
+    final paintedText = paragraph.text.toPlainText();
+    // getPositionForOffset snaps whitespace outside a line to the nearest
+    // caret. Check both adjacent characters so either half of a glyph works.
+    // Require a real box hit instead of snapping blank space to text.
+    int? textOffset;
+    for (final candidate in [caretOffset, caretOffset - 1]) {
+      if (candidate < 0 ||
+          candidate >= paintedText.length ||
+          paintedText[candidate].trim().isEmpty) {
+        continue;
+      }
+      final boxes = paragraph.getBoxesForSelection(
+        TextSelection(baseOffset: candidate, extentOffset: candidate + 1),
+      );
+      if (boxes.any((box) => box.toRect().contains(localPosition))) {
+        textOffset = candidate;
+        break;
+      }
+    }
+    if (textOffset == null) return;
+    final sourceOffset = widget.page.sourceOffsetForTextOffset(textOffset);
+    if (sourceOffset >= widget.sourceText.length ||
+        widget.sourceText[sourceOffset].trim().isEmpty) {
+      return;
+    }
+    // Notes retain their existing tap action, even during listening.
+    if (widget.annotations.any(
+      (note) =>
+          note.type == readerAnnotationTypeNote &&
+          readerAnnotationOverlaps(
+            note,
+            widget.chapterId,
+            sourceOffset,
+            sourceOffset + 1,
+          ),
+    )) {
+      return;
+    }
+    final selection = _selectionKey.currentState?.selectableRegion;
+    selection?.hideToolbar();
+    selection?.clearSelection();
+    ReaderTextTapHandledNotification().dispatch(context);
+    callback(sourceOffset);
+  }
 
   @override
   void dispose() {
@@ -254,6 +314,19 @@ class _ReaderAnnotatedTextPageState extends State<ReaderAnnotatedTextPage> {
     }
   }
 
+  Future<void> _purifySelection(SelectableRegionState regionState) async {
+    final selection = _selectionSnapshot;
+    final handler = widget.onPurifySelection;
+    if (selection == null || handler == null) return;
+    _clearSelection(regionState);
+    widget.onInteractionChanged?.call(true);
+    try {
+      await handler(selection);
+    } finally {
+      widget.onInteractionChanged?.call(false);
+    }
+  }
+
   Widget _buildSelectionToolbar(
     BuildContext context,
     SelectableRegionState regionState,
@@ -270,6 +343,9 @@ class _ReaderAnnotatedTextPageState extends State<ReaderAnnotatedTextPage> {
       onSearch: widget.onSearchSelection == null
           ? null
           : () => unawaited(_searchSelection(regionState)),
+      onPurify: widget.onPurifySelection == null
+          ? null
+          : () => unawaited(_purifySelection(regionState)),
       onAskAi: widget.onAskAiSelection == null
           ? null
           : () => unawaited(_askAi(regionState)),
@@ -279,15 +355,21 @@ class _ReaderAnnotatedTextPageState extends State<ReaderAnnotatedTextPage> {
   @override
   Widget build(BuildContext context) {
     final body = SelectionArea(
+      key: _selectionKey,
       contextMenuBuilder: _buildSelectionToolbar,
       child: SelectionListener(
         selectionNotifier: _selectionNotifier,
-        child: ReaderTextPageContent(
-          page: widget.page,
-          chapterTitle: widget.chapterTitle,
-          bodyStyle: widget.bodyStyle,
-          flowStyle: widget.flowStyle,
-          sourceSpanBuilder: _annotatedSpan,
+        child: ReaderTapObserver(
+          enabled: widget.onPlayFromOffset != null,
+          onTap: _handleTextTap,
+          child: ReaderTextPageContent(
+            textKey: _textKey,
+            page: widget.page,
+            chapterTitle: widget.chapterTitle,
+            bodyStyle: widget.bodyStyle,
+            flowStyle: widget.flowStyle,
+            sourceSpanBuilder: _annotatedSpan,
+          ),
         ),
       ),
     );
@@ -320,6 +402,7 @@ class ReaderSelectionToolbar extends StatelessWidget {
     required this.onCopy,
     this.onAskAi,
     this.onSearch,
+    this.onPurify,
   });
 
   final ReaderThemePalette palette;
@@ -329,6 +412,7 @@ class ReaderSelectionToolbar extends StatelessWidget {
   final VoidCallback? onCopy;
   final VoidCallback? onAskAi;
   final VoidCallback? onSearch;
+  final VoidCallback? onPurify;
 
   @override
   Widget build(BuildContext context) {
@@ -365,6 +449,13 @@ class ReaderSelectionToolbar extends StatelessWidget {
             label: '搜索',
             color: palette.text,
             onPressed: onSearch,
+          ),
+        if (onPurify != null)
+          _ReaderSelectionAction(
+            icon: Icons.auto_fix_high_rounded,
+            label: context.l10n.readerPurifySelection,
+            color: palette.text,
+            onPressed: onPurify,
           ),
         if (onAskAi != null)
           _ReaderSelectionAction(

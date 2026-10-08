@@ -24,8 +24,9 @@ class BookSourceChapterCache {
   static final Map<String, _CacheEntry<List<BookSourceChapter>>>
   _catalogMemory = {};
   static final Map<String, Future<BookSourceChapterContent>> _inFlight = {};
-  static final Map<String, Future<List<BookSourceChapter>>> _catalogInFlight =
+  static final Map<Object, Future<List<BookSourceChapter>>> _catalogInFlight =
       {};
+  static final Map<String, Object> _latestCatalogLoads = {};
   static final Map<String, Future<void>> _diskWriteQueues = {};
   static final Map<String, bool> _memoryOrder = {};
   static int _memoryBytes = 0;
@@ -58,6 +59,7 @@ class BookSourceChapterCache {
     _writeGeneration++;
     _inFlight.clear();
     _catalogInFlight.clear();
+    _latestCatalogLoads.clear();
     releaseMemory();
   }
 
@@ -123,6 +125,10 @@ class BookSourceChapterCache {
     required String bookId,
     Duration refreshAfter = catalogRefreshAfter,
     bool staleWhileRevalidate = true,
+    bool Function(Object error)? staleErrorTest,
+    // Requests with different scopes load independently while sharing the
+    // same persisted catalog. Equal scopes still deduplicate in flight.
+    Object requestScope = #shared,
     required Future<List<BookSourceChapter>> Function() loader,
   }) async {
     final key = _key(sourceId, sourceRevision, bookId, 'catalog');
@@ -136,6 +142,8 @@ class BookSourceChapterCache {
         memory,
         refreshAfter: refreshAfter,
         staleWhileRevalidate: staleWhileRevalidate,
+        staleErrorTest: staleErrorTest,
+        requestScope: requestScope,
         loader: loader,
         generation: generation,
       );
@@ -149,11 +157,13 @@ class BookSourceChapterCache {
         disk,
         refreshAfter: refreshAfter,
         staleWhileRevalidate: staleWhileRevalidate,
+        staleErrorTest: staleErrorTest,
+        requestScope: requestScope,
         loader: loader,
         generation: generation,
       );
     }
-    return _loadCatalog(key, loader, generation);
+    return _loadCatalog(key, requestScope, loader, generation);
   }
 
   Future<BookSourceChapterContent> _resolveCachedContent(
@@ -324,24 +334,34 @@ class BookSourceChapterCache {
     _CacheEntry<List<BookSourceChapter>> cached, {
     required Duration refreshAfter,
     required bool staleWhileRevalidate,
+    required bool Function(Object error)? staleErrorTest,
+    required Object requestScope,
     required Future<List<BookSourceChapter>> Function() loader,
     required int generation,
   }) async {
     if (DateTime.now().difference(cached.cachedAt) < refreshAfter) {
       return cached.value;
     }
-    if (!staleWhileRevalidate) return _loadCatalog(key, loader, generation);
-    unawaited(_refreshCatalog(key, loader, generation));
+    if (!staleWhileRevalidate) {
+      try {
+        return await _loadCatalog(key, requestScope, loader, generation);
+      } catch (error) {
+        if (staleErrorTest?.call(error) == true) return cached.value;
+        rethrow;
+      }
+    }
+    unawaited(_refreshCatalog(key, requestScope, loader, generation));
     return cached.value;
   }
 
   Future<void> _refreshCatalog(
     String key,
+    Object requestScope,
     Future<List<BookSourceChapter>> Function() loader,
     int generation,
   ) async {
     try {
-      await _loadCatalog(key, loader, generation);
+      await _loadCatalog(key, requestScope, loader, generation);
     } catch (_) {
       // A stale catalog remains useful while a source is slow or offline.
     }
@@ -349,19 +369,26 @@ class BookSourceChapterCache {
 
   Future<List<BookSourceChapter>> _loadCatalog(
     String key,
+    Object requestScope,
     Future<List<BookSourceChapter>> Function() loader,
     int generation,
   ) async {
     if (generation != _writeGeneration) return loader();
-    final pending = _catalogInFlight[key];
+    final flightKey = (key, requestScope);
+    final pending = _catalogInFlight[flightKey];
     if (pending != null) return pending;
-    final future = _fetchAndStoreCatalog(key, loader, generation);
-    _catalogInFlight[key] = future;
+    final loadToken = Object();
+    _latestCatalogLoads[key] = loadToken;
+    final future = _fetchAndStoreCatalog(key, loader, generation, loadToken);
+    _catalogInFlight[flightKey] = future;
     try {
       return await future;
     } finally {
-      if (identical(_catalogInFlight[key], future)) {
-        _catalogInFlight.remove(key);
+      if (identical(_catalogInFlight[flightKey], future)) {
+        _catalogInFlight.remove(flightKey);
+      }
+      if (identical(_latestCatalogLoads[key], loadToken)) {
+        _latestCatalogLoads.remove(key);
       }
     }
   }
@@ -370,9 +397,13 @@ class BookSourceChapterCache {
     String key,
     Future<List<BookSourceChapter>> Function() loader,
     int generation,
+    Object loadToken,
   ) async {
     final chapters = List<BookSourceChapter>.unmodifiable(await loader());
-    if (generation != _writeGeneration) return chapters;
+    if (generation != _writeGeneration ||
+        !identical(_latestCatalogLoads[key], loadToken)) {
+      return chapters;
+    }
     final entry = _CacheEntry(
       chapters,
       DateTime.now(),

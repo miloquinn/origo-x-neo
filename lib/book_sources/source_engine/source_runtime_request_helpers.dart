@@ -18,6 +18,19 @@ String? decodeSourceDataTarget(String value) {
   final metadata = dataPart.substring(0, comma).toLowerCase();
   final payload = dataPart.substring(comma + 1);
   try {
+    // A typed data request carries local bytes even when those bytes happen
+    // to contain an HTTP URL. Reuse the request parser's type contract before
+    // considering the legacy untyped URL-wrapper behavior.
+    if (optionsStart >= 0) {
+      try {
+        if (SourceRequestTemplate.parse(value, baseUri: Uri()).syntheticBody !=
+            null) {
+          return null;
+        }
+      } on BookSourceProtocolException {
+        // Untyped data wrappers are not request targets until decoded below.
+      }
+    }
     final decoded = metadata.contains(';base64')
         ? utf8.decode(base64Decode(payload), allowMalformed: true)
         : Uri.decodeComponent(payload);

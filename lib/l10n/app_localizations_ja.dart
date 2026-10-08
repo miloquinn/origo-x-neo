@@ -5359,7 +5359,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get replaceRulesEmptyTitle => '置換ルールはまだありません';
 
   @override
-  String get replaceRulesEmptyBody => '書籍ソースの JSON を読み込むか、正規表現ルールを作成できます。';
+  String get replaceRulesEmptyBody =>
+      '置換ルールの JSON をインポートするか、文字列・正規表現のルールを作成できます。';
 
   @override
   String get replaceRulesNoSearchResults => '一致するルールはありません';
@@ -5398,7 +5399,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get replaceRulesScopeLabel => '適用範囲（任意）';
 
   @override
-  String get replaceRulesScopeHelper => '書名または書籍ソース名をセミコロンで区切ります';
+  String get replaceRulesScopeHelper => '本のタイトル、ソース URL、ソース名はセミコロンで区切ってください';
 
   @override
   String get replaceRulesExcludeScopeLabel => '除外範囲（任意）';
@@ -7240,6 +7241,97 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsWelcomeGuide => '使い方ガイド';
 
   @override
+  String get replaceRulesDefaultEnabledLabel => 'すべての本で既定で有効にする';
+
+  @override
+  String replaceRulesBookEnabledLabel(String bookTitle) {
+    return '「$bookTitle」で有効にする';
+  }
+
+  @override
+  String get replaceRulesEffectiveLabel => '現在適用中';
+
+  @override
+  String get replaceRulesGroupAll => 'すべてのグループ';
+
+  @override
+  String get replaceRulesSelectionMode => 'ルールを選択';
+
+  @override
+  String replaceRulesSelectedCount(int count) {
+    return '$count 件選択済み';
+  }
+
+  @override
+  String get replaceRulesSelectAll => 'すべて選択';
+
+  @override
+  String get replaceRulesEnableSelected => '有効にする';
+
+  @override
+  String get replaceRulesDisableSelected => '無効にする';
+
+  @override
+  String get replaceRulesDeleteSelected => '削除';
+
+  @override
+  String get replaceRulesDeleteSelectedConfirmTitle => '選択したルールを削除しますか？';
+
+  @override
+  String replaceRulesDeleteSelectedConfirmBody(int count) {
+    return '$count 件のルールを削除します。';
+  }
+
+  @override
+  String get replaceRulesExportSelected => 'エクスポート';
+
+  @override
+  String get replaceRulesCopyJson => 'JSON をコピー';
+
+  @override
+  String get replaceRulesPasteJson => 'JSON を貼り付け';
+
+  @override
+  String get replaceRulesCopied => 'ルールの JSON をコピーしました';
+
+  @override
+  String get replaceRulesPasted => 'ルールを貼り付けました';
+
+  @override
+  String get replaceRulesMoveTop => '先頭へ移動';
+
+  @override
+  String get replaceRulesMoveBottom => '末尾へ移動';
+
+  @override
+  String get replaceRulesTimeoutLabel => 'タイムアウト（ミリ秒）';
+
+  @override
+  String get replaceRulesTimeoutHelper => '各ルールの最大実行時間';
+
+  @override
+  String get replaceRulesTimeoutInvalid => '0 より大きい値を入力してください';
+
+  @override
+  String get replaceRulesMissingTarget => '章のタイトルか本文を選択してください';
+
+  @override
+  String replaceRulesContextSubtitle(String bookTitle, String sourceName) {
+    return '$bookTitle · $sourceName';
+  }
+
+  @override
+  String get replaceRulesUnsupportedReplacement =>
+      'この環境では JavaScript による置換に対応していません。文字列または正規表現を使用してください。';
+
+  @override
+  String get replaceRulesTimeoutNotice =>
+      'このルールはタイムアウトしたため無効になりました。修正してから再度有効にしてください。';
+
+  @override
+  String get readerPurifySelection => '選択テキストをクリーンアップ';
+
+  @override
   String get accountInviteUnavailable => '現在の招待キャンペーンを読み込めませんでした。再試行してください。';
 
   @override
@@ -7325,4 +7417,53 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountInviteRecordsTitle => '招待履歴';
+
+  @override
+  String get activityCenterTitle => 'イベント';
+
+  @override
+  String get activityCenterSubtitle => '開催中のイベントと参加状況を確認できます。';
+
+  @override
+  String get activityCenterEmptyTitle => '現在イベントはありません';
+
+  @override
+  String get activityCenterEmptyMessage => '新しいイベントはこちらに表示されます。';
+
+  @override
+  String get activityCenterLoadError => 'イベントを読み込めませんでした。';
+
+  @override
+  String get activityCenterOpenError => 'イベントの詳細を開けませんでした。もう一度お試しください。';
+
+  @override
+  String get activityCenterLearnMore => 'イベントの詳細';
+
+  @override
+  String get activityCenterProgress => '招待の進捗';
+
+  @override
+  String get activityCenterUpcoming => '開催予定';
+
+  @override
+  String get activityCenterPaused => '一時停止中';
+
+  @override
+  String get activityCenterEnded => '終了';
+
+  @override
+  String get activityCenterActive => '開催中';
+
+  @override
+  String activityCenterStartsOn(String date) {
+    return '$date 開始';
+  }
+
+  @override
+  String activityCenterEndsOn(String date) {
+    return '$date 終了';
+  }
+
+  @override
+  String get activityCenterRefresh => '更新';
 }

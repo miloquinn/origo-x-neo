@@ -138,6 +138,255 @@ void main() {
     });
 
     test(
+      'sentence navigation snaps the selected character to sentence start',
+      () async {
+        await controller.playFromOffset(
+          const ReaderAloudPosition(chapterIndex: 0, offset: 4),
+        );
+        await _flush();
+        expect(engine.spokenTexts, ['乙句。']);
+        expect(controller.currentOffset, 3);
+        expect(
+          source.revealed.last,
+          const ReaderAloudPosition(chapterIndex: 0, offset: 3),
+        );
+        expect(
+          () => controller.chapterSegments.clear(),
+          throwsUnsupportedError,
+        );
+      },
+    );
+
+    test(
+      'paused sentence navigation plays and preserves the sleep timer',
+      () async {
+        await controller.start();
+        await _flush();
+        await controller.pause();
+        controller.setSleepTimer(const Duration(minutes: 10));
+        final remaining = controller.sleepRemaining!;
+        await controller.playFromOffset(
+          const ReaderAloudPosition(chapterIndex: 1, offset: 1),
+        );
+        await _flush();
+        expect(controller.state, ReaderAloudPlaybackState.playing);
+        expect(engine.spokenTexts.last, '丙句。');
+        expect(controller.sleepDuration, const Duration(minutes: 10));
+        expect(controller.sleepRemaining!, lessThanOrEqualTo(remaining));
+      },
+    );
+
+    test(
+      'reattaching a reader preserves playback and uses its source',
+      () async {
+        await controller.start();
+        await _flush();
+        controller.setSleepTimer(const Duration(minutes: 10));
+        final reopened = _FakeReaderAloudSource(
+          chapters: source.chapters,
+          initialPosition: const ReaderAloudPosition(
+            chapterIndex: 1,
+            offset: 4,
+          ),
+        );
+        final highlight = controller.highlight;
+        controller.rebindSource(reopened);
+        expect(controller.state, ReaderAloudPlaybackState.playing);
+        expect(controller.highlight, highlight);
+        expect(engine.spokenTexts, ['乙句。']);
+        expect(controller.sleepDuration, const Duration(minutes: 10));
+        await controller.playFromOffset(reopened.initialPosition);
+        await _flush();
+        expect(engine.spokenTexts.last, '丁句。');
+        expect(reopened.revealed.last.offset, 3);
+        expect(reopened.persisted, isNotEmpty);
+      },
+    );
+
+    test('reattaching invalidates an old route reveal', () async {
+      final delayed = Completer<void>();
+      source.beforeReveal = (_) => delayed.future;
+      await controller.start();
+      await _flush();
+      final reopened = _FakeReaderAloudSource(
+        chapters: source.chapters,
+        initialPosition: const ReaderAloudPosition(chapterIndex: 0, offset: 0),
+      );
+      controller.rebindSource(reopened);
+      delayed.complete();
+      await _flush();
+      expect(source.revealed, isEmpty);
+      await controller.playFromOffset(reopened.initialPosition);
+      await _flush();
+      expect(reopened.revealed.last.offset, 0);
+    });
+
+    test('tapping the current sentence restarts its beginning', () async {
+      await controller.start();
+      await _flush();
+      engine.reportProgress(2);
+      await controller.playFromOffset(
+        const ReaderAloudPosition(chapterIndex: 0, offset: 5),
+      );
+      await _flush();
+      expect(engine.spokenTexts, ['乙句。', '乙句。']);
+      expect(controller.currentOffset, 3);
+    });
+
+    test('late chapter loading cannot override a newer jump', () async {
+      final delayed = Completer<ReaderAloudChapter?>();
+      source.chapterLoader = (index) async =>
+          index == 1 ? delayed.future : source.chapters[index];
+      final older = controller.playFromOffset(
+        const ReaderAloudPosition(chapterIndex: 1, offset: 4),
+      );
+      await _flush();
+      await controller.playFromOffset(
+        const ReaderAloudPosition(chapterIndex: 0, offset: 1),
+      );
+      await _flush();
+      delayed.complete(source.chapters[1]);
+      await older;
+      await _flush();
+      expect(controller.currentChapter?.id, 'c1');
+      expect(engine.spokenTexts, ['甲句。']);
+      expect(
+        source.revealed.last,
+        const ReaderAloudPosition(chapterIndex: 0, offset: 0),
+      );
+    });
+
+    test('stopping while loading a jump prevents late playback', () async {
+      final delayed = Completer<ReaderAloudChapter?>();
+      source.chapterLoader = (_) => delayed.future;
+      final jump = controller.playFromOffset(
+        const ReaderAloudPosition(chapterIndex: 1, offset: 1),
+      );
+      await _flush();
+      expect(controller.isPreparing, isTrue);
+      expect(controller.highlight, isNull);
+      await controller.stop();
+      delayed.complete(source.chapters[1]);
+      await jump;
+      await _flush();
+      expect(controller.state, ReaderAloudPlaybackState.stopped);
+      expect(controller.currentChapter, isNull);
+      expect(engine.spokenTexts, isEmpty);
+    });
+
+    test('preparing speech does not display a playing highlight', () async {
+      final ready = Completer<void>();
+      engine.speechPreparation = ready;
+      await controller.playFromOffset(
+        const ReaderAloudPosition(chapterIndex: 0, offset: 4),
+      );
+      await _flush();
+      expect(controller.isPreparing, isTrue);
+      expect(controller.currentSegment?.startOffset, 3);
+      expect(controller.currentOffset, 3);
+      expect(controller.highlight, isNull);
+      ready.complete();
+      await _flush();
+      expect(controller.isPreparing, isFalse);
+      expect(controller.highlight?.startOffset, 3);
+    });
+
+    test(
+      'pausing before speech is ready never restores an unplayed highlight',
+      () async {
+        final ready = Completer<void>();
+        engine.speechPreparation = ready;
+        await controller.playFromOffset(
+          const ReaderAloudPosition(chapterIndex: 0, offset: 4),
+        );
+        await _flush();
+        await controller.pause();
+        expect(controller.state, ReaderAloudPlaybackState.paused);
+        expect(controller.isPreparing, isTrue);
+        expect(controller.highlight, isNull);
+        expect(controller.currentOffset, 3);
+        ready.complete();
+        await _flush();
+        expect(controller.state, ReaderAloudPlaybackState.paused);
+        expect(controller.highlight, isNull);
+      },
+    );
+
+    test(
+      'late navigation cannot reveal a sentence after a newer jump',
+      () async {
+        final delayed = Completer<void>();
+        source.beforeReveal = (position) async {
+          if (position.chapterIndex == 1) await delayed.future;
+        };
+        await controller.playFromOffset(
+          const ReaderAloudPosition(chapterIndex: 1, offset: 4),
+        );
+        await _flush();
+        await controller.playFromOffset(
+          const ReaderAloudPosition(chapterIndex: 0, offset: 1),
+        );
+        await _flush();
+        delayed.complete();
+        await _flush();
+        expect(source.revealed, [
+          const ReaderAloudPosition(chapterIndex: 0, offset: 0),
+        ]);
+        expect(engine.spokenTexts, ['甲句。']);
+      },
+    );
+
+    test(
+      'stop invalidates navigation already awaiting chapter layout',
+      () async {
+        final delayed = Completer<void>();
+        source.beforeReveal = (_) => delayed.future;
+        await controller.playFromOffset(
+          const ReaderAloudPosition(chapterIndex: 1, offset: 1),
+        );
+        await _flush();
+        await controller.stop();
+        delayed.complete();
+        await _flush();
+        expect(source.revealed, isEmpty);
+        expect(engine.spokenTexts, isEmpty);
+        expect(controller.state, ReaderAloudPlaybackState.stopped);
+      },
+    );
+
+    test('queued sentence navigation discards a late earlier reveal', () async {
+      source.chapters[0] = const ReaderAloudChapter(
+        index: 0,
+        id: 'c1',
+        title: '第一章',
+        text: '甲句。乙句。丙句。',
+      );
+      engine.supportsQueuedText = true;
+      final delayed = Completer<void>();
+      source.beforeReveal = (position) async {
+        if (position.offset == 3) await delayed.future;
+      };
+      await controller.playFromOffset(
+        const ReaderAloudPosition(chapterIndex: 0, offset: 0),
+      );
+      await _flush();
+      engine.startQueuedText(1);
+      await _flush();
+      engine.startQueuedText(2);
+      await _flush();
+      delayed.complete();
+      await _flush();
+      expect(
+        source.revealed,
+        isNot(contains(const ReaderAloudPosition(chapterIndex: 0, offset: 3))),
+      );
+      expect(
+        source.revealed.last,
+        const ReaderAloudPosition(chapterIndex: 0, offset: 6),
+      );
+    });
+
+    test(
       'sleep timer accepts arbitrary durations and exposes remaining time',
       () {
         const duration = Duration(hours: 2, minutes: 7);
@@ -179,6 +428,105 @@ void main() {
         contains(const ReaderAloudPosition(chapterIndex: 1, offset: 0)),
       );
     });
+
+    test('asks the source for updates at the known catalog boundary', () async {
+      final lastChapter = source.chapters.removeLast();
+      source.initialPosition = const ReaderAloudPosition(
+        chapterIndex: 0,
+        offset: 3,
+      );
+      source.chapterLoader = (index) async {
+        if (index == source.chapters.length) {
+          source.chapters.add(lastChapter);
+        }
+        return source.chapters[index];
+      };
+      await controller.start();
+      await _flush();
+      engine.completeUtterance();
+      await _flush();
+
+      expect(engine.spokenTexts, ['乙句。', '丙句。']);
+      expect(controller.currentChapter?.id, 'c2');
+      expect(controller.state, ReaderAloudPlaybackState.playing);
+    });
+
+    for (final action in ['stop', 'new target']) {
+      test('late next chapter completion cannot override $action', () async {
+        final delayed = Completer<ReaderAloudChapter?>();
+        source.initialPosition = const ReaderAloudPosition(
+          chapterIndex: 0,
+          offset: 3,
+        );
+        source.chapterLoader = (index) async =>
+            index == 1 ? delayed.future : source.chapters[index];
+        await controller.start();
+        await _flush();
+        engine.completeUtterance();
+        await _flush();
+        if (action == 'stop') {
+          await controller.stop();
+        } else {
+          await controller.playFromOffset(
+            const ReaderAloudPosition(chapterIndex: 0, offset: 0),
+          );
+          await _flush();
+        }
+        delayed.complete(source.chapters[1]);
+        await _flush();
+
+        expect(controller.currentChapter?.id, 'c1');
+        expect(
+          controller.state,
+          action == 'stop'
+              ? ReaderAloudPlaybackState.stopped
+              : ReaderAloudPlaybackState.playing,
+        );
+        expect(engine.spokenTexts, action == 'stop' ? ['乙句。'] : ['乙句。', '甲句。']);
+      });
+    }
+
+    test(
+      'reopening during a next chapter load keeps playback active',
+      () async {
+        final delayed = Completer<ReaderAloudChapter?>();
+        source.initialPosition = const ReaderAloudPosition(
+          chapterIndex: 0,
+          offset: 3,
+        );
+        source.chapterLoader = (index) async =>
+            index == 1 ? delayed.future : source.chapters[index];
+        await controller.start();
+        await _flush();
+        engine.completeUtterance();
+        await _flush();
+        final reopened = _FakeReaderAloudSource(
+          chapters: [
+            source.chapters.first,
+            const ReaderAloudChapter(
+              index: 1,
+              id: 'c2',
+              title: '第二章',
+              text: '新句。',
+            ),
+          ],
+          initialPosition: const ReaderAloudPosition(
+            chapterIndex: 0,
+            offset: 3,
+          ),
+        );
+        controller.rebindSource(reopened);
+        delayed.complete(source.chapters[1]);
+        await _flush();
+
+        expect(controller.state, ReaderAloudPlaybackState.playing);
+        expect(engine.spokenTexts, ['乙句。', '新句。']);
+        expect(
+          reopened.revealed.last,
+          const ReaderAloudPosition(chapterIndex: 1, offset: 0),
+        );
+      },
+    );
 
     test(
       'batches adjacent sentences for continuous engines and keeps highlighting',
@@ -572,6 +920,8 @@ class _FakeReaderAloudEngine extends ChangeNotifier
   bool _playing = false;
   bool _paused = false;
   bool failNextSpeak = false;
+  Completer<void>? speechPreparation;
+  int _speechGeneration = 0;
   @override
   bool supportsContinuousText = false;
   @override
@@ -588,6 +938,7 @@ class _FakeReaderAloudEngine extends ChangeNotifier
 
   @override
   Future<void> pause() async {
+    ++_speechGeneration;
     _playing = false;
     _paused = true;
     _utterance?.complete();
@@ -598,6 +949,9 @@ class _FakeReaderAloudEngine extends ChangeNotifier
   @override
   Future<void> speak(String text) async {
     spokenTexts.add(text);
+    final generation = ++_speechGeneration;
+    await speechPreparation?.future;
+    if (generation != _speechGeneration) return;
     if (failNextSpeak) {
       failNextSpeak = false;
       throw StateError('tts_call_failed');
@@ -640,6 +994,7 @@ class _FakeReaderAloudEngine extends ChangeNotifier
 
   @override
   Future<void> stop() async {
+    ++_speechGeneration;
     _playing = false;
     _paused = false;
     _position = 0;
@@ -669,14 +1024,16 @@ class _FakeReaderAloudEngine extends ChangeNotifier
 
 class _FakeReaderAloudSource implements ReaderAloudSource {
   _FakeReaderAloudSource({
-    required this.chapters,
+    required List<ReaderAloudChapter> chapters,
     required this.initialPosition,
-  });
+  }) : chapters = List.of(chapters);
 
   final List<ReaderAloudChapter> chapters;
   ReaderAloudPosition initialPosition;
   final List<ReaderAloudPosition> revealed = [];
   final List<ReaderAloudPosition> persisted = [];
+  Future<ReaderAloudChapter?> Function(int)? chapterLoader;
+  Future<void> Function(ReaderAloudPosition)? beforeReveal;
 
   @override
   String get bookTitle => '测试书籍';
@@ -688,8 +1045,13 @@ class _FakeReaderAloudSource implements ReaderAloudSource {
   Future<ReaderAloudPosition> currentPosition() async => initialPosition;
 
   @override
-  Future<ReaderAloudChapter?> loadChapter(int index) async =>
-      index >= 0 && index < chapters.length ? chapters[index] : null;
+  Future<ReaderAloudChapter?> loadChapter(
+    int index, {
+    bool Function()? isCurrent,
+  }) async {
+    if (chapterLoader != null) return chapterLoader!(index);
+    return index >= 0 && index < chapters.length ? chapters[index] : null;
+  }
 
   @override
   Future<void> persistPosition(ReaderAloudPosition position) async {
@@ -697,7 +1059,12 @@ class _FakeReaderAloudSource implements ReaderAloudSource {
   }
 
   @override
-  Future<void> revealPosition(ReaderAloudPosition position) async {
+  Future<void> revealPosition(
+    ReaderAloudPosition position, {
+    bool Function()? isCurrent,
+  }) async {
+    await beforeReveal?.call(position);
+    if (isCurrent?.call() == false) return;
     revealed.add(position);
   }
 }

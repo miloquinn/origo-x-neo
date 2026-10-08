@@ -25,32 +25,72 @@ class ReplaceRuleExecutor {
         (batch.target == ReplaceRuleTarget.title
             ? rule.scopeTitle
             : rule.scopeContent) &&
-        replaceRuleMatchesScope(rule, batch.bookTitle, batch.sourceName);
+        replaceRuleMatchesScope(
+          rule,
+          batch.bookTitle,
+          batch.sourceName,
+          batch.sourceUrl,
+        );
     final applicable = batch.rules
-        .where((rule) => !rule.isRegex && applies(rule))
+        .where(
+          (rule) =>
+              !rule.isRegex &&
+              !isUnsupportedReplaceRuleReplacement(
+                rule.replacement,
+                isRegex: rule.isRegex,
+              ) &&
+              applies(rule),
+        )
         .map(PreparedReplaceRule.new)
         .toList(growable: false);
     final skipped = batch.rules
-        .where((rule) => rule.isRegex && applies(rule))
+        .where(
+          (rule) =>
+              (rule.isRegex ||
+                  isUnsupportedReplaceRuleReplacement(
+                    rule.replacement,
+                    isRegex: rule.isRegex,
+                  )) &&
+              applies(rule),
+        )
         .toList(growable: false);
     final outputLimit = replaceRuleOutputCharacterLimit(batch.values);
     final values = <String>[];
+    final effectiveRuleIds = <String>{};
     for (final input in batch.values) {
       var output = input;
+      final inputEffectiveRuleIds = <String>{};
+      var rolledBack = false;
       for (final rule in applicable) {
-        output = rule.apply(output);
+        final before = output;
+        final candidate = rule.apply(before);
+        if (batch.target == ReplaceRuleTarget.title &&
+            before.trim().isNotEmpty &&
+            candidate.trim().isEmpty) {
+          continue;
+        }
+        output = candidate;
+        if (candidate != before) inputEffectiveRuleIds.add(rule.source.id);
         if (output.length > outputLimit) {
           output = input;
+          rolledBack = true;
           break;
         }
       }
+      if (!rolledBack) effectiveRuleIds.addAll(inputEffectiveRuleIds);
       values.add(output);
     }
     final diagnostics = <ReplaceRuleDiagnostic>[];
     if (skipped.isNotEmpty &&
         _reportedRegexSignatures.add(batch.rulesSignature)) {
       final diagnostic = ReplaceRuleDiagnostic(
-        kind: ReplaceRuleDiagnosticKind.regexUnavailable,
+        kind:
+            isUnsupportedReplaceRuleReplacement(
+              skipped.first.replacement,
+              isRegex: skipped.first.isRegex,
+            )
+            ? ReplaceRuleDiagnosticKind.unsupportedReplacement
+            : ReplaceRuleDiagnosticKind.regexUnavailable,
         rulesSignature: batch.rulesSignature,
         ruleId: skipped.first.id,
         ruleName: skipped.first.name,
@@ -64,6 +104,7 @@ class ReplaceRuleExecutor {
       values: values,
       diagnostics: diagnostics,
       skippedRuleIds: skipped.map((rule) => rule.id).toList(growable: false),
+      effectiveRuleIds: effectiveRuleIds.toList(growable: false),
       degraded: skipped.isNotEmpty,
     );
   }

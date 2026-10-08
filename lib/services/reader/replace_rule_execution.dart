@@ -22,6 +22,7 @@ class ReplaceRuleExecutionRule {
     required this.scopeTitle,
     required this.scopeContent,
     required this.order,
+    this.timeoutMillisecond = 3000,
   });
 
   final String id;
@@ -36,6 +37,9 @@ class ReplaceRuleExecutionRule {
   final bool scopeTitle;
   final bool scopeContent;
   final int order;
+  final int timeoutMillisecond;
+  int get validTimeoutMillisecond =>
+      timeoutMillisecond > 0 ? timeoutMillisecond : 3000;
 
   /// Stable within and across processes. It is intentionally independent of
   /// list position so a timed-out rule remains identifiable after a reorder.
@@ -48,6 +52,7 @@ class ReplaceRuleExecutionRule {
     scopeContent,
     scope,
     excludeScope,
+    validTimeoutMillisecond,
   ]);
 
   Map<String, Object?> toMessage() => <String, Object?>{
@@ -63,6 +68,7 @@ class ReplaceRuleExecutionRule {
     'scopeTitle': scopeTitle,
     'scopeContent': scopeContent,
     'order': order,
+    'timeoutMillisecond': validTimeoutMillisecond,
     'fingerprint': fingerprint,
   };
 
@@ -80,6 +86,7 @@ class ReplaceRuleExecutionRule {
         scopeTitle: value['scopeTitle'] == true,
         scopeContent: value['scopeContent'] == true,
         order: value['order'] as int? ?? 0,
+        timeoutMillisecond: value['timeoutMillisecond'] as int? ?? 3000,
       );
 }
 
@@ -91,6 +98,7 @@ class ReplaceRuleExecutionBatch {
     required this.bookTitle,
     required this.target,
     this.sourceName,
+    this.sourceUrl,
   });
 
   final List<String> values;
@@ -98,6 +106,7 @@ class ReplaceRuleExecutionBatch {
   final String rulesSignature;
   final String bookTitle;
   final String? sourceName;
+  final String? sourceUrl;
   final ReplaceRuleTarget target;
 }
 
@@ -108,6 +117,7 @@ enum ReplaceRuleDiagnosticKind {
   outputLimit,
   regexUnavailable,
   emptyOutput,
+  unsupportedReplacement,
 }
 
 class ReplaceRuleDiagnostic {
@@ -133,11 +143,13 @@ class ReplaceRuleExecutionResult {
     required this.values,
     this.diagnostics = const <ReplaceRuleDiagnostic>[],
     this.skippedRuleIds = const <String>[],
+    this.effectiveRuleIds = const <String>[],
     this.degraded = false,
   });
 
   final List<String> values;
   final List<ReplaceRuleDiagnostic> diagnostics;
   final List<String> skippedRuleIds;
+  final List<String> effectiveRuleIds;
   final bool degraded;
 }

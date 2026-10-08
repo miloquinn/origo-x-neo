@@ -45,16 +45,54 @@ void main() {
             SourceRequestTemplate.parse(url, baseUri: Uri.parse(url)),
           ),
           throwsA(
-            predicate(
-              (error) =>
-                  '$error'.contains('Membership required') &&
-                  '$error'.contains('/books') &&
-                  !'$error'.contains('private-test'),
-            ),
+            isA<BookSourceProtocolException>()
+                .having((error) => error.statusCode, 'statusCode', 400)
+                .having((error) => error.isTransient, 'isTransient', isFalse)
+                .having(
+                  (error) => error.message,
+                  'safe message',
+                  allOf(
+                    contains('Membership required'),
+                    contains('/books'),
+                    isNot(contains('private-test')),
+                  ),
+                ),
           ),
         );
       },
     );
+
+    test('HTTP 404 remains a structured missing-chapter failure', () async {
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server!.listen((request) async {
+        request.response.statusCode = HttpStatus.notFound;
+        await request.response.close();
+      });
+      final transport = SourceHttpTransport(
+        networkPolicy: const BookSourceNetworkPolicy(allowPrivateNetwork: true),
+      );
+      addTearDown(transport.close);
+      final url = 'http://127.0.0.1:${server!.port}/chapter/missing';
+
+      await expectLater(
+        transport.send(
+          SourceRequestTemplate.parse(url, baseUri: Uri.parse(url)),
+        ),
+        throwsA(
+          isA<BookSourceProtocolException>()
+              .having(
+                (error) => error.statusCode,
+                'statusCode',
+                HttpStatus.notFound,
+              )
+              .having(
+                (error) => error.isMissingChapter,
+                'isMissingChapter',
+                isTrue,
+              ),
+        ),
+      );
+    });
 
     test(
       'sends structured source JSON as UTF-8 bytes with its media type',

@@ -56,7 +56,7 @@ class GlassTopBar extends StatelessWidget {
       fontWeight: titleFontWeight,
       color: scheme.onSurface,
       height: 1,
-      shadows: useBlur
+      shadows: useBlur && scheme.brightness == Brightness.dark
           ? [
               Shadow(
                 color: scheme.surface.withValues(alpha: 0.9),

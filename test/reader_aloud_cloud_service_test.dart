@@ -13,7 +13,34 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test(
-    'cloud queue prepares one segment ahead without advancing playback',
+    'late stop completion cannot clear the replacement sentence progress',
+    () async {
+      final player = _DelayedStopBytesPlayer();
+      final service = ReaderAloudService(
+        systemEngine: _FakeSystemEngine(),
+        settingsStore: _FakeSettingsStore()..type = ReaderAloudEngineType.cloud,
+        cloudClient: _FakeCloudClient(),
+        bytesPlayer: player,
+      );
+      addTearDown(service.dispose);
+      await service.initialize();
+      final old = service.speakQueued(['old'], onTextStarted: (_) {});
+      await _flushQueue();
+      final stopping = service.stop();
+      final latest = service.speakQueued(['latest'], onTextStarted: (_) {});
+      await _flushQueue();
+      expect(service.currentPosition, 3);
+      player.stopGate.complete();
+      await stopping;
+      await old;
+      expect(service.currentPosition, 3);
+      player.complete();
+      await latest;
+    },
+  );
+
+  test(
+    'cloud queue prioritizes first audio and buffers four with two requests',
     () async {
       final client = _QueuedCloudClient();
       final player = _QueuedBytesPlayer();
@@ -31,39 +58,53 @@ void main() {
         'first',
         'second',
         'third',
+        'fourth',
+        'fifth',
+        'sixth',
       ], onTextStarted: started.add);
       await _flushQueue();
       expect(client.texts, ['first']);
+      expect(started, isEmpty);
       client.complete(0);
       await _flushQueue();
       expect(player.audio, [
         [0],
       ]);
-      expect(client.texts, ['first', 'second']);
-      client.complete(1);
-      await _flushQueue();
-      expect(started, [0]);
-      expect(player.audio, hasLength(1));
-      expect(client.texts, hasLength(2));
-      player.complete();
-      await _flushQueue();
-      expect(player.audio, [
-        [0],
-        [1],
-      ]);
-      expect(started, [0, 1]);
       expect(client.texts, ['first', 'second', 'third']);
-      client.complete(2);
+      expect(client.maximumInFlight, 2);
+      client.complete(2); // Out-of-order completion must not advance playback.
+      await _flushQueue();
+      expect(client.texts, ['first', 'second', 'third', 'fourth']);
+      client.complete(3);
+      await _flushQueue();
+      expect(client.texts, ['first', 'second', 'third', 'fourth', 'fifth']);
+      client.complete(4);
+      await _flushQueue();
+      expect(client.texts, hasLength(5)); // Bounded to four ahead of first.
+      expect(started, [0]);
+      client.complete(1);
       player.complete();
       await _flushQueue();
+      expect(started, [0, 1]);
+      expect(client.texts.last, 'sixth');
+      client.complete(5);
+      for (var index = 2; index < 6; index++) {
+        player.complete();
+        await _flushQueue();
+        expect(started.last, index);
+      }
+      player.complete();
+      await playback;
       expect(player.audio, [
         [0],
         [1],
         [2],
+        [3],
+        [4],
+        [5],
       ]);
-      player.complete();
-      await playback;
-      expect(started, [0, 1, 2]);
+      expect(player.firstInQueue, [true, false, false, false, false, false]);
+      expect(client.maximumInFlight, 2);
     },
   );
 
@@ -90,20 +131,21 @@ void main() {
         await _flushQueue();
         client.complete(0);
         await _flushQueue();
-        expect(client.texts, ['first', 'second']);
+        expect(client.texts, ['first', 'second', 'third']);
         if (action == 'pause') {
           await service.pause();
         } else {
           await service.stop();
         }
         client.complete(1);
+        client.complete(2);
         await playback;
         await _flushQueue();
         expect(started, [0]);
         expect(player.audio, [
           [0],
         ]);
-        expect(client.texts, hasLength(2));
+        expect(client.texts, hasLength(3));
       },
     );
   }
@@ -143,6 +185,180 @@ void main() {
         [0],
       ]);
       expect(started, [0, 1]);
+    },
+  );
+
+  test('failed synthesis does not announce an unplayable sentence', () async {
+    final client = _QueuedCloudClient();
+    final player = _QueuedBytesPlayer();
+    final service = ReaderAloudService(
+      systemEngine: _FakeSystemEngine(),
+      settingsStore: _FakeSettingsStore()
+        ..type = ReaderAloudEngineType.cloud
+        ..settings = const ReaderAloudCloudSettings(fallbackToSystem: false),
+      cloudClient: client,
+      bytesPlayer: player,
+    );
+    addTearDown(service.dispose);
+    final started = <int>[];
+    final playback = service.speakQueued(['first'], onTextStarted: started.add);
+    final failed = expectLater(
+      playback,
+      throwsA(isA<ReaderAloudCloudException>()),
+    );
+    await _flushQueue();
+    client.results[0].completeError(
+      const ReaderAloudCloudException('failed', 'failed'),
+    );
+    await failed;
+    expect(started, isEmpty);
+    expect(player.audio, isEmpty);
+  });
+
+  test(
+    'repeated seeks share two request slots and only latest plays',
+    () async {
+      final client = _QueuedCloudClient();
+      final player = _QueuedBytesPlayer();
+      final service = ReaderAloudService(
+        systemEngine: _FakeSystemEngine(),
+        settingsStore: _FakeSettingsStore()..type = ReaderAloudEngineType.cloud,
+        cloudClient: client,
+        bytesPlayer: player,
+      );
+      addTearDown(service.dispose);
+      final old = service.speakQueued([
+        'old',
+        'ahead',
+        'later',
+      ], onTextStarted: (_) {});
+      await _flushQueue();
+      client.complete(0);
+      await _flushQueue();
+      expect(client.texts, ['old', 'ahead', 'later']);
+      await service.stop();
+      final superseded = service.speakQueued([
+        'superseded',
+      ], onTextStarted: (_) {});
+      await _flushQueue();
+      await service.stop();
+      final started = <int>[];
+      final latest = service.speakQueued([
+        'latest',
+      ], onTextStarted: started.add);
+      await _flushQueue();
+      expect(client.texts, hasLength(3));
+      client.complete(1);
+      await _flushQueue();
+      expect(client.texts, ['old', 'ahead', 'later', 'latest']);
+      client.complete(2);
+      client.complete(3);
+      await _flushQueue();
+      expect(started, [0]);
+      expect(player.audio, [
+        [0],
+        [3],
+      ]);
+      player.complete();
+      await Future.wait([old, superseded, latest]);
+      expect(client.maximumInFlight, 2);
+    },
+  );
+
+  for (final action in ['stop', 'pause', 'new queue', 'dispose']) {
+    test(
+      '$action cancels real cloud response streams without stale fallback',
+      () async {
+        final adapter = _CancellableStreamAdapter();
+        final dio = Dio()..httpClientAdapter = adapter;
+        final system = _FakeSystemEngine();
+        final player = _QueuedBytesPlayer();
+        final service = ReaderAloudService(
+          systemEngine: system,
+          settingsStore: _FakeSettingsStore()
+            ..type = ReaderAloudEngineType.cloud,
+          cloudClient: OpenAiCompatibleReaderAloudCloudClient(dio: dio),
+          bytesPlayer: player,
+        );
+        if (action != 'dispose') addTearDown(service.dispose);
+        final started = <int>[];
+        final old = service.speakQueued([
+          'first',
+          'ahead',
+          'later',
+        ], onTextStarted: started.add);
+        await adapter.prefetchStarted.future.timeout(
+          const Duration(seconds: 2),
+        );
+        expect(adapter.texts, ['first', 'ahead', 'later']);
+        expect(adapter.listening, [true, true, true]);
+        expect(started, [0]);
+        Future<void>? latest;
+        if (action == 'dispose') {
+          service.dispose();
+          player.complete();
+        } else if (action == 'pause') {
+          await service.pause();
+        } else if (action == 'stop') {
+          await service.stop();
+        } else {
+          // The controller stops the old player before starting the new queue.
+          player.complete();
+          latest = service.speakQueued(['latest'], onTextStarted: (_) {});
+        }
+        await _flushQueue();
+        expect(adapter.cancelled, containsAll([1, 2]));
+        expect(system.spoken, isEmpty);
+        expect(service.cloudError, isNull);
+        if (action != 'dispose') {
+          latest ??= service.speakQueued(['latest'], onTextStarted: (_) {});
+          await adapter.latestRequested.future.timeout(
+            const Duration(seconds: 2),
+          );
+          // Neither abandoned response body has been finished by the test.
+          // Cancellation frees both slots before the provider's 90s timeout.
+          expect(adapter.texts.last, 'latest');
+          final played = player.waitForNextPlayback();
+          adapter.complete(3);
+          await played.timeout(const Duration(seconds: 2));
+          expect(player.audio, [
+            [0],
+            [3],
+          ]);
+          player.complete();
+          await latest;
+        }
+        await old;
+        expect(system.spoken, isEmpty);
+      },
+    );
+  }
+
+  test(
+    'tap to seek defaults off and persists independently of page following',
+    () async {
+      final service = ReaderAloudService(
+        systemEngine: _FakeSystemEngine(),
+        settingsStore: _FakeSettingsStore(),
+        bytesPlayer: _FakeBytesPlayer(),
+      );
+      addTearDown(service.dispose);
+      await service.initialize();
+      expect(service.tapToSeek, isFalse);
+      await service.setTapToSeek(true);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('reader_aloud_tap_to_seek'), isTrue);
+      expect(service.followPageTurns, isFalse);
+      final restored = ReaderAloudService(
+        systemEngine: _FakeSystemEngine(),
+        settingsStore: _FakeSettingsStore(),
+        bytesPlayer: _FakeBytesPlayer(),
+      );
+      addTearDown(restored.dispose);
+      await restored.initialize();
+      expect(restored.tapToSeek, isTrue);
+      await restored.setTapToSeek(false);
+      expect(prefs.getBool('reader_aloud_tap_to_seek'), isFalse);
     },
   );
 
@@ -747,6 +963,8 @@ class _FailingProfileStore extends _FakeSettingsStore
 Future<void> _flushQueue() => Future<void>.delayed(Duration.zero);
 
 class _QueuedCloudClient implements ReaderAloudCloudClient {
+  int inFlight = 0;
+  int maximumInFlight = 0;
   final texts = <String>[];
   final voices = <String>[];
   final speeds = <double>[];
@@ -765,13 +983,23 @@ class _QueuedCloudClient implements ReaderAloudCloudClient {
     speeds.add(speed);
     final result = Completer<Uint8List>();
     results.add(result);
-    return result.future;
+    inFlight++;
+    if (inFlight > maximumInFlight) maximumInFlight = inFlight;
+    return result.future.whenComplete(() => inFlight--);
   }
 }
 
-class _QueuedBytesPlayer extends _FakeBytesPlayer {
+class _QueuedBytesPlayer extends _FakeBytesPlayer
+    implements ReaderAloudQueuedBytesPlayer {
   final audio = <List<int>>[];
+  final firstInQueue = <bool>[];
   Completer<void>? active;
+  Completer<void>? _nextPlayback;
+  Future<void> waitForNextPlayback() {
+    _nextPlayback = Completer<void>();
+    return _nextPlayback!.future;
+  }
+
   void complete() {
     final value = active;
     if (value != null && !value.isCompleted) value.complete();
@@ -784,12 +1012,83 @@ class _QueuedBytesPlayer extends _FakeBytesPlayer {
     required double volume,
   }) {
     audio.add(bytes.toList());
+    _nextPlayback?.complete();
+    _nextPlayback = null;
     active = Completer<void>();
     return active!.future;
+  }
+
+  @override
+  Future<void> playNext(
+    Uint8List bytes, {
+    required String mimeType,
+    required double volume,
+    required bool firstInQueue,
+  }) {
+    this.firstInQueue.add(firstInQueue);
+    return play(bytes, mimeType: mimeType, volume: volume);
   }
 
   @override
   Future<void> pause() async => complete();
   @override
   Future<void> stop() async => complete();
+}
+
+class _DelayedStopBytesPlayer extends _QueuedBytesPlayer {
+  final stopGate = Completer<void>();
+  @override
+  Duration get duration => const Duration(seconds: 1);
+  @override
+  Duration get position => const Duration(milliseconds: 500);
+  @override
+  Future<void> stop() async {
+    complete();
+    await stopGate.future;
+  }
+}
+
+class _CancellableStreamAdapter implements HttpClientAdapter {
+  final texts = <String>[];
+  final bodies = <StreamController<Uint8List>>[];
+  final listening = <bool>[];
+  final cancelled = <int>[];
+  final prefetchStarted = Completer<void>();
+  final latestRequested = Completer<void>();
+
+  void complete(int index) {
+    bodies[index].add(Uint8List.fromList([index]));
+    unawaited(bodies[index].close());
+  }
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    final index = texts.length;
+    texts.add(options.data['input'] as String);
+    if (index == 3) latestRequested.complete();
+    listening.add(false);
+    final body = StreamController<Uint8List>(
+      onListen: () {
+        listening[index] = true;
+        if (index == 2) prefetchStarted.complete();
+      },
+      onCancel: () => cancelled.add(index),
+    );
+    bodies.add(body);
+    if (index == 0) complete(index);
+    return ResponseBody(
+      body.stream,
+      200,
+      headers: {
+        Headers.contentTypeHeader: ['audio/mpeg'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

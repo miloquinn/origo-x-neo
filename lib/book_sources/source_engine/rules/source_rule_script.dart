@@ -123,6 +123,8 @@ class SourceRuleScript {
   ) {
     final input = scripted.selector.trim().isEmpty
         ? context ?? document.scriptResultValue
+        : scripted.selector.contains('{{')
+        ? selectors.evaluateString(document, context, scripted.selector)
         : selectors.evaluateList(document, context, scripted.selector);
     final script = interpolateScript(document, input, scripted.script);
     final output = _evaluate(
@@ -160,6 +162,12 @@ class SourceRuleScript {
   ) async {
     final input = scripted.selector.trim().isEmpty
         ? context ?? document.scriptResultValue
+        : scripted.selector.contains('{{')
+        ? await selectors.evaluateStringAsync(
+            document,
+            context,
+            scripted.selector,
+          )
         : await selectors.evaluateListAsync(
             document,
             context,

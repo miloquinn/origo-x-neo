@@ -121,6 +121,7 @@ extension _NativeReaderPageCache on _NativeReaderPageState {
     warmAfterFrame = (Duration _) {
       if (!mounted ||
           !supportsBookPaginationWarm() ||
+          (chapterIndex - _chapterIndex).abs() > 3 ||
           key !=
               _paginationFingerprintFor(
                 chapterIndex,
@@ -138,20 +139,10 @@ extension _NativeReaderPageCache on _NativeReaderPageState {
         return;
       }
       final chapter = chapters[chapterIndex];
-      if (!chapter.hasLoadedText) {
-        debugPrint(
-          '[reader-horizontal] warm content start chapter=$chapterIndex',
-        );
-        _loadIndexedChapterWindow(
-          chapters,
-          chapterIndex,
-          retainAroundCurrentChapter: true,
-        ).then((_) {
+      if (!chapter.isReadyForLayout) {
+        _loadIndexedChapter(chapters, chapterIndex).then((_) {
+          _retainIndexedChapterContent(chapters);
           if (mounted) {
-            debugPrint(
-              '[reader-horizontal] warm content complete '
-              'chapter=$chapterIndex',
-            );
             scheduleAfterFrame(requestFrame: true);
           } else {
             _queuedHorizontalPaginationWarms.remove(key);

@@ -279,34 +279,40 @@ class SourceRuntimeCatalog {
         'Compatible source did not return a book title.',
       );
     }
-    final cover = await _remoteAssetValue(
+    var cover = await _remoteAssetValue(
       contextualDocument,
       context,
       rule,
       'coverUrl',
     );
+    if (_rules.optionalRule(rule, 'coverUrl').isEmpty &&
+        '${bookContext['coverUrl'] ?? ''}'.isNotEmpty) {
+      cover = parseRemoteAsset(
+        '${bookContext['coverUrl']}',
+        source.baseUri,
+        Map<String, String>.from(
+          bookContext['coverHeaders'] as Map? ?? const {},
+        ),
+      );
+    }
     seedBookMetadata(bookContext, source: source, bookId: bookId, name: title);
-    final author = await _rules.value(
-      contextualDocument,
-      context,
-      rule,
-      'author',
-    );
+    final author = _rules.optionalRule(rule, 'author').isEmpty
+        ? '${bookContext['author'] ?? ''}'
+        : await _rules.value(contextualDocument, context, rule, 'author');
     bookContext['author'] = author;
     final book = BookSourceBook(
       id: bookId,
       title: title,
       author: author,
-      description: await _rules.value(
-        contextualDocument,
-        context,
-        rule,
-        'intro',
-      ),
+      description: _rules.optionalRule(rule, 'intro').isEmpty
+          ? '${bookContext['intro'] ?? ''}'
+          : await _rules.value(contextualDocument, context, rule, 'intro'),
       type: bookType(source),
       coverUrl: cover?.url,
       coverHeaders: cover?.headers ?? const {},
-      categories: await _categoriesFromRules(contextualDocument, context, rule),
+      categories: _rules.optionalRule(rule, 'kind').isEmpty
+          ? splitCategories('${bookContext['kind'] ?? ''}')
+          : await _categoriesFromRules(contextualDocument, context, rule),
       status: nullable(
         await _rules.value(contextualDocument, context, rule, 'status'),
       ),
@@ -321,6 +327,12 @@ class SourceRuntimeCatalog {
         type: bookType(source),
       ),
     );
+    bookContext.addAll({
+      'intro': book.description,
+      'coverUrl': book.coverUrl?.toString() ?? '',
+      'coverHeaders': book.coverHeaders,
+      'kind': book.categories.join(','),
+    });
     _state.rememberBookContext(source, bookId, bookContext);
     _state.rememberRuleState(source, bookId, document.ruleState);
     _state.rememberRuleState(source, book.id, document.ruleState);
@@ -395,6 +407,12 @@ class SourceRuntimeCatalog {
         type: bookType(source),
       ),
     );
+    bookContext.addAll({
+      'intro': book.description,
+      'coverUrl': book.coverUrl?.toString() ?? '',
+      'coverHeaders': book.coverHeaders,
+      'kind': book.categories.join(','),
+    });
     _state.rememberBookContext(source, book.id, bookContext);
     _state.rememberRuleState(source, book.id, document.ruleState);
     return book;

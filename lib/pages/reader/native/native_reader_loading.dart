@@ -64,11 +64,18 @@ extension _NativeReaderLoading on _NativeReaderPageState {
     NativeReaderCacheStore.instance.retainFrom(this, _bookCacheKey);
     if (chapters.isEmpty) return chapters;
     for (final chapter in chapters) {
-      chapter.configureReplacement(widget.book.title);
+      chapter.configureReplacement(
+        bookTitle: widget.book.title,
+        bookId: _replaceRuleBookId,
+        sourceName: _replaceRuleSourceName,
+        sourceUrl: _replaceRuleSourceUrl,
+        eligibleByDefault: _replaceRulesEligibleByDefault,
+      );
     }
     final replacementService = _replaceRules;
+    final replacementRevision = replacementService.revision;
     for (final chapter in chapters) {
-      chapter.prepareReplacementRevision(replacementService.revision);
+      chapter.prepareReplacementRevision(replacementRevision);
     }
     const titleBatchSize = 256;
     for (var start = 0; start < chapters.length; start += titleBatchSize) {
@@ -77,8 +84,15 @@ extension _NativeReaderLoading on _NativeReaderPageState {
       final cleaned = await replacementService.applyBatchAsync(
         batch.map((chapter) => chapter.originalTitle).toList(growable: false),
         bookTitle: widget.book.title,
+        bookId: _replaceRuleBookId,
+        sourceName: _replaceRuleSourceName,
+        sourceUrl: _replaceRuleSourceUrl,
+        eligibleByDefault: _replaceRulesEligibleByDefault,
         title: true,
       );
+      if (replacementRevision != replacementService.revision) {
+        return _prepareLoadedChapters(Future.value(chapters));
+      }
       for (var index = 0; index < batch.length; index++) {
         batch[index].applyPreparedTitle(cleaned.values[index]);
       }
@@ -87,12 +101,18 @@ extension _NativeReaderLoading on _NativeReaderPageState {
     final preparedNavigation = await _prepareNavigationTitles(
       _parsedNavigationChapters,
     );
+    if (replacementRevision != replacementService.revision) {
+      return _prepareLoadedChapters(Future.value(chapters));
+    }
     _loadedChapters = chapters;
     final initialChapterIndex = _chapterIndex.clamp(0, chapters.length - 1);
     // 冷缓存打开时，章节文本的读取与 UTF-8 解码（UI isolate 上数十毫秒）
     // 等封面飞到静止的停留画面再执行，避免解码回调冻结飞行帧。
     if (_pageCache.isEmpty) await _waitForOpeningCoverHold();
     await _loadIndexedChapterWindow(chapters, initialChapterIndex);
+    if (replacementRevision != replacementService.revision) {
+      return _prepareLoadedChapters(Future.value(chapters));
+    }
     _navigationChapters =
         _navigationMemoryCache[_navigationReplacementCacheKey] ??
         (preparedNavigation.isNotEmpty
@@ -120,6 +140,10 @@ extension _NativeReaderLoading on _NativeReaderPageState {
     final cleaned = await _replaceRules.applyBatchAsync(
       navigation.map((entry) => entry.title).toList(growable: false),
       bookTitle: widget.book.title,
+      bookId: _replaceRuleBookId,
+      sourceName: _replaceRuleSourceName,
+      sourceUrl: _replaceRuleSourceUrl,
+      eligibleByDefault: _replaceRulesEligibleByDefault,
       title: true,
     );
     return List<ReaderNavigationChapter>.generate(
@@ -137,14 +161,8 @@ extension _NativeReaderLoading on _NativeReaderPageState {
 
   Future<void> _loadIndexedChapterWindow(
     List<_NativeChapter> chapters,
-    int chapterIndex, {
-    bool retainAroundCurrentChapter = false,
-  }) async {
-    debugPrint(
-      '[reader-horizontal] load window target=$chapterIndex '
-      'current=$_chapterIndex first=$_horizontalFirstChapter '
-      'last=$_horizontalLastChapter retain=$retainAroundCurrentChapter',
-    );
+    int chapterIndex,
+  ) async {
     final indexes = <int>{
       chapterIndex,
       chapterIndex - 1,
@@ -154,36 +172,57 @@ extension _NativeReaderLoading on _NativeReaderPageState {
       chapterIndex - 3,
       chapterIndex + 3,
     }.where((index) => index >= 0 && index < chapters.length).toList();
-    final epubChapters = indexes
+    await _prepareIndexedChapters(chapters, indexes);
+    _retainIndexedChapterContent(chapters);
+  }
+
+  Future<void> _loadIndexedChapter(
+    List<_NativeChapter> chapters,
+    int chapterIndex,
+  ) {
+    return _prepareIndexedChapters(chapters, <int>[chapterIndex]);
+  }
+
+  Future<void> _prepareIndexedChapters(
+    List<_NativeChapter> chapters,
+    Iterable<int> indexes,
+  ) async {
+    final selectedChapters = indexes
         .map((index) => chapters[index])
+        .toList(growable: false);
+    final epubChapters = selectedChapters
         .where((chapter) => chapter.isLazyEpub)
         .toList(growable: false);
     if (epubChapters.isNotEmpty) {
       await _loadEpubChapterBatch(epubChapters);
     }
-    final kindleChapters = indexes
-        .map((index) => chapters[index])
+    final kindleChapters = selectedChapters
         .where((chapter) => chapter.isLazyKindle)
         .toList(growable: false);
     if (kindleChapters.isNotEmpty) {
       await _loadKindleChapterBatch(kindleChapters);
     }
     await Future.wait<void>([
-      for (final index in indexes)
-        chapters[index].prepareReplacementAsync(_replaceRules),
+      for (final chapter in selectedChapters)
+        chapter.prepareReplacementAsync(_replaceRules),
     ]);
-    final retainedChapterIndex = retainAroundCurrentChapter
-        ? _chapterIndex.clamp(0, chapters.length - 1)
-        : chapterIndex;
+  }
+
+  void _retainIndexedChapterContent(List<_NativeChapter> chapters) {
+    if (chapters.isEmpty) return;
+    final currentChapterIndex = _chapterIndex.clamp(0, chapters.length - 1);
+    final pendingChapterIndex = _pendingChapterIndex;
     for (var index = 0; index < chapters.length; index++) {
-      if ((index - retainedChapterIndex).abs() > 4) {
+      final nearCurrent = (index - currentChapterIndex).abs() <= 4;
+      final nearPending =
+          pendingChapterIndex != null &&
+          pendingChapterIndex >= 0 &&
+          pendingChapterIndex < chapters.length &&
+          (index - pendingChapterIndex).abs() <= 4;
+      if (!nearCurrent && !nearPending) {
         chapters[index].unloadLazyContent();
       }
     }
-    debugPrint(
-      '[reader-horizontal] load window complete target=$chapterIndex '
-      'retained=$retainedChapterIndex cacheLayouts=${_pageCache.length}',
-    );
   }
 
   Future<void> _loadEpubChapterBatch(List<_NativeChapter> chapters) async {

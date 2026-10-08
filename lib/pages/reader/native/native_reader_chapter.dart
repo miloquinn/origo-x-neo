@@ -74,7 +74,13 @@ class _NativeChapter {
   final String? sourceChapterId;
   final int sourceBodyStart;
   String replaceBookTitle;
+  String? replaceBookId;
+  String? replaceSourceName;
+  String? replaceSourceUrl;
+  bool replaceEligibleByDefault = true;
   int _replacementRevision = -1;
+  int _replacementGeneration = 0;
+  Set<String> _effectiveRuleIds = const <String>{};
   final String? _plainText;
   final List<_NativeBlock>? _blocks;
   final String? _dataPath;
@@ -97,6 +103,7 @@ class _NativeChapter {
   bool _rulesApplied = false;
 
   bool get hasLoadedText => _plainText != null || _loadedText != null;
+  bool get isReadyForLayout => hasLoadedText && _rulesApplied;
 
   bool get isLazyEpub => _epubDescriptor != null;
   bool get isLazyKindle => _kindleDescriptor != null;
@@ -112,19 +119,37 @@ class _NativeChapter {
   /// expressions on the UI isolate.
   String get title => _replacedTitle ?? _title;
   String get originalTitle => _title;
+  Set<String> get effectiveRuleIds => _effectiveRuleIds;
 
-  void configureReplacement(String bookTitle) {
-    if (replaceBookTitle == bookTitle) return;
+  void configureReplacement({
+    required String bookTitle,
+    required String bookId,
+    String? sourceName,
+    String? sourceUrl,
+    required bool eligibleByDefault,
+  }) {
+    if (replaceBookTitle == bookTitle &&
+        replaceBookId == bookId &&
+        replaceSourceName == sourceName &&
+        replaceSourceUrl == sourceUrl &&
+        replaceEligibleByDefault == eligibleByDefault) {
+      return;
+    }
     replaceBookTitle = bookTitle;
+    replaceBookId = bookId;
+    replaceSourceName = sourceName;
+    replaceSourceUrl = sourceUrl;
+    replaceEligibleByDefault = eligibleByDefault;
     _replacedTitle = null;
     _resetReplacementCache();
+    _replacementGeneration++;
   }
 
   void prepareReplacementRevision(int revision) {
     if (_replacementRevision == revision) return;
-    _replacedTitle = null;
-    _resetReplacementCache();
+    _resetReplacementCache(retainContent: true);
     _replacementRevision = revision;
+    _replacementGeneration++;
   }
 
   void applyPreparedTitle(String cleaned) {
@@ -133,34 +158,51 @@ class _NativeChapter {
 
   Future<void> prepareReplacementAsync(ReplaceRuleService service) {
     if (_rulesApplied) return Future<void>.value();
-    return _replacementLoad ??= _prepareReplacementAsync(service).whenComplete(
-      () {
-        _replacementLoad = null;
-      },
-    );
+    final pending = _replacementLoad;
+    if (pending != null) return pending;
+    late final Future<void> loading;
+    loading = _prepareReplacementAsync(service).whenComplete(() {
+      if (identical(_replacementLoad, loading)) _replacementLoad = null;
+    });
+    _replacementLoad = loading;
+    return loading;
   }
 
   Future<void> _prepareReplacementAsync(ReplaceRuleService service) async {
+    final generation = _replacementGeneration;
     await loadTextAsync();
-    if (_rulesApplied) return;
+    if (_rulesApplied || generation != _replacementGeneration) return;
     final raw = _plainText ?? _loadedText ?? '';
     final sourceBlocks = _blocks ?? _loadedBlocks;
     if (sourceBlocks == null ||
         (sourceBlocks.length == 1 && sourceBlocks.first.startOffset < 0)) {
-      _replacedText = await service.applyAsync(
-        raw,
+      final result = await service.applyBatchAsync(
+        <String>[raw],
         bookTitle: replaceBookTitle,
+        bookId: replaceBookId,
+        sourceName: replaceSourceName,
+        sourceUrl: replaceSourceUrl,
+        eligibleByDefault: replaceEligibleByDefault,
       );
+      if (generation != _replacementGeneration) return;
+      _replacedText = result.values.single;
+      _effectiveRuleIds = result.effectiveRuleIds.toSet();
       _replacedBlocks = <_NativeBlock>[_NativeBlock.text(_replacedText!)];
     } else {
       final result = await _replaceRichContentAsync(raw, sourceBlocks, service);
+      if (generation != _replacementGeneration) return;
       _replacedText = result.text;
       _replacedBlocks = result.blocks;
+      _effectiveRuleIds = result.effectiveRuleIds;
     }
+    _textBlocks = null;
     _rulesApplied = true;
   }
 
-  Future<({String text, List<_NativeBlock> blocks})> _replaceRichContentAsync(
+  Future<
+    ({String text, List<_NativeBlock> blocks, Set<String> effectiveRuleIds})
+  >
+  _replaceRichContentAsync(
     String raw,
     List<_NativeBlock> sourceBlocks,
     ReplaceRuleService service,
@@ -200,11 +242,19 @@ class _NativeChapter {
         if (!(templates[index]?.hasImage ?? false)) segments[index],
     ];
     if (textSegments.isEmpty) {
-      return (text: raw, blocks: List<_NativeBlock>.from(sourceBlocks));
+      return (
+        text: raw,
+        blocks: List<_NativeBlock>.from(sourceBlocks),
+        effectiveRuleIds: const <String>{},
+      );
     }
     final cleaned = await service.applyBatchAsync(
       textSegments,
       bookTitle: replaceBookTitle,
+      bookId: replaceBookId,
+      sourceName: replaceSourceName,
+      sourceUrl: replaceSourceUrl,
+      eligibleByDefault: replaceEligibleByDefault,
       preserveNonEmpty: false,
     );
     final output = StringBuffer();
@@ -237,7 +287,11 @@ class _NativeChapter {
     if (replacedBlocks.isEmpty) {
       replacedBlocks.add(_NativeBlock.text(output.toString()));
     }
-    return (text: output.toString(), blocks: replacedBlocks);
+    return (
+      text: output.toString(),
+      blocks: replacedBlocks,
+      effectiveRuleIds: cleaned.effectiveRuleIds.toSet(),
+    );
   }
 
   String get plainText {
@@ -321,7 +375,11 @@ class _NativeChapter {
   }
 
   void unloadLazyContent() {
-    if ((!isLazyEpub && !isLazyKindle) || _pendingLoad != null) return;
+    if ((!isLazyEpub && !isLazyKindle) ||
+        _pendingLoad != null ||
+        _replacementLoad != null) {
+      return;
+    }
     _loadedText = null;
     _loadedBlocks = null;
     _loadedAnchorOffsets = null;
@@ -356,7 +414,7 @@ class _NativeChapter {
   }
 
   void _ensureRulesApplied() {
-    if (_rulesApplied) return;
+    if (_replacedText != null && _replacedBlocks != null) return;
     // Reader loading prepares every visible/prefetched chapter asynchronously.
     // A raw fallback is retained for isolated model tests and non-reader tools,
     // but deliberately never executes user regular expressions in a getter.
@@ -367,14 +425,17 @@ class _NativeChapter {
     _replacedText = raw;
     _replacedBlocks =
         _blocks ?? _loadedBlocks ?? <_NativeBlock>[_NativeBlock.text(raw)];
-    _rulesApplied = true;
   }
 
-  void _resetReplacementCache() {
-    _replacedText = null;
-    _replacedBlocks = null;
-    _textBlocks = null;
+  void _resetReplacementCache({bool retainContent = false}) {
+    _replacementLoad = null;
+    if (!retainContent) {
+      _replacedText = null;
+      _replacedBlocks = null;
+      _textBlocks = null;
+    }
     _rulesApplied = false;
+    _effectiveRuleIds = const <String>{};
   }
 }
 

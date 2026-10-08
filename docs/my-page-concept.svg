@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1010" viewBox="0 0 1120 1010" role="img" aria-labelledby="title desc">
+  <title id="title">Origo X 我的页面概念稿</title>
+  <desc id="desc">左侧是我的首页，右侧是偏好设置二级页，展示账户、高级版、设置分类和阅读偏好。</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#F7F9FC"/><stop offset="1" stop-color="#EAF0F6"/></linearGradient>
+    <linearGradient id="premium" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#142846"/><stop offset="1" stop-color="#263D5B"/></linearGradient>
+    <linearGradient id="avatar" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#DCEAF6"/><stop offset="1" stop-color="#B5D4EF"/></linearGradient>
+    <filter id="deviceShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="22" flood-color="#1B3450" flood-opacity=".14"/></filter>
+    <filter id="cardShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="7" stdDeviation="12" flood-color="#2A4663" flood-opacity=".07"/></filter>
+    <clipPath id="leftClip"><rect x="92" y="120" width="390" height="824" rx="32"/></clipPath>
+    <clipPath id="rightClip"><rect x="638" y="120" width="390" height="824" rx="32"/></clipPath>
+    <style>
+      text {font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC",sans-serif}
+      text:not([fill]) {fill:#1B2D40}
+      .small {font-size:12px;fill:#69798A}.label {font-size:14px;font-weight:700}.muted {fill:#68798B}.title {font-size:30px;font-weight:800;letter-spacing:-1px}.section {font-size:13px;font-weight:700;letter-spacing:1px;fill:#748397}.row {font-size:16px;font-weight:680}.chevron {font-size:26px;fill:#A4B2BF;font-weight:300}.icon {font-size:19px;font-weight:600;dominant-baseline:middle;text-anchor:middle}
+    </style>
+  </defs>
+  <rect width="1120" height="1010" fill="url(#paper)"/>
+  <circle cx="65" cy="104" r="170" fill="#DFEAF5" opacity=".45"/>
+  <circle cx="1080" cy="960" r="220" fill="#DCE8F4" opacity=".45"/>
+  <text x="90" y="60" font-size="14" font-weight="800" fill="#376E9D" letter-spacing="2">ORIGO X  ·  页面改版概念</text>
+  <text x="90" y="88" font-size="14" fill="#65798C">账户与权益在前，设置按任务归位</text>
+  <text x="92" y="978" class="small">01  我的首页</text>
+  <text x="638" y="978" class="small">02  偏好设置 · 二级页直接操作</text>
+
+  <rect x="90" y="118" width="394" height="828" rx="34" fill="#FFFFFF" stroke="#D8E2EB" stroke-width="2" filter="url(#deviceShadow)"/>
+  <g clip-path="url(#leftClip)">
+    <rect x="92" y="120" width="390" height="824" fill="#F6F8FA"/>
+    <text x="116" y="150" font-size="13" font-weight="700">9:41</text>
+    <rect x="423" y="138" width="18" height="9" rx="2" fill="#1B2D40"/><rect x="443" y="140" width="3" height="5" rx="1" fill="#1B2D40"/>
+    <text x="116" y="210" class="title">我的</text>
+    <text x="117" y="237" font-size="13" class="muted">你的阅读空间</text>
+
+    <rect x="110" y="259" width="354" height="106" rx="20" fill="#FFFFFF" filter="url(#cardShadow)"/>
+    <circle cx="151" cy="310" r="27" fill="url(#avatar)"/>
+    <text x="151" y="313" class="icon" fill="#245B89">人</text>
+    <text x="193" y="299" font-size="17" font-weight="750">未登录</text>
+    <text x="193" y="323" class="small">本地阅读无需登录</text>
+    <text x="193" y="345" font-size="12" font-weight="700" fill="#2870A8">登录 / 管理账号</text>
+    <text x="437" y="319" class="chevron">›</text>
+
+    <rect x="110" y="382" width="354" height="164" rx="22" fill="url(#premium)"/>
+    <path d="M403 382L464 382L464 455Q421 440 403 382Z" fill="#E7BF78" opacity=".13"/>
+    <circle cx="428" cy="503" r="73" fill="none" stroke="#EBCB90" stroke-opacity=".18" stroke-width="1"/>
+    <circle cx="428" cy="503" r="53" fill="none" stroke="#EBCB90" stroke-opacity=".16" stroke-width="1"/>
+    <text x="130" y="410" font-size="11" font-weight="800" letter-spacing="2" fill="#E8C995">ORIGO X · 高级版</text>
+    <text x="130" y="446" font-size="21" font-weight="780" fill="#FFF9EE">让阅读有更多可能</text>
+    <text x="130" y="472" font-size="12" fill="#D8E0EA">书源扩展与私有网络访问</text>
+    <rect x="130" y="493" width="124" height="35" rx="10" fill="#F1D49E"/>
+    <text x="192" y="516" text-anchor="middle" font-size="12" font-weight="760" fill="#1C304A">查看权益  ↗</text>
+
+    <text x="114" y="584" class="section">设置与管理</text>
+    <rect x="110" y="600" width="354" height="251" rx="19" fill="#FFFFFF" filter="url(#cardShadow)"/>
+    <line x1="162" y1="663" x2="448" y2="663" stroke="#ECF0F3"/>
+    <line x1="162" y1="726" x2="448" y2="726" stroke="#ECF0F3"/>
+    <line x1="162" y1="789" x2="448" y2="789" stroke="#ECF0F3"/>
+    <rect x="126" y="617" width="30" height="30" rx="9" fill="#E8F2FB"/><text x="141" y="633" class="icon" fill="#367AB2">◐</text>
+    <text x="171" y="627" class="row">偏好设置</text><text x="171" y="647" class="small">外观、阅读、语言</text><text x="441" y="639" class="chevron">›</text>
+    <rect x="126" y="680" width="30" height="30" rx="9" fill="#E8F5F2"/><text x="141" y="696" class="icon" fill="#388A78">↻</text>
+    <text x="171" y="690" class="row">数据与同步</text><text x="171" y="710" class="small">WebDAV、缓存管理</text><text x="441" y="702" class="chevron">›</text>
+    <rect x="126" y="743" width="30" height="30" rx="9" fill="#F1EDFA"/><text x="141" y="759" class="icon" fill="#7C6BB0">✦</text>
+    <text x="171" y="753" class="row">内容与服务</text><text x="171" y="773" class="small">书源、AI、听书</text><text x="441" y="765" class="chevron">›</text>
+    <rect x="126" y="806" width="30" height="30" rx="9" fill="#F1F3F5"/><text x="141" y="822" class="icon" fill="#68798B">ⓘ</text>
+    <text x="171" y="816" class="row">关于与支持</text><text x="171" y="836" class="small">版本、更新、开源项目</text><text x="441" y="828" class="chevron">›</text>
+
+    <rect x="92" y="869" width="390" height="75" fill="#FFFFFF"/>
+    <line x1="92" y1="869" x2="482" y2="869" stroke="#E5EBF0"/>
+    <text x="130" y="900" class="icon" fill="#8B9AAA">⌂</text><text x="130" y="921" text-anchor="middle" class="small">首页</text>
+    <text x="207" y="900" class="icon" fill="#8B9AAA">▥</text><text x="207" y="921" text-anchor="middle" class="small">书库</text>
+    <text x="284" y="900" class="icon" fill="#8B9AAA">◇</text><text x="284" y="921" text-anchor="middle" class="small">发现</text>
+    <text x="361" y="900" class="icon" fill="#8B9AAA">✦</text><text x="361" y="921" text-anchor="middle" class="small">AI</text>
+    <text x="439" y="900" class="icon" fill="#2870A8">●</text><text x="439" y="921" text-anchor="middle" font-size="12" font-weight="700" fill="#2870A8">我的</text>
+  </g>
+
+  <rect x="636" y="118" width="394" height="828" rx="34" fill="#FFFFFF" stroke="#D8E2EB" stroke-width="2" filter="url(#deviceShadow)"/>
+  <g clip-path="url(#rightClip)">
+    <rect x="638" y="120" width="390" height="824" fill="#F6F8FA"/>
+    <text x="662" y="150" font-size="13" font-weight="700">9:41</text>
+    <rect x="969" y="138" width="18" height="9" rx="2" fill="#1B2D40"/><rect x="989" y="140" width="3" height="5" rx="1" fill="#1B2D40"/>
+    <text x="662" y="198" font-size="25" font-weight="400" fill="#397AAB">‹</text>
+    <text x="684" y="197" font-size="14" font-weight="680" fill="#397AAB">我的</text>
+    <text x="660" y="250" class="title">偏好设置</text>
+    <text x="660" y="275" font-size="13" class="muted">常用选项放在触手可及的位置</text>
+
+    <text x="660" y="317" class="section">外观</text>
+    <rect x="656" y="333" width="354" height="164" rx="18" fill="#FFFFFF" filter="url(#cardShadow)"/>
+    <text x="675" y="366" class="row">界面风格</text>
+    <rect x="675" y="385" width="92" height="34" rx="10" fill="#E7F2FC" stroke="#8DB8DA"/>
+    <text x="721" y="407" text-anchor="middle" font-size="12" font-weight="750" fill="#286D9F">跟随系统</text>
+    <rect x="774" y="385" width="65" height="34" rx="10" fill="#F5F7F9"/>
+    <text x="806" y="407" text-anchor="middle" font-size="12" fill="#667A8C">浅色</text>
+    <rect x="846" y="385" width="65" height="34" rx="10" fill="#F5F7F9"/>
+    <text x="878" y="407" text-anchor="middle" font-size="12" fill="#667A8C">深色</text>
+    <line x1="675" y1="438" x2="991" y2="438" stroke="#ECF0F3"/>
+    <text x="675" y="470" class="row">字体与字号</text><text x="989" y="470" class="chevron">›</text>
+
+    <text x="660" y="539" class="section">阅读</text>
+    <rect x="656" y="555" width="354" height="187" rx="18" fill="#FFFFFF" filter="url(#cardShadow)"/>
+    <text x="675" y="591" class="row">打开时继续上次阅读</text>
+    <text x="675" y="612" class="small">从上次阅读的位置继续</text>
+    <rect x="944" y="573" width="48" height="28" rx="14" fill="#3E83B8"/><circle cx="977" cy="587" r="11" fill="#FFFFFF"/>
+    <line x1="675" y1="627" x2="991" y2="627" stroke="#ECF0F3"/>
+    <text x="675" y="659" class="row">音量键翻页</text>
+    <rect x="944" y="641" width="48" height="28" rx="14" fill="#D8E0E7"/><circle cx="958" cy="655" r="11" fill="#FFFFFF"/>
+    <line x1="675" y1="681" x2="991" y2="681" stroke="#ECF0F3"/>
+    <text x="675" y="717" class="row">阅读器顶部栏</text><text x="987" y="717" font-size="12" fill="#7A8A99" text-anchor="end">跟随阅读主题  ›</text>
+
+    <text x="660" y="784" class="section">应用</text>
+    <rect x="656" y="800" width="354" height="91" rx="18" fill="#FFFFFF" filter="url(#cardShadow)"/>
+    <text x="675" y="836" class="row">语言</text><text x="989" y="836" font-size="12" fill="#7A8A99" text-anchor="end">简体中文  ›</text>
+    <line x1="675" y1="852" x2="991" y2="852" stroke="#ECF0F3"/>
+    <text x="675" y="879" class="row">书架与导航布局</text><text x="989" y="879" class="chevron">›</text>
+  </g>
+</svg>

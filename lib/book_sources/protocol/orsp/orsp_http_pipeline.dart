@@ -122,7 +122,7 @@ class OrspHttpPipeline {
       deduplicateInFlight: deduplicateInFlight,
       persistToDisk: persistToDisk,
       staleIfError: const Duration(days: 7),
-      staleErrorTest: _canUseStaleResponse,
+      staleErrorTest: canUseStaleResponse,
       loader: (validators) async {
         final response = await _getBoundedResponse(
           uri,
@@ -198,6 +198,8 @@ class OrspHttpPipeline {
       BookSourceProtocolException(
         _dioErrorMessage(error),
         code: _sourceErrorCode(error),
+        statusCode: error.response?.statusCode,
+        isTransient: canUseStaleResponse(error),
       );
 
   static Uri apiUri(Uri baseUrl, String relativePath) {
@@ -223,7 +225,8 @@ class OrspHttpPipeline {
   static String discoveryCacheKey(Uri manifestUrl) =>
       'orsp-discovery|${Uri.encodeComponent(manifestUrl.toString())}';
 
-  bool _canUseStaleResponse(Object error) {
+  bool canUseStaleResponse(Object error) {
+    if (error is BookSourceProtocolException) return error.isTransient;
     if (error is! DioException) return false;
     if (CancelToken.isCancel(error)) return false;
     final status = error.response?.statusCode;

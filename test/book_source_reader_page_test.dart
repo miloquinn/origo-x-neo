@@ -31,11 +31,16 @@ import 'package:xxread/widgets/reader_cover_page_turn.dart';
 import 'package:xxread/widgets/reader_annotated_text_page.dart';
 import 'package:xxread/widgets/reader_text_page_content.dart';
 import 'package:xxread/widgets/reader_opening_loader.dart';
+import 'package:xxread/widgets/reader_navigation_sheet.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 import 'package:xxread/widgets/reader_shader_page_curl.dart';
 import 'package:xxread/widgets/reader_top_information_bar.dart';
 
 import 'support/book_source_progress_test_utils.dart';
+import 'support/controllable_replace_rule_service.dart';
+import 'support/no_shelf_book_source_service.dart';
+import 'package:xxread/widgets/reader_control_chrome.dart';
+import 'package:xxread/pages/settings/replace_rules_page.dart';
 
 late ReplaceRuleService _replaceRules;
 late BookSourceProgressTestFixture _progressFixture;
@@ -92,7 +97,7 @@ void main() {
           ),
         ),
       );
-      await _pumpUntilFound(tester, find.textContaining('第一章正文'));
+      await _pumpUntilFound(tester, find.byType(ReaderAnnotatedTextPage));
       await navigator.currentState!.maybePop();
       await _pumpUntilFound(tester, find.byType(AlertDialog));
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -207,6 +212,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: BookSourceReaderPage(
+            shelfServiceFactory: NoShelfBookSourceService.new,
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
             progressStore: _progressFixture.store,
@@ -263,6 +269,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -304,6 +311,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -390,6 +398,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: paginationCache,
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -402,12 +411,6 @@ void main() {
     await _pumpUntilFound(tester, find.text('第一章'));
     expect(find.text('第一章'), findsWidgets);
     expect(find.byType(ReaderInlineChapterTitle), findsWidgets);
-    await tester.fling(
-      find.byKey(const ValueKey('book-source-reader-surface')),
-      const Offset(0, -500),
-      1000,
-    );
-    await tester.pumpAndSettle();
     final firstBody = find.textContaining('第一章正文', findRichText: true);
     await _pumpUntilFound(tester, firstBody);
     expect(firstBody, findsOneWidget);
@@ -460,6 +463,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: BookSourceReaderPage(
+            shelfServiceFactory: NoShelfBookSourceService.new,
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
             progressStore: _progressFixture.store,
@@ -547,6 +551,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: BookSourceReaderPage(
+            shelfServiceFactory: NoShelfBookSourceService.new,
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
             progressStore: _progressFixture.store,
@@ -645,6 +650,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -662,6 +668,9 @@ void main() {
       ),
     );
 
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 150)),
+    );
     await _pumpUntilFound(tester, find.text('第一章'));
     expect(find.textContaining('[广告]'), findsNothing);
     final cleanedBody = find.textContaining('正文开头', findRichText: true);
@@ -671,6 +680,247 @@ void main() {
     expect(client.requestedChapterTitles, isNotEmpty);
     expect(client.requestedChapterTitles, everyElement('[广告] 第一章'));
   });
+
+  testWidgets('online live purification restores original title and body', (
+    tester,
+  ) async {
+    await _setPurificationSettings();
+    final client = _ReplacementBookSourceClient();
+    await tester.pumpWidget(_purificationReader(client));
+    await _waitForPurification(
+      tester,
+      find.textContaining('广告内容', findRichText: true),
+    );
+    await _replaceRules.upsert(
+      const ReplaceRule(
+        id: 'title',
+        name: 'title',
+        pattern: '[广告] ',
+        replacement: '',
+        isRegex: false,
+        scopeTitle: true,
+        scopeContent: false,
+      ),
+    );
+    await _replaceRules.upsert(
+      const ReplaceRule(
+        id: 'body',
+        name: 'body',
+        pattern: '广告内容\n',
+        replacement: '',
+        isRegex: false,
+      ),
+    );
+    await _waitForPurification(tester, find.text('第一章'));
+    expect(find.textContaining('广告内容', findRichText: true), findsNothing);
+    await _replaceRules.setDefaultEnabled(false);
+    await _waitForPurification(
+      tester,
+      find.textContaining('广告内容', findRichText: true),
+    );
+    expect(find.textContaining('[广告] 第一章'), findsWidgets);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('online latest purification wins when old body finishes last', (
+    tester,
+  ) async {
+    await _setPurificationSettings();
+    await _replaceRules.close();
+    final controlled = ControllableReplaceRuleService();
+    _replaceRules = controlled;
+    final client = _ReplacementBookSourceClient();
+    await tester.pumpWidget(_purificationReader(client));
+    await _waitForPurification(
+      tester,
+      find.textContaining('广告内容', findRichText: true),
+    );
+    controlled.delayBodies = true;
+    await controlled.upsert(
+      const ReplaceRule(
+        id: 'race',
+        name: 'body',
+        pattern: '广告内容',
+        replacement: '银色段落',
+        isRegex: false,
+      ),
+    );
+    await _waitForSourceBatches(tester, controlled, 1);
+    await controlled.upsert(
+      const ReplaceRule(
+        id: 'race',
+        name: 'body',
+        pattern: '广告内容',
+        replacement: '金色段落',
+        isRegex: false,
+      ),
+    );
+    await _waitForSourceBatches(tester, controlled, 2);
+    controlled.pendingBodies[1].complete();
+    await _waitForPurification(
+      tester,
+      find.textContaining('金色段落', findRichText: true),
+    );
+    controlled.pendingBodies[0].complete();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('金色段落', findRichText: true), findsWidgets);
+    expect(find.textContaining('银色段落', findRichText: true), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('online purification takes over a pending initial body load', (
+    tester,
+  ) async {
+    await _setPurificationSettings();
+    await _replaceRules.close();
+    final controlled = ControllableReplaceRuleService()..delayBodies = true;
+    _replaceRules = controlled;
+    final client = _ReplacementBookSourceClient();
+    await tester.pumpWidget(_purificationReader(client));
+    await _waitForSourceBatches(tester, controlled, 1);
+    await controlled.upsert(
+      const ReplaceRule(
+        id: 'pending',
+        name: 'body',
+        pattern: '广告内容',
+        replacement: '已净化段落',
+        isRegex: false,
+      ),
+    );
+    await _waitForSourceBatches(tester, controlled, 2);
+    controlled.pendingBodies[1].complete();
+    await _waitForPurification(
+      tester,
+      find.textContaining('已净化段落', findRichText: true),
+    );
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    controlled.pendingBodies[0].complete();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('已净化段落', findRichText: true), findsWidgets);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('online initial title batch retries after a rule save', (
+    tester,
+  ) async {
+    await _setPurificationSettings();
+    await _replaceRules.close();
+    final controlled = ControllableReplaceRuleService()..delayNextTitle = true;
+    _replaceRules = controlled;
+    final client = _ReplacementBookSourceClient();
+    await tester.pumpWidget(_purificationReader(client));
+    for (
+      var attempt = 0;
+      attempt < 40 && controlled.pendingTitles.isEmpty;
+      attempt++
+    ) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(controlled.pendingTitles, hasLength(1));
+    await controlled.upsert(
+      const ReplaceRule(
+        id: 'initial-title',
+        name: 'title',
+        pattern: '[广告] ',
+        replacement: '',
+        isRegex: false,
+        scopeTitle: true,
+        scopeContent: false,
+      ),
+    );
+    controlled.pendingTitles.single.complete();
+    await _waitForPurification(tester, find.text('第一章'));
+    expect(find.textContaining('[广告]'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('online bookshelf purification uses the stored book ID', (
+    tester,
+  ) async {
+    await _setPurificationSettings();
+    await _replaceRules.upsert(
+      const ReplaceRule(
+        id: 'book-key',
+        name: 'body',
+        pattern: '广告内容',
+        replacement: '已净化段落',
+        isRegex: false,
+      ),
+    );
+    await _replaceRules.setBookEnabled('book:42', false);
+    final client = _ReplacementBookSourceClient();
+    await tester.pumpWidget(
+      _purificationReader(
+        client,
+        shelfBook: Book(
+          id: 42,
+          title: '测试书籍',
+          filePath: '',
+          format: 'source',
+          storageType: 'online',
+        ),
+      ),
+    );
+    await _waitForPurification(
+      tester,
+      find.textContaining('广告内容', findRichText: true),
+    );
+    expect(find.textContaining('已净化段落', findRichText: true), findsNothing);
+    await _replaceRules.setBookEnabled('book:42', true);
+    await _waitForPurification(
+      tester,
+      find.textContaining('已净化段落', findRichText: true),
+    );
+    expect(find.textContaining('广告内容', findRichText: true), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'online image source defaults off and exposes the book rule entry',
+    (tester) async {
+      await _setPurificationSettings();
+      await _replaceRules.upsert(
+        const ReplaceRule(
+          id: 'image-default',
+          name: 'body',
+          pattern: '广告内容',
+          replacement: '已净化段落',
+          isRegex: false,
+        ),
+      );
+      final client = _ReplacementBookSourceClient();
+      final source = _testSource().copyWith(
+        sourceConfig: {
+          'bookSourceUrl': 'https://example.org',
+          'bookSourceType': 2,
+        },
+      );
+      await tester.pumpWidget(_purificationReader(client, source: source));
+      await _waitForPurification(
+        tester,
+        find.textContaining('广告内容', findRichText: true),
+      );
+      await _showReaderControls(tester);
+      tester
+          .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+          .onBookSettings!();
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('book-settings-replace-rules-action')),
+      );
+      await tester.pumpAndSettle();
+      await _waitForPurification(tester, find.byType(ReplaceRulesPage));
+      final rulesPage = tester.widget<ReplaceRulesPage>(
+        find.byType(ReplaceRulesPage),
+      );
+      expect(rulesPage.bookId, 'source:example.source:book-1');
+      expect(rulesPage.eligibleByDefault, isFalse);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets('restores the last source chapter on reopen', (tester) async {
     final source = _testSource();
@@ -699,6 +949,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           source: source,
@@ -931,6 +1182,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -1004,6 +1256,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: BookSourceReaderPage(
+            shelfServiceFactory: NoShelfBookSourceService.new,
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
             progressStore: _progressFixture.store,
@@ -1082,6 +1335,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -1134,6 +1388,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -1392,6 +1647,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: BookSourceReaderPage(
+            shelfServiceFactory: NoShelfBookSourceService.new,
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
             progressStore: _progressFixture.store,
@@ -1408,17 +1664,8 @@ void main() {
         ),
       );
       final bodyFinder = find.textContaining('第一章正文', findRichText: true);
-      await _pumpUntilFound(
-        tester,
-        find.byKey(const ValueKey('book-source-reader-surface')),
-      );
-      if (mode == BookSourcePageMode.verticalScroll) {
-        await tester.fling(
-          find.byKey(const ValueKey('book-source-reader-surface')),
-          const Offset(0, -500),
-          1000,
-        );
-      } else {
+      await _pumpUntilFound(tester, find.byType(ReaderAnnotatedTextPage));
+      if (mode != BookSourcePageMode.verticalScroll) {
         await tester.tapAt(const Offset(760, 300));
       }
       await tester.pumpAndSettle();
@@ -1443,6 +1690,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -1459,10 +1707,7 @@ void main() {
       ),
     );
     final bodyFinder = find.textContaining('第一章正文', findRichText: true);
-    await _pumpUntilFound(
-      tester,
-      find.byKey(const ValueKey('book-source-reader-surface')),
-    );
+    await _pumpUntilFound(tester, find.byType(ReaderAnnotatedTextPage));
     await tester.tapAt(const Offset(760, 300));
     await tester.pumpAndSettle();
     await _pumpUntilFound(tester, bodyFinder);
@@ -1474,6 +1719,71 @@ void main() {
   });
 
   for (final scrollByChapter in [false, true]) {
+    for (final titlePage in [false, true]) {
+      testWidgets('vertical source catalog jump aligns the chapter beginning '
+          '(scrollByChapter=$scrollByChapter, titlePage=$titlePage)', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey:
+              BookSourcePageMode.verticalScroll.name,
+          ReaderSettingsStore.scrollByChapterKey: scrollByChapter,
+          ReaderSettingsStore.chapterTitlePageKey: titlePage,
+        });
+        final client = _ConfigurableBookSourceClient({
+          'chapter-1': _tabletChapterText(150),
+          'chapter-2': _tabletChapterText(150),
+        });
+        addTearDown(client.close);
+        await tester.pumpWidget(_buildTabletSourceReader(client));
+        await _pumpUntilFound(
+          tester,
+          find.byKey(const ValueKey('book-source-reader-surface')),
+        );
+        await tester.pumpAndSettle();
+        await _showReaderControls(tester);
+        await tester.tap(find.byTooltip('Table of Contents'));
+        await tester.pumpAndSettle();
+        final navigation = find.byType(ReaderNavigationSheet);
+        expect(navigation, findsOneWidget);
+        await tester.tap(
+          find
+              .descendant(of: navigation, matching: find.text('Tablet chapter'))
+              .at(1),
+        );
+        await tester.pumpAndSettle();
+        expect(navigation, findsNothing);
+
+        final window = find.byKey(
+          const ValueKey('book-source-vertical-reading-window'),
+        );
+        final viewport = tester.getRect(
+          find.descendant(of: window, matching: find.byType(ClipRect)).first,
+        );
+        final firstPage = find.byWidgetPredicate(
+          (widget) =>
+              widget is ReaderAnnotatedTextPage &&
+              widget.chapterId == 'chapter-2' &&
+              widget.pageIndex == 0,
+        );
+        expect(firstPage, findsOneWidget);
+        if (titlePage) {
+          final titleCell = find
+              .ancestor(of: firstPage, matching: find.byType(SizedBox))
+              .first;
+          final titleRect = tester.getRect(titleCell);
+          expect(titleRect.top, closeTo(viewport.top, 0.5));
+          expect(titleRect.bottom, closeTo(viewport.bottom, 0.5));
+        } else {
+          final title = find.descendant(
+            of: firstPage,
+            matching: find.byType(ReaderInlineChapterTitle),
+          );
+          expect(tester.getTopLeft(title).dy, closeTo(viewport.top, 0.5));
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
     for (final titlePage in [false, true]) {
       testWidgets('vertical source reopens at the saved text anchor '
           '(scrollByChapter=$scrollByChapter, titlePage=$titlePage)', (
@@ -1556,6 +1866,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: BookSourceReaderPage(
+            shelfServiceFactory: NoShelfBookSourceService.new,
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
             progressStore: _progressFixture.store,
@@ -1616,6 +1927,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: BookSourceReaderPage(
+              shelfServiceFactory: NoShelfBookSourceService.new,
               paginationCacheDao: _MemoryPaginationCacheDao(),
               replaceRuleService: _replaceRules,
               progressStore: _progressFixture.store,
@@ -1945,6 +2257,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: BookSourceReaderPage(
+              shelfServiceFactory: NoShelfBookSourceService.new,
               paginationCacheDao: _MemoryPaginationCacheDao(),
               onPaginationCacheMiss: cacheMisses.add,
               replaceRuleService: _replaceRules,
@@ -2062,6 +2375,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: BookSourceReaderPage(
+              shelfServiceFactory: NoShelfBookSourceService.new,
               paginationCacheDao: _MemoryPaginationCacheDao(),
               replaceRuleService: _replaceRules,
               source: _testSource(),
@@ -2204,7 +2518,7 @@ void main() {
   });
 
   testWidgets(
-    'horizontal slide finishes one swipe after a delayed next chapter arrives',
+    'horizontal slide commits a delayed next chapter at the boundary',
     (tester) async {
       SharedPreferences.setMockInitialValues({
         ReaderSettingsStore.pageModeKey:
@@ -2223,9 +2537,13 @@ void main() {
             pageView.childrenDelegate.estimatedChildCount! - 2;
         pageView.controller!.jumpToPage(lastCurrentPage);
         await tester.pumpAndSettle();
-        await tester.drag(find.byType(PageView), const Offset(-600, 0));
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pump();
+        final turn = pageView.controller!.nextPage(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+        await tester.pumpAndSettle();
+        await turn;
+        expect(pageView.controller!.page, lastCurrentPage + 1);
         expect(client.secondChapterCompleted, isFalse);
 
         client.completeSecondChapter();
@@ -2264,6 +2582,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: BookSourceReaderPage(
+              shelfServiceFactory: NoShelfBookSourceService.new,
               paginationCacheDao: _MemoryPaginationCacheDao(),
               replaceRuleService: _replaceRules,
               progressStore: _progressFixture.store,
@@ -2538,6 +2857,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -2578,6 +2898,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BookSourceReaderPage(
+          shelfServiceFactory: NoShelfBookSourceService.new,
           paginationCacheDao: _MemoryPaginationCacheDao(),
           replaceRuleService: _replaceRules,
           progressStore: _progressFixture.store,
@@ -2624,6 +2945,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: BookSourceReaderPage(
+            shelfServiceFactory: NoShelfBookSourceService.new,
             paginationCacheDao: _MemoryPaginationCacheDao(),
             replaceRuleService: _replaceRules,
             progressStore: _progressFixture.store,
@@ -2691,6 +3013,7 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
     await tester.pump(const Duration(milliseconds: 100));
     if (finder.evaluate().isNotEmpty) return;
   }
+  expect(finder, findsWidgets, reason: 'Reader content did not become ready.');
 }
 
 Future<void> _showReaderControls(WidgetTester tester) async {
@@ -2808,6 +3131,7 @@ Widget _buildTabletSourceReader(
     ),
     client: client,
     progressStore: progressStore ?? _progressFixture.store,
+    shelfService: NoShelfBookSourceService(client),
   ),
 );
 
@@ -2893,6 +3217,7 @@ Widget _slideTestReader(BookSourceClient client) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: BookSourceReaderPage(
+    shelfServiceFactory: NoShelfBookSourceService.new,
     paginationCacheDao: _MemoryPaginationCacheDao(),
     replaceRuleService: _replaceRules,
     progressStore: _progressFixture.store,
@@ -3308,4 +3633,82 @@ class _ExitTestShelfService extends BookSourceShelfService {
   }) async {
     savedChapterIndex = chapterIndex;
   }
+}
+
+Future<void> _setPurificationSettings() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(
+    ReaderSettingsStore.pageModeKey,
+    BookSourcePageMode.verticalScroll.name,
+  );
+  await prefs.setBool('native_reader_txt_chapter_title_page_enabled', false);
+}
+
+Widget _purificationReader(
+  BookSourceClient client, {
+  RegisteredBookSource? source,
+  Book? shelfBook,
+}) => MaterialApp(
+  locale: const Locale('zh'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: BookSourceReaderPage(
+    source: source ?? _testSource(),
+    book: const BookSourceBook(
+      id: 'book-1',
+      title: '测试书籍',
+      author: '作者',
+      description: '',
+      categories: [],
+    ),
+    client: client,
+    shelfService: _PurificationShelfService(client, shelfBook),
+    replaceRuleService: _replaceRules,
+    progressStore: _progressFixture.store,
+    paginationCacheDao: _MemoryPaginationCacheDao(),
+    initialTheme: ReaderThemes.day,
+  ),
+);
+
+Future<void> _waitForPurification(WidgetTester tester, Finder finder) async {
+  for (var attempt = 0; attempt < 40; attempt++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    if (finder.evaluate().isNotEmpty) return;
+  }
+  expect(finder, findsWidgets);
+}
+
+Future<void> _waitForSourceBatches(
+  WidgetTester tester,
+  ControllableReplaceRuleService rules,
+  int count,
+) async {
+  for (var attempt = 0; attempt < 40; attempt++) {
+    await tester.pump(const Duration(milliseconds: 25));
+    if (rules.pendingBodies.length >= count) return;
+  }
+  expect(rules.pendingBodies.length, greaterThanOrEqualTo(count));
+}
+
+class _PurificationShelfService extends BookSourceShelfService {
+  _PurificationShelfService(BookSourceClient client, this.book)
+    : super(client: client);
+  final Book? book;
+
+  @override
+  Future<Book?> findShelfBook({
+    required String sourceId,
+    required String sourceBookId,
+  }) async => book;
+
+  @override
+  Future<void> updateShelfProgress({
+    required int shelfBookId,
+    required int chapterIndex,
+    required int chapterCount,
+    required double chapterProgress,
+  }) async {}
 }

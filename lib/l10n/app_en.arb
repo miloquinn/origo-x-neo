@@ -5657,7 +5657,7 @@
   "replaceRulesDeleteValue": "Remove",
   "replaceRulesCreate": "New rule",
   "replaceRulesEmptyTitle": "No replacement rules",
-  "replaceRulesEmptyBody": "Import a reading-source JSON file or create a regular-expression rule.",
+  "replaceRulesEmptyBody": "Import replacement-rule JSON or create a text or regular-expression rule.",
   "replaceRulesNoSearchResults": "No matching rules",
   "replaceRulesCreateTitle": "New replacement rule",
   "replaceRulesEditTitle": "Edit replacement rule",
@@ -5670,7 +5670,7 @@
   "replaceRulesScopeContentLabel": "Apply to chapter content",
   "replaceRulesGroupLabel": "Group (optional)",
   "replaceRulesScopeLabel": "Scope (optional)",
-  "replaceRulesScopeHelper": "Separate book titles or source names with semicolons",
+  "replaceRulesScopeHelper": "Separate book titles, source URLs, or source names with semicolons",
   "replaceRulesExcludeScopeLabel": "Excluded scope (optional)",
   "replaceRulesDeleteConfirmTitle": "Delete this rule?",
   "replaceRulesDeleteConfirmBody": "The rule will be removed from this device.",
@@ -6927,6 +6927,37 @@
   "welcomeStartReading": "Start reading",
   "welcomeTagline": "Good stories. Take your time.",
   "settingsWelcomeGuide": "Welcome guide",
+  "replaceRulesDefaultEnabledLabel": "Enable by default for all books",
+  "replaceRulesBookEnabledLabel": "Enable for “{bookTitle}”",
+  "@replaceRulesBookEnabledLabel": {"placeholders": {"bookTitle": {"type": "String"}}},
+  "replaceRulesEffectiveLabel": "Effective now",
+  "replaceRulesGroupAll": "All groups",
+  "replaceRulesSelectionMode": "Select rules",
+  "replaceRulesSelectedCount": "{count} selected",
+  "@replaceRulesSelectedCount": {"placeholders": {"count": {"type": "int"}}},
+  "replaceRulesSelectAll": "Select all",
+  "replaceRulesEnableSelected": "Enable",
+  "replaceRulesDisableSelected": "Disable",
+  "replaceRulesDeleteSelected": "Delete",
+  "replaceRulesDeleteSelectedConfirmTitle": "Delete selected rules?",
+  "replaceRulesDeleteSelectedConfirmBody": "{count} rules will be deleted.",
+  "@replaceRulesDeleteSelectedConfirmBody": {"placeholders": {"count": {"type": "int"}}},
+  "replaceRulesExportSelected": "Export",
+  "replaceRulesCopyJson": "Copy JSON",
+  "replaceRulesPasteJson": "Paste JSON",
+  "replaceRulesCopied": "Rule JSON copied",
+  "replaceRulesPasted": "Rule JSON pasted",
+  "replaceRulesMoveTop": "Move to top",
+  "replaceRulesMoveBottom": "Move to bottom",
+  "replaceRulesTimeoutLabel": "Timeout (milliseconds)",
+  "replaceRulesTimeoutHelper": "Maximum execution time per rule",
+  "replaceRulesTimeoutInvalid": "Enter a timeout greater than 0",
+  "replaceRulesMissingTarget": "Select chapter titles or content",
+  "replaceRulesContextSubtitle": "{bookTitle} · {sourceName}",
+  "@replaceRulesContextSubtitle": {"placeholders": {"bookTitle": {"type": "String"}, "sourceName": {"type": "String"}}},
+  "replaceRulesUnsupportedReplacement": "JavaScript replacement scripts are not supported here. Use text or regular-expression replacements.",
+  "replaceRulesTimeoutNotice": "This rule timed out and was disabled. Edit it, then enable it again.",
+  "readerPurifySelection": "Clean selected text",
   "accountInviteUnavailable": "Could not load the current invitation campaign. Try again.",
   "accountInviteActiveProgress": "Active new users",
   "accountInvitePaidProgress": "First-time paid friends",
@@ -6993,5 +7024,34 @@
         "type": "int"
       }
     }
-  }
+  },
+  "activityCenterTitle": "Activities",
+  "activityCenterSubtitle": "Discover current activities and follow your progress.",
+  "activityCenterEmptyTitle": "No activities right now",
+  "activityCenterEmptyMessage": "Check back soon for new activities.",
+  "activityCenterLoadError": "Activities could not be loaded.",
+  "activityCenterOpenError": "Could not open this activity. Please try again.",
+  "activityCenterLearnMore": "About this activity",
+  "activityCenterProgress": "My invitation progress",
+  "activityCenterUpcoming": "Coming soon",
+  "activityCenterPaused": "Paused",
+  "activityCenterEnded": "Ended",
+  "activityCenterActive": "In progress",
+  "activityCenterStartsOn": "Starts {date}",
+  "@activityCenterStartsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterEndsOn": "Ends {date}",
+  "@activityCenterEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterRefresh": "Refresh"
 }

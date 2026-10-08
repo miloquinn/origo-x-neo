@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+/// A nested text action consumed the same short tap as its surrounding reader.
+/// It bubbles through every observer without changing selection/drag gestures.
+class ReaderTextTapHandledNotification extends Notification {}
+
 /// Observes a short, stationary pointer sequence without entering Flutter's
 /// gesture arena.
 ///
@@ -31,6 +35,7 @@ class _ReaderTapObserverState extends State<ReaderTapObserver> {
   Timer? _longPressTimer;
   bool _moved = false;
   bool _expired = false;
+  bool _tapHandled = false;
 
   void _reset() {
     _pointer = null;
@@ -44,6 +49,7 @@ class _ReaderTapObserverState extends State<ReaderTapObserver> {
   void _handleDown(PointerDownEvent event) {
     if (!widget.enabled || _pointer != null) return;
     _pointer = event.pointer;
+    _tapHandled = false;
     _origin = event.position;
     _moved = false;
     _expired = false;
@@ -70,7 +76,7 @@ class _ReaderTapObserverState extends State<ReaderTapObserver> {
     // Let inline text recognizers run first. A tappable annotation can open a
     // route or disable reader input before this fallback page tap is handled.
     scheduleMicrotask(() {
-      if (!mounted || !widget.enabled) return;
+      if (!mounted || !widget.enabled || _tapHandled) return;
       final route = ModalRoute.of(context);
       if (route != null && !route.isCurrent) return;
       widget.onTap(localPosition);
@@ -94,12 +100,19 @@ class _ReaderTapObserverState extends State<ReaderTapObserver> {
   }
 
   @override
-  Widget build(BuildContext context) => Listener(
-    behavior: HitTestBehavior.translucent,
-    onPointerDown: _handleDown,
-    onPointerMove: _handleMove,
-    onPointerUp: _handleUp,
-    onPointerCancel: _handleCancel,
-    child: widget.child,
-  );
+  Widget build(BuildContext context) =>
+      NotificationListener<ReaderTextTapHandledNotification>(
+        onNotification: (_) {
+          _tapHandled = true;
+          return false;
+        },
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: _handleDown,
+          onPointerMove: _handleMove,
+          onPointerUp: _handleUp,
+          onPointerCancel: _handleCancel,
+          child: widget.child,
+        ),
+      );
 }

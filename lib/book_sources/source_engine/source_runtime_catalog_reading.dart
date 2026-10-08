@@ -65,6 +65,7 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
         book: bookContext,
         cancellation: cancellation,
       );
+      _ensureChapterRequestSucceeded(response);
       fetchedPages++;
       final redirectTarget = response.finalUri.toString();
       if (redirectTarget != requestedTarget && !seenPages.add(redirectTarget)) {
@@ -223,6 +224,7 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
     _state.rememberBookContext(source, bookId, bookContext);
     _state.rememberRuleState(source, bookId, ruleState);
     await _sessions.flush(source);
+    _state.rememberCatalogParsed(source, bookId);
     return chapters;
   }
 
@@ -312,6 +314,8 @@ extension SourceRuntimeCatalogReading on SourceRuntimeReading {
     if (response.statusCode < 400) return;
     throw BookSourceProtocolException(
       'Chapter request failed with HTTP ${response.statusCode}.',
+      statusCode: response.statusCode,
+      isTransient: response.statusCode == 429 || response.statusCode >= 500,
     );
   }
 

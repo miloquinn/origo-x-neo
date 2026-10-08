@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -388,6 +389,15 @@ void main() {
       final epub = File('${directory.path}/search-navigation.epub')
         ..writeAsBytesSync(_epubFixture(chapterCount: 10));
       const searchTarget = 'cleaned search target';
+
+      // EPUB purification is opt-in. This case intentionally searches the
+      // replaced text, so enable it for the fixture before opening the reader.
+      await tester.runAsync(() async {
+        await replaceRuleService.setBookEnabled(
+          'local:${sha1.convert(utf8.encode(epub.path))}',
+          true,
+        );
+      });
 
       try {
         await tester.pumpWidget(

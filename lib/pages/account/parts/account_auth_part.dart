@@ -7,7 +7,6 @@ class _ExternalLoginMethods extends StatelessWidget {
   const _ExternalLoginMethods({
     required this.account,
     required this.polling,
-    required this.authorization,
     required this.onLogin,
     required this.onLoginApple,
     required this.onCancel,
@@ -15,7 +14,6 @@ class _ExternalLoginMethods extends StatelessWidget {
   });
   final MemberAccountController account;
   final bool polling;
-  final DeviceAuthorization? authorization;
   final ValueChanged<MemberExternalAuthMethod> onLogin;
   final VoidCallback onLoginApple;
   final VoidCallback onCancel;
@@ -80,10 +78,7 @@ class _ExternalLoginMethods extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (polling) {
-      return _AuthorizationProgress(
-        authorization: authorization,
-        onCancel: onCancel,
-      );
+      return _AuthorizationProgress(onCancel: onCancel);
     }
     final available = _available;
     return Column(
@@ -151,18 +146,13 @@ class _ExternalLoginMethods extends StatelessWidget {
 }
 
 class _AuthorizationProgress extends StatelessWidget {
-  const _AuthorizationProgress({
-    required this.authorization,
-    required this.onCancel,
-  });
+  const _AuthorizationProgress({required this.onCancel});
 
-  final DeviceAuthorization? authorization;
   final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final userCode = authorization?.userCode ?? '';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -195,27 +185,6 @@ class _AuthorizationProgress extends StatelessWidget {
               ),
             ],
           ),
-          if (userCode.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.75),
-                ),
-              ),
-              child: SelectableText(
-                userCode,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.4,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

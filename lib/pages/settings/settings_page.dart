@@ -55,6 +55,7 @@ import 'package:xxread/widgets/update_check_gate.dart';
 
 import 'app_text_size_sheet.dart';
 import 'custom_fonts_page.dart';
+import '../activities/activity_center_page.dart';
 
 part 'parts/settings_appearance_part.dart';
 part 'parts/settings_about_part.dart';
@@ -102,25 +103,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   bool _enableAutoSave = true;
   bool _keepScreenOn = false;
-  int _autoSaveInterval = 30;
+  SettingsPagePreferences? _loadedPreferences;
 
   // 阅读设置
   bool _enableVolumeKeyTurn = false;
   bool _autoResumeReading = false;
-  bool _closeReaderToLibrary = false;
+  bool _closeReaderToLibrary = true;
   ReaderTopBarStyle _readerTopBarStyle = ReaderTopBarStyle.reader;
-
-  bool _enableAutoExtractCover = true;
-
-  // 其他设置
-  bool _enableFullscreen = false;
-
-  // 开发者设置
-  bool _enableDeveloperMode = false;
-  bool _enableDebugLogging = false;
-  bool _enablePerformanceMonitor = false;
-  bool _enableMemoryStats = false;
-  bool _showFPS = false;
   String _appVersion = '0.9.1';
   bool _isCheckingForUpdates = false;
   AIProviderSettings? _activeAiSettings;
@@ -144,9 +133,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (widget.category == SettingsCategory.dataSync) {
       unawaited(_refreshCacheUsage());
     }
-    if (widget.category == SettingsCategory.preferences ||
-        widget.category == SettingsCategory.contentServices) {
-      _loadSettings();
+    if (widget.category == SettingsCategory.preferences) {
+      unawaited(_loadPreferences());
+    }
+    if (widget.category == SettingsCategory.contentServices) {
+      unawaited(_loadAiSettings());
     }
     _attachSettingsController(widget.controller);
   }
@@ -188,29 +179,26 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  Future<void> _loadSettings() async {
+  Future<void> _loadPreferences() async {
     final preferences = await _preferencesStore.load();
-    final activeAiSettings = await _aiService.loadSettings();
     if (!mounted) {
       return;
     }
     setState(() {
+      _loadedPreferences = preferences;
       _enableAutoSave = preferences.enableAutoSave;
       _keepScreenOn = preferences.keepScreenOn;
-      _autoSaveInterval = preferences.autoSaveInterval;
-      _enableAutoExtractCover = preferences.enableAutoExtractCover;
       _enableVolumeKeyTurn = preferences.enableVolumeKeyTurn;
       _autoResumeReading = preferences.autoResumeReading;
       _closeReaderToLibrary = preferences.closeReaderToLibrary;
       _readerTopBarStyle = preferences.readerTopBarStyle;
-      _enableFullscreen = preferences.enableFullscreen;
-      _enableDeveloperMode = preferences.enableDeveloperMode;
-      _enableDebugLogging = preferences.enableDebugLogging;
-      _enablePerformanceMonitor = preferences.enablePerformanceMonitor;
-      _enableMemoryStats = preferences.enableMemoryStats;
-      _showFPS = preferences.showFPS;
-      _activeAiSettings = activeAiSettings;
     });
+  }
+
+  Future<void> _loadAiSettings() async {
+    final active = await _aiService.loadSettings();
+    if (!mounted) return;
+    setState(() => _activeAiSettings = active);
   }
 
   Future<void> _loadAppVersion() async {
@@ -259,30 +247,31 @@ class _SettingsPageState extends State<SettingsPage> {
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const AiSettingsPage()));
     if (!mounted) return;
-    final active = await _aiService.loadSettings();
-    if (!mounted) return;
-    setState(() => _activeAiSettings = active);
+    await _loadAiSettings();
   }
 
   Future<void> _saveSettings() async {
-    await _preferencesStore.save(
-      SettingsPagePreferences(
-        enableAutoSave: _enableAutoSave,
-        keepScreenOn: _keepScreenOn,
-        autoSaveInterval: _autoSaveInterval,
-        enableAutoExtractCover: _enableAutoExtractCover,
-        enableVolumeKeyTurn: _enableVolumeKeyTurn,
-        autoResumeReading: _autoResumeReading,
-        closeReaderToLibrary: _closeReaderToLibrary,
-        readerTopBarStyle: _readerTopBarStyle,
-        enableFullscreen: _enableFullscreen,
-        enableDeveloperMode: _enableDeveloperMode,
-        enableDebugLogging: _enableDebugLogging,
-        enablePerformanceMonitor: _enablePerformanceMonitor,
-        enableMemoryStats: _enableMemoryStats,
-        showFPS: _showFPS,
-      ),
+    final previous = _loadedPreferences;
+    if (previous == null) return;
+    // Preserve settings owned by other features without mirroring them in UI state.
+    final preferences = SettingsPagePreferences(
+      enableAutoSave: _enableAutoSave,
+      keepScreenOn: _keepScreenOn,
+      autoSaveInterval: previous.autoSaveInterval,
+      enableAutoExtractCover: previous.enableAutoExtractCover,
+      enableVolumeKeyTurn: _enableVolumeKeyTurn,
+      autoResumeReading: _autoResumeReading,
+      closeReaderToLibrary: _closeReaderToLibrary,
+      readerTopBarStyle: _readerTopBarStyle,
+      enableFullscreen: previous.enableFullscreen,
+      enableDeveloperMode: previous.enableDeveloperMode,
+      enableDebugLogging: previous.enableDebugLogging,
+      enablePerformanceMonitor: previous.enablePerformanceMonitor,
+      enableMemoryStats: previous.enableMemoryStats,
+      showFPS: previous.showFPS,
     );
+    _loadedPreferences = preferences;
+    await _preferencesStore.save(preferences);
   }
 
   void _setKeepScreenOn(bool value) {
@@ -332,17 +321,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeNotifier = Provider.of<ThemeNotifier>(context);
-    final appSettings = Provider.of<AppSettingsNotifier>(context);
-    final isMaterial3Style = themeNotifier.uiStyle == AppUiStyle.material3;
-
     if (widget.category != null) {
       return FloatingSubpageScaffold(
         title: _categoryTitle(context.l10n, widget.category!),
-        body: _buildCategoryContent(themeNotifier, appSettings),
+        body: _buildCategoryContent(),
       );
     }
 
+    final isMaterial3Style = context.select<ThemeNotifier, bool>(
+      (theme) => theme.uiStyle == AppUiStyle.material3,
+    );
     // 检查是否在侧边导航栏模式下
     final navContext = NavigationContext.of(context);
     final useRailNavigation = navContext?.useRailNavigation ?? false;
@@ -427,16 +415,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  String _webDavSyncSubtitle(WebDavBackupController backup) =>
-      BackupCopy.of(context).summary;
-
-  Widget _webDavSyncTrailing(WebDavBackupController backup) => backup.busy
-      ? const SizedBox.square(
-          dimension: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        )
-      : const Icon(Icons.chevron_right_rounded);
-
   void _openBookSourceManagement() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const BookSourceManagementPage()),
@@ -462,13 +440,15 @@ class _SettingsPageState extends State<SettingsPage> {
     bool enabled = true,
     bool persistPageSettings = true,
   }) {
+    final settingEnabled =
+        enabled && (!persistPageSettings || _loadedPreferences != null);
     return Container(
       key: key,
       margin: const EdgeInsets.only(bottom: 1),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: enabled
+          onTap: settingEnabled
               ? () {
                   onChanged(!value);
                   if (persistPageSettings) {
@@ -518,7 +498,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 Switch(
                   value: value,
-                  onChanged: enabled
+                  onChanged: settingEnabled
                       ? (newValue) {
                           onChanged(newValue);
                           if (persistPageSettings) {

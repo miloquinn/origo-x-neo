@@ -2729,7 +2729,7 @@
   "replaceRulesDeleteValue": "削除",
   "replaceRulesCreate": "ルールを追加",
   "replaceRulesEmptyTitle": "置換ルールはまだありません",
-  "replaceRulesEmptyBody": "書籍ソースの JSON を読み込むか、正規表現ルールを作成できます。",
+  "replaceRulesEmptyBody": "置換ルールの JSON をインポートするか、文字列・正規表現のルールを作成できます。",
   "replaceRulesNoSearchResults": "一致するルールはありません",
   "replaceRulesCreateTitle": "置換ルールを追加",
   "replaceRulesEditTitle": "置換ルールを編集",
@@ -2742,7 +2742,7 @@
   "replaceRulesScopeContentLabel": "本文に適用",
   "replaceRulesGroupLabel": "グループ（任意）",
   "replaceRulesScopeLabel": "適用範囲（任意）",
-  "replaceRulesScopeHelper": "書名または書籍ソース名をセミコロンで区切ります",
+  "replaceRulesScopeHelper": "本のタイトル、ソース URL、ソース名はセミコロンで区切ってください",
   "replaceRulesExcludeScopeLabel": "除外範囲（任意）",
   "replaceRulesDeleteConfirmTitle": "このルールを削除しますか？",
   "replaceRulesDeleteConfirmBody": "この端末からルールが削除されます。",
@@ -3383,6 +3383,33 @@
   "welcomeStartReading": "読書を始める",
   "welcomeTagline": "いい物語を、ゆっくりと。",
   "settingsWelcomeGuide": "使い方ガイド",
+  "readerPurifySelection": "選択テキストをクリーンアップ",
+  "replaceRulesDefaultEnabledLabel": "すべての本で既定で有効にする",
+  "replaceRulesBookEnabledLabel": "「{bookTitle}」で有効にする",
+  "replaceRulesEffectiveLabel": "現在適用中",
+  "replaceRulesGroupAll": "すべてのグループ",
+  "replaceRulesSelectionMode": "ルールを選択",
+  "replaceRulesSelectedCount": "{count} 件選択済み",
+  "replaceRulesSelectAll": "すべて選択",
+  "replaceRulesEnableSelected": "有効にする",
+  "replaceRulesDisableSelected": "無効にする",
+  "replaceRulesDeleteSelected": "削除",
+  "replaceRulesDeleteSelectedConfirmTitle": "選択したルールを削除しますか？",
+  "replaceRulesDeleteSelectedConfirmBody": "{count} 件のルールを削除します。",
+  "replaceRulesExportSelected": "エクスポート",
+  "replaceRulesCopyJson": "JSON をコピー",
+  "replaceRulesPasteJson": "JSON を貼り付け",
+  "replaceRulesCopied": "ルールの JSON をコピーしました",
+  "replaceRulesPasted": "ルールを貼り付けました",
+  "replaceRulesMoveTop": "先頭へ移動",
+  "replaceRulesMoveBottom": "末尾へ移動",
+  "replaceRulesTimeoutLabel": "タイムアウト（ミリ秒）",
+  "replaceRulesTimeoutHelper": "各ルールの最大実行時間",
+  "replaceRulesTimeoutInvalid": "0 より大きい値を入力してください",
+  "replaceRulesMissingTarget": "章のタイトルか本文を選択してください",
+  "replaceRulesContextSubtitle": "{bookTitle} · {sourceName}",
+  "replaceRulesUnsupportedReplacement": "この環境では JavaScript による置換に対応していません。文字列または正規表現を使用してください。",
+  "replaceRulesTimeoutNotice": "このルールはタイムアウトしたため無効になりました。修正してから再度有効にしてください。",
   "accountInviteUnavailable": "現在の招待キャンペーンを読み込めませんでした。再試行してください。",
   "accountInviteActiveProgress": "有効な新規ユーザー",
   "accountInvitePaidProgress": "初回購入した友だち",
@@ -3449,5 +3476,34 @@
         "type": "int"
       }
     }
-  }
+  },
+  "activityCenterTitle": "イベント",
+  "activityCenterSubtitle": "開催中のイベントと参加状況を確認できます。",
+  "activityCenterEmptyTitle": "現在イベントはありません",
+  "activityCenterEmptyMessage": "新しいイベントはこちらに表示されます。",
+  "activityCenterLoadError": "イベントを読み込めませんでした。",
+  "activityCenterOpenError": "イベントの詳細を開けませんでした。もう一度お試しください。",
+  "activityCenterLearnMore": "イベントの詳細",
+  "activityCenterProgress": "招待の進捗",
+  "activityCenterUpcoming": "開催予定",
+  "activityCenterPaused": "一時停止中",
+  "activityCenterEnded": "終了",
+  "activityCenterActive": "開催中",
+  "activityCenterStartsOn": "{date} 開始",
+  "@activityCenterStartsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterEndsOn": "{date} 終了",
+  "@activityCenterEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterRefresh": "更新"
 }

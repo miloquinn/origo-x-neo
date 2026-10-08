@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -16,12 +17,15 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/reader/native/native_reader_page.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
+import 'package:xxread/services/reader/replace_rule_execution.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
 import 'package:xxread/widgets/reader_annotated_text_page.dart';
+import 'package:xxread/widgets/reader_navigation_sheet.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 import 'package:xxread/widgets/reader_shader_page_curl.dart';
 
+import 'support/controllable_replace_rule_service.dart';
 import 'support/reader_cache_test_utils.dart';
 
 void main() {
@@ -793,6 +797,322 @@ void main() {
     }
   });
 
+  for (final viewport in <({String name, Size size})>[
+    (name: 'phone', size: const Size(400, 800)),
+    (name: 'tablet', size: const Size(1200, 800)),
+  ]) {
+    testWidgets(
+      'EPUB TOC far-back jump mounts the cold target body on ${viewport.name}',
+      (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
+          ReaderSettingsStore.chapterTitlePageKey: false,
+        });
+        await tester.binding.setSurfaceSize(viewport.size);
+        final directory = Directory.systemTemp.createTempSync(
+          'origo-x-epub-toc-far-back-${viewport.name}-',
+        );
+        final epub = File('${directory.path}/toc-far-back.epub')
+          ..writeAsBytesSync(
+            _epubFixture(
+              chapterCount: 12,
+              chapterParagraphCounts: <int>[
+                4,
+                2,
+                3,
+                5,
+                8,
+                12,
+                20,
+                28,
+                44,
+                60,
+                72,
+                84,
+              ],
+            ),
+          );
+
+        try {
+          await tester.pumpWidget(
+            MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: NativeReaderPage(
+                replaceRuleService: replaceRuleService,
+                book: Book(
+                  title: 'EPUB TOC far-back fixture',
+                  filePath: epub.path,
+                  format: 'epub',
+                  currentPage: 10,
+                  fileModifiedTime: epub
+                      .lastModifiedSync()
+                      .millisecondsSinceEpoch,
+                ),
+              ),
+            ),
+          );
+          await _waitForVisibleChapter(tester, 'Chapter 11');
+
+          final pageView = _nativeReaderPageView();
+          final originalPageView = tester.widget<PageView>(pageView);
+          final originalController = originalPageView.controller!;
+          final originalInitialPage = originalController.initialPage;
+          await _selectTocChapter(tester, 'Chapter 2');
+          await _waitForControllerReplacement(tester, originalController);
+
+          final jumpedPageView = tester.widget<PageView>(pageView);
+          final jumpedController = jumpedPageView.controller!;
+          expect(jumpedController, isNot(same(originalController)));
+          expect(
+            find.byKey(const ValueKey('native-reader-positioning-placeholder')),
+            findsNothing,
+          );
+          final visiblePage = _visibleAnnotatedPage(tester, pageView);
+          expect(visiblePage.chapterTitle, 'Chapter 2');
+          expect(visiblePage.chapterId, contains('chapter2.xhtml'));
+          expect(visiblePage.sourceText, contains('Chapter 2 paragraph 0'));
+          expect(visiblePage.page.text.trim(), isNotEmpty);
+          expect(
+            jumpedController.page,
+            jumpedController.initialPage.toDouble(),
+            reason:
+                'The replacement PageView must attach at its new chapter '
+                'origin instead of inheriting the previous scroll pixels.',
+          );
+
+          originalPageView.onPageChanged!(originalInitialPage);
+          await tester.pump();
+          final afterStaleCallback = _visibleAnnotatedPage(tester, pageView);
+          expect(afterStaleCallback.chapterTitle, 'Chapter 2');
+          expect(
+            afterStaleCallback.sourceText,
+            contains('Chapter 2 paragraph 0'),
+          );
+          expect(tester.takeException(), isNull);
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await drainReaderCache(tester);
+          await tester.binding.setSurfaceSize(null);
+          debugDefaultTargetPlatformOverride = null;
+          directory.deleteSync(recursive: true);
+        }
+      },
+    );
+  }
+
+  testWidgets(
+    'latest EPUB TOC jump wins when an older cold jump finishes last',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+      });
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      final directory = Directory.systemTemp.createTempSync(
+        'origo-x-epub-toc-latest-intent-',
+      );
+      final epub = File('${directory.path}/toc-latest-intent.epub')
+        ..writeAsBytesSync(_epubFixture(chapterCount: 12));
+      await replaceRuleService.close();
+      final controlledRules = ControllableReplaceRuleService();
+      replaceRuleService = controlledRules;
+      var bodiesReleased = false;
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NativeReaderPage(
+              replaceRuleService: replaceRuleService,
+              book: Book(
+                title: 'EPUB latest TOC intent fixture',
+                filePath: epub.path,
+                format: 'epub',
+                currentPage: 10,
+                fileModifiedTime: epub
+                    .lastModifiedSync()
+                    .millisecondsSinceEpoch,
+              ),
+            ),
+          ),
+        );
+        await _waitForVisibleChapter(tester, 'Chapter 11');
+
+        controlledRules.delayBodies = true;
+        await _selectTocChapter(tester, 'Chapter 2');
+        expect(
+          find.byKey(const ValueKey('native-reader-chapter-loading')),
+          findsOneWidget,
+          reason: 'A cold TOC jump must acknowledge the tap immediately.',
+        );
+        await _waitForPendingReplacementBody(
+          tester,
+          controlledRules,
+          'Chapter 2 paragraph 0',
+        );
+
+        // Chapter 12 belongs to the already prepared opening window, so the
+        // newer intent can finish while the older cold Chapter 2 request waits.
+        await _selectTocChapter(tester, 'Chapter 12');
+        await _waitForVisibleChapter(tester, 'Chapter 12');
+
+        for (final pending in controlledRules.pendingBodies) {
+          pending.complete();
+        }
+        bodiesReleased = true;
+        controlledRules.delayBodies = false;
+        await tester.runAsync(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 250));
+        });
+        await tester.pumpAndSettle();
+
+        final visiblePage = _visibleAnnotatedPage(
+          tester,
+          _nativeReaderPageView(),
+        );
+        expect(visiblePage.chapterTitle, 'Chapter 12');
+        expect(visiblePage.chapterId, contains('chapter12.xhtml'));
+        expect(visiblePage.sourceText, contains('Chapter 12 paragraph 0'));
+        expect(tester.takeException(), isNull);
+      } finally {
+        if (!bodiesReleased) {
+          for (final pending in controlledRules.pendingBodies) {
+            pending.complete();
+          }
+        }
+        controlledRules.delayBodies = false;
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        await drainReaderCache(tester);
+        await tester.binding.setSurfaceSize(null);
+        debugDefaultTargetPlatformOverride = null;
+        directory.deleteSync(recursive: true);
+      }
+    },
+  );
+
+  testWidgets(
+    'EPUB TOC jump stays rendered while its predecessor is still preparing',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+      });
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      final directory = Directory.systemTemp.createTempSync(
+        'origo-x-epub-toc-target-priority-',
+      );
+      final epub = File('${directory.path}/toc-target-priority.epub')
+        ..writeAsBytesSync(
+          _epubFixture(
+            chapterCount: 12,
+            chapterParagraphCounts: <int>[
+              4,
+              2,
+              6,
+              8,
+              12,
+              16,
+              24,
+              32,
+              40,
+              48,
+              56,
+              64,
+            ],
+          ),
+        );
+      await replaceRuleService.close();
+      final blockingRules = _AdjacentBlockingReplaceRuleService(
+        blockedMarker: 'Chapter 1 paragraph 0',
+      );
+      replaceRuleService = blockingRules;
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NativeReaderPage(
+              replaceRuleService: replaceRuleService,
+              book: Book(
+                title: 'EPUB target-priority fixture',
+                filePath: epub.path,
+                format: 'epub',
+                currentPage: 10,
+                fileModifiedTime: epub
+                    .lastModifiedSync()
+                    .millisecondsSinceEpoch,
+              ),
+            ),
+          ),
+        );
+        await _waitForVisibleChapter(tester, 'Chapter 11');
+
+        blockingRules.enabled = true;
+        await _selectTocChapter(tester, 'Chapter 2');
+        await _waitForAdjacentBlock(tester, blockingRules);
+
+        // The selected chapter is ready. Its slower neighbor should continue
+        // warming in the background instead of holding the visible jump.
+        await _waitForVisibleChapter(tester, 'Chapter 2');
+        final visiblePage = _visibleAnnotatedPage(
+          tester,
+          _nativeReaderPageView(),
+        );
+        expect(visiblePage.chapterId, contains('chapter2.xhtml'));
+        expect(visiblePage.sourceText, contains('Chapter 2 paragraph 0'));
+        expect(visiblePage.page.text.trim(), isNotEmpty);
+        expect(blockingRules.isBlocked, isTrue);
+
+        final pageView = _nativeReaderPageView();
+        final stableController = tester.widget<PageView>(pageView).controller!;
+        final rect = tester.getRect(pageView);
+        final backwardGesture = await tester.startGesture(
+          Offset(rect.left + 8, rect.center.dy),
+        );
+        await backwardGesture.moveBy(Offset(rect.width * 0.65, 0));
+        await tester.pump();
+        await backwardGesture.up();
+        await _pumpTransitionFrames(tester);
+
+        final blockedVisiblePage = _visibleAnnotatedPage(tester, pageView);
+        expect(blockedVisiblePage.chapterTitle, 'Chapter 2');
+        expect(
+          tester.widget<PageView>(pageView).controller,
+          same(stableController),
+        );
+
+        blockingRules.release();
+        await _pumpUntil(
+          tester,
+          () => _nearbyPageIndexes(tester, pageView, 'Chapter 1').isNotEmpty,
+        );
+        final preparedVisiblePage = _visibleAnnotatedPage(tester, pageView);
+        expect(preparedVisiblePage.chapterTitle, 'Chapter 2');
+        expect(preparedVisiblePage.page.text.trim(), isNotEmpty);
+        expect(
+          tester.widget<PageView>(pageView).controller,
+          same(stableController),
+        );
+      } finally {
+        blockingRules.release();
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        await drainReaderCache(tester);
+        await tester.binding.setSurfaceSize(null);
+        debugDefaultTargetPlatformOverride = null;
+        directory.deleteSync(recursive: true);
+      }
+    },
+  );
+
   testWidgets(
     'EPUB page curl returns from a chapter first page to the previous last page',
     (tester) async {
@@ -901,6 +1221,236 @@ Future<void> _pumpUntil(WidgetTester tester, bool Function() condition) async {
   fail('Timed out waiting for EPUB reader state.');
 }
 
+Future<void> _waitForVisibleChapter(
+  WidgetTester tester,
+  String chapterTitle,
+) async {
+  await tester.runAsync(() async {
+    for (var attempt = 0; attempt < 100; attempt++) {
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await tester.pump();
+      if (_nativeReaderPageViews().evaluate().isEmpty) continue;
+      final pageView = _nativeReaderPageView();
+      final visible = _tryVisibleAnnotatedPage(tester, pageView);
+      if (visible?.chapterTitle == chapterTitle) return;
+    }
+  });
+  final hasPageView = _nativeReaderPageViews().evaluate().isNotEmpty;
+  final pageView = hasPageView ? _nativeReaderPageView() : null;
+  final visible = pageView == null
+      ? null
+      : _tryVisibleAnnotatedPage(tester, pageView);
+  expect(
+    visible?.chapterTitle,
+    chapterTitle,
+    reason: 'Timed out waiting for the mounted chapter body.',
+  );
+}
+
+Future<void> _selectTocChapter(WidgetTester tester, String chapterTitle) async {
+  final pageView = _nativeReaderPageView();
+  Finder tocButton() => find
+      .descendant(
+        of: find.byType(NativeReaderPage),
+        matching: find.byIcon(Icons.format_list_bulleted_rounded),
+      )
+      .hitTestable();
+  if (tocButton().evaluate().isEmpty) {
+    await tester.tapAt(tester.getRect(pageView).center);
+    await _pumpTransitionFrames(tester);
+  }
+  expect(tocButton(), findsOneWidget);
+  await tester.tap(tocButton());
+  await _pumpTransitionFrames(tester);
+  final sheet = find.byType(ReaderNavigationSheet);
+  expect(sheet, findsOneWidget);
+  final searchField = find.descendant(
+    of: sheet,
+    matching: find.byType(TextField),
+  );
+  await tester.enterText(searchField, chapterTitle);
+  // The catalog opens around the current late chapter. Reset that retained
+  // scroll offset after filtering so the single early result is built.
+  await tester.pump();
+  final resultList = find
+      .descendant(of: sheet, matching: find.byType(ListView))
+      .first;
+  tester.widget<ListView>(resultList).controller!.jumpTo(0);
+  await tester.pump();
+  await tester.pump();
+  expect(
+    tester.widget<TextField>(searchField).controller!.text,
+    chapterTitle,
+    reason: 'Deferred TOC positioning must finish before entering a search.',
+  );
+  final targetLabel = find.descendant(
+    of: sheet,
+    matching: find.text(chapterTitle),
+  );
+  final targetRow = find
+      .ancestor(of: targetLabel, matching: find.byType(InkWell))
+      .hitTestable();
+  expect(targetRow, findsOneWidget);
+  await tester.tap(targetRow);
+  await _pumpTransitionFrames(tester);
+  expect(
+    sheet,
+    findsNothing,
+    reason: 'Selecting a TOC row must dismiss the navigation sheet.',
+  );
+}
+
+Future<void> _pumpTransitionFrames(WidgetTester tester) async {
+  for (var frame = 0; frame < 10; frame++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+Future<void> _waitForControllerReplacement(
+  WidgetTester tester,
+  PageController originalController,
+) async {
+  await tester.runAsync(() async {
+    for (var attempt = 0; attempt < 100; attempt++) {
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await tester.pump();
+      if (_nativeReaderPageViews().evaluate().isEmpty) continue;
+      final pageView = _nativeReaderPageView();
+      final current = tester.widget<PageView>(pageView).controller;
+      if (!identical(current, originalController)) return;
+    }
+  });
+  expect(
+    tester.widget<PageView>(_nativeReaderPageView()).controller,
+    isNot(same(originalController)),
+    reason: 'Timed out waiting for the chapter-jump controller replacement.',
+  );
+}
+
+Future<void> _waitForPendingReplacementBody(
+  WidgetTester tester,
+  ControllableReplaceRuleService service,
+  String marker,
+) async {
+  bool containsTarget() => service.pendingBodies.any(
+    (pending) => pending.values.any((value) => value.contains(marker)),
+  );
+  await tester.runAsync(() async {
+    for (var attempt = 0; attempt < 100; attempt++) {
+      if (containsTarget()) return;
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await tester.pump();
+    }
+  });
+  expect(
+    containsTarget(),
+    isTrue,
+    reason: 'Timed out waiting for the selected cold chapter body.',
+  );
+}
+
+Future<void> _waitForAdjacentBlock(
+  WidgetTester tester,
+  _AdjacentBlockingReplaceRuleService service,
+) async {
+  await tester.runAsync(() async {
+    for (var attempt = 0; attempt < 100; attempt++) {
+      if (service.isBlocked) return;
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await tester.pump();
+    }
+  });
+  expect(
+    service.isBlocked,
+    isTrue,
+    reason: 'Timed out waiting for the unrelated adjacent chapter blocker.',
+  );
+}
+
+Finder _nativeReaderPageViews() => find.descendant(
+  of: find.byType(NativeReaderPage),
+  matching: find.byType(PageView),
+);
+
+Finder _nativeReaderPageView() => _nativeReaderPageViews().first;
+
+ReaderAnnotatedTextPage _visibleAnnotatedPage(
+  WidgetTester tester,
+  Finder pageView,
+) {
+  final page = _tryVisibleAnnotatedPage(tester, pageView);
+  expect(
+    page,
+    isNotNull,
+    reason: 'The mounted viewport must contain a rendered text body.',
+  );
+  return page!;
+}
+
+ReaderAnnotatedTextPage? _tryVisibleAnnotatedPage(
+  WidgetTester tester,
+  Finder pageView,
+) {
+  final viewport = tester.getRect(pageView);
+  ReaderAnnotatedTextPage? best;
+  var bestVisibleArea = 0.0;
+  for (final element in find.byType(ReaderAnnotatedTextPage).evaluate()) {
+    final renderObject = element.renderObject;
+    if (renderObject is! RenderBox || !renderObject.attached) continue;
+    final rect = renderObject.localToGlobal(Offset.zero) & renderObject.size;
+    final overlap = rect.intersect(viewport);
+    final visibleArea = overlap.isEmpty ? 0.0 : overlap.width * overlap.height;
+    if (visibleArea > bestVisibleArea) {
+      bestVisibleArea = visibleArea;
+      best = element.widget as ReaderAnnotatedTextPage;
+    }
+  }
+  return best;
+}
+
+class _AdjacentBlockingReplaceRuleService extends ReplaceRuleService {
+  _AdjacentBlockingReplaceRuleService({required this.blockedMarker});
+
+  final String blockedMarker;
+  final Completer<void> _release = Completer<void>();
+  bool enabled = false;
+  bool isBlocked = false;
+
+  void release() {
+    if (!_release.isCompleted) _release.complete();
+  }
+
+  @override
+  Future<ReplaceRuleExecutionResult> applyBatchAsync(
+    List<String> inputs, {
+    required String bookTitle,
+    String? sourceName,
+    String? sourceUrl,
+    String? bookId,
+    bool eligibleByDefault = true,
+    bool title = false,
+    bool preserveNonEmpty = false,
+  }) async {
+    final result = await super.applyBatchAsync(
+      inputs,
+      bookTitle: bookTitle,
+      sourceName: sourceName,
+      sourceUrl: sourceUrl,
+      bookId: bookId,
+      eligibleByDefault: eligibleByDefault,
+      title: title,
+      preserveNonEmpty: preserveNonEmpty,
+    );
+    if (enabled &&
+        !title &&
+        inputs.any((value) => value.contains(blockedMarker))) {
+      isBlocked = true;
+      await _release.future;
+    }
+    return result;
+  }
+}
+
 List<String?> _leafFontFamilies(InlineSpan span) {
   if (span is! TextSpan) return const [];
   final children = span.children;
@@ -962,7 +1512,12 @@ List<int> _epubFixture({
   int imageOnlyChapterCount = 0,
   bool uniqueImagePerChapter = false,
   bool serifParagraphs = false,
+  List<int>? chapterParagraphCounts,
 }) {
+  assert(
+    chapterParagraphCounts == null ||
+        chapterParagraphCounts.length == chapterCount,
+  );
   final archive = Archive();
   void add(String name, String content) {
     final bytes = utf8.encode(content);
@@ -1008,9 +1563,10 @@ List<int> _epubFixture({
     addBytes('OEBPS/stripe.png', imageBytes);
   }
   for (var chapter = 1; chapter <= chapterCount; chapter++) {
+    final paragraphCount = chapterParagraphCounts?[chapter - 1] ?? 40;
     add('OEBPS/chapter$chapter.xhtml', '''<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter $chapter</title></head><body>
-${chapter <= imageOnlyChapterCount ? '<img src="${uniqueImagePerChapter ? 'stripe$chapter.png' : 'stripe.png'}" alt=""/>' : '<h1>Chapter $chapter</h1>${List.generate(40, (index) => '<p${serifParagraphs ? ' style="font-family: serif"' : ''}>Chapter $chapter paragraph $index contains enough text to create several deterministic reader pages for transition testing.</p>').join()}'}
+${chapter <= imageOnlyChapterCount ? '<img src="${uniqueImagePerChapter ? 'stripe$chapter.png' : 'stripe.png'}" alt=""/>' : '<h1>Chapter $chapter</h1>${List.generate(paragraphCount, (index) => '<p${serifParagraphs ? ' style="font-family: serif"' : ''}>Chapter $chapter paragraph $index contains enough text to create several deterministic reader pages for transition testing.</p>').join()}'}
 </body></html>''');
   }
   return ZipEncoder().encode(archive)!;

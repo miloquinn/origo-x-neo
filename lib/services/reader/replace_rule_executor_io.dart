@@ -11,10 +11,9 @@ import 'replace_rule_semantics.dart';
 /// rule is quarantined for the current rules signature, and the batch is
 /// replayed atomically on a fresh worker. No partial transformation is exposed.
 class ReplaceRuleExecutor {
-  ReplaceRuleExecutor({Duration? timeout, this.maximumTimeoutRetries = 2})
-    : timeout = timeout ?? const Duration(milliseconds: 1500);
+  ReplaceRuleExecutor({this.timeout, this.maximumTimeoutRetries = 2});
 
-  final Duration timeout;
+  final Duration? timeout;
   final int maximumTimeoutRetries;
   final StreamController<ReplaceRuleDiagnostic> _diagnostics =
       StreamController<ReplaceRuleDiagnostic>.broadcast(sync: true);
@@ -77,6 +76,7 @@ class ReplaceRuleExecutor {
             ...result.diagnostics,
           ],
           skippedRuleIds: result.skippedRuleIds,
+          effectiveRuleIds: result.effectiveRuleIds,
           degraded: diagnostics.isNotEmpty || result.degraded,
         );
       }
@@ -97,6 +97,7 @@ class ReplaceRuleExecutor {
         ..._quarantinedIds(batch),
         ...fallback.skippedRuleIds,
       }.toList(growable: false),
+      effectiveRuleIds: fallback.effectiveRuleIds,
       degraded: true,
     );
   }
@@ -112,23 +113,35 @@ class ReplaceRuleExecutor {
       batch: batch,
     );
     _active = active;
-    active.timer = Timer(timeout, () {
-      if (!identical(_active, active) || completer.isCompleted) return;
-      final started = active.lastStartedRule;
-      final diagnostic = ReplaceRuleDiagnostic(
-        kind: ReplaceRuleDiagnosticKind.timeout,
-        rulesSignature: batch.rulesSignature,
-        ruleId: started?['id'] as String?,
-        ruleName: started?['name'] as String?,
-        ruleFingerprint: started?['fingerprint'] as String?,
-        detail: 'Replacement worker exceeded ${timeout.inMilliseconds} ms.',
-      );
-      _destroyWorker();
-      if (!completer.isCompleted) {
-        completer.complete(_ReplaceAttempt.failure(diagnostic));
+    void armWatchdog(Duration budget) {
+      active.timer?.cancel();
+      active.timer = Timer(budget, () {
+        if (!identical(_active, active) || completer.isCompleted) return;
+        final started = active.lastStartedRule;
+        final diagnostic = ReplaceRuleDiagnostic(
+          kind: ReplaceRuleDiagnosticKind.timeout,
+          rulesSignature: batch.rulesSignature,
+          ruleId: started?['id'] as String?,
+          ruleName: started?['name'] as String?,
+          ruleFingerprint: started?['fingerprint'] as String?,
+          detail: 'Replacement worker exceeded ${budget.inMilliseconds} ms.',
+        );
+        _destroyWorker();
+        if (!completer.isCompleted) {
+          completer.complete(_ReplaceAttempt.failure(diagnostic));
+        }
+      });
+    }
+
+    active.armWatchdog = armWatchdog;
+    armWatchdog(timeout ?? const Duration(milliseconds: 3000));
+    final sendRules = !_knownWorkerSignatures.contains(batch.rulesSignature);
+    if (sendRules) {
+      _knownWorkerSignatures.add(batch.rulesSignature);
+      if (_knownWorkerSignatures.length > 4) {
+        _knownWorkerSignatures.remove(_knownWorkerSignatures.first);
       }
-    });
-    final sendRules = _knownWorkerSignatures.add(batch.rulesSignature);
+    }
     _commands!.send(<String, Object?>{
       'type': 'apply',
       'jobId': jobId,
@@ -140,6 +153,7 @@ class ReplaceRuleExecutor {
       'values': batch.values,
       'bookTitle': batch.bookTitle,
       'sourceName': batch.sourceName,
+      'sourceUrl': batch.sourceUrl,
       'target': batch.target.name,
       'quarantined': _quarantined[batch.rulesSignature]?.toList() ?? const [],
     });
@@ -202,6 +216,10 @@ class ReplaceRuleExecutor {
     }
     if (type == 'ruleStarted') {
       active.lastStartedRule = Map<Object?, Object?>.from(message);
+      final ruleTimeout = message['timeoutMillisecond'] as int? ?? 3000;
+      active.armWatchdog?.call(
+        timeout ?? Duration(milliseconds: ruleTimeout > 0 ? ruleTimeout : 3000),
+      );
       return;
     }
     if (type == 'result' && !active.completer.isCompleted) {
@@ -229,6 +247,9 @@ class ReplaceRuleExecutor {
             diagnostics: diagnostics,
             skippedRuleIds: List<String>.from(
               message['skippedRuleIds'] as List? ?? const [],
+            ),
+            effectiveRuleIds: List<String>.from(
+              message['effectiveRuleIds'] as List? ?? const [],
             ),
             degraded: message['degraded'] == true,
           ),
@@ -282,6 +303,7 @@ class ReplaceRuleExecutor {
         ..._quarantinedIds(batch),
         ...literals.skippedRuleIds,
       }.toList(growable: false),
+      effectiveRuleIds: literals.effectiveRuleIds,
       degraded: true,
     );
   }
@@ -297,23 +319,42 @@ class ReplaceRuleExecutor {
           (batch.target == ReplaceRuleTarget.title
               ? rule.scopeTitle
               : rule.scopeContent) &&
-          replaceRuleMatchesScope(rule, batch.bookTitle, batch.sourceName),
+          replaceRuleMatchesScope(
+            rule,
+            batch.bookTitle,
+            batch.sourceName,
+            batch.sourceUrl,
+          ),
     );
+    final effectiveRuleIds = <String>{};
     for (final rule in applicable) {
+      if (isUnsupportedReplaceRuleReplacement(
+        rule.replacement,
+        isRegex: rule.isRegex,
+      )) {
+        skipped.add(rule.id);
+        continue;
+      }
       if (rule.isRegex) {
         skipped.add(rule.id);
         continue;
       }
       for (var index = 0; index < values.length; index++) {
-        values[index] = values[index].replaceAll(
-          rule.pattern,
-          rule.replacement,
-        );
+        final before = values[index];
+        final candidate = before.replaceAll(rule.pattern, rule.replacement);
+        if (batch.target == ReplaceRuleTarget.title &&
+            before.trim().isNotEmpty &&
+            candidate.trim().isEmpty) {
+          continue;
+        }
+        values[index] = candidate;
+        if (candidate != before) effectiveRuleIds.add(rule.id);
       }
     }
     return ReplaceRuleExecutionResult(
       values: values,
       skippedRuleIds: skipped,
+      effectiveRuleIds: effectiveRuleIds.toList(growable: false),
       degraded: true,
     );
   }
@@ -381,6 +422,7 @@ class _ActiveReplaceJob {
   final Completer<_ReplaceAttempt> completer;
   final ReplaceRuleExecutionBatch batch;
   Timer? timer;
+  void Function(Duration)? armWatchdog;
   Map<Object?, Object?>? lastStartedRule;
 }
 
@@ -428,11 +470,13 @@ void _replaceRuleWorkerMain(SendPort events) {
     final target = ReplaceRuleTarget.values.byName('${message['target']}');
     final title = '${message['bookTitle'] ?? ''}';
     final sourceName = message['sourceName'] as String?;
+    final sourceUrl = message['sourceUrl'] as String?;
     final quarantined = Set<String>.from(
       message['quarantined'] as List? ?? const [],
     );
     final diagnostics = <Map<String, Object?>>[];
     final skippedIds = <String>[];
+    final effectiveRuleIds = <String>{};
     final outputLimit = replaceRuleOutputCharacterLimit(originals);
     var degraded = false;
 
@@ -441,7 +485,22 @@ void _replaceRuleWorkerMain(SendPort events) {
           (target == ReplaceRuleTarget.title
               ? !rule.scopeTitle
               : !rule.scopeContent) ||
-          !replaceRuleMatchesScope(rule, title, sourceName)) {
+          !replaceRuleMatchesScope(rule, title, sourceName, sourceUrl)) {
+        continue;
+      }
+      if (isUnsupportedReplaceRuleReplacement(
+        rule.replacement,
+        isRegex: rule.isRegex,
+      )) {
+        diagnostics.add(<String, Object?>{
+          'kind': ReplaceRuleDiagnosticKind.unsupportedReplacement.name,
+          'ruleId': rule.id,
+          'ruleName': rule.name,
+          'ruleFingerprint': rule.fingerprint,
+          'detail': 'JavaScript replacements require a killable runtime.',
+        });
+        skippedIds.add(rule.id);
+        degraded = true;
         continue;
       }
       if (quarantined.contains(rule.fingerprint)) {
@@ -455,6 +514,7 @@ void _replaceRuleWorkerMain(SendPort events) {
         'id': rule.id,
         'name': rule.name,
         'fingerprint': rule.fingerprint,
+        'timeoutMillisecond': rule.timeoutMillisecond,
       });
       PreparedReplaceRule compiled;
       try {
@@ -476,7 +536,23 @@ void _replaceRuleWorkerMain(SendPort events) {
         continue;
       }
       for (var index = 0; index < outputs.length; index++) {
-        outputs[index] = compiled.apply(outputs[index]);
+        final before = outputs[index];
+        final candidate = compiled.apply(before);
+        if (target == ReplaceRuleTarget.title &&
+            before.trim().isNotEmpty &&
+            candidate.trim().isEmpty) {
+          diagnostics.add(<String, Object?>{
+            'kind': ReplaceRuleDiagnosticKind.emptyOutput.name,
+            'ruleId': rule.id,
+            'ruleName': rule.name,
+            'ruleFingerprint': rule.fingerprint,
+            'detail': 'Replacement rule would remove the complete title.',
+          });
+          degraded = true;
+          continue;
+        }
+        outputs[index] = candidate;
+        if (candidate != before) effectiveRuleIds.add(rule.id);
       }
       final outputCharacters = outputs.fold<int>(
         0,
@@ -493,6 +569,7 @@ void _replaceRuleWorkerMain(SendPort events) {
         outputs
           ..clear()
           ..addAll(originals);
+        effectiveRuleIds.clear();
         degraded = true;
         break;
       }
@@ -503,6 +580,7 @@ void _replaceRuleWorkerMain(SendPort events) {
       'values': outputs,
       'diagnostics': diagnostics,
       'skippedRuleIds': skippedIds,
+      'effectiveRuleIds': effectiveRuleIds.toList(growable: false),
       'degraded': degraded,
     });
   });

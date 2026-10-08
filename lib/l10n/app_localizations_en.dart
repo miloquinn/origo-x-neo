@@ -5567,7 +5567,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get replaceRulesEmptyBody =>
-      'Import a reading-source JSON file or create a regular-expression rule.';
+      'Import replacement-rule JSON or create a text or regular-expression rule.';
 
   @override
   String get replaceRulesNoSearchResults => 'No matching rules';
@@ -5608,7 +5608,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get replaceRulesScopeHelper =>
-      'Separate book titles or source names with semicolons';
+      'Separate book titles, source URLs, or source names with semicolons';
 
   @override
   String get replaceRulesExcludeScopeLabel => 'Excluded scope (optional)';
@@ -7548,6 +7548,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsWelcomeGuide => 'Welcome guide';
 
   @override
+  String get replaceRulesDefaultEnabledLabel =>
+      'Enable by default for all books';
+
+  @override
+  String replaceRulesBookEnabledLabel(String bookTitle) {
+    return 'Enable for “$bookTitle”';
+  }
+
+  @override
+  String get replaceRulesEffectiveLabel => 'Effective now';
+
+  @override
+  String get replaceRulesGroupAll => 'All groups';
+
+  @override
+  String get replaceRulesSelectionMode => 'Select rules';
+
+  @override
+  String replaceRulesSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get replaceRulesSelectAll => 'Select all';
+
+  @override
+  String get replaceRulesEnableSelected => 'Enable';
+
+  @override
+  String get replaceRulesDisableSelected => 'Disable';
+
+  @override
+  String get replaceRulesDeleteSelected => 'Delete';
+
+  @override
+  String get replaceRulesDeleteSelectedConfirmTitle => 'Delete selected rules?';
+
+  @override
+  String replaceRulesDeleteSelectedConfirmBody(int count) {
+    return '$count rules will be deleted.';
+  }
+
+  @override
+  String get replaceRulesExportSelected => 'Export';
+
+  @override
+  String get replaceRulesCopyJson => 'Copy JSON';
+
+  @override
+  String get replaceRulesPasteJson => 'Paste JSON';
+
+  @override
+  String get replaceRulesCopied => 'Rule JSON copied';
+
+  @override
+  String get replaceRulesPasted => 'Rule JSON pasted';
+
+  @override
+  String get replaceRulesMoveTop => 'Move to top';
+
+  @override
+  String get replaceRulesMoveBottom => 'Move to bottom';
+
+  @override
+  String get replaceRulesTimeoutLabel => 'Timeout (milliseconds)';
+
+  @override
+  String get replaceRulesTimeoutHelper => 'Maximum execution time per rule';
+
+  @override
+  String get replaceRulesTimeoutInvalid => 'Enter a timeout greater than 0';
+
+  @override
+  String get replaceRulesMissingTarget => 'Select chapter titles or content';
+
+  @override
+  String replaceRulesContextSubtitle(String bookTitle, String sourceName) {
+    return '$bookTitle · $sourceName';
+  }
+
+  @override
+  String get replaceRulesUnsupportedReplacement =>
+      'JavaScript replacement scripts are not supported here. Use text or regular-expression replacements.';
+
+  @override
+  String get replaceRulesTimeoutNotice =>
+      'This rule timed out and was disabled. Edit it, then enable it again.';
+
+  @override
+  String get readerPurifySelection => 'Clean selected text';
+
+  @override
   String get accountInviteUnavailable =>
       'Could not load the current invitation campaign. Try again.';
 
@@ -7634,4 +7726,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountInviteRecordsTitle => 'Invitation history';
+
+  @override
+  String get activityCenterTitle => 'Activities';
+
+  @override
+  String get activityCenterSubtitle =>
+      'Discover current activities and follow your progress.';
+
+  @override
+  String get activityCenterEmptyTitle => 'No activities right now';
+
+  @override
+  String get activityCenterEmptyMessage =>
+      'Check back soon for new activities.';
+
+  @override
+  String get activityCenterLoadError => 'Activities could not be loaded.';
+
+  @override
+  String get activityCenterOpenError =>
+      'Could not open this activity. Please try again.';
+
+  @override
+  String get activityCenterLearnMore => 'About this activity';
+
+  @override
+  String get activityCenterProgress => 'My invitation progress';
+
+  @override
+  String get activityCenterUpcoming => 'Coming soon';
+
+  @override
+  String get activityCenterPaused => 'Paused';
+
+  @override
+  String get activityCenterEnded => 'Ended';
+
+  @override
+  String get activityCenterActive => 'In progress';
+
+  @override
+  String activityCenterStartsOn(String date) {
+    return 'Starts $date';
+  }
+
+  @override
+  String activityCenterEndsOn(String date) {
+    return 'Ends $date';
+  }
+
+  @override
+  String get activityCenterRefresh => 'Refresh';
 }

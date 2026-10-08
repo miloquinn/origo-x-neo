@@ -305,6 +305,41 @@ void main() {
     expect(find.byIcon(Icons.error_outline_rounded), findsNothing);
   });
 
+  testWidgets(
+    'external login progress hides the code already embedded in the browser URL',
+    (tester) async {
+      const channel = MethodChannel('flutter_web_auth_2');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (_) async => 'xxread://auth/callback',
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      await _pumpExternalLoginPage(tester);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('account-provider-github')),
+          matching: find.byType(InkWell),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('ABCD-EFGH'), findsNothing);
+      expect(find.text('取消'), findsOneWidget);
+
+      await tester.tap(find.text('取消'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
+
   testWidgets('iOS external login platform failures are shown to the user', (
     tester,
   ) async {
@@ -1028,9 +1063,15 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('account-support')));
       await tester.pumpAndSettle();
-      expect(find.text('Origo 探元'), findsNWidgets(2));
+      expect(find.text('Origo 探元'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('premium-details-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('premium-benefits-details')));
+      await tester.pumpAndSettle();
       expect(find.text('更多书源协议'), findsWidgets);
       expect(find.text('允许内网书源'), findsWidgets);
+      await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('account-redemption-code')),
         findsOneWidget,

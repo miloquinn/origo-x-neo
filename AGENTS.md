@@ -24,3 +24,11 @@ These rules are mandatory for every coding and release task in this repository.
 ## Commit protocol
 
 - Follow the workspace Lore commit format and include concrete `Tested:` and `Not-tested:` trailers.
+
+## Physical-device acceptance
+
+- After completing APP changes, automatically build, install in place, and launch the latest app on the user's SloanePro for acceptance; do not wait for another installation request. This standing instruction was given on 2026-10-08.
+- Resolve the device by name and verify its identity (currently iPhone 16 Pro, UDID `00008140-001979421E93001C`). Preserve installed data; do not uninstall or clear the app to deliver an update.
+- Use the appropriate acceptance distribution channel and report it. A local development installation is separate from a TestFlight or App Store release.
+- Verify the installed app identity and successful launch. If a required service changed, complete the authorized service delivery so the new feature works against the real endpoint.
+- Ask for device unlock only when iOS actually blocks launch. Report any remaining device or service blocker and distinguish installation from physical UI acceptance.

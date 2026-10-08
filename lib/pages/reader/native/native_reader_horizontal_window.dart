@@ -13,12 +13,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
     if (boundary.chapterIndex > _horizontalLastChapter) {
       _horizontalForwardExpansionPending = true;
     }
-    debugPrint(
-      '[reader-horizontal] hold forward boundary '
-      'controller=$controllerPage target=${boundary.chapterIndex}:0 '
-      'window=$_horizontalFirstChapter..$_horizontalLastChapter '
-      'generation=$_pageControllerGeneration',
-    );
   }
 
   void _schedulePendingHorizontalForwardBoundaryCommit(
@@ -55,12 +49,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
             return;
           }
           _pendingHorizontalForwardBoundary = null;
-          debugPrint(
-            '[reader-horizontal] publish forward boundary '
-            'controller=${pending.controllerPage} '
-            'target=${page.chapterIndex}:${page.pageIndex} '
-            'generation=$controllerGeneration',
-          );
           _publishBookPageChanged(page, chapters);
           _commitHorizontalWindowMaintenanceWhenIdle(
             bookPages,
@@ -81,14 +69,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
     List<_NativeChapter> chapters,
   ) {
     final page = bookPages[index];
-    debugPrint(
-      '[reader-horizontal] pageChanged index=$index '
-      'target=${page.chapterIndex}:${page.pageIndex} '
-      'controller=${_pageController?.page?.toStringAsFixed(2)} '
-      'generation=$_pageControllerGeneration '
-      'window=$_horizontalFirstChapter..$_horizontalLastChapter '
-      'items=${bookPages.length}',
-    );
     if (page.isBlank) return;
     if (page.chapterIndex == _chapterIndex && page.pageIndex == _pageIndex) {
       return;
@@ -114,10 +94,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
           chapterIndex: _chapterIndex,
           pageIndex: _pageIndex,
         ),
-      );
-      debugPrint(
-        '[reader-horizontal] defer page state until idle '
-        'target=${page.chapterIndex}:${page.pageIndex}',
       );
       return;
     }
@@ -208,11 +184,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
     final nextLastChapter = _takeHorizontalForwardExpansion(chapters);
     if (nextLastChapter == null) return false;
     final boundedLastChapter = math.min(nextLastChapter, _chapterIndex + 2);
-    debugPrint(
-      '[reader-horizontal] commit forward expansion '
-      'window=$_horizontalFirstChapter..$boundedLastChapter '
-      'controller=${_pageController?.page?.toStringAsFixed(2)}',
-    );
     _setReaderState(() => _horizontalLastChapter = boundedLastChapter);
     return true;
   }
@@ -241,25 +212,12 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
     final removedBookPages = bookPages
         .takeWhile((page) => page.chapterIndex < nextFirstChapter)
         .length;
-    final localTargetPage = targetPage - removedBookPages;
     final removedControllerPages = usesTwoPageLayout
         ? removedBookPages ~/ 2
         : removedBookPages;
-    final nextControllerPage = usesTwoPageLayout
-        ? localTargetPage ~/ 2
-        : localTargetPage;
     final previousControllerOrigin = _horizontalPageIndexMap.origin;
     final nextControllerOrigin =
         previousControllerOrigin + removedControllerPages;
-    debugPrint(
-      '[reader-horizontal] commit forward contraction '
-      'target=$_chapterIndex:$_pageIndex '
-      'window=$_horizontalFirstChapter..$_horizontalLastChapter '
-      'nextFirst=$nextFirstChapter targetPage=$targetPage '
-      'nextControllerPage=${nextControllerOrigin + nextControllerPage} '
-      'origin=$previousControllerOrigin->$nextControllerOrigin '
-      'items=${bookPages.length}',
-    );
     _horizontalForwardContractionPending = false;
     final expandedLastChapter =
         _takeHorizontalForwardExpansion(chapters) ?? _horizontalLastChapter;
@@ -292,7 +250,8 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
       direction,
       textScaler,
     );
-    if (!chapter.hasLoadedText || !_pageCache.containsKey(layoutFingerprint)) {
+    if (!chapter.isReadyForLayout ||
+        !_pageCache.containsKey(layoutFingerprint)) {
       if (!_horizontalBackwardExpansionWarmPending) {
         _horizontalBackwardExpansionWarmPending = true;
         unawaited(
@@ -308,12 +267,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
       }
       return false;
     }
-    debugPrint(
-      '[reader-horizontal] commit backward expansion '
-      'target=$_chapterIndex:$_pageIndex '
-      'window=$_horizontalFirstChapter..$_horizontalLastChapter '
-      'nextFirst=$nextFirstChapter controller=${_pageController?.page?.toStringAsFixed(2)}',
-    );
     _horizontalBackwardExpansionPending = false;
     _horizontalBackwardExpansionWarmPending = false;
     if (_pageMode != NativePageMode.horizontalSlide) {
@@ -356,11 +309,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
       _horizontalFirstChapter = nextFirstChapter;
       _horizontalLastChapter = nextLastChapter;
     });
-    debugPrint(
-      '[reader-horizontal] backward origin '
-      '$previousControllerOrigin->$nextControllerOrigin '
-      'addedControllerPages=$addedControllerPages',
-    );
     return true;
   }
 
@@ -377,10 +325,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
 
     void run() {
       if (!isCurrentController()) {
-        debugPrint(
-          '[reader-horizontal] idle callback stale '
-          'requestedGeneration=$controllerGeneration currentGeneration=$_pageControllerGeneration',
-        );
         onStale?.call();
         return;
       }
@@ -400,11 +344,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
       run();
       return;
     }
-    debugPrint(
-      '[reader-horizontal] defer window maintenance until idle '
-      'controller=${pageController.page?.toStringAsFixed(2)} '
-      'generation=$controllerGeneration',
-    );
     late VoidCallback onIdle;
     onIdle = () {
       if (scrolling.value) return;
@@ -478,11 +417,8 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
             );
 
     try {
-      await _loadIndexedChapterWindow(
-        chapters,
-        chapterIndex,
-        retainAroundCurrentChapter: true,
-      );
+      await _loadIndexedChapter(chapters, chapterIndex);
+      _retainIndexedChapterContent(chapters);
     } catch (error) {
       debugPrint('prepare previous native chapter failed: $error');
       _horizontalBackwardExpansionWarmPending = false;
@@ -569,15 +505,6 @@ extension _NativeReaderHorizontalWindowMaintenance on _NativeReaderPageState {
       }
       _commitHorizontalForwardExpansion(chapters);
     }
-
-    debugPrint(
-      '[reader-horizontal] window maintenance requested '
-      'controller=${pageController.page?.toStringAsFixed(2)} '
-      'generation=$controllerGeneration '
-      'pending=backward=$_horizontalBackwardExpansionPending '
-      'contraction=$_horizontalForwardContractionPending '
-      'forward=$_horizontalForwardExpansionPending',
-    );
 
     _runWhenHorizontalControllerIsIdle(
       pageController,

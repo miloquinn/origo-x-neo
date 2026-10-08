@@ -19,6 +19,8 @@ void main() {
   for (final entry in const {
     1: 'e45dffe131e8e1ec4eacc95917440a2fd0c7610ac871c53a630802ff8771d2cb',
     2: '9699728e43dd5d37a38e12571e4170bbde69a7e97dbac557abd93bb0ac107f1e',
+    4: '82e50ff202e1ae7370e64947943e929f2ec2596fd04dd974fd8863fd4cd59170',
+    5: '9b42188d86203ef19789d77f4ce54caffaa879fd508d84c09f5784ceef3ef27d',
   }.entries) {
     test(
       'rule revision bypasses revision ${entry.key} catalog and content on disk',

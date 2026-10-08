@@ -19,6 +19,7 @@ extension _BookSourcePersistentPagination on _BookSourceReaderPageState {
     // Continuous text does not measure page boundaries or persist layouts.
     if (_pageMode == BookSourcePageMode.verticalScroll) return;
     final generation = PaginationCacheDao.epoch;
+    final catalogGeneration = _catalogGeneration;
     final text = _readableChapterText[index];
     if (text == null) return;
     final revision = sha256.convert(utf8.encode(text)).toString();
@@ -36,6 +37,7 @@ extension _BookSourcePersistentPagination on _BookSourceReaderPageState {
       debugPrint('load online pagination cache failed: $error');
     }
     if (!mounted ||
+        catalogGeneration != _catalogGeneration ||
         generation != PaginationCacheDao.epoch ||
         _readableChapterText[index] != text) {
       return;

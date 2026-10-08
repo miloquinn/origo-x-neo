@@ -500,6 +500,7 @@ extension _NativeReaderShell on _NativeReaderPageState {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         BookOpenTransition.markReaderContentReady(context);
+        _attachExistingReaderAloudSession();
         _syncCloudReading();
       }
     });

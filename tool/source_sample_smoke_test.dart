@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 import 'package:xxread/book_sources/source_engine/source_config.dart';
+import 'package:xxread/book_sources/source_engine/source_debug.dart';
 import 'package:xxread/book_sources/source_engine/source_http_transport.dart';
 import 'package:xxread/book_sources/source_engine/source_login_session.dart';
 import 'package:xxread/book_sources/source_engine/source_runtime.dart';
@@ -56,6 +57,9 @@ void main() {
             requestTimeout: const Duration(seconds: 12),
           ),
           loginSessionStore: _MemorySessionStore(),
+          debugRecorder: Platform.environment['SOURCE_SAMPLE_TRACE'] == 'true'
+              ? _SafeNetworkTrace()
+              : null,
         );
         final cancellation = BookDownloadCancellation();
         final timer = Timer(const Duration(seconds: 90), cancellation.cancel);
@@ -135,6 +139,33 @@ void main() {
         }
       },
       timeout: const Timeout(Duration(minutes: 2)),
+    );
+  }
+}
+
+// Request values, cookies, headers and response text stay out of trace output.
+class _SafeNetworkTrace implements SourceDebugRecorder {
+  @override
+  void stageStarted(String stage) {}
+  @override
+  void stageSucceeded(String stage, String summary) {}
+  @override
+  void stageFailed(String stage, Object error) {}
+  @override
+  void recordNetwork({
+    required String stage,
+    required String method,
+    required Uri url,
+    int? statusCode,
+    String? bodyPreview,
+    Object? error,
+    Duration? elapsed,
+  }) {
+    stdout.writeln(
+      'SMOKE NETWORK $stage $method ${url.scheme}://${url.host}'
+      '${url.scheme == 'data' ? '' : url.path} status=$statusCode '
+      'elapsedMs=${elapsed?.inMilliseconds} errorType=${error?.runtimeType} '
+      'queryKeys=${url.queryParameters.keys.join(",")}',
     );
   }
 }

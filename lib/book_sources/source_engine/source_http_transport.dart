@@ -630,5 +630,9 @@ BookSourceProtocolException _requestFailure(
   }
   return BookSourceProtocolException(
     'Reading source returned HTTP ${response!.statusCode} (${uri.host}${uri.path}).${detail == null ? '' : ' $detail'}',
+    statusCode: response.statusCode,
+    isTransient:
+        response.statusCode == HttpStatus.tooManyRequests ||
+        response.statusCode! >= HttpStatus.internalServerError,
   );
 }

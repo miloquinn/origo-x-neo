@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -19,10 +20,15 @@ import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/utils/book_open_transition.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/widgets/reader_annotated_text_page.dart';
+import 'package:xxread/widgets/reader_control_chrome.dart';
+import 'package:xxread/pages/settings/replace_rules_page.dart';
 import 'package:xxread/widgets/reader_navigation_sheet.dart';
 import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 import 'package:xxread/widgets/reader_theme_background.dart';
+
+import 'support/controllable_replace_rule_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -143,6 +149,225 @@ void main() {
     await _pumpUntilFound(tester, find.textContaining('晨曦'));
     expect(find.textContaining('风暴'), findsNothing);
     expect(_richTextContaining('墨色'), findsNothing);
+  });
+
+  testWidgets('native live purification restores original title and body', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(_replacementReader(bookFile, replaceRuleService));
+    await _waitForNativeText(tester, '风暴');
+    await replaceRuleService.upsert(
+      const ReplaceRule(
+        id: 'live-title',
+        name: 'title',
+        pattern: '风暴',
+        replacement: '晨曦',
+        isRegex: false,
+        scopeTitle: true,
+        scopeContent: false,
+      ),
+    );
+    await replaceRuleService.upsert(
+      const ReplaceRule(
+        id: 'live-body',
+        name: 'body',
+        pattern: '墨色',
+        replacement: '银色',
+        isRegex: false,
+      ),
+    );
+    await _waitForNativeText(tester, '晨曦');
+    expect(find.textContaining('风暴'), findsNothing);
+    await replaceRuleService.setDefaultEnabled(false);
+    await _waitForNativeText(tester, '风暴');
+    expect(find.textContaining('晨曦'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('native latest purification wins when old body finishes last', (
+    tester,
+  ) async {
+    await replaceRuleService.close();
+    final controlled = ControllableReplaceRuleService();
+    replaceRuleService = controlled;
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    SharedPreferences.setMockInitialValues({
+      ReaderSettingsStore.pageModeKey: ReaderPageMode.verticalScroll.name,
+      'native_reader_txt_chapter_title_page_enabled': false,
+    });
+    await tester.pumpWidget(_replacementReader(bookFile, controlled));
+    await _waitForNativeText(tester, '墨色');
+    controlled.delayBodies = true;
+    await controlled.upsert(
+      const ReplaceRule(
+        id: 'race',
+        name: 'body',
+        pattern: '墨色',
+        replacement: '银色',
+        isRegex: false,
+      ),
+    );
+    await _waitForPendingBodies(tester, controlled, 1);
+    // A rebuild during the suspended replacement must not mark raw text as
+    // already purified, or prevent the next generation from starting.
+    await tester.pump();
+    await controlled.upsert(
+      const ReplaceRule(
+        id: 'race',
+        name: 'body',
+        pattern: '墨色',
+        replacement: '金色',
+        isRegex: false,
+      ),
+    );
+    await _waitForPendingBodies(tester, controlled, 2);
+    controlled.pendingBodies[1].complete();
+    await _waitForNativeText(tester, '金色');
+    controlled.pendingBodies[0].complete();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(_richTextContaining('金色'), findsWidgets);
+    expect(_richTextContaining('银色'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('native source rules read registered nested source config', (
+    tester,
+  ) async {
+    await replaceRuleService.upsert(
+      const ReplaceRule(
+        id: 'source-body',
+        name: 'body',
+        pattern: '墨色',
+        replacement: '银色',
+        isRegex: false,
+        scope: 'https://actual-source.example',
+      ),
+    );
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    SharedPreferences.setMockInitialValues({
+      ReaderSettingsStore.pageModeKey: ReaderPageMode.verticalScroll.name,
+      'native_reader_txt_chapter_title_page_enabled': false,
+      ReplaceRuleService.preferenceKey: jsonEncode(
+        replaceRuleService.rules.map((r) => r.toJson()).toList(),
+      ),
+    });
+    await tester.pumpWidget(
+      _replacementReader(
+        bookFile,
+        replaceRuleService,
+        sourceJson: jsonEncode({
+          'name': 'Registered source',
+          'manifestUrl': 'https://manifest.example/source.json',
+          'sourceConfig': {
+            'bookSourceUrl': 'https://actual-source.example',
+            'bookSourceName': 'Nested source',
+          },
+        }),
+      ),
+    );
+    await _waitForNativeText(tester, '银色');
+    expect(_richTextContaining('墨色'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('native initial title batch retries after a rule save', (
+    tester,
+  ) async {
+    await replaceRuleService.close();
+    final controlled = ControllableReplaceRuleService()..delayNextTitle = true;
+    replaceRuleService = controlled;
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(_replacementReader(bookFile, controlled));
+    for (
+      var attempt = 0;
+      attempt < 40 && controlled.pendingTitles.isEmpty;
+      attempt++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 25)),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(controlled.pendingTitles, hasLength(1));
+    await controlled.upsert(
+      const ReplaceRule(
+        id: 'initial-title',
+        name: 'title',
+        pattern: '风暴',
+        replacement: '晨曦',
+        isRegex: false,
+        scopeTitle: true,
+        scopeContent: false,
+      ),
+    );
+    controlled.pendingTitles.single.complete();
+    await _waitForNativeText(tester, '晨曦');
+    expect(find.textContaining('风暴'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('native book rule entry shares the DB key and current effects', (
+    tester,
+  ) async {
+    bookFile.writeAsStringSync('第十二章 风暴将至\n墨色的云。\n第十三章 另一章\n远古的云。');
+    await replaceRuleService.upsert(
+      const ReplaceRule(
+        id: 'current-body',
+        name: 'body',
+        pattern: '墨色',
+        replacement: '银色',
+        isRegex: false,
+      ),
+    );
+    await replaceRuleService.upsert(
+      const ReplaceRule(
+        id: 'neighbor-body',
+        name: 'other body',
+        pattern: '远古',
+        replacement: '现代',
+        isRegex: false,
+      ),
+    );
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      _replacementReader(bookFile, replaceRuleService, bookId: 7),
+    );
+    await _waitForNativeText(tester, '风暴');
+    await tester.tapAt(tester.getCenter(find.byType(NativeReaderPage)));
+    await tester.pump(const Duration(milliseconds: 350));
+    tester
+        .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+        .onBookSettings!();
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const Key('book-settings-replace-rules-action')),
+    );
+    await tester.pumpAndSettle();
+    for (
+      var attempt = 0;
+      attempt < 30 && find.byType(ReplaceRulesPage).evaluate().isEmpty;
+      attempt++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    final rulesPage = tester.widget<ReplaceRulesPage>(
+      find.byType(ReplaceRulesPage),
+    );
+    expect(rulesPage.bookId, 'book:7');
+    expect(rulesPage.effectiveRuleIds, contains('current-body'));
+    expect(rulesPage.effectiveRuleIds, isNot(contains('neighbor-body')));
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('TXT chapter title is a dedicated first page', (tester) async {
@@ -589,6 +814,122 @@ void main() {
     },
   );
 
+  for (final chapterTitlePageEnabled in [true, false]) {
+    for (final scrollByChapter in [true, false]) {
+      testWidgets('vertical TXT TOC jump aligns the chapter start '
+          '(titlePage=$chapterTitlePageEnabled, '
+          'scrollByChapter=$scrollByChapter)', (tester) async {
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey: ReaderPageMode.verticalScroll.name,
+          ReaderSettingsStore.chapterTitlePageKey: chapterTitlePageEnabled,
+          ReaderSettingsStore.scrollByChapterKey: scrollByChapter,
+        });
+        const targetTitle = '第8章 远方的灯塔';
+        bookFile.writeAsStringSync(
+          List.generate(9, (chapterIndex) {
+            final chapterNumber = chapterIndex + 1;
+            final title = chapterNumber == 8
+                ? targetTitle
+                : '第$chapterNumber章 长篇测试章节';
+            final body = List.generate(
+              48,
+              (paragraphIndex) =>
+                  '第$chapterNumber章第$paragraphIndex段正文，'
+                  '用于确保目录远距离跳转需要跨过多个长章节。',
+            ).join('\n\n');
+            return '$title\n\n$body';
+          }).join('\n\n'),
+        );
+        await tester.binding.setSurfaceSize(const Size(400, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NativeReaderPage(
+              replaceRuleService: replaceRuleService,
+              book: Book(
+                title: '竖向目录对齐测试',
+                filePath: bookFile.path,
+                format: 'txt',
+                textEncoding: 'utf8',
+                fileModifiedTime: bookFile
+                    .lastModifiedSync()
+                    .millisecondsSinceEpoch,
+              ),
+            ),
+          ),
+        );
+
+        final readingWindow = find.byKey(
+          const ValueKey('native-vertical-reading-window'),
+        );
+        await tester.runAsync(() async {
+          for (var attempt = 0; attempt < 200; attempt++) {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
+            if (readingWindow.evaluate().isNotEmpty) return;
+          }
+        });
+        await _pumpUntilFound(tester, readingWindow);
+        expect(_chapterHeading('第1章 长篇测试章节'), findsOneWidget);
+
+        for (var jump = 0; jump < 2; jump++) {
+          await _jumpToTxtChapter(tester, targetTitle);
+          final heading = _chapterHeading(targetTitle);
+          await _pumpUntilFound(tester, heading);
+          await tester.pumpAndSettle();
+
+          final visibleTop = _verticalReadingContentTop(tester, readingWindow);
+          if (chapterTitlePageEnabled) {
+            final pageRect = _chapterTitlePageFrameRect(tester, heading);
+            expect(
+              pageRect.top,
+              closeTo(visibleTop, 1),
+              reason:
+                  'A dedicated chapter-title page must align its whole '
+                  'page frame to the visible reading window after TOC jump '
+                  '${jump + 1}.',
+            );
+            expect(
+              pageRect.height,
+              closeTo(_verticalReadingContentHeight(tester, readingWindow), 1),
+            );
+          } else {
+            final headingRect = tester.getRect(heading);
+            expect(
+              headingRect.top,
+              closeTo(visibleTop, 1),
+              reason:
+                  'An inline chapter heading must start at the visible '
+                  'reading window after TOC jump ${jump + 1}.',
+            );
+            final bodyRect = _targetChapterBodyRect(tester, targetTitle);
+            expect(bodyRect.top, greaterThan(headingRect.bottom));
+            expect(
+              headingRect.center.dy,
+              lessThan(
+                visibleTop +
+                    _verticalReadingContentHeight(tester, readingWindow) / 3,
+              ),
+              reason:
+                  'The chapter start must not be centered like a dedicated '
+                  'title page when the title-page setting is disabled.',
+            );
+          }
+          if (jump == 0) {
+            await tester.drag(readingWindow, const Offset(0, -520));
+            await tester.pumpAndSettle();
+          }
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      });
+    }
+  }
+
   testWidgets(
     'horizontal TOC jump mounts the target title on the first frame and keeps the previous page ready',
     (tester) async {
@@ -963,4 +1304,162 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
     'Timed out waiting for $finder. Texts: $texts. '
     'Exception: ${tester.takeException()}',
   );
+}
+
+Finder _chapterHeading(String title) => find.byWidgetPredicate(
+  (widget) =>
+      widget is Text &&
+      widget.data == title &&
+      (widget.key == ReaderChapterTitlePage.contentKey ||
+          widget.key == ReaderInlineChapterTitle.contentKey),
+  description: 'rendered chapter heading "$title"',
+);
+
+Future<void> _jumpToTxtChapter(WidgetTester tester, String title) async {
+  final readingWindow = find.byKey(
+    const ValueKey('native-vertical-reading-window'),
+  );
+  await tester.tapAt(tester.getRect(readingWindow).center);
+  await tester.pumpAndSettle();
+  tester
+      .widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.format_list_bulleted_rounded),
+          matching: find.byType(IconButton),
+        ),
+      )
+      .onPressed!();
+  await tester.pumpAndSettle();
+  final navigationSheet = find.byType(ReaderNavigationSheet);
+  await tester.enterText(
+    find.descendant(of: navigationSheet, matching: find.byType(TextField)),
+    title,
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.descendant(
+      of: navigationSheet,
+      matching: find.byWidgetPredicate(
+        (widget) => widget is Text && widget.data == title,
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
+double _verticalReadingContentTop(WidgetTester tester, Finder readingWindow) {
+  final padding = tester
+      .widget<Padding>(readingWindow)
+      .padding
+      .resolve(TextDirection.ltr);
+  return tester.getTopLeft(readingWindow).dy + padding.top;
+}
+
+double _verticalReadingContentHeight(
+  WidgetTester tester,
+  Finder readingWindow,
+) {
+  final padding = tester
+      .widget<Padding>(readingWindow)
+      .padding
+      .resolve(TextDirection.ltr);
+  return tester.getSize(readingWindow).height - padding.vertical;
+}
+
+Rect _chapterTitlePageFrameRect(WidgetTester tester, Finder heading) {
+  final readingWindow = find.byKey(
+    const ValueKey('native-vertical-reading-window'),
+  );
+  final expectedHeight = _verticalReadingContentHeight(tester, readingWindow);
+  Rect? frame;
+  heading.evaluate().single.visitAncestorElements((ancestor) {
+    final renderObject = ancestor.renderObject;
+    if (renderObject is! RenderBox || !renderObject.hasSize) return true;
+    if ((renderObject.size.height - expectedHeight).abs() <= 1) {
+      frame = renderObject.localToGlobal(Offset.zero) & renderObject.size;
+      return false;
+    }
+    return true;
+  });
+  expect(
+    frame,
+    isNotNull,
+    reason: 'The dedicated chapter title must be mounted in a full-page cell.',
+  );
+  return frame!;
+}
+
+Rect _targetChapterBodyRect(WidgetTester tester, String title) {
+  final targetPage = tester
+      .widgetList<ReaderAnnotatedTextPage>(find.byType(ReaderAnnotatedTextPage))
+      .singleWhere(
+        (page) =>
+            page.chapterTitle == title && page.page.showsInlineChapterTitle,
+      );
+  final body = find.descendant(
+    of: find.byWidget(targetPage),
+    matching: find.byType(RichText),
+  );
+  final bodyParagraph = body.evaluate().firstWhere((element) {
+    var belongsToHeading = false;
+    element.visitAncestorElements((ancestor) {
+      if (ancestor.widget is ReaderInlineChapterTitle) {
+        belongsToHeading = true;
+        return false;
+      }
+      if (ancestor.widget == targetPage) return false;
+      return true;
+    });
+    return !belongsToHeading;
+  });
+  final renderObject = bodyParagraph.renderObject! as RenderBox;
+  return renderObject.localToGlobal(Offset.zero) & renderObject.size;
+}
+
+Widget _replacementReader(
+  File file,
+  ReplaceRuleService rules, {
+  String? sourceJson,
+  int? bookId,
+}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: NativeReaderPage(
+    replaceRuleService: rules,
+    book: Book(
+      title: '测试书',
+      filePath: file.path,
+      format: 'txt',
+      textEncoding: 'utf8',
+      id: bookId,
+      sourceJson: sourceJson,
+      sourceLocator: 'source-id-that-is-not-a-url',
+      fileModifiedTime: file.lastModifiedSync().millisecondsSinceEpoch,
+    ),
+  ),
+);
+
+Future<void> _waitForNativeText(WidgetTester tester, String text) async {
+  for (var attempt = 0; attempt < 40; attempt++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 25)),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    if (find.textContaining(text, findRichText: true).evaluate().isNotEmpty) {
+      return;
+    }
+  }
+  expect(find.textContaining(text, findRichText: true), findsWidgets);
+}
+
+Future<void> _waitForPendingBodies(
+  WidgetTester tester,
+  ControllableReplaceRuleService rules,
+  int count,
+) async {
+  for (var attempt = 0; attempt < 40; attempt++) {
+    await tester.pump(const Duration(milliseconds: 25));
+    if (rules.pendingBodies.length >= count) return;
+  }
+  expect(rules.pendingBodies.length, greaterThanOrEqualTo(count));
 }

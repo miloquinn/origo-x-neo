@@ -28,6 +28,7 @@ class SourceRuntime {
     SourceConcurrencyLimiter? concurrencyLimiter,
     SourceDebugRecorder? debugRecorder,
     SourceInteractionCoordinatorPort? interactionCoordinator,
+    SourceRuntimeState? state,
     SourceBrowserSessionClient browserClient =
         const SourceBrowserSessionClient(),
   }) : _transport =
@@ -43,7 +44,7 @@ class SourceRuntime {
     };
     _trace = SourceRuntimeTrace(debugRecorder);
     _scripts = SourceRuntimeScriptOwner(scriptEvaluator);
-    _state = SourceRuntimeState();
+    _state = state ?? SourceRuntimeState();
     _sessions = SourceRuntimeSessionManager(
       loginSessionStore ?? SecureSourceLoginSessionStore(),
       cookieTransport,
@@ -130,6 +131,42 @@ class SourceRuntime {
       return Future<T>.error(StateError('The source runtime is closed.'));
     }
     return action();
+  }
+
+  bool hasReadingCatalogState(
+    RegisteredBookSource registered,
+    String bookId,
+    String identity, {
+    String? chapterId,
+  }) {
+    if (_closed) return false;
+    try {
+      return _state.hasCatalogIdentity(
+        sourceFromRegistered(registered),
+        bookId,
+        identity,
+        chapterId: chapterId,
+      );
+    } on FormatException {
+      return _state.hasExternalCatalogIdentity(registered.id, bookId, identity);
+    }
+  }
+
+  void rememberReadingCatalogIdentity(
+    RegisteredBookSource registered,
+    String bookId,
+    String identity,
+  ) {
+    if (_closed) return;
+    try {
+      _state.rememberCatalogIdentity(
+        sourceFromRegistered(registered),
+        bookId,
+        identity,
+      );
+    } on FormatException {
+      _state.rememberExternalCatalogIdentity(registered.id, bookId, identity);
+    }
   }
 
   Future<BookSourceSearchPage> search(

@@ -21,6 +21,7 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         BookOpenTransition.markReaderContentReady(context);
+        _attachExistingReaderAloudSession();
         _syncCloudReading();
       }
     });
@@ -105,7 +106,10 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
               FilledButton(
                 onPressed: _chapters.isEmpty
                     ? _initialize
-                    : () => _loadChapter(_chapterIndex, saveCurrent: false),
+                    : () => _loadChapter(
+                        _requestedChapterIndex ?? _chapterIndex,
+                        saveCurrent: false,
+                      ),
                 child: Text(context.l10n.retry),
               ),
             ],

@@ -27,6 +27,263 @@ void main() {
 
   setUp(AppDistribution.debugReset);
 
+  for (final locale in [const Locale('zh'), const Locale('de')]) {
+    testWidgets(
+      'trial expiry wraps on a narrow large-text phone in ${locale.languageCode}',
+      (tester) async {
+        _usePlatform(TargetPlatform.iOS);
+        addTearDown(_resetPlatform);
+        tester.view.physicalSize = const Size(320, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final store = _FakeAppleStore();
+        final account = _TestAccount(
+          store: store,
+          premium: true,
+          source: 'promotion',
+          expiresAt: DateTime(2026, 12, 2, 22, 40),
+        );
+        addTearDown(account.dispose);
+        addTearDown(store.close);
+        final previewKey = GlobalKey();
+        await _pumpPage(
+          tester,
+          account: account,
+          themeMode: ThemeMode.dark,
+          locale: locale,
+          textScaler: const TextScaler.linear(1.5),
+          previewKey: previewKey,
+          previewFont: screenshotDirectory != null,
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('purchase-adaptive-scroll')),
+          findsOneWidget,
+        );
+        final expiry = find.byKey(const ValueKey('premium-membership-source'));
+        expect(tester.widget<Text>(expiry).maxLines, isNull);
+        expect(
+          find.textContaining(locale.languageCode == 'zh' ? '10:40' : '22:40'),
+          findsOneWidget,
+        );
+        if (screenshotDirectory != null) {
+          await _capture(
+            tester,
+            previewKey,
+            '$screenshotDirectory/premium-trial-narrow-${locale.languageCode}.png',
+          );
+        }
+        await _scrollVisible(tester, const ValueKey('account-apple-purchase'));
+        expect(
+          find.byKey(const ValueKey('account-apple-purchase')).hitTestable(),
+          findsOneWidget,
+        );
+        await _scrollVisible(tester, const ValueKey('premium-redeem-entry'));
+        expect(
+          find.byKey(const ValueKey('premium-redeem-entry')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+        _resetPlatform();
+      },
+    );
+  }
+
+  for (final spec in [
+    (mode: ThemeMode.light, use24Hour: false),
+    (mode: ThemeMode.dark, use24Hour: false),
+    (mode: ThemeMode.light, use24Hour: true),
+    (mode: ThemeMode.dark, use24Hour: true),
+  ]) {
+    final mode = spec.mode;
+    testWidgets(
+      'trial summary stays together and fits the phone in ${mode.name}, 24h=${spec.use24Hour}',
+      (tester) async {
+        _usePlatform(TargetPlatform.iOS);
+        addTearDown(_resetPlatform);
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final store = _FakeAppleStore();
+        final account = _TestAccount(
+          store: store,
+          premium: true,
+          source: 'promotion',
+          permanentReader: false,
+          expiresAt: DateTime(2026, 12, 2, 22, 40),
+        );
+        addTearDown(account.dispose);
+        addTearDown(store.close);
+        final previewKey = GlobalKey();
+        await _pumpPage(
+          tester,
+          account: account,
+          themeMode: mode,
+          previewKey: previewKey,
+          previewFont: screenshotDirectory != null,
+          alwaysUse24HourFormat: spec.use24Hour,
+        );
+        await tester.pumpAndSettle();
+
+        final trial = find.byKey(const ValueKey('premium-trial-status'));
+        expect(trial, findsOneWidget);
+        expect(
+          find.descendant(
+            of: trial,
+            matching: find.byKey(const ValueKey('premium-membership-source')),
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('探元体验有效至'), findsOneWidget);
+        expect(
+          find.textContaining(spec.use24Hour ? '22:40' : '10:40'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('下午'),
+          spec.use24Hour ? findsNothing : findsOneWidget,
+        );
+        expect(find.byType(PurchaseArtwork), findsNothing);
+        expect(tester.getRect(trial).height, lessThanOrEqualTo(64));
+        final benefits = tester.getRect(
+          find.byKey(const ValueKey('premium-benefits')),
+        );
+        final footer = tester.getRect(
+          find.byKey(const ValueKey('purchase-fixed-footer')),
+        );
+        expect(benefits.bottom, lessThanOrEqualTo(footer.top));
+        for (final key in [
+          'account-apple-purchase',
+          'account-apple-restore',
+          'premium-redeem-entry',
+        ]) {
+          expect(find.byKey(ValueKey(key)).hitTestable(), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+        if (screenshotDirectory != null) {
+          await _capture(
+            tester,
+            previewKey,
+            '$screenshotDirectory/premium-trial-phone-${mode.name}${spec.use24Hour ? '-24h' : ''}.png',
+          );
+        }
+        _resetPlatform();
+      },
+    );
+  }
+
+  testWidgets(
+    'details stay in the header menu and do not occupy the action area',
+    (tester) async {
+      AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+      final store = _FakeAppleStore();
+      final account = _TestAccount(store: store, premium: true);
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+      await _pumpPage(tester, account: account);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('premium-benefits-details')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('premium-purchase-details')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('premium-details-menu')).hitTestable(),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('premium-details-menu')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('premium-benefits-details')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('premium-purchase-details')).hitTestable(),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('premium-menu-privacy')));
+      await tester.pumpAndSettle();
+      expect(find.byType(PremiumPolicyPage), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final premium in [false, true]) {
+    testWidgets('restore and redemption share a row, premium=$premium', (
+      tester,
+    ) async {
+      AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final store = _FakeAppleStore();
+      final account = _TestAccount(store: store, premium: premium);
+      addTearDown(account.dispose);
+      addTearDown(store.close);
+      await _pumpPage(tester, account: account);
+      await tester.pumpAndSettle();
+
+      final restore = find.byKey(const ValueKey('account-apple-restore'));
+      final redeem = find.byKey(const ValueKey('premium-redeem-entry'));
+      expect(restore.hitTestable(), findsOneWidget);
+      expect(redeem.hitTestable(), findsOneWidget);
+      expect(
+        tester.getCenter(restore).dy,
+        closeTo(tester.getCenter(redeem).dy, 1),
+      );
+      expect(tester.getRect(restore).height, greaterThanOrEqualTo(48));
+      expect(tester.getRect(redeem).height, greaterThanOrEqualTo(48));
+      if (premium) {
+        expect(find.byKey(const ValueKey('premium-store-price')), findsNothing);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('owned Explore hides automatic product loading failure', (
+    tester,
+  ) async {
+    AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+    final store = _FakeAppleStore(productAvailable: false);
+    final account = _TestAccount(store: store, premium: true);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('premium-active')), findsOneWidget);
+    expect(find.byKey(const ValueKey('premium-purchase-status')), findsNothing);
+    await _scrollVisible(tester, const ValueKey('account-apple-restore'));
+    expect(
+      find.byKey(const ValueKey('account-apple-restore')).hitTestable(),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('owned Explore still reports a real restore failure', (
+    tester,
+  ) async {
+    AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+    final store = _FakeAppleStore();
+    final account = _TestAccount(
+      store: store,
+      premium: true,
+      purchasePhaseOverride: StorePurchasePhase.failed,
+      purchaseErrorOverride: '恢复购买失败',
+    );
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+
+    expect(find.text('恢复购买失败'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Apple sandbox keeps normal Explore purchase actions', (
     tester,
   ) async {
@@ -269,7 +526,7 @@ void main() {
     addTearDown(store.close);
     await _pumpPage(tester, account: account);
     await tester.pumpAndSettle();
-    expect(find.text('探元体验'), findsOneWidget);
+    expect(find.byKey(const ValueKey('premium-trial-status')), findsOneWidget);
     expect(find.textContaining('探元体验有效至'), findsWidgets);
     expect(
       find.byKey(const ValueKey('account-redemption-code')),
@@ -334,12 +591,12 @@ void main() {
               widget is PurchaseArtwork &&
               widget.scene == PurchaseArtworkScene.extensions,
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.text('更多书源协议'), findsWidgets);
       expect(find.textContaining('局域网'), findsOneWidget);
       final pageColors = Theme.of(
-        tester.element(find.byType(PurchaseArtwork)),
+        tester.element(find.byKey(const ValueKey('premium-membership-card'))),
       ).colorScheme;
       await _tapVisible(tester, const ValueKey('premium-benefits-details'));
       expect(find.byType(PurchaseDetailsPage), findsOneWidget);
@@ -733,10 +990,7 @@ void main() {
     expect(find.byKey(const ValueKey('premium-active')), findsOneWidget);
     expect(find.text('购买说明'), findsNothing);
     expect(find.byKey(const ValueKey('account-redemption-code')), findsNothing);
-    expect(
-      find.byKey(const ValueKey('premium-purchase-details')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('premium-details-menu')), findsOneWidget);
     _resetPlatform();
   });
 
@@ -1008,6 +1262,7 @@ Future<void> _pumpPage(
   GlobalKey? previewKey,
   bool previewFont = false,
   Locale locale = const Locale('zh'),
+  bool alwaysUse24HourFormat = false,
 }) async {
   await tester.pumpWidget(
     ChangeNotifierProvider<MemberAccountController>.value(
@@ -1020,7 +1275,10 @@ Future<void> _pumpPage(
         darkTheme: _theme(Brightness.dark, previewFont: previewFont),
         themeMode: themeMode,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: textScaler,
+            alwaysUse24HourFormat: alwaysUse24HourFormat,
+          ),
           child: child!,
         ),
         home: RepaintBoundary(
@@ -1042,6 +1300,11 @@ Future<void> _tapVisible(WidgetTester tester, ValueKey<String> key) async {
 }
 
 Future<void> _scrollVisible(WidgetTester tester, ValueKey<String> key) async {
+  if (key.value == 'premium-benefits-details' ||
+      key.value == 'premium-purchase-details') {
+    await tester.tap(find.byKey(const ValueKey('premium-details-menu')));
+    await tester.pumpAndSettle();
+  }
   final target = find.byKey(key);
   expect(target, findsOneWidget);
   await tester.ensureVisible(target);
@@ -1106,6 +1369,7 @@ class _TestAccount extends MemberAccountController {
     this.authenticated = true,
     this.purchaseLoadingOverride,
     this.purchasePhaseOverride,
+    this.purchaseErrorOverride,
     this.purchaseUrl,
   }) : super(purchaseStore: store);
 
@@ -1118,6 +1382,7 @@ class _TestAccount extends MemberAccountController {
   final bool authenticated;
   final bool? purchaseLoadingOverride;
   final StorePurchasePhase? purchasePhaseOverride;
+  final String? purchaseErrorOverride;
   final String? purchaseUrl;
 
   @override
@@ -1130,6 +1395,10 @@ class _TestAccount extends MemberAccountController {
   @override
   StorePurchasePhase get premiumPurchasePhase =>
       purchasePhaseOverride ?? super.premiumPurchasePhase;
+
+  @override
+  String? get premiumPurchaseError =>
+      purchaseErrorOverride ?? super.premiumPurchaseError;
 
   @override
   MemberMembershipConfig get membershipConfig => MemberMembershipConfig(

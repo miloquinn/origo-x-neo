@@ -3039,7 +3039,7 @@
   "replaceRulesDeleteValue": "删除",
   "replaceRulesCreate": "新建规则",
   "replaceRulesEmptyTitle": "还没有替换规则",
-  "replaceRulesEmptyBody": "可以导入阅读书源 JSON，或新建一条正则规则。",
+  "replaceRulesEmptyBody": "可以导入净化规则 JSON，或新建文字、正则规则。",
   "replaceRulesNoSearchResults": "没有匹配的规则",
   "replaceRulesCreateTitle": "新建替换规则",
   "replaceRulesEditTitle": "编辑替换规则",
@@ -3052,7 +3052,7 @@
   "replaceRulesScopeContentLabel": "作用于正文",
   "replaceRulesGroupLabel": "分组（可选）",
   "replaceRulesScopeLabel": "作用范围（可选）",
-  "replaceRulesScopeHelper": "多个书名或书源名称用分号分隔",
+  "replaceRulesScopeHelper": "多个书名、书源 URL 或名称用分号分隔",
   "replaceRulesExcludeScopeLabel": "排除范围（可选）",
   "replaceRulesDeleteConfirmTitle": "删除这条规则？",
   "replaceRulesDeleteConfirmBody": "这条规则将从当前设备移除。",
@@ -3698,6 +3698,33 @@
   "welcomeStartReading": "开始阅读",
   "welcomeTagline": "好故事，慢慢读。",
   "settingsWelcomeGuide": "欢迎引导",
+  "replaceRulesDefaultEnabledLabel": "默认对所有书籍启用",
+  "replaceRulesBookEnabledLabel": "为《{bookTitle}》启用",
+  "replaceRulesEffectiveLabel": "当前生效",
+  "replaceRulesGroupAll": "全部分组",
+  "replaceRulesSelectionMode": "批量选择",
+  "replaceRulesSelectedCount": "已选择 {count} 条",
+  "replaceRulesSelectAll": "全选",
+  "replaceRulesEnableSelected": "启用",
+  "replaceRulesDisableSelected": "停用",
+  "replaceRulesDeleteSelected": "删除",
+  "replaceRulesDeleteSelectedConfirmTitle": "删除所选规则？",
+  "replaceRulesDeleteSelectedConfirmBody": "将删除 {count} 条规则。",
+  "replaceRulesExportSelected": "导出",
+  "replaceRulesCopyJson": "复制 JSON",
+  "replaceRulesPasteJson": "粘贴 JSON",
+  "replaceRulesCopied": "已复制规则 JSON",
+  "replaceRulesPasted": "已粘贴规则",
+  "replaceRulesMoveTop": "置顶",
+  "replaceRulesMoveBottom": "置底",
+  "replaceRulesTimeoutLabel": "超时时间（毫秒）",
+  "replaceRulesTimeoutHelper": "单条规则最多执行多久",
+  "replaceRulesTimeoutInvalid": "请输入大于 0 的超时时间",
+  "replaceRulesMissingTarget": "请至少选择章节标题或正文",
+  "replaceRulesContextSubtitle": "{bookTitle} · {sourceName}",
+  "replaceRulesUnsupportedReplacement": "当前环境不支持 JavaScript 净化替换，请使用文字或正则替换。",
+  "replaceRulesTimeoutNotice": "此规则执行超时，已停用。请修改规则后重新启用。",
+  "readerPurifySelection": "净化所选文字",
   "accountInviteUnavailable": "当前邀请活动加载失败，请重试。",
   "accountInviteActiveProgress": "有效新用户",
   "accountInvitePaidProgress": "首次付费好友",
@@ -3764,5 +3791,34 @@
         "type": "int"
       }
     }
-  }
+  },
+  "activityCenterTitle": "活动中心",
+  "activityCenterSubtitle": "发现近期活动，查看你的参与进度。",
+  "activityCenterEmptyTitle": "暂时没有活动",
+  "activityCenterEmptyMessage": "有新活动时，会在这里展示。",
+  "activityCenterLoadError": "活动加载失败，请稍后重试。",
+  "activityCenterOpenError": "无法打开活动详情，请稍后重试。",
+  "activityCenterLearnMore": "了解活动",
+  "activityCenterProgress": "我的邀请进度",
+  "activityCenterUpcoming": "即将开始",
+  "activityCenterPaused": "已暂停",
+  "activityCenterEnded": "已结束",
+  "activityCenterActive": "进行中",
+  "activityCenterStartsOn": "{date} 开始",
+  "@activityCenterStartsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterEndsOn": "{date} 截止",
+  "@activityCenterEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterRefresh": "刷新"
 }

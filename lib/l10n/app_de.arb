@@ -1568,7 +1568,7 @@
   "replaceRulesDeleteValue": "Entfernen",
   "replaceRulesCreate": "Neue Regel",
   "replaceRulesEmptyTitle": "Keine Ersetzungsregeln",
-  "replaceRulesEmptyBody": "Importiere eine Lesequellen-JSON-Datei oder erstelle eine Regel mit regulärem Ausdruck.",
+  "replaceRulesEmptyBody": "Importieren Sie Ersetzungsregeln als JSON oder erstellen Sie eine Text- oder Regex-Regel.",
   "replaceRulesNoSearchResults": "Keine passenden Regeln",
   "replaceRulesCreateTitle": "Neue Ersetzungsregel",
   "replaceRulesEditTitle": "Ersetzungsregel bearbeiten",
@@ -1581,7 +1581,7 @@
   "replaceRulesScopeContentLabel": "Auf Kapitelinhalt anwenden",
   "replaceRulesGroupLabel": "Gruppe (optional)",
   "replaceRulesScopeLabel": "Bereich (optional)",
-  "replaceRulesScopeHelper": "Trenne Buchtitel oder Quellnamen mit Semikolons",
+  "replaceRulesScopeHelper": "Buchtitel, Quellen-URLs oder Quellennamen durch Semikolons trennen",
   "replaceRulesExcludeScopeLabel": "Ausgeschlossener Bereich (optional)",
   "replaceRulesDeleteConfirmTitle": "Diese Regel löschen?",
   "replaceRulesDeleteConfirmBody": "Die Regel wird von diesem Gerät entfernt.",
@@ -2123,6 +2123,33 @@
   "welcomeStartReading": "Jetzt lesen",
   "welcomeTagline": "Gute Geschichten. Lass dir Zeit.",
   "settingsWelcomeGuide": "Einführung",
+  "readerPurifySelection": "Ausgewählten Text bereinigen",
+  "replaceRulesDefaultEnabledLabel": "Standardmäßig für alle Bücher aktivieren",
+  "replaceRulesBookEnabledLabel": "Für „{bookTitle}“ aktivieren",
+  "replaceRulesEffectiveLabel": "Aktuell wirksam",
+  "replaceRulesGroupAll": "Alle Gruppen",
+  "replaceRulesSelectionMode": "Regeln auswählen",
+  "replaceRulesSelectedCount": "{count} ausgewählt",
+  "replaceRulesSelectAll": "Alle auswählen",
+  "replaceRulesEnableSelected": "Aktivieren",
+  "replaceRulesDisableSelected": "Deaktivieren",
+  "replaceRulesDeleteSelected": "Löschen",
+  "replaceRulesDeleteSelectedConfirmTitle": "Ausgewählte Regeln löschen?",
+  "replaceRulesDeleteSelectedConfirmBody": "{count} Regeln werden gelöscht.",
+  "replaceRulesExportSelected": "Exportieren",
+  "replaceRulesCopyJson": "JSON kopieren",
+  "replaceRulesPasteJson": "JSON einfügen",
+  "replaceRulesCopied": "Regel-JSON kopiert",
+  "replaceRulesPasted": "Regel eingefügt",
+  "replaceRulesMoveTop": "Nach oben verschieben",
+  "replaceRulesMoveBottom": "Nach unten verschieben",
+  "replaceRulesTimeoutLabel": "Zeitlimit (Millisekunden)",
+  "replaceRulesTimeoutHelper": "Maximale Ausführungszeit pro Regel",
+  "replaceRulesTimeoutInvalid": "Geben Sie ein Zeitlimit größer als 0 ein",
+  "replaceRulesMissingTarget": "Wählen Sie Kapiteltitel oder Inhalt",
+  "replaceRulesContextSubtitle": "{bookTitle} · {sourceName}",
+  "replaceRulesUnsupportedReplacement": "JavaScript-Ersetzungen werden hier nicht unterstützt. Verwenden Sie Text oder reguläre Ausdrücke.",
+  "replaceRulesTimeoutNotice": "Diese Regel wurde nach einer Zeitüberschreitung deaktiviert. Bearbeite sie und aktiviere sie erneut.",
   "accountInviteUnavailable": "Die aktuelle Einladungsaktion konnte nicht geladen werden. Bitte erneut versuchen.",
   "accountInviteActiveProgress": "Aktive neue Nutzer",
   "accountInvitePaidProgress": "Erstmals zahlende Freunde",
@@ -2189,5 +2216,34 @@
         "type": "int"
       }
     }
-  }
+  },
+  "activityCenterTitle": "Aktionen",
+  "activityCenterSubtitle": "Entdecke aktuelle Aktionen und deinen Fortschritt.",
+  "activityCenterEmptyTitle": "Derzeit keine Aktionen",
+  "activityCenterEmptyMessage": "Schau bald wieder vorbei.",
+  "activityCenterLoadError": "Aktionen konnten nicht geladen werden.",
+  "activityCenterOpenError": "Die Aktion konnte nicht geöffnet werden. Bitte erneut versuchen.",
+  "activityCenterLearnMore": "Über diese Aktion",
+  "activityCenterProgress": "Mein Einladungsfortschritt",
+  "activityCenterUpcoming": "Demnächst",
+  "activityCenterPaused": "Pausiert",
+  "activityCenterEnded": "Beendet",
+  "activityCenterActive": "Läuft",
+  "activityCenterStartsOn": "Beginn: {date}",
+  "@activityCenterStartsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterEndsOn": "Ende: {date}",
+  "@activityCenterEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterRefresh": "Aktualisieren"
 }

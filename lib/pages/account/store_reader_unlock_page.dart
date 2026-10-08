@@ -7,10 +7,14 @@ import 'package:flutter/services.dart';
 import '../../services/account/account.dart';
 import '../../services/core/app_distribution.dart';
 import '../../utils/localization_extension.dart';
+import '../../widgets/floating_subpage_scaffold.dart';
 import '../../widgets/purchase_artwork.dart';
 import '../../widgets/purchase_icons.dart';
 import '../../widgets/purchase_page_scaffold.dart';
 import 'account_page.dart';
+import 'membership_redemption_page.dart';
+
+enum _ReaderDetailsAction { benefits, purchase }
 
 /// Account-bound reading access purchased through the current app store.
 class StoreReaderUnlockPage extends StatelessWidget {
@@ -130,13 +134,41 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
       return PurchasePageScaffold(
         key: const ValueKey('store-reader-license-page'),
         title: l10n.storeReaderLicenseTitle,
+        actions: [
+          FloatingSubpageMenuButton<_ReaderDetailsAction>(
+            key: const ValueKey('store-reader-details-menu'),
+            icon: Icons.more_horiz_rounded,
+            tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+            items: [
+              FloatingSubpageMenuItem(
+                value: _ReaderDetailsAction.benefits,
+                itemKey: const ValueKey('store-reader-benefits'),
+                child: Text(l10n.purchaseBenefitsAction),
+              ),
+              FloatingSubpageMenuItem(
+                value: _ReaderDetailsAction.purchase,
+                itemKey: const ValueKey('store-reader-details'),
+                child: Text(l10n.purchaseDetailsTitle),
+              ),
+            ],
+            onSelected: (action) {
+              switch (action) {
+                case _ReaderDetailsAction.benefits:
+                  _openBenefits();
+                case _ReaderDetailsAction.purchase:
+                  _openDetails();
+              }
+            },
+          ),
+        ],
+        pinFooter: !permanent,
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               l10n.basicEditorialTitle,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 30,
+                fontSize: 28,
                 fontWeight: FontWeight.w500,
                 height: 1.35,
               ),
@@ -153,10 +185,10 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
             PurchaseArtwork(
               key: ValueKey('basic-artwork-$_featureIndex'),
               scene: PurchaseArtworkScene.values[_featureIndex],
-              height: 214,
+              height: 174,
             ),
             _featureTabs(),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
               [
                 l10n.basicReadingHeadline,
@@ -181,18 +213,28 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
               ),
             ),
             if (permanent) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _summaryLine(
                 Icons.verified_rounded,
                 l10n.storeReaderCrossPlatformAccess,
                 key: const ValueKey('store-reader-active'),
+                textStyle: TextStyle(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
               ),
             ] else if (!licenseRequired) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _summaryLine(
                 Icons.menu_book_rounded,
                 l10n.storeReaderCurrentlyFree,
                 key: const ValueKey('store-reader-free-access'),
+                textStyle: TextStyle(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
               ),
             ] else if (trial && account.readerTrialExpiresAt != null) ...[
               const SizedBox(height: 20),
@@ -213,30 +255,6 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                 style: TextStyle(color: colors.onSurfaceVariant),
               ),
             ],
-            const SizedBox(height: 8),
-            ListTile(
-              key: const ValueKey('store-reader-benefits'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-              title: Text(
-                l10n.purchaseBenefitsAction,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: _openBenefits,
-            ),
-            const Divider(height: 1),
-            ListTile(
-              key: const ValueKey('store-reader-details'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-              title: Text(
-                l10n.purchaseDetailsTitle,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: _openDetails,
-            ),
           ],
         ),
         footer: Column(
@@ -326,42 +344,58 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                 ),
               ),
             ],
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                if (licenseRequired &&
-                    !permanent &&
-                    account.canStartReaderTrial)
-                  Expanded(
-                    child: TextButton(
-                      key: const ValueKey('store-start-trial'),
-                      onPressed: busy
-                          ? null
-                          : () =>
-                                _performAccountAction(account.startReaderTrial),
-                      child: Text(
-                        l10n.storeTrialStart(
-                          account.membershipConfig?.storeTrialDays ?? 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+            if (licenseRequired && !permanent && account.canStartReaderTrial)
+              TextButton(
+                key: const ValueKey('store-start-trial'),
+                onPressed: busy
+                    ? null
+                    : () => _performAccountAction(account.startReaderTrial),
+                child: Text(
+                  l10n.storeTrialStart(
+                    account.membershipConfig?.storeTrialDays ?? 14,
                   ),
-                Expanded(
-                  child: TextButton.icon(
-                    key: const ValueKey('store-reader-restore'),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            PurchaseActionRow(
+              children: [
+                TextButton(
+                  key: const ValueKey('store-reader-restore'),
+                  onPressed: busy
+                      ? null
+                      : () => _performAccountAction(
+                          account.restoreReaderPurchases,
+                        ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.restore_rounded, size: 17),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          l10n.accountAppleRestore,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (account.isAuthenticated)
+                  TextButton(
+                    key: const ValueKey('store-reader-redeem-entry'),
                     onPressed: busy
                         ? null
-                        : () => _performAccountAction(
-                            account.restoreReaderPurchases,
+                        : () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  MembershipRedemptionPage(account: account),
+                            ),
                           ),
-                    icon: const Icon(Icons.restore_rounded, size: 17),
-                    label: Text(
-                      l10n.accountAppleRestore,
+                    child: Text(
+                      l10n.accountHaveRedemptionCode,
                       textAlign: TextAlign.center,
                     ),
                   ),
-                ),
               ],
             ),
             if (status != null) ...[
@@ -446,14 +480,22 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
     );
   }
 
-  Widget _summaryLine(IconData icon, String text, {Key? key}) => Row(
+  Widget _summaryLine(
+    IconData icon,
+    String text, {
+    Key? key,
+    TextStyle? textStyle,
+  }) => Row(
     key: key,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
-      const SizedBox(width: 12),
+      Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+      const SizedBox(width: 8),
       Expanded(
-        child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+        child: Text(
+          text,
+          style: textStyle ?? Theme.of(context).textTheme.bodyMedium,
+        ),
       ),
     ],
   );
@@ -587,7 +629,12 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
     final l10n = context.l10n;
     return switch (account.readerPurchasePhase) {
       StorePurchasePhase.idle => null,
-      StorePurchasePhase.loadingProduct => l10n.accountAppleProductLoading,
+      StorePurchasePhase.loadingProduct =>
+        account.hasPermanentReaderAccess
+            ? null
+            : l10n.accountAppleProductLoading,
+      StorePurchasePhase.productUnavailable =>
+        account.hasPermanentReaderAccess ? null : l10n.storeBillingUnavailable,
       StorePurchasePhase.purchasing => l10n.loading,
       StorePurchasePhase.pending => l10n.storeReaderPendingApproval(_storeName),
       StorePurchasePhase.verifying => l10n.storeReaderVerifying,

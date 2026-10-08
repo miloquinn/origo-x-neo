@@ -154,7 +154,7 @@ extension _NativeReaderAutoPageTurn on _NativeReaderPageState {
     }
     if (_visiblePages.isEmpty ||
         !_initialPositionRestored ||
-        _horizontalChapterJumpPending ||
+        _pendingChapterIndex != null ||
         _pendingHorizontalForwardBoundary != null ||
         _pendingHorizontalPage != null ||
         (_pageController?.hasClients == true &&
@@ -341,11 +341,7 @@ extension _NativeReaderAutoPageTurn on _NativeReaderPageState {
     }
     final nextChapterIndex = _chapterIndex + 1;
     try {
-      await _loadIndexedChapterWindow(
-        chapters,
-        nextChapterIndex,
-        retainAroundCurrentChapter: true,
-      );
+      await _loadIndexedChapterWindow(chapters, nextChapterIndex);
       if (!mounted || !_autoPageTurnController.isActive) return;
       _pagesFor(
         chapters[nextChapterIndex],
@@ -383,11 +379,7 @@ extension _NativeReaderAutoPageTurn on _NativeReaderPageState {
       return true;
     }
     try {
-      await _loadIndexedChapterWindow(
-        chapters,
-        nextChapterIndex,
-        retainAroundCurrentChapter: true,
-      );
+      await _loadIndexedChapterWindow(chapters, nextChapterIndex);
       if (mounted) _setReaderState(() {});
       return chapters[nextChapterIndex].hasLoadedText;
     } catch (error) {

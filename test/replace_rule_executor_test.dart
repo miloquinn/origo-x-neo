@@ -7,6 +7,9 @@ ReplaceRuleExecutionRule _rule({
   String replacement = '',
   bool isRegex = true,
   int order = 0,
+  bool scopeTitle = false,
+  bool scopeContent = true,
+  int timeoutMillisecond = 3000,
 }) => ReplaceRuleExecutionRule(
   id: id,
   name: id,
@@ -17,24 +20,37 @@ ReplaceRuleExecutionRule _rule({
   excludeScope: '',
   enabled: true,
   isRegex: isRegex,
-  scopeTitle: false,
-  scopeContent: true,
+  scopeTitle: scopeTitle,
+  scopeContent: scopeContent,
   order: order,
+  timeoutMillisecond: timeoutMillisecond,
 );
 
 ReplaceRuleExecutionBatch _batch({
   required String signature,
   required List<String> values,
   required List<ReplaceRuleExecutionRule> rules,
+  ReplaceRuleTarget target = ReplaceRuleTarget.content,
 }) => ReplaceRuleExecutionBatch(
   values: values,
   rules: rules,
   rulesSignature: signature,
   bookTitle: 'Book',
-  target: ReplaceRuleTarget.content,
+  target: target,
 );
 
 void main() {
+  test('non-positive rule timeout is normalized to the default', () {
+    expect(
+      _rule(
+        id: 'timeout',
+        pattern: 'x',
+        timeoutMillisecond: 0,
+      ).toMessage()['timeoutMillisecond'],
+      3000,
+    );
+  });
+
   test('worker applies a batch with sequential rule semantics', () async {
     final executor = ReplaceRuleExecutor();
     addTearDown(executor.dispose);
@@ -57,7 +73,112 @@ void main() {
     );
 
     expect(result.values, ['one', '2']);
+    expect(result.effectiveRuleIds, ['regex', 'literal']);
     expect(result.degraded, isFalse);
+  });
+
+  test(
+    'signature cache keeps full rules across title and content jobs',
+    () async {
+      final executor = ReplaceRuleExecutor();
+      addTearDown(executor.dispose);
+      final rules = [
+        _rule(
+          id: 'title',
+          pattern: 'T',
+          replacement: 'title',
+          isRegex: false,
+          scopeTitle: true,
+          scopeContent: false,
+        ),
+        _rule(
+          id: 'content',
+          pattern: 'C',
+          replacement: 'content',
+          isRegex: false,
+        ),
+      ];
+      final title = await executor.applyBatch(
+        _batch(
+          signature: 'shared',
+          values: const ['T'],
+          rules: rules,
+          target: ReplaceRuleTarget.title,
+        ),
+      );
+      final content = await executor.applyBatch(
+        _batch(signature: 'shared', values: const ['C'], rules: rules),
+      );
+      expect(title.values, ['title']);
+      expect(content.values, ['content']);
+    },
+  );
+
+  test('title rolls back an individual rule that erases all text', () async {
+    final executor = ReplaceRuleExecutor();
+    addTearDown(executor.dispose);
+    final result = await executor.applyBatch(
+      _batch(
+        signature: 'title-empty',
+        values: const ['Chapter'],
+        target: ReplaceRuleTarget.title,
+        rules: [
+          _rule(
+            id: 'erase',
+            pattern: r'.*',
+            scopeTitle: true,
+            scopeContent: false,
+          ),
+          _rule(
+            id: 'rename',
+            pattern: 'Chapter',
+            replacement: 'Named',
+            isRegex: false,
+            scopeTitle: true,
+            scopeContent: false,
+          ),
+        ],
+      ),
+    );
+    expect(result.values, ['Named']);
+    expect(result.effectiveRuleIds, ['rename']);
+  });
+
+  test('resends a signature after the worker cache evicts it', () async {
+    final executor = ReplaceRuleExecutor();
+    addTearDown(executor.dispose);
+    for (var index = 1; index <= 5; index++) {
+      final result = await executor.applyBatch(
+        _batch(
+          signature: 'signature-$index',
+          values: ['v$index'],
+          rules: [
+            _rule(
+              id: 'rule-$index',
+              pattern: 'v$index',
+              replacement: 'done-$index',
+              isRegex: false,
+            ),
+          ],
+        ),
+      );
+      expect(result.values, ['done-$index']);
+    }
+    final restored = await executor.applyBatch(
+      _batch(
+        signature: 'signature-1',
+        values: const ['v1'],
+        rules: [
+          _rule(
+            id: 'rule-1',
+            pattern: 'v1',
+            replacement: 'done-1',
+            isRegex: false,
+          ),
+        ],
+      ),
+    );
+    expect(restored.values, ['done-1']);
   });
 
   test(

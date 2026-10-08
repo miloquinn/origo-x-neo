@@ -9737,7 +9737,7 @@ abstract class AppLocalizations {
   /// No description provided for @replaceRulesEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Import a reading-source JSON file or create a regular-expression rule.'**
+  /// **'Import replacement-rule JSON or create a text or regular-expression rule.'**
   String get replaceRulesEmptyBody;
 
   /// No description provided for @replaceRulesNoSearchResults.
@@ -9815,7 +9815,7 @@ abstract class AppLocalizations {
   /// No description provided for @replaceRulesScopeHelper.
   ///
   /// In en, this message translates to:
-  /// **'Separate book titles or source names with semicolons'**
+  /// **'Separate book titles, source URLs, or source names with semicolons'**
   String get replaceRulesScopeHelper;
 
   /// No description provided for @replaceRulesExcludeScopeLabel.
@@ -13088,6 +13088,168 @@ abstract class AppLocalizations {
   /// **'Welcome guide'**
   String get settingsWelcomeGuide;
 
+  /// No description provided for @replaceRulesDefaultEnabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable by default for all books'**
+  String get replaceRulesDefaultEnabledLabel;
+
+  /// No description provided for @replaceRulesBookEnabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable for “{bookTitle}”'**
+  String replaceRulesBookEnabledLabel(String bookTitle);
+
+  /// No description provided for @replaceRulesEffectiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective now'**
+  String get replaceRulesEffectiveLabel;
+
+  /// No description provided for @replaceRulesGroupAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All groups'**
+  String get replaceRulesGroupAll;
+
+  /// No description provided for @replaceRulesSelectionMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Select rules'**
+  String get replaceRulesSelectionMode;
+
+  /// No description provided for @replaceRulesSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String replaceRulesSelectedCount(int count);
+
+  /// No description provided for @replaceRulesSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get replaceRulesSelectAll;
+
+  /// No description provided for @replaceRulesEnableSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get replaceRulesEnableSelected;
+
+  /// No description provided for @replaceRulesDisableSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable'**
+  String get replaceRulesDisableSelected;
+
+  /// No description provided for @replaceRulesDeleteSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get replaceRulesDeleteSelected;
+
+  /// No description provided for @replaceRulesDeleteSelectedConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected rules?'**
+  String get replaceRulesDeleteSelectedConfirmTitle;
+
+  /// No description provided for @replaceRulesDeleteSelectedConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} rules will be deleted.'**
+  String replaceRulesDeleteSelectedConfirmBody(int count);
+
+  /// No description provided for @replaceRulesExportSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get replaceRulesExportSelected;
+
+  /// No description provided for @replaceRulesCopyJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy JSON'**
+  String get replaceRulesCopyJson;
+
+  /// No description provided for @replaceRulesPasteJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste JSON'**
+  String get replaceRulesPasteJson;
+
+  /// No description provided for @replaceRulesCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule JSON copied'**
+  String get replaceRulesCopied;
+
+  /// No description provided for @replaceRulesPasted.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule JSON pasted'**
+  String get replaceRulesPasted;
+
+  /// No description provided for @replaceRulesMoveTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to top'**
+  String get replaceRulesMoveTop;
+
+  /// No description provided for @replaceRulesMoveBottom.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to bottom'**
+  String get replaceRulesMoveBottom;
+
+  /// No description provided for @replaceRulesTimeoutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeout (milliseconds)'**
+  String get replaceRulesTimeoutLabel;
+
+  /// No description provided for @replaceRulesTimeoutHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum execution time per rule'**
+  String get replaceRulesTimeoutHelper;
+
+  /// No description provided for @replaceRulesTimeoutInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a timeout greater than 0'**
+  String get replaceRulesTimeoutInvalid;
+
+  /// No description provided for @replaceRulesMissingTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Select chapter titles or content'**
+  String get replaceRulesMissingTarget;
+
+  /// No description provided for @replaceRulesContextSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{bookTitle} · {sourceName}'**
+  String replaceRulesContextSubtitle(String bookTitle, String sourceName);
+
+  /// No description provided for @replaceRulesUnsupportedReplacement.
+  ///
+  /// In en, this message translates to:
+  /// **'JavaScript replacement scripts are not supported here. Use text or regular-expression replacements.'**
+  String get replaceRulesUnsupportedReplacement;
+
+  /// No description provided for @replaceRulesTimeoutNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'This rule timed out and was disabled. Edit it, then enable it again.'**
+  String get replaceRulesTimeoutNotice;
+
+  /// No description provided for @readerPurifySelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean selected text'**
+  String get readerPurifySelection;
+
   /// No description provided for @accountInviteUnavailable.
   ///
   /// In en, this message translates to:
@@ -13237,6 +13399,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invitation history'**
   String get accountInviteRecordsTitle;
+
+  /// No description provided for @activityCenterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get activityCenterTitle;
+
+  /// No description provided for @activityCenterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover current activities and follow your progress.'**
+  String get activityCenterSubtitle;
+
+  /// No description provided for @activityCenterEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activities right now'**
+  String get activityCenterEmptyTitle;
+
+  /// No description provided for @activityCenterEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back soon for new activities.'**
+  String get activityCenterEmptyMessage;
+
+  /// No description provided for @activityCenterLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities could not be loaded.'**
+  String get activityCenterLoadError;
+
+  /// No description provided for @activityCenterOpenError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this activity. Please try again.'**
+  String get activityCenterOpenError;
+
+  /// No description provided for @activityCenterLearnMore.
+  ///
+  /// In en, this message translates to:
+  /// **'About this activity'**
+  String get activityCenterLearnMore;
+
+  /// No description provided for @activityCenterProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'My invitation progress'**
+  String get activityCenterProgress;
+
+  /// No description provided for @activityCenterUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get activityCenterUpcoming;
+
+  /// No description provided for @activityCenterPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get activityCenterPaused;
+
+  /// No description provided for @activityCenterEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get activityCenterEnded;
+
+  /// No description provided for @activityCenterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get activityCenterActive;
+
+  /// No description provided for @activityCenterStartsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts {date}'**
+  String activityCenterStartsOn(String date);
+
+  /// No description provided for @activityCenterEndsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {date}'**
+  String activityCenterEndsOn(String date);
+
+  /// No description provided for @activityCenterRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get activityCenterRefresh;
 }
 
 class _AppLocalizationsDelegate

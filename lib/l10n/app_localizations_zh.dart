@@ -5284,7 +5284,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get replaceRulesEmptyTitle => '还没有替换规则';
 
   @override
-  String get replaceRulesEmptyBody => '可以导入阅读书源 JSON，或新建一条正则规则。';
+  String get replaceRulesEmptyBody => '可以导入净化规则 JSON，或新建文字、正则规则。';
 
   @override
   String get replaceRulesNoSearchResults => '没有匹配的规则';
@@ -5323,7 +5323,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get replaceRulesScopeLabel => '作用范围（可选）';
 
   @override
-  String get replaceRulesScopeHelper => '多个书名或书源名称用分号分隔';
+  String get replaceRulesScopeHelper => '多个书名、书源 URL 或名称用分号分隔';
 
   @override
   String get replaceRulesExcludeScopeLabel => '排除范围（可选）';
@@ -7111,6 +7111,96 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWelcomeGuide => '欢迎引导';
 
   @override
+  String get replaceRulesDefaultEnabledLabel => '默认对所有书籍启用';
+
+  @override
+  String replaceRulesBookEnabledLabel(String bookTitle) {
+    return '为《$bookTitle》启用';
+  }
+
+  @override
+  String get replaceRulesEffectiveLabel => '当前生效';
+
+  @override
+  String get replaceRulesGroupAll => '全部分组';
+
+  @override
+  String get replaceRulesSelectionMode => '批量选择';
+
+  @override
+  String replaceRulesSelectedCount(int count) {
+    return '已选择 $count 条';
+  }
+
+  @override
+  String get replaceRulesSelectAll => '全选';
+
+  @override
+  String get replaceRulesEnableSelected => '启用';
+
+  @override
+  String get replaceRulesDisableSelected => '停用';
+
+  @override
+  String get replaceRulesDeleteSelected => '删除';
+
+  @override
+  String get replaceRulesDeleteSelectedConfirmTitle => '删除所选规则？';
+
+  @override
+  String replaceRulesDeleteSelectedConfirmBody(int count) {
+    return '将删除 $count 条规则。';
+  }
+
+  @override
+  String get replaceRulesExportSelected => '导出';
+
+  @override
+  String get replaceRulesCopyJson => '复制 JSON';
+
+  @override
+  String get replaceRulesPasteJson => '粘贴 JSON';
+
+  @override
+  String get replaceRulesCopied => '已复制规则 JSON';
+
+  @override
+  String get replaceRulesPasted => '已粘贴规则';
+
+  @override
+  String get replaceRulesMoveTop => '置顶';
+
+  @override
+  String get replaceRulesMoveBottom => '置底';
+
+  @override
+  String get replaceRulesTimeoutLabel => '超时时间（毫秒）';
+
+  @override
+  String get replaceRulesTimeoutHelper => '单条规则最多执行多久';
+
+  @override
+  String get replaceRulesTimeoutInvalid => '请输入大于 0 的超时时间';
+
+  @override
+  String get replaceRulesMissingTarget => '请至少选择章节标题或正文';
+
+  @override
+  String replaceRulesContextSubtitle(String bookTitle, String sourceName) {
+    return '$bookTitle · $sourceName';
+  }
+
+  @override
+  String get replaceRulesUnsupportedReplacement =>
+      '当前环境不支持 JavaScript 净化替换，请使用文字或正则替换。';
+
+  @override
+  String get replaceRulesTimeoutNotice => '此规则执行超时，已停用。请修改规则后重新启用。';
+
+  @override
+  String get readerPurifySelection => '净化所选文字';
+
+  @override
   String get accountInviteUnavailable => '当前邀请活动加载失败，请重试。';
 
   @override
@@ -7196,6 +7286,55 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountInviteRecordsTitle => '邀请记录';
+
+  @override
+  String get activityCenterTitle => '活动中心';
+
+  @override
+  String get activityCenterSubtitle => '发现近期活动，查看你的参与进度。';
+
+  @override
+  String get activityCenterEmptyTitle => '暂时没有活动';
+
+  @override
+  String get activityCenterEmptyMessage => '有新活动时，会在这里展示。';
+
+  @override
+  String get activityCenterLoadError => '活动加载失败，请稍后重试。';
+
+  @override
+  String get activityCenterOpenError => '无法打开活动详情，请稍后重试。';
+
+  @override
+  String get activityCenterLearnMore => '了解活动';
+
+  @override
+  String get activityCenterProgress => '我的邀请进度';
+
+  @override
+  String get activityCenterUpcoming => '即将开始';
+
+  @override
+  String get activityCenterPaused => '已暂停';
+
+  @override
+  String get activityCenterEnded => '已结束';
+
+  @override
+  String get activityCenterActive => '进行中';
+
+  @override
+  String activityCenterStartsOn(String date) {
+    return '$date 开始';
+  }
+
+  @override
+  String activityCenterEndsOn(String date) {
+    return '$date 截止';
+  }
+
+  @override
+  String get activityCenterRefresh => '刷新';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -12478,7 +12617,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get replaceRulesEmptyTitle => '還沒有替換規則';
 
   @override
-  String get replaceRulesEmptyBody => '可以匯入閱讀書源 JSON，或新增一條正則規則。';
+  String get replaceRulesEmptyBody => '可以匯入淨化規則 JSON，或新增文字、正則規則。';
 
   @override
   String get replaceRulesNoSearchResults => '沒有符合的規則';
@@ -12517,7 +12656,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get replaceRulesScopeLabel => '作用範圍（選填）';
 
   @override
-  String get replaceRulesScopeHelper => '多個書名或書源名稱請用分號分隔';
+  String get replaceRulesScopeHelper => '多個書名、書源 URL 或名稱請用分號分隔';
 
   @override
   String get replaceRulesExcludeScopeLabel => '排除範圍（選填）';
@@ -14306,6 +14445,96 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsWelcomeGuide => '歡迎導覽';
 
   @override
+  String get replaceRulesDefaultEnabledLabel => '預設對所有書籍啟用';
+
+  @override
+  String replaceRulesBookEnabledLabel(String bookTitle) {
+    return '為《$bookTitle》啟用';
+  }
+
+  @override
+  String get replaceRulesEffectiveLabel => '目前生效';
+
+  @override
+  String get replaceRulesGroupAll => '全部群組';
+
+  @override
+  String get replaceRulesSelectionMode => '批次選取';
+
+  @override
+  String replaceRulesSelectedCount(int count) {
+    return '已選取 $count 條';
+  }
+
+  @override
+  String get replaceRulesSelectAll => '全選';
+
+  @override
+  String get replaceRulesEnableSelected => '啟用';
+
+  @override
+  String get replaceRulesDisableSelected => '停用';
+
+  @override
+  String get replaceRulesDeleteSelected => '刪除';
+
+  @override
+  String get replaceRulesDeleteSelectedConfirmTitle => '刪除所選規則？';
+
+  @override
+  String replaceRulesDeleteSelectedConfirmBody(int count) {
+    return '將刪除 $count 條規則。';
+  }
+
+  @override
+  String get replaceRulesExportSelected => '匯出';
+
+  @override
+  String get replaceRulesCopyJson => '複製 JSON';
+
+  @override
+  String get replaceRulesPasteJson => '貼上 JSON';
+
+  @override
+  String get replaceRulesCopied => '已複製規則 JSON';
+
+  @override
+  String get replaceRulesPasted => '已貼上規則';
+
+  @override
+  String get replaceRulesMoveTop => '置頂';
+
+  @override
+  String get replaceRulesMoveBottom => '置底';
+
+  @override
+  String get replaceRulesTimeoutLabel => '逾時時間（毫秒）';
+
+  @override
+  String get replaceRulesTimeoutHelper => '單條規則最多執行多久';
+
+  @override
+  String get replaceRulesTimeoutInvalid => '請輸入大於 0 的逾時時間';
+
+  @override
+  String get replaceRulesMissingTarget => '請至少選擇章節標題或正文';
+
+  @override
+  String replaceRulesContextSubtitle(String bookTitle, String sourceName) {
+    return '$bookTitle · $sourceName';
+  }
+
+  @override
+  String get replaceRulesUnsupportedReplacement =>
+      '目前環境不支援 JavaScript 淨化替換，請使用文字或正則替換。';
+
+  @override
+  String get replaceRulesTimeoutNotice => '此規則執行逾時，已停用。請修改規則後重新啟用。';
+
+  @override
+  String get readerPurifySelection => '淨化所選文字';
+
+  @override
   String get accountInviteUnavailable => '目前邀請活動載入失敗，請重試。';
 
   @override
@@ -14391,4 +14620,53 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get accountInviteRecordsTitle => '邀請紀錄';
+
+  @override
+  String get activityCenterTitle => '活動中心';
+
+  @override
+  String get activityCenterSubtitle => '探索近期活動，查看你的參與進度。';
+
+  @override
+  String get activityCenterEmptyTitle => '暫時沒有活動';
+
+  @override
+  String get activityCenterEmptyMessage => '有新活動時，會在這裡顯示。';
+
+  @override
+  String get activityCenterLoadError => '活動載入失敗，請稍後重試。';
+
+  @override
+  String get activityCenterOpenError => '無法開啟活動詳情，請稍後重試。';
+
+  @override
+  String get activityCenterLearnMore => '瞭解活動';
+
+  @override
+  String get activityCenterProgress => '我的邀請進度';
+
+  @override
+  String get activityCenterUpcoming => '即將開始';
+
+  @override
+  String get activityCenterPaused => '已暫停';
+
+  @override
+  String get activityCenterEnded => '已結束';
+
+  @override
+  String get activityCenterActive => '進行中';
+
+  @override
+  String activityCenterStartsOn(String date) {
+    return '$date 開始';
+  }
+
+  @override
+  String activityCenterEndsOn(String date) {
+    return '$date 截止';
+  }
+
+  @override
+  String get activityCenterRefresh => '重新整理';
 }

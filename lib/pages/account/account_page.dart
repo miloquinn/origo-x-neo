@@ -22,6 +22,7 @@ import '../../widgets/store_reader_account_entry.dart';
 import 'avatar_crop_page.dart';
 import 'premium_membership_page.dart';
 import 'premium_policy_page.dart';
+import '../activities/activity_center_page.dart';
 
 part 'parts/account_auth_part.dart';
 part 'parts/account_auth_form_part.dart';
@@ -34,6 +35,13 @@ enum _AccountMode { email, password, register, code, reset }
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
+
+  static Future<void> openReferral(BuildContext context) async {
+    if (AppDistribution.usesStoreBilling) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const _AccountReferralEntry()),
+    );
+  }
 
   @override
   State<AccountPage> createState() => _AccountPageState();
@@ -577,10 +585,7 @@ class _AccountPageState extends State<AccountPage> {
         context.l10n.accountAuthorizationTitle,
         context.l10n.accountExternalHint,
       ),
-      _AuthorizationProgress(
-        authorization: _deviceAuthorization,
-        onCancel: _backAuth,
-      ),
+      _AuthorizationProgress(onCancel: _backAuth),
       if (_deviceAuthorization != null)
         TextButton(
           onPressed: () => _openExternalLoginUri(
@@ -627,6 +632,9 @@ class _AccountPageState extends State<AccountPage> {
       onEditProfile: _openProfileEditor,
       onOpenSecurity: _openAccountSecurity,
       onOpenReferral: _openReferral,
+      onOpenActivities: () => Navigator.of(context).push<void>(
+        MaterialPageRoute(builder: (_) => const ActivityCenterPage()),
+      ),
       onOpenSupport: _openSupport,
     ),
     const SizedBox(height: 20),
@@ -699,4 +707,18 @@ class _AccountPageState extends State<AccountPage> {
       ),
     );
   }
+}
+
+/// The same native sign-in screen becomes the invitation page once sign-in is
+/// complete. Account changes also remove the previous participant's progress.
+class _AccountReferralEntry extends StatelessWidget {
+  const _AccountReferralEntry();
+
+  @override
+  Widget build(BuildContext context) => Consumer<MemberAccountController>(
+    builder: (context, account, _) =>
+        account.user == null || account.mfaRequired
+        ? const AccountPage()
+        : const _AccountReferralPage(),
+  );
 }

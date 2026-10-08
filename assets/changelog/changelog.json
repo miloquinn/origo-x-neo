@@ -63,6 +63,17 @@
         },
         {
             "version": "2.7.2",
+            "buildNumber": "261003003",
+            "notes": {
+                "zh": [
+                    "在线书源阅读前先同步最新目录，避免使用旧目录中的失效章节地址；断网或服务暂时不可用时保留缓存阅读。",
+                    "改善阅读中章节失效时的目录重新定位和重试，减少手动更新目录的操作；登录失效和书籍不存在仍正常提示。",
+                    "修复目录更新后旧预取、分页及滚动状态混入新目录的问题，改善翻章和连续滚动的稳定性。"
+                ]
+            }
+        },
+        {
+            "version": "2.7.2",
             "buildNumber": "261003002",
             "notes": {
                 "zh": [
@@ -231,6 +242,18 @@
                     "Refine purchase, sign-in and account security screens, including accent colors and centered security headings.",
                     "Include native Apple language declarations and localized app names.",
                     "Pin code redemption to the selected Origo account to prevent account-switching mismatches."
+                ]
+            }
+        },
+        {
+            "version": "2.7.1",
+            "buildNumber": "260926001",
+            "notes": {
+                "zh": [
+                    "全新欢迎引导正式启用，以连贯的书本开合与翻页动画串联各个步骤，并修正书本打开方向。",
+                    "使用应用品牌图标，统一欢迎页的配色与字体，适配深浅主题、窄屏、大字号及减少动态效果设置。",
+                    "用户条款、第三方书源说明与隐私说明默认展示重点，可按需展开查看完整内容，最后统一确认同意。",
+                    "完善跳过引导、返回查看和同意保存流程；跳过仅前往条款页，已同意条款的用户正常进入应用。"
                 ]
             }
         },

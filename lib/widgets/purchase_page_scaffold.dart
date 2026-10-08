@@ -38,11 +38,15 @@ class PurchasePageScaffold extends StatelessWidget {
     required this.title,
     required this.body,
     required this.footer,
+    this.pinFooter = true,
+    this.actions = const [],
   });
 
   final String title;
   final Widget body;
   final Widget footer;
+  final bool pinFooter;
+  final List<Widget> actions;
 
   Widget _bounded(Widget child) => Center(
     child: ConstrainedBox(
@@ -54,18 +58,19 @@ class PurchasePageScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) => FloatingSubpageScaffold(
     title: title,
+    actions: actions,
     decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
     body: Material(
       type: MaterialType.transparency,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final top = FloatingSubpageScaffold.headerExtentOf(context) + 10;
-          final bottom = MediaQuery.viewPaddingOf(context).bottom + 12;
+          final top = FloatingSubpageScaffold.headerExtentOf(context) + 8;
+          final bottom = MediaQuery.viewPaddingOf(context).bottom + 8;
           final needsScrolling =
               constraints.maxHeight < 620 ||
               MediaQuery.textScalerOf(context).scale(14) > 14 * 1.35 ||
               MediaQuery.viewInsetsOf(context).bottom > 0;
-          if (needsScrolling) {
+          if (needsScrolling || !pinFooter) {
             return SingleChildScrollView(
               key: const ValueKey('purchase-adaptive-scroll'),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -73,7 +78,7 @@ class PurchasePageScaffold extends StatelessWidget {
               child: _bounded(
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [body, const SizedBox(height: 24), footer],
+                  children: [body, const SizedBox(height: 8), footer],
                 ),
               ),
             );
@@ -100,7 +105,7 @@ class PurchasePageScaffold extends StatelessWidget {
                 ),
                 child: Padding(
                   key: const ValueKey('purchase-fixed-footer'),
-                  padding: EdgeInsets.fromLTRB(24, 18, 24, bottom),
+                  padding: EdgeInsets.fromLTRB(24, 8, 24, bottom),
                   child: _bounded(footer),
                 ),
               ),
@@ -108,6 +113,26 @@ class PurchasePageScaffold extends StatelessWidget {
           );
         },
       ),
+    ),
+  );
+}
+
+/// Equal-width secondary actions share one baseline and keep full tap targets.
+class PurchaseActionRow extends StatelessWidget {
+  const PurchaseActionRow({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => TextButtonTheme(
+    data: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+      ),
+    ),
+    child: Row(
+      children: [for (final child in children) Expanded(child: child)],
     ),
   );
 }

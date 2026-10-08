@@ -17,6 +17,7 @@ class ReaderTextPageContent extends StatelessWidget {
     required this.bodyStyle,
     required this.flowStyle,
     this.sourceSpanBuilder,
+    this.textKey,
   });
 
   final ReaderTextPage page;
@@ -24,6 +25,7 @@ class ReaderTextPageContent extends StatelessWidget {
   final TextStyle bodyStyle;
   final NativeTextFlowStyle flowStyle;
   final ReaderSourceSpanBuilder? sourceSpanBuilder;
+  final Key? textKey;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +33,7 @@ class ReaderTextPageContent extends StatelessWidget {
       return ReaderChapterTitlePage(title: chapterTitle, bodyStyle: bodyStyle);
     }
     return RichText(
+      key: textKey,
       text: page.buildSpan(
         style: bodyStyle,
         sourceSpanBuilder: sourceSpanBuilder,

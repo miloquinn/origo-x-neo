@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -94,15 +95,24 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
 
   static const _cacheAuthRevisionPrefix =
       'reading_source_chapter_cache_auth_revision_v1:';
+  static const _readerContextVariableKeys = {
+    'chapterIndex',
+    'chapterTitle',
+    'bookName',
+    'bookAuthor',
+    'bookType',
+  };
   // Bump when rule semantics change so persisted catalogs and content are
-  // reparsed. Revision 4 includes mixed script/selector pipelines and the
-  // embedded HTML function protocol.
-  static const _ruleEngineRevision = 4;
+  // reparsed. Revision 6 prevents content parsed without its catalog/runtime
+  // state from reusing a body that may have crossed a chapter boundary.
+  static const _ruleEngineRevision = 6;
 
   final SourceRuntime Function() _runtime;
   final BookSourceChapterCache _chapterCache;
   final Future<bool> Function() _additionalProtocolsEnabled;
   final Map<String, int> _cacheAuthRevisions = {};
+  final Expando<Map<String, _RuntimeCatalogFlight>>
+  _runtimeCatalogInitializations = Expando();
 
   @override
   Future<List<SourceLoginField>> loadLoginFields(
@@ -214,15 +224,26 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
     Map<String, String> sourceVariables = const {},
   }) async {
     await _ensureEnabled();
+    final sourceRevision = await _cacheRevision(source, sourceVariables);
+    final catalogIdentity = await _runtimeCatalogIdentity(
+      source,
+      sourceVariables,
+      sourceRevision: sourceRevision,
+    );
     return _chapterCache.getChapterCatalogOrLoad(
       sourceId: source.id,
-      sourceRevision: await _cacheRevision(source, sourceVariables),
+      sourceRevision: sourceRevision,
       bookId: bookId,
-      loader: () => _runtime().getChapters(
-        source,
-        bookId,
-        sourceVariables: sourceVariables,
-      ),
+      loader: () {
+        final runtime = _runtime();
+        return _refreshRuntimeCatalog(
+          runtime,
+          source,
+          bookId,
+          sourceRevision: catalogIdentity.revision,
+          sourceVariables: catalogIdentity.variables,
+        );
+      },
     );
   }
 
@@ -235,18 +256,29 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
   }) async {
     cancellation?.throwIfCancelled();
     await _ensureEnabled();
+    final sourceRevision = await _cacheRevision(source, sourceVariables);
+    final catalogIdentity = await _runtimeCatalogIdentity(
+      source,
+      sourceVariables,
+      sourceRevision: sourceRevision,
+    );
     final chapters = await _chapterCache.getChapterCatalogOrLoad(
       sourceId: source.id,
-      sourceRevision: await _cacheRevision(source, sourceVariables),
+      sourceRevision: sourceRevision,
       bookId: bookId,
       refreshAfter: Duration.zero,
       staleWhileRevalidate: false,
-      loader: () => _runtime().getChapters(
-        source,
-        bookId,
-        sourceVariables: sourceVariables,
-        cancellation: cancellation,
-      ),
+      loader: () {
+        final runtime = _runtime();
+        return _refreshRuntimeCatalog(
+          runtime,
+          source,
+          bookId,
+          sourceRevision: catalogIdentity.revision,
+          sourceVariables: catalogIdentity.variables,
+          cancellation: cancellation,
+        );
+      },
     );
     cancellation?.throwIfCancelled();
     return chapters;
@@ -260,10 +292,19 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
     BookDownloadCancellation? cancellation,
   }) async {
     await _ensureEnabled();
-    return _runtime().getChapters(
+    final sourceRevision = await _cacheRevision(source, sourceVariables);
+    final catalogIdentity = await _runtimeCatalogIdentity(
+      source,
+      sourceVariables,
+      sourceRevision: sourceRevision,
+    );
+    final runtime = _runtime();
+    return _refreshRuntimeCatalog(
+      runtime,
       source,
       bookId,
-      sourceVariables: sourceVariables,
+      sourceRevision: catalogIdentity.revision,
+      sourceVariables: catalogIdentity.variables,
       cancellation: cancellation,
     );
   }
@@ -276,17 +317,29 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
     Map<String, String> sourceVariables = const {},
   }) async {
     await _ensureEnabled();
+    final sourceRevision = await _cacheRevision(source, sourceVariables);
+    final catalogIdentity = await _runtimeCatalogIdentity(
+      source,
+      sourceVariables,
+      sourceRevision: sourceRevision,
+    );
     return _chapterCache.getOrLoad(
       sourceId: source.id,
-      sourceRevision: await _cacheRevision(source, sourceVariables),
+      sourceRevision: sourceRevision,
       bookId: bookId,
       chapterId: chapterId,
-      loader: () => _runtime().getChapterContent(
-        source,
-        bookId: bookId,
-        chapterId: chapterId,
-        sourceVariables: sourceVariables,
-      ),
+      loader: () {
+        final runtime = _runtime();
+        return _loadRuntimeChapterContent(
+          runtime,
+          source,
+          bookId: bookId,
+          chapterId: chapterId,
+          catalogRevision: catalogIdentity.revision,
+          catalogVariables: catalogIdentity.variables,
+          sourceVariables: sourceVariables,
+        );
+      },
     );
   }
 
@@ -300,19 +353,31 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
   }) async {
     cancellation?.throwIfCancelled();
     await _ensureEnabled();
+    final sourceRevision = await _cacheRevision(source, sourceVariables);
+    final catalogIdentity = await _runtimeCatalogIdentity(
+      source,
+      sourceVariables,
+      sourceRevision: sourceRevision,
+    );
     final content = await _chapterCache.getOrLoad(
       sourceId: source.id,
-      sourceRevision: await _cacheRevision(source, sourceVariables),
+      sourceRevision: sourceRevision,
       bookId: bookId,
       chapterId: chapterId,
       staleWhileRevalidate: false,
-      loader: () => _runtime().getChapterContent(
-        source,
-        bookId: bookId,
-        chapterId: chapterId,
-        sourceVariables: sourceVariables,
-        cancellation: cancellation,
-      ),
+      loader: () {
+        final runtime = _runtime();
+        return _loadRuntimeChapterContent(
+          runtime,
+          source,
+          bookId: bookId,
+          chapterId: chapterId,
+          catalogRevision: catalogIdentity.revision,
+          catalogVariables: catalogIdentity.variables,
+          sourceVariables: sourceVariables,
+          cancellation: cancellation,
+        );
+      },
     );
     cancellation?.throwIfCancelled();
     return content;
@@ -327,12 +392,188 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
     BookDownloadCancellation? cancellation,
   }) async {
     await _ensureEnabled();
-    return _runtime().getChapterContent(
+    final sourceRevision = await _cacheRevision(source, sourceVariables);
+    final catalogIdentity = await _runtimeCatalogIdentity(
+      source,
+      sourceVariables,
+      sourceRevision: sourceRevision,
+    );
+    final runtime = _runtime();
+    return _loadRuntimeChapterContent(
+      runtime,
+      source,
+      bookId: bookId,
+      chapterId: chapterId,
+      catalogRevision: catalogIdentity.revision,
+      catalogVariables: catalogIdentity.variables,
+      sourceVariables: sourceVariables,
+      cancellation: cancellation,
+    );
+  }
+
+  Future<BookSourceChapterContent> _loadRuntimeChapterContent(
+    SourceRuntime runtime,
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    required String catalogRevision,
+    required Map<String, String> catalogVariables,
+    required Map<String, String> sourceVariables,
+    BookDownloadCancellation? cancellation,
+  }) async {
+    await _ensureRuntimeCatalog(
+      runtime,
+      source,
+      bookId,
+      chapterId: chapterId,
+      sourceRevision: catalogRevision,
+      sourceVariables: catalogVariables,
+      cancellation: cancellation,
+    );
+    cancellation?.throwIfCancelled();
+    return runtime.getChapterContent(
       source,
       bookId: bookId,
       chapterId: chapterId,
       sourceVariables: sourceVariables,
       cancellation: cancellation,
+    );
+  }
+
+  Future<void> _ensureRuntimeCatalog(
+    SourceRuntime runtime,
+    RegisteredBookSource source,
+    String bookId, {
+    required String chapterId,
+    required String sourceRevision,
+    required Map<String, String> sourceVariables,
+    BookDownloadCancellation? cancellation,
+  }) {
+    final flights = _runtimeCatalogInitializations[runtime] ??=
+        <String, _RuntimeCatalogFlight>{};
+    final key = '${source.id}\u0000$bookId';
+    final existing = flights[key];
+    if (existing != null && existing.revision == sourceRevision) {
+      return _waitForRuntimeCatalog(existing.future, cancellation);
+    }
+    if (existing == null &&
+        runtime.hasReadingCatalogState(
+          source,
+          bookId,
+          sourceRevision,
+          chapterId: chapterId,
+        )) {
+      cancellation?.throwIfCancelled();
+      return Future<void>.value();
+    }
+    final attempt = _queueRuntimeCatalog(
+      flights,
+      key,
+      runtime,
+      source,
+      bookId,
+      sourceRevision: sourceRevision,
+      sourceVariables: sourceVariables,
+    );
+    return _waitForRuntimeCatalog(attempt.then<void>((_) {}), cancellation);
+  }
+
+  Future<List<BookSourceChapter>> _refreshRuntimeCatalog(
+    SourceRuntime runtime,
+    RegisteredBookSource source,
+    String bookId, {
+    required String sourceRevision,
+    required Map<String, String> sourceVariables,
+    BookDownloadCancellation? cancellation,
+  }) {
+    final flights = _runtimeCatalogInitializations[runtime] ??=
+        <String, _RuntimeCatalogFlight>{};
+    final key = '${source.id}\u0000$bookId';
+    final attempt = _queueRuntimeCatalog(
+      flights,
+      key,
+      runtime,
+      source,
+      bookId,
+      sourceRevision: sourceRevision,
+      sourceVariables: sourceVariables,
+    );
+    return _waitForRuntimeCatalog(attempt, cancellation);
+  }
+
+  Future<List<BookSourceChapter>> _queueRuntimeCatalog(
+    Map<String, _RuntimeCatalogFlight> flights,
+    String key,
+    SourceRuntime runtime,
+    RegisteredBookSource source,
+    String bookId, {
+    required String sourceRevision,
+    required Map<String, String> sourceVariables,
+  }) {
+    final previous = flights[key]?.future;
+    final attempt = () async {
+      if (previous != null) {
+        try {
+          await previous;
+        } catch (_) {
+          // A newer initialization remains useful after an earlier failure.
+        }
+      }
+      final chapters = await runtime.getChapters(
+        source,
+        bookId,
+        sourceVariables: sourceVariables,
+      );
+      runtime.rememberReadingCatalogIdentity(source, bookId, sourceRevision);
+      return chapters;
+    }();
+    final completion = attempt.then<void>((_) {});
+    final flight = _RuntimeCatalogFlight(sourceRevision, completion);
+    flights[key] = flight;
+    unawaited(
+      completion.then<void>(
+        (_) {
+          if (identical(flights[key], flight)) flights.remove(key);
+        },
+        onError: (Object _, StackTrace _) {
+          if (identical(flights[key], flight)) flights.remove(key);
+        },
+      ),
+    );
+    return attempt;
+  }
+
+  Future<T> _waitForRuntimeCatalog<T>(
+    Future<T> catalog,
+    BookDownloadCancellation? cancellation,
+  ) {
+    cancellation?.throwIfCancelled();
+    if (cancellation == null) return catalog;
+    return Future.any<T>([
+      catalog,
+      cancellation.whenCancelled.then<T>(
+        (_) => throw const BookDownloadCancelledException(),
+      ),
+    ]);
+  }
+
+  Future<({String revision, Map<String, String> variables})>
+  _runtimeCatalogIdentity(
+    RegisteredBookSource source,
+    Map<String, String> sourceVariables, {
+    required String sourceRevision,
+  }) async {
+    if (!sourceVariables.keys.any(_readerContextVariableKeys.contains)) {
+      return (revision: sourceRevision, variables: sourceVariables);
+    }
+    final variables = <String, String>{
+      for (final entry in sourceVariables.entries)
+        if (!_readerContextVariableKeys.contains(entry.key))
+          entry.key: entry.value,
+    };
+    return (
+      revision: await _cacheRevision(source, variables),
+      variables: variables,
     );
   }
 
@@ -397,4 +638,11 @@ Object? _stableCacheJson(Object? value) {
     return value.map(_stableCacheJson).toList(growable: false);
   }
   return value;
+}
+
+class _RuntimeCatalogFlight {
+  const _RuntimeCatalogFlight(this.revision, this.future);
+
+  final String revision;
+  final Future<void> future;
 }

@@ -14,6 +14,7 @@ class SourceRuntimeState {
   final Map<String, Map<String, Object?>> _bookEntityContexts = {};
   final Map<String, Map<String, Object?>> _chapterRuleContexts = {};
   final Map<String, SourceResponse> _bookInfoResponses = {};
+  final Map<String, _CatalogRuntimeState> _catalogRuntimeStates = {};
 
   Map<String, Object?> ruleStateFor(
     ReadingSourceConfig source,
@@ -102,6 +103,71 @@ class SourceRuntimeState {
     maxRememberedBookStates,
   );
 
+  void rememberCatalogParsed(ReadingSourceConfig source, String bookId) {
+    final key = bookKey(source, bookId);
+    _rememberBounded(
+      _catalogRuntimeStates,
+      key,
+      _CatalogRuntimeState(requiresRuleState: _bookRuleStates.containsKey(key)),
+      maxRememberedBookStates,
+    );
+  }
+
+  void rememberCatalogIdentity(
+    ReadingSourceConfig source,
+    String bookId,
+    String identity,
+  ) {
+    final key = bookKey(source, bookId);
+    final current = _catalogRuntimeStates[key];
+    _rememberBounded(
+      _catalogRuntimeStates,
+      key,
+      (current ?? const _CatalogRuntimeState(external: true)).copyWith(
+        identity: identity,
+      ),
+      maxRememberedBookStates,
+    );
+  }
+
+  bool hasCatalogIdentity(
+    ReadingSourceConfig source,
+    String bookId,
+    String identity, {
+    String? chapterId,
+  }) {
+    final key = bookKey(source, bookId);
+    final catalog = _catalogRuntimeStates[key];
+    if (catalog == null || catalog.identity != identity) return false;
+    if (catalog.external) return true;
+    if (!_bookEntityContexts.containsKey(key)) return false;
+    if (catalog.requiresRuleState && !_bookRuleStates.containsKey(key)) {
+      return false;
+    }
+    if (chapterId == null) return true;
+    final chapter = _chapterRuleContexts[chapterKey(source, bookId, chapterId)];
+    return chapter != null && chapter.containsKey('nextChapterUrl');
+  }
+
+  void rememberExternalCatalogIdentity(
+    String sourceId,
+    String bookId,
+    String identity,
+  ) => _rememberBounded(
+    _catalogRuntimeStates,
+    'external\u0000$sourceId\u0000$bookId',
+    _CatalogRuntimeState(identity: identity, external: true),
+    maxRememberedBookStates,
+  );
+
+  bool hasExternalCatalogIdentity(
+    String sourceId,
+    String bookId,
+    String identity,
+  ) =>
+      _catalogRuntimeStates['external\u0000$sourceId\u0000$bookId']?.identity ==
+      identity;
+
   SourceResponse? takeBookInfoResponse(
     ReadingSourceConfig source,
     String bookId,
@@ -122,6 +188,7 @@ class SourceRuntimeState {
     _bookEntityContexts.removeWhere((key, _) => key.startsWith(prefix));
     _chapterRuleContexts.removeWhere((key, _) => key.startsWith(prefix));
     _bookInfoResponses.removeWhere((key, _) => key.startsWith(prefix));
+    _catalogRuntimeStates.removeWhere((key, _) => key.startsWith(prefix));
   }
 
   void clear() {
@@ -129,7 +196,26 @@ class SourceRuntimeState {
     _bookEntityContexts.clear();
     _chapterRuleContexts.clear();
     _bookInfoResponses.clear();
+    _catalogRuntimeStates.clear();
   }
+}
+
+class _CatalogRuntimeState {
+  const _CatalogRuntimeState({
+    this.identity,
+    this.requiresRuleState = false,
+    this.external = false,
+  });
+
+  final String? identity;
+  final bool requiresRuleState;
+  final bool external;
+
+  _CatalogRuntimeState copyWith({String? identity}) => _CatalogRuntimeState(
+    identity: identity ?? this.identity,
+    requiresRuleState: requiresRuleState,
+    external: external,
+  );
 }
 
 void _rememberBounded<K, V>(Map<K, V> values, K key, V value, int limit) {

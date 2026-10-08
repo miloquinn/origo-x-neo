@@ -6,6 +6,7 @@ import 'package:xxread/core/reader/native_text_paginator.dart';
 import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/core/reader/reader_annotation.dart';
 import 'package:xxread/core/reader/reader_text_pagination.dart';
+import 'package:xxread/core/reader/reader_text_layout.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book_note.dart';
 import 'package:xxread/utils/reader_themes.dart';
@@ -14,6 +15,173 @@ import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_tap_observer.dart';
 
 void main() {
+  testWidgets('sentence tap consumes page tap on either half of a glyph', (
+    tester,
+  ) async {
+    final offsets = <int>[];
+    var pageTaps = 0;
+    await _renderTapPage(
+      tester,
+      onPlay: offsets.add,
+      onPageTap: () => pageTaps++,
+    );
+    final paragraph = _tapParagraph(tester);
+    final box = paragraph
+        .getBoxesForSelection(
+          const TextSelection(baseOffset: 1, extentOffset: 2),
+        )
+        .single
+        .toRect();
+    for (final fraction in [0.25, 0.75]) {
+      await tester.tapAt(
+        paragraph.localToGlobal(
+          Offset(box.left + box.width * fraction, box.center.dy),
+        ),
+      );
+      await tester.pump();
+    }
+    expect(offsets, [1, 1]);
+    expect(pageTaps, 0);
+  });
+
+  testWidgets('blank page space keeps the existing tap action', (tester) async {
+    final offsets = <int>[];
+    var pageTaps = 0;
+    await _renderTapPage(
+      tester,
+      onPlay: offsets.add,
+      onPageTap: () => pageTaps++,
+    );
+    final paragraph = _tapParagraph(tester);
+    await tester.tapAt(paragraph.localToGlobal(const Offset(330, 120)));
+    await tester.pump();
+    expect(offsets, isEmpty);
+    expect(pageTaps, 1);
+  });
+
+  testWidgets('disabled sentence navigation leaves ordinary page taps intact', (
+    tester,
+  ) async {
+    var pageTaps = 0;
+    await _renderTapPage(tester, onPageTap: () => pageTaps++);
+    final paragraph = _tapParagraph(tester);
+    final box = paragraph
+        .getBoxesForSelection(
+          const TextSelection(baseOffset: 1, extentOffset: 2),
+        )
+        .single
+        .toRect();
+    await tester.tapAt(paragraph.localToGlobal(box.center));
+    await tester.pump();
+    expect(pageTaps, 1);
+  });
+
+  testWidgets('generated indentation maps glyph taps to canonical text', (
+    tester,
+  ) async {
+    const source = '甲句。\n乙句。';
+    final layout = ReaderTextLayout.build(
+      source,
+      firstLineIndent: 2,
+      paragraphSpacing: 1,
+    );
+    final page = ReaderTextPage(
+      text: layout.text,
+      layout: layout,
+      endOffset: source.length,
+    );
+    final offsets = <int>[];
+    var pageTaps = 0;
+    await _renderTapPage(
+      tester,
+      source: source,
+      page: page,
+      onPlay: offsets.add,
+      onPageTap: () => pageTaps++,
+    );
+    final paragraph = _tapParagraph(tester);
+    final displayOffset = layout.text.indexOf('乙');
+    final box = paragraph
+        .getBoxesForSelection(
+          TextSelection(
+            baseOffset: displayOffset,
+            extentOffset: displayOffset + 1,
+          ),
+        )
+        .single
+        .toRect();
+    await tester.tapAt(paragraph.localToGlobal(box.center));
+    await tester.pump();
+    expect(offsets, [4]);
+    expect(pageTaps, 0);
+    final indent = paragraph
+        .getBoxesForSelection(
+          const TextSelection(baseOffset: 0, extentOffset: 1),
+        )
+        .single
+        .toRect();
+    await tester.tapAt(paragraph.localToGlobal(indent.center));
+    await tester.pump();
+    expect(offsets, [4]);
+    expect(pageTaps, 1);
+  });
+
+  testWidgets('cross-page text taps retain chapter offsets', (tester) async {
+    const source = '甲句。乙句继续跨页。';
+    const page = ReaderTextPage(text: '继续跨页。', startOffset: 5);
+    final offsets = <int>[];
+    await _renderTapPage(
+      tester,
+      source: source,
+      page: page,
+      onPlay: offsets.add,
+      onPageTap: () {},
+    );
+    final paragraph = _tapParagraph(tester);
+    final box = paragraph
+        .getBoxesForSelection(
+          const TextSelection(baseOffset: 0, extentOffset: 1),
+        )
+        .single
+        .toRect();
+    await tester.tapAt(paragraph.localToGlobal(box.center));
+    await tester.pump();
+    expect(offsets, [5]);
+  });
+
+  testWidgets(
+    'sentence navigation leaves long press selection and drags alone',
+    (tester) async {
+      final offsets = <int>[];
+      var pageTaps = 0;
+      await _renderTapPage(
+        tester,
+        onPlay: offsets.add,
+        onPageTap: () => pageTaps++,
+      );
+      final paragraph = _tapParagraph(tester);
+      final box = paragraph
+          .getBoxesForSelection(
+            const TextSelection(baseOffset: 1, extentOffset: 2),
+          )
+          .single
+          .toRect();
+      final position = paragraph.localToGlobal(box.center);
+      final gesture = await tester.startGesture(position);
+      await tester.pump(const Duration(milliseconds: 600));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('reader-selection-toolbar')),
+        findsOneWidget,
+      );
+      await tester.dragFrom(position, const Offset(80, 0));
+      await tester.pump();
+      expect(offsets, isEmpty);
+      expect(pageTaps, 0);
+    },
+  );
+
   testWidgets('moving spoken highlight preserves every character position', (
     tester,
   ) async {
@@ -305,88 +473,100 @@ void main() {
     },
   );
 
-  testWidgets('ask AI action hands the selection to the reader', (
-    tester,
-  ) async {
-    ReaderSelectionSnapshot? askedSelection;
-    final interactionChanges = <bool>[];
-    const bodyStyle = TextStyle(fontSize: 20, height: 1.6);
-    final flowStyle = NativeTextFlowStyle(
-      textDirection: TextDirection.ltr,
-      textScaler: TextScaler.noScaling,
-      locale: const Locale('zh'),
-      strutStyle: readerStrutStyle(bodyStyle),
-      textHeightBehavior: readerTextHeightBehavior,
-    );
+  for (final purify in [false, true]) {
+    testWidgets(
+      '${purify ? 'purify' : 'ask AI'} action hands the selection to the reader',
+      (tester) async {
+        ReaderSelectionSnapshot? askedSelection;
+        final interactionChanges = <bool>[];
+        const bodyStyle = TextStyle(fontSize: 20, height: 1.6);
+        final flowStyle = NativeTextFlowStyle(
+          textDirection: TextDirection.ltr,
+          textScaler: TextScaler.noScaling,
+          locale: const Locale('zh'),
+          strutStyle: readerStrutStyle(bodyStyle),
+          textHeightBehavior: readerTextHeightBehavior,
+        );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('zh'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: Center(
-            child: SizedBox(
-              width: 360,
-              height: 260,
-              child: ReaderAnnotatedTextPage(
-                page: const ReaderTextPage(text: '选择这段文字去问问AI助手。'),
-                sourceText: '选择这段文字去问问AI助手。',
-                chapterId: 'chapter-1',
-                chapterTitle: '第一章',
-                chapterIndex: 0,
-                pageIndex: 0,
-                bookId: 1,
-                format: BookFormat.txt,
-                renderer: ReaderRendererType.flutterNative,
-                palette: ReaderThemes.green,
-                bodyStyle: bodyStyle,
-                flowStyle: flowStyle,
-                annotations: const [],
-                onSaveTextAnnotation: (_, _) async {},
-                onAskAiSelection: (selection) async {
-                  askedSelection = selection;
-                },
-                onInteractionChanged: interactionChanges.add,
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('zh'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 360,
+                  height: 260,
+                  child: ReaderAnnotatedTextPage(
+                    page: const ReaderTextPage(text: '选择这段文字去问问AI助手。'),
+                    sourceText: '选择这段文字去问问AI助手。',
+                    chapterId: 'chapter-1',
+                    chapterTitle: '第一章',
+                    chapterIndex: 0,
+                    pageIndex: 0,
+                    bookId: 1,
+                    format: BookFormat.txt,
+                    renderer: ReaderRendererType.flutterNative,
+                    palette: ReaderThemes.green,
+                    bodyStyle: bodyStyle,
+                    flowStyle: flowStyle,
+                    annotations: const [],
+                    onSaveTextAnnotation: (_, _) async {},
+                    onAskAiSelection: purify
+                        ? null
+                        : (selection) async {
+                            askedSelection = selection;
+                          },
+                    onPurifySelection: purify
+                        ? (selection) async {
+                            askedSelection = selection;
+                          }
+                        : null,
+                    onInteractionChanged: interactionChanges.add,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-    final richText = find.descendant(
-      of: find.byType(ReaderAnnotatedTextPage),
-      matching: find.byType(RichText),
-    );
-    final paragraph = tester.renderObject<RenderParagraph>(richText);
-    final characterBox = paragraph
-        .getBoxesForSelection(
-          const TextSelection(baseOffset: 5, extentOffset: 6),
-        )
-        .single
-        .toRect();
-    final gesture = await tester.startGesture(
-      paragraph.localToGlobal(characterBox.center),
-    );
-    addTearDown(gesture.removePointer);
-    await tester.pump(const Duration(milliseconds: 500));
-    await gesture.up();
-    await tester.pumpAndSettle();
+        final richText = find.descendant(
+          of: find.byType(ReaderAnnotatedTextPage),
+          matching: find.byType(RichText),
+        );
+        final paragraph = tester.renderObject<RenderParagraph>(richText);
+        final characterBox = paragraph
+            .getBoxesForSelection(
+              const TextSelection(baseOffset: 5, extentOffset: 6),
+            )
+            .single
+            .toRect();
+        final gesture = await tester.startGesture(
+          paragraph.localToGlobal(characterBox.center),
+        );
+        addTearDown(gesture.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-    expect(find.text('问AI'), findsOneWidget);
-    await tester.tap(find.text('问AI'));
-    await tester.pumpAndSettle();
+        final actionLabel = purify ? '净化所选文字' : '问AI';
+        expect(find.text(actionLabel), findsOneWidget);
+        await tester.tap(find.text(actionLabel));
+        await tester.pumpAndSettle();
 
-    expect(askedSelection?.selectedText, isNotEmpty);
-    expect(interactionChanges, [true, false]);
-  });
+        expect(askedSelection?.selectedText, isNotEmpty);
+        expect(interactionChanges, [true, false]);
+      },
+    );
+  }
 
   testWidgets(
     'tapping an underlined note opens its details without turning the page',
     (tester) async {
       var readerTaps = 0;
+      var sentenceTaps = 0;
       final interactionChanges = <bool>[];
       const sourceText = '点击笔记文字查看内容';
       const bodyStyle = TextStyle(fontSize: 20, height: 1.6);
@@ -436,6 +616,7 @@ void main() {
                     bodyStyle: bodyStyle,
                     flowStyle: flowStyle,
                     annotations: [note],
+                    onPlayFromOffset: (_) => sentenceTaps++,
                     onSaveTextAnnotation: (_, _) async {},
                     onInteractionChanged: interactionChanges.add,
                   ),
@@ -469,6 +650,7 @@ void main() {
       expect(find.text('点击笔记'), findsOneWidget);
       expect(find.text('这是保存的笔记内容。'), findsOneWidget);
       expect(readerTaps, 0);
+      expect(sentenceTaps, 0);
       expect(interactionChanges, [true]);
 
       await tester.tap(find.text('确认'));
@@ -476,4 +658,64 @@ void main() {
       expect(interactionChanges, [true, false]);
     },
   );
+}
+
+RenderParagraph _tapParagraph(WidgetTester tester) =>
+    tester.renderObject<RenderParagraph>(
+      find.descendant(
+        of: find.byType(ReaderAnnotatedTextPage),
+        matching: find.byType(RichText),
+      ),
+    );
+
+Future<void> _renderTapPage(
+  WidgetTester tester, {
+  String source = '甲句。乙句。',
+  ReaderTextPage? page,
+  ValueChanged<int>? onPlay,
+  required VoidCallback onPageTap,
+}) async {
+  const style = TextStyle(fontSize: 20, height: 1.6);
+  await tester.pumpWidget(
+    MaterialApp(
+      locale: const Locale('zh'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 360,
+            height: 260,
+            child: ReaderTapObserver(
+              onTap: (_) => onPageTap(),
+              child: ReaderAnnotatedTextPage(
+                page: page ?? ReaderTextPage(text: source),
+                sourceText: source,
+                chapterId: 'chapter-1',
+                chapterTitle: '第一章',
+                chapterIndex: 0,
+                pageIndex: 0,
+                bookId: 1,
+                format: BookFormat.txt,
+                renderer: ReaderRendererType.flutterNative,
+                palette: ReaderThemes.day,
+                bodyStyle: style,
+                flowStyle: NativeTextFlowStyle(
+                  textDirection: TextDirection.ltr,
+                  textScaler: TextScaler.noScaling,
+                  locale: const Locale('zh'),
+                  strutStyle: readerStrutStyle(style),
+                  textHeightBehavior: readerTextHeightBehavior,
+                ),
+                annotations: const [],
+                onSaveTextAnnotation: (_, _) async {},
+                onPlayFromOffset: onPlay,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
 }

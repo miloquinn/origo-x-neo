@@ -192,48 +192,79 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
     required int chapterIndex,
     required int pageIndex,
     bool fillAvailableSpace = true,
-  }) {
-    final flowStyle = _readerTextFlowStyle();
-    return ReaderAnnotatedTextPage(
-      key: ValueKey(
-        'native-annotated-page:${chapter.id}:$pageIndex:'
-        '${page.startOffset}:${page.endOffset}',
-      ),
-      page: page,
-      sourceText: chapter.plainText,
-      chapterId: chapter.id,
-      chapterTitle: chapter.title,
-      chapterIndex: chapterIndex,
-      pageIndex: pageIndex,
-      bookId: widget.book.id,
-      format: BookFormat.fromFileExtension(widget.book.format),
-      renderer: ReaderRendererType.flutterNative,
-      palette: _readerTheme,
-      bodyStyle: _readerTextStyle,
-      flowStyle: flowStyle,
-      annotations: _annotations
-          .where((note) => isTxtNoteLocatorResolved(note.toMap()))
-          .toList(growable: false),
-      spokenHighlight: _readerAloudHighlight,
-      baseSourceSpanBuilder: (start, end) => _styledSpanForRange(
-        chapter,
-        start,
-        end,
-        _readerTextStyle,
-        preserveDocumentFont: _preserveDocumentFont,
-      ),
-      onSaveTextAnnotation: _saveTextAnnotation,
-      onAskAiSelection: _askAiAboutSelection,
-      onSearchSelection: (selection) =>
-          _showFullTextSearch(initialQuery: selection.selectedText),
-      fillAvailableSpace: fillAvailableSpace,
-      onInteractionChanged: (active) {
-        if (!mounted || _annotationInteractionActive == active) return;
-        if (active) _cancelAutoSweepOrPause();
-        _setReaderState(() => _annotationInteractionActive = active);
-      },
-    );
-  }
+  }) => Builder(
+    builder: (context) {
+      final flowStyle = _readerTextFlowStyle();
+      final tapToSeek = context.select<ReaderAloudService?, bool>(
+        (service) => service?.tapToSeek ?? false,
+      );
+      final listening = context
+          .select<ReaderAloudSession?, ReaderAloudController?>(
+            (session) =>
+                session?.sourceId == 'local:${widget.book.id}' &&
+                    session!.isActive
+                ? session.controller
+                : null,
+          );
+      return ReaderAnnotatedTextPage(
+        key: ValueKey(
+          'native-annotated-page:${chapter.id}:$pageIndex:'
+          '${page.startOffset}:${page.endOffset}',
+        ),
+        page: page,
+        sourceText: chapter.plainText,
+        chapterId: chapter.id,
+        chapterTitle: chapter.title,
+        chapterIndex: chapterIndex,
+        pageIndex: pageIndex,
+        bookId: widget.book.id,
+        format: BookFormat.fromFileExtension(widget.book.format),
+        renderer: ReaderRendererType.flutterNative,
+        palette: _readerTheme,
+        bodyStyle: _readerTextStyle,
+        flowStyle: flowStyle,
+        annotations: _annotations
+            .where((note) => isTxtNoteLocatorResolved(note.toMap()))
+            .toList(growable: false),
+        spokenHighlight: _readerAloudHighlight,
+        onPlayFromOffset: tapToSeek && listening != null
+            ? (offset) {
+                final controller = _ensureReaderAloudController();
+                if (controller == null) return;
+                _cancelAutoSweepOrPause();
+                _readerAloudNavigationDetached = false;
+                ++_readerAloudNavigationRevision;
+                unawaited(
+                  controller.playFromOffset(
+                    ReaderAloudPosition(
+                      chapterIndex: chapterIndex,
+                      offset: offset,
+                    ),
+                  ),
+                );
+              }
+            : null,
+        baseSourceSpanBuilder: (start, end) => _styledSpanForRange(
+          chapter,
+          start,
+          end,
+          _readerTextStyle,
+          preserveDocumentFont: _preserveDocumentFont,
+        ),
+        onSaveTextAnnotation: _saveTextAnnotation,
+        onAskAiSelection: _askAiAboutSelection,
+        onSearchSelection: (selection) =>
+            _showFullTextSearch(initialQuery: selection.selectedText),
+        onPurifySelection: _purifySelection,
+        fillAvailableSpace: fillAvailableSpace,
+        onInteractionChanged: (active) {
+          if (!mounted || _annotationInteractionActive == active) return;
+          if (active) _cancelAutoSweepOrPause();
+          _setReaderState(() => _annotationInteractionActive = active);
+        },
+      );
+    },
+  );
 
   ReaderSafeAreaMetrics get _readerSafeArea => ReaderSafeAreaMetrics(
     viewPadding: MediaQuery.viewPaddingOf(context),

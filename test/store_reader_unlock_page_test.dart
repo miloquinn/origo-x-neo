@@ -48,6 +48,101 @@ void main() {
   });
   tearDown(AppDistribution.debugReset);
 
+  testWidgets('reader details stay in the header menu', (tester) async {
+    final account = _UnlockAccount(permanent: true, authenticated: true);
+    addTearDown(account.dispose);
+    await _pumpPage(tester, account);
+    expect(find.byKey(const ValueKey('store-reader-benefits')), findsNothing);
+    expect(find.byKey(const ValueKey('store-reader-details')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('store-reader-details-menu')).hitTestable(),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('store-reader-details-menu')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('store-reader-benefits')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('store-reader-details')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final phase in [
+    StorePurchasePhase.loadingProduct,
+    StorePurchasePhase.productUnavailable,
+  ]) {
+    testWidgets('owned reader hides background product status $phase', (
+      tester,
+    ) async {
+      final account = _UnlockAccount(
+        permanent: true,
+        authenticated: true,
+        phase: phase,
+      );
+      addTearDown(account.dispose);
+      await _pumpPage(tester, account);
+
+      expect(find.byKey(const ValueKey('store-reader-active')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('store-reader-purchase-status')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('owned reader still reports a real restore failure', (
+    tester,
+  ) async {
+    final account = _UnlockAccount(
+      permanent: true,
+      authenticated: true,
+      phase: StorePurchasePhase.failed,
+      purchaseError: '恢复购买失败',
+    );
+    addTearDown(account.dispose);
+    await _pumpPage(tester, account);
+    expect(find.text('恢复购买失败'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reader restore and redemption share a row and open redemption', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final account = _UnlockAccount(permanent: true, authenticated: true);
+    addTearDown(account.dispose);
+    await _pumpPage(tester, account);
+
+    final restore = find.byKey(const ValueKey('store-reader-restore'));
+    final redeem = find.byKey(const ValueKey('store-reader-redeem-entry'));
+    expect(restore.hitTestable(), findsOneWidget);
+    expect(redeem.hitTestable(), findsOneWidget);
+    expect(
+      tester.getCenter(restore).dy,
+      closeTo(tester.getCenter(redeem).dy, 1),
+    );
+    expect(tester.getRect(redeem).height, greaterThanOrEqualTo(48));
+    final status = find.byKey(const ValueKey('store-reader-active'));
+    expect(
+      tester.getRect(restore).top - tester.getRect(status).bottom,
+      lessThanOrEqualTo(12),
+    );
+    await tester.tap(redeem);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('account-redemption-code')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Apple sandbox keeps normal optional purchase actions', (
     tester,
   ) async {
@@ -173,11 +268,7 @@ void main() {
       );
       expect(find.text('登录后购买永久阅读权益'), findsOneWidget);
 
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('store-reader-details')),
-      );
-      await tester.tap(find.byKey(const ValueKey('store-reader-details')));
-      await tester.pumpAndSettle();
+      await _openReaderDetails(tester, const ValueKey('store-reader-details'));
       expect(find.textContaining('基础阅读目前免费开放'), findsWidgets);
       expect(find.textContaining('完整本地阅读体验，一次购买长期使用'), findsNothing);
       Navigator.of(
@@ -236,8 +327,7 @@ void main() {
         'store-reader-purchase',
         'store-start-trial',
         'store-reader-restore',
-        'store-reader-details',
-        'store-reader-benefits',
+        'store-reader-details-menu',
       ]) {
         final finder = find.byKey(ValueKey(key));
         expect(finder.hitTestable(), findsOneWidget);
@@ -259,8 +349,7 @@ void main() {
       expect(find.byKey(const ValueKey('basic-artwork-2')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('basic-feature-tab-0')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('store-reader-benefits')));
-      await tester.pumpAndSettle();
+      await _openReaderDetails(tester, const ValueKey('store-reader-benefits'));
       expect(
         find.byKey(const ValueKey('store-reader-benefits-page')),
         findsOneWidget,
@@ -284,8 +373,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.textContaining('不会再次收费'), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('store-reader-details')));
-      await tester.pumpAndSettle();
+      await _openReaderDetails(tester, const ValueKey('store-reader-details'));
       expect(
         find.byKey(const ValueKey('store-reader-details-page')),
         findsOneWidget,
@@ -443,8 +531,10 @@ void main() {
                 ? PremiumMembershipPage(account: account)
                 : StoreReaderUnlockPage(account: account),
           );
-          final artwork = find.byType(PurchaseArtwork).first;
-          final actual = Theme.of(tester.element(artwork));
+          final content = premium
+              ? find.byKey(const ValueKey('premium-membership-card'))
+              : find.byType(PurchaseArtwork).first;
+          final actual = Theme.of(tester.element(content));
           expect(actual.colorScheme, scheme);
           expect(actual.brightness, scheme.brightness);
           expect(tester.takeException(), isNull);
@@ -582,6 +672,41 @@ void main() {
             premiumKey,
             '$screenshotDirectory/premium-phone-${dark ? "dark" : "light"}.png',
           );
+          final ownedKey = GlobalKey();
+          await _pumpWidgetPage(
+            tester,
+            boundaryKey: ownedKey,
+            dark: dark,
+            viewPadding: const EdgeInsets.only(top: 54, bottom: 34),
+            child: StoreReaderUnlockPage(account: ownedReaderAccount),
+          );
+          await _precacheBrandIcon(tester, find.byType(StoreReaderUnlockPage));
+          await _capture(
+            tester,
+            ownedKey,
+            '$screenshotDirectory/reader-owned-phone-${dark ? "dark" : "light"}.png',
+          );
+
+          final activeAccount = _UnlockAccount(
+            permanent: true,
+            authenticated: true,
+            premium: true,
+          );
+          addTearDown(activeAccount.dispose);
+          final activeKey = GlobalKey();
+          await _pumpWidgetPage(
+            tester,
+            boundaryKey: activeKey,
+            dark: dark,
+            viewPadding: const EdgeInsets.only(top: 54, bottom: 34),
+            child: PremiumMembershipPage(account: activeAccount),
+          );
+          await _precacheBrandIcon(tester, find.byType(PremiumMembershipPage));
+          await _capture(
+            tester,
+            activeKey,
+            '$screenshotDirectory/explore-owned-phone-${dark ? "dark" : "light"}.png',
+          );
           expect(tester.takeException(), isNull);
         }
       } finally {
@@ -590,6 +715,17 @@ void main() {
     },
     skip: screenshotDirectory == null,
   );
+}
+
+Future<void> _openReaderDetails(
+  WidgetTester tester,
+  ValueKey<String> key,
+) async {
+  await tester.tap(find.byKey(const ValueKey('store-reader-details-menu')));
+  await tester.pumpAndSettle();
+  expect(find.byKey(key).hitTestable(), findsOneWidget);
+  await tester.tap(find.byKey(key));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _enableAppleBeta() async {
@@ -629,6 +765,7 @@ Future<void> _pumpWidgetPage(
   Color accent = Colors.blue,
   bool settle = true,
   MemberAccountController? account,
+  EdgeInsets viewPadding = EdgeInsets.zero,
 }) async {
   final app = MaterialApp(
     locale: const Locale('zh'),
@@ -640,6 +777,12 @@ Future<void> _pumpWidgetPage(
         brightness: dark ? Brightness.dark : Brightness.light,
       ),
       fontFamily: _previewFontPath == null ? null : 'SplitBillingPreview',
+    ),
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(padding: viewPadding, viewPadding: viewPadding),
+      child: child!,
     ),
     home: RepaintBoundary(key: boundaryKey, child: child),
   );
@@ -691,6 +834,7 @@ class _UnlockAccount extends MemberAccountController {
     this.premium = false,
     this.authenticated = false,
     this.phase = StorePurchasePhase.idle,
+    this.purchaseError,
   });
 
   final bool permanent;
@@ -698,6 +842,7 @@ class _UnlockAccount extends MemberAccountController {
   final bool premium;
   final bool authenticated;
   final StorePurchasePhase phase;
+  final String? purchaseError;
   int purchaseCalls = 0;
   int restoreCalls = 0;
   int trialCalls = 0;
@@ -783,7 +928,7 @@ class _UnlockAccount extends MemberAccountController {
   bool get readerPurchaseLoading => phase == StorePurchasePhase.verifying;
 
   @override
-  String? get readerPurchaseError => null;
+  String? get readerPurchaseError => purchaseError;
 
   @override
   StorePurchasePhase get premiumPurchasePhase => StorePurchasePhase.idle;

@@ -16,7 +16,12 @@ import '../../widgets/floating_subpage_scaffold.dart';
 import '../book_sources/source_login_page.dart';
 import '../book_sources/widgets/book_source_text_normalizer.dart';
 
-enum BookSettingsAction { editText, changeSource, readingSettings }
+enum BookSettingsAction {
+  editText,
+  changeSource,
+  replaceRules,
+  readingSettings,
+}
 
 /// Reader-specific book management, separate from the discovery details page.
 class BookSettingsPage extends StatefulWidget {
@@ -167,6 +172,13 @@ class _BookSettingsPageState extends State<BookSettingsPage> {
         loading: _loadingLogin,
         onTap: _login,
       ),
+    _action(
+      Icons.auto_fix_high_rounded,
+      context.l10n.replaceRulesTitle,
+      BookSettingsAction.replaceRules,
+      key: const Key('book-settings-replace-rules-action'),
+      subtitle: context.l10n.replaceRulesSettingsSubtitle,
+    ),
     _action(
       Icons.tune_rounded,
       context.l10n.readingSettings,

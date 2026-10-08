@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/services/reader/replace_rule_executor.dart';
+import 'package:xxread/services/reader/replace_rule_semantics.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
 
 void main() {
@@ -116,6 +119,90 @@ void main() {
       replacement: '',
     );
     expect(service.applyRules([classRule], '字-数 字 数', bookTitle: '书'), ' ');
+
+    expect(
+      service.applyRules(
+        [classRule.copyWith(pattern: r'字\H数')],
+        '字A数 字 数',
+        bookTitle: '书',
+      ),
+      ' 字 数',
+    );
+  });
+
+  test('uses Java replacement escaping, longest valid groups, and names', () {
+    const rule = ReplaceRule(
+      id: 'java-replacement',
+      name: 'java-replacement',
+      pattern: r'(?<word>[a-z]+)-(\d)',
+      replacement: r'${word}:$12:\$1',
+    );
+    expect(
+      service.applyRules([rule], 'abc-7', bookTitle: 'Book'),
+      r'abc:abc2:$1',
+    );
+  });
+
+  test(
+    'supports common JVM Unicode, quoted literal, and mixed class syntax',
+    () {
+      const rule = ReplaceRule(
+        id: 'jvm-patterns',
+        name: 'jvm-patterns',
+        pattern: r'\p{Punct}+|\Qliteral.*\E|[x\H]',
+        replacement: '',
+      );
+      expect(
+        service.applyRules([rule], '! literal.* A x', bookTitle: 'Book'),
+        '   ',
+      );
+      expect(
+        () => ReplaceRuleService.validate(
+          rule.copyWith(pattern: r'\p{NotAProperty}'),
+        ),
+        throwsA(isA<ReplaceRuleValidationException>()),
+      );
+      final mixed = compileReplaceRulePattern(r'[x\H]');
+      final complement = compileReplaceRulePattern(r'[\H]');
+      expect(mixed.hasMatch('A'), isTrue);
+      expect(mixed.hasMatch('x'), isTrue);
+      expect(mixed.hasMatch(' '), isFalse);
+      expect(complement.hasMatch('A'), isTrue);
+      expect(complement.hasMatch(' '), isFalse);
+      final javaPunct = compileReplaceRulePattern(r'\p{Punct}');
+      final unicodePunctuation = compileReplaceRulePattern(r'\p{P}');
+      final notJavaPunct = compileReplaceRulePattern(r'\P{Punct}');
+      expect(javaPunct.hasMatch('!'), isTrue);
+      expect(javaPunct.hasMatch('！'), isFalse);
+      expect(unicodePunctuation.hasMatch('！'), isTrue);
+      expect(notJavaPunct.hasMatch('A'), isTrue);
+      expect(notJavaPunct.hasMatch('!'), isFalse);
+    },
+  );
+
+  test('content trims every line before applicable replacements', () {
+    const rule = ReplaceRule(
+      id: 'line-ad',
+      name: 'line-ad',
+      pattern: r'(?m)^广告.*$',
+      replacement: '',
+    );
+    expect(
+      service.applyRules(
+        [rule],
+        '  正文  \n   广告下载   \n 下一行 ',
+        bookTitle: 'Book',
+      ),
+      '正文\n\n下一行',
+    );
+    expect(
+      service.applyRules(
+        [rule.copyWith(scope: 'Other Novel')],
+        '  正文  \n   广告下载   ',
+        bookTitle: 'Book',
+      ),
+      '  正文  \n   广告下载   ',
+    );
   });
 
   test('separates title and content rules', () {
@@ -166,6 +253,196 @@ void main() {
       ),
       '正文广告',
     );
+  });
+
+  test('scope and exclude also match the complete source URL', () {
+    const scoped = ReplaceRule(
+      id: 'url-scope',
+      name: 'url-scope',
+      pattern: '广告',
+      replacement: '',
+      isRegex: false,
+      scope: '限定:https://example.com/books/42?full=true（附注）',
+    );
+    expect(
+      service.applyRules(
+        [scoped],
+        '正文广告',
+        bookTitle: 'Novel',
+        sourceUrl: 'https://example.com/books/42?full=true',
+      ),
+      '正文',
+    );
+    expect(
+      service.applyRules(
+        [
+          scoped.copyWith(
+            scope: '限定:完整书名（附注）',
+            excludeScope: '排除:https://example.com/books/42?full=true（附注）',
+          ),
+        ],
+        '正文广告',
+        bookTitle: '完整书名',
+        sourceUrl: 'https://example.com/books/42?full=true',
+      ),
+      '正文广告',
+    );
+  });
+
+  test('persists rule timeout and rejects a targetless new rule', () {
+    final decoded = ReplaceRuleService.decodeImport(
+      '''[{"pattern":"ad","timeoutMillisecond":4321}]''',
+    ).single;
+    expect(decoded.timeoutMillisecond, 4321);
+    expect(decoded.toJson()['timeoutMillisecond'], 4321);
+    expect(
+      () => ReplaceRuleService.validate(
+        const ReplaceRule(
+          id: 'none',
+          name: 'none',
+          pattern: 'ad',
+          replacement: '',
+          scopeTitle: false,
+          scopeContent: false,
+        ),
+      ),
+      throwsA(
+        isA<ReplaceRuleValidationException>().having(
+          (error) => error.kind,
+          'kind',
+          ReplaceRuleValidationKind.missingTarget,
+        ),
+      ),
+    );
+  });
+
+  test('rejects regex JavaScript replacement and preserves literal prefix', () {
+    const imported = ReplaceRule(
+      id: 'js',
+      name: 'js',
+      pattern: 'ad',
+      replacement: "@js:result = 'oops'",
+      enabled: false,
+    );
+    expect(
+      () => ReplaceRuleService.decodeImport(
+        '''[{"id":"js","pattern":"ad","replacement":"@js:result = 'oops'"}]''',
+      ),
+      throwsA(isA<ReplaceRuleValidationException>()),
+    );
+    expect(
+      service.applyRules(
+        [imported.copyWith(enabled: true)],
+        'ad',
+        bookTitle: 'Book',
+      ),
+      'ad',
+    );
+    expect(
+      service.applyRules(
+        [
+          imported.copyWith(
+            enabled: true,
+            isRegex: false,
+            replacement: '@js:literal',
+          ),
+        ],
+        'ad',
+        bookTitle: 'Book',
+      ),
+      '@js:literal',
+    );
+    expect(
+      () => ReplaceRuleService.validate(imported.copyWith(enabled: true)),
+      throwsA(
+        isA<ReplaceRuleValidationException>().having(
+          (error) => error.kind,
+          'kind',
+          ReplaceRuleValidationKind.unsupportedReplacement,
+        ),
+      ),
+    );
+  });
+
+  test(
+    'loads persisted targetless rules without discarding valid rules',
+    () async {
+      service.dispose();
+      await service.close();
+      SharedPreferences.setMockInitialValues({
+        ReplaceRuleService.preferenceKey: '''[
+        {"id":"bad","name":"bad","pattern":"x","scopeTitle":false,"scopeContent":false},
+        {"id":"good","name":"good","pattern":"y","scopeContent":true}
+      ]''',
+      });
+      service = ReplaceRuleService();
+      await service.load();
+      expect(service.rules, hasLength(2));
+      expect(service.rules.first.enabled, isFalse);
+      expect(service.rules.last.enabled, isTrue);
+    },
+  );
+
+  test('loads valid rules around an invalid persisted rule', () async {
+    service.dispose();
+    await service.close();
+    SharedPreferences.setMockInitialValues({
+      ReplaceRuleService.preferenceKey: '''[
+        {"id":"first","name":"first","pattern":"a","scopeContent":true},
+        {"id":"bad","name":"bad","pattern":"","scopeContent":true},
+        {"id":"last","name":"last","pattern":"z","scopeContent":true}
+      ]''',
+    });
+    service = ReplaceRuleService();
+    await service.load();
+    expect(service.rules.map((rule) => rule.id), ['first', 'bad', 'last']);
+    expect(service.rules[1].enabled, isFalse);
+    await service.toggle('first', false);
+    expect(service.rules, hasLength(3));
+  });
+
+  test(
+    'global and per-book switches bypass cleaning and affect signature',
+    () async {
+      await service.load();
+      await service.saveAll(const [
+        ReplaceRule(
+          id: 'one',
+          name: 'one',
+          pattern: 'ad',
+          replacement: '',
+          isRegex: false,
+        ),
+      ]);
+      final enabledSignature = service.rulesSignature;
+      await service.setDefaultEnabled(false);
+      expect(service.defaultEnabled, isFalse);
+      expect(service.rulesSignature, isNot(enabledSignature));
+      expect(
+        await service.applyAsync('ad', bookTitle: 'Book', bookId: 'book'),
+        'ad',
+      );
+      await service.setBookEnabled('book', true);
+      expect(service.isEnabledForBook('book'), isTrue);
+      expect(
+        await service.applyAsync('ad', bookTitle: 'Book', bookId: 'book'),
+        '',
+      );
+      expect(service.apply('ad', bookTitle: 'Book', bookId: 'book'), '');
+    },
+  );
+
+  test('loads rules when persisted book overrides are malformed', () async {
+    service.dispose();
+    await service.close();
+    SharedPreferences.setMockInitialValues({
+      ReplaceRuleService.preferenceKey:
+          '''[{"id":"good","name":"good","pattern":"y","scopeContent":true}]''',
+      ReplaceRuleService.bookEnabledPreferenceKey: '{broken',
+    });
+    service = ReplaceRuleService();
+    await service.load();
+    expect(service.rules.single.id, 'good');
   });
 
   test('merges imports and persists normalized order', () async {
@@ -343,28 +620,75 @@ void main() {
     expect(result.degraded, isFalse);
   });
 
-  test('async cleaning retains non-empty source when rules erase it', () async {
-    await service.load();
-    await service.saveAll(const [
-      ReplaceRule(
-        id: 'erase',
-        name: 'erase',
-        pattern: r'(?s).*',
+  test(
+    'persists timeout disable and does not disable an edited fingerprint',
+    () async {
+      service.dispose();
+      await service.close();
+      final executor = _ControlledTimeoutReplaceRuleExecutor();
+      service = ReplaceRuleService(executor: executor);
+      await service.load();
+      const original = ReplaceRule(
+        id: 'slow',
+        name: 'slow',
+        pattern: r'(a+)+$',
         replacement: '',
-      ),
-    ]);
+      );
+      await service.saveAll(const [original]);
+      final applying = service.applyAsync('aaaa!', bookTitle: 'Book');
+      await executor.started.future;
+      await service.upsert(original.copyWith(pattern: r'a+'));
+      executor.release.complete();
+      await applying;
+      expect(service.rules.single.enabled, isTrue);
 
-    final result = await service.applyBatchAsync(const [
-      'meaningful chapter',
-    ], bookTitle: 'Book');
+      final secondExecutor = _ControlledTimeoutReplaceRuleExecutor();
+      final second = ReplaceRuleService(executor: secondExecutor);
+      await second.load();
+      await second.upsert(original);
+      final secondApplying = second.applyAsync('aaaa!', bookTitle: 'Book');
+      await secondExecutor.started.future;
+      secondExecutor.release.complete();
+      await secondApplying;
+      expect(second.rules.single.enabled, isFalse);
+      final reloaded = ReplaceRuleService();
+      await reloaded.load();
+      expect(reloaded.rules.single.enabled, isFalse);
+      reloaded.dispose();
+      await reloaded.close();
+      second.dispose();
+      await second.close();
+    },
+  );
 
-    expect(result.values.single, 'meaningful chapter');
-    expect(result.degraded, isTrue);
-    expect(
-      result.diagnostics.map((item) => item.kind.name),
-      contains('emptyOutput'),
-    );
-  });
+  test(
+    'content may be erased while title rejects each empty-producing rule',
+    () async {
+      await service.load();
+      await service.saveAll(const [
+        ReplaceRule(
+          id: 'erase',
+          name: 'erase',
+          pattern: r'(?s).*',
+          replacement: '',
+          scopeTitle: true,
+        ),
+      ]);
+
+      final result = await service.applyBatchAsync(const [
+        'meaningful chapter',
+      ], bookTitle: 'Book');
+      expect(result.values.single, '');
+      expect(result.effectiveRuleIds, ['erase']);
+
+      final title = await service.applyBatchAsync(
+        const ['meaningful chapter'],
+        bookTitle: 'Book',
+        title: true,
+      );
+      expect(title.values.single, 'meaningful chapter');
+    },
+  );
 }
 
 class _TrackingReplaceRuleExecutor extends ReplaceRuleExecutor {
@@ -374,5 +698,33 @@ class _TrackingReplaceRuleExecutor extends ReplaceRuleExecutor {
   Future<void> dispose() async {
     disposeCalls++;
     await super.dispose();
+  }
+}
+
+class _ControlledTimeoutReplaceRuleExecutor extends ReplaceRuleExecutor {
+  final started = Completer<void>();
+  final release = Completer<void>();
+
+  @override
+  Future<ReplaceRuleExecutionResult> applyBatch(
+    ReplaceRuleExecutionBatch batch,
+  ) async {
+    final rule = batch.rules.firstWhere((item) => item.id == 'slow');
+    if (!started.isCompleted) started.complete();
+    await release.future;
+    return ReplaceRuleExecutionResult(
+      values: batch.values,
+      diagnostics: [
+        ReplaceRuleDiagnostic(
+          kind: ReplaceRuleDiagnosticKind.timeout,
+          rulesSignature: batch.rulesSignature,
+          ruleId: rule.id,
+          ruleName: rule.name,
+          ruleFingerprint: rule.fingerprint,
+        ),
+      ],
+      skippedRuleIds: [rule.id],
+      degraded: true,
+    );
   }
 }

@@ -27,6 +27,12 @@ Future<AppSettingsNotifier> _loadNotifier({PremiumTestAccount? account}) async {
   return notifier;
 }
 
+class _NotifyingPremiumTestAccount extends PremiumTestAccount {
+  _NotifyingPremiumTestAccount({super.premium});
+
+  void notifyOrdinaryAccountChange() => notifyListeners();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -148,6 +154,38 @@ void main() {
         isFalse,
       );
       expect(prefs.containsKey(privateBookSourceNetworkPreferenceKey), isFalse);
+    },
+  );
+
+  test(
+    'global settings only notify when advanced source access changes',
+    () async {
+      final account = _NotifyingPremiumTestAccount(premium: false);
+      addTearDown(account.dispose);
+      final notifier = await _loadNotifier(account: account);
+      addTearDown(notifier.dispose);
+      var notifications = 0;
+      notifier.addListener(() => notifications++);
+
+      for (var index = 0; index < 30; index++) {
+        account.notifyOrdinaryAccountChange();
+      }
+
+      expect(notifications, 0);
+      expect(AdvancedFeatureAccess.premiumUnlocked, isFalse);
+      expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isFalse);
+
+      account.setPremium(true);
+      expect(notifications, 1);
+      expect(notifier.advancedFeaturesUnlocked, isTrue);
+      expect(AdvancedFeatureAccess.premiumUnlocked, isTrue);
+      expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isTrue);
+
+      account.setPremium(false);
+      expect(notifications, 2);
+      expect(notifier.advancedFeaturesUnlocked, isFalse);
+      expect(AdvancedFeatureAccess.premiumUnlocked, isFalse);
+      expect(BookSourceNetworkPolicy.preferredPrivateNetwork, isFalse);
     },
   );
 

@@ -206,10 +206,13 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                       if (usesTwoPageLayout) {
                         _pageIndex = _spreadStartForPage(_pageIndex);
                       }
+                      _cancelInvalidPositionRestore();
+                      var needsHorizontalAlignment = false;
                       if (_restoreAnchorAfterLayout &&
                           _anchorOffset != null &&
                           (_pendingRestoreChapterIndex == null ||
                               _pendingRestoreChapterIndex == _chapterIndex)) {
+                        needsHorizontalAlignment = true;
                         final anchor = _anchorOffset!.clamp(
                           0,
                           chapter.plainText.length,
@@ -218,15 +221,20 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                         if (_pageMode == NativePageMode.verticalScroll) {
                           _verticalCanonicalOffset = anchor;
                         }
-                        final restoredIndex =
+                        final restorePages =
                             _pageMode == NativePageMode.verticalScroll
-                            ? readerTextPageIndexForOffset(
-                                _visiblePages,
-                                anchor,
-                              )
-                            : anchor == 0 && pages.first.isChapterTitle
+                            ? _visiblePages
+                            : pages;
+                        final restoredIndex =
+                            anchor == 0 &&
+                                restorePages.first.isChapterTitle &&
+                                (_pageMode != NativePageMode.verticalScroll ||
+                                    !_restoreContinuousAnchorCentered)
                             ? 0
-                            : readerTextPageIndexForOffset(pages, anchor);
+                            : readerTextPageIndexForOffset(
+                                restorePages,
+                                anchor,
+                              );
                         if (restoredIndex >= 0) _pageIndex = restoredIndex;
                         if (usesTwoPageLayout) {
                           _pageIndex = _spreadStartForPage(_pageIndex);
@@ -237,6 +245,8 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                           _scheduleInitialContinuousScrollRestore(size);
                         } else {
                           _initialPositionRestored = true;
+                          _positionRestoreShouldApply = null;
+                          _positionRestorePreviousVerticalOffset = null;
                         }
                       }
                       if (_pageMode != NativePageMode.verticalScroll) {
@@ -271,6 +281,7 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                             localTargetControllerPage;
                         _pageController ??= PageController(
                           initialPage: math.max(0, targetControllerPage),
+                          keepPage: false,
                         );
                         _schedulePendingHorizontalForwardBoundaryCommit(
                           bookPages,
@@ -279,59 +290,35 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                         );
                         final pageControllerGeneration =
                             _pageControllerGeneration;
+                        final pageController = _pageController;
+                        final alignmentChapter = _chapterIndex;
+                        final alignmentPage = _pageIndex;
                         final blockControllerRealignment =
                             _pendingHorizontalForwardBoundary != null ||
                             _pendingHorizontalPage != null;
-                        if (_horizontalChapterJumpPending) {
-                          if (!_horizontalChapterJumpRevealScheduled) {
-                            _horizontalChapterJumpRevealScheduled = true;
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (!mounted ||
-                                  pageControllerGeneration !=
-                                      _pageControllerGeneration) {
+                        _initialPositionRestored = true;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!needsHorizontalAlignment) return;
+                          _runWhenHorizontalControllerIsIdle(
+                            pageController,
+                            pageControllerGeneration,
+                            () {
+                              if (blockControllerRealignment ||
+                                  _pendingHorizontalForwardBoundary != null ||
+                                  _pendingHorizontalPage != null ||
+                                  _chapterIndex != alignmentChapter ||
+                                  _pageIndex != alignmentPage ||
+                                  pageController == null ||
+                                  !pageController.hasClients) {
                                 return;
                               }
-                              _setReaderState(() {
-                                _horizontalChapterJumpPending = false;
-                                _horizontalChapterJumpRevealScheduled = false;
-                                _initialPositionRestored = true;
-                              });
-                            });
-                          }
-                        } else {
-                          _initialPositionRestored = true;
-                        }
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (pageControllerGeneration !=
-                              _pageControllerGeneration) {
-                            return;
-                          }
-                          if (blockControllerRealignment ||
-                              _pendingHorizontalForwardBoundary != null ||
-                              _pendingHorizontalPage != null) {
-                            return;
-                          }
-                          final pageController = _pageController;
-                          if (pageController == null ||
-                              !pageController.hasClients) {
-                            return;
-                          }
-                          // A live drag or fling already drives the
-                          // controller toward the page that will report
-                          // through onPageChanged; forcing jumpToPage while
-                          // that motion is in flight fights the user's
-                          // finger and reads as a flash to another page.
-                          if (pageController
-                              .position
-                              .isScrollingNotifier
-                              .value) {
-                            return;
-                          }
-                          final current = pageController.page?.round();
-                          if (targetPage >= 0 &&
-                              current != targetControllerPage) {
-                            pageController.jumpToPage(targetControllerPage);
-                          }
+                              if (targetPage >= 0 &&
+                                  pageController.page?.round() !=
+                                      targetControllerPage) {
+                                pageController.jumpToPage(targetControllerPage);
+                              }
+                            },
+                          );
                         });
                       }
 
@@ -433,6 +420,23 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                                   ),
                                   color: _readerTheme.background,
                                   child: const SizedBox.expand(),
+                                ),
+                              ),
+                            if (_pendingChapterIndex != null)
+                              Positioned(
+                                top: MediaQuery.paddingOf(context).top + 12,
+                                right: 16,
+                                child: IgnorePointer(
+                                  child: SizedBox.square(
+                                    key: const ValueKey(
+                                      'native-reader-chapter-loading',
+                                    ),
+                                    dimension: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: _readerTheme.text,
+                                    ),
+                                  ),
                                 ),
                               ),
                             if (_showLeafFloatingStatus &&

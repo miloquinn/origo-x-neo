@@ -188,19 +188,28 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
     int sourceOffset, {
     bool centerInViewport = false,
   }) async {
+    _cancelInvalidPositionRestore();
     final revision = _verticalScrollRevision;
+    bool isCurrent() {
+      _cancelInvalidPositionRestore();
+      return mounted && revision == _verticalScrollRevision;
+    }
+
     final targetContext = _continuousPartKey(
       chapter.id,
       partIndex,
     ).currentContext;
-    if (targetContext == null) return false;
+    if (!isCurrent() || targetContext == null) return false;
     await Scrollable.ensureVisible(
       targetContext,
       alignment: 0,
       duration: Duration.zero,
     );
     await WidgetsBinding.instance.endOfFrame;
-    if (!mounted || revision != _verticalScrollRevision) return false;
+    if (!mounted || !isCurrent()) return false;
+    // Chapter navigation aligns the whole opening cell, including its title.
+    // Only precise text anchors need the additional caret adjustment.
+    if (!centerInViewport && sourceOffset == 0) return true;
     final paragraph = readerParagraphForKey(
       _continuousPartKey(chapter.id, partIndex),
     );
@@ -239,7 +248,7 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
       offset: offsetDelta,
       duration: const Duration(milliseconds: 1),
     );
-    return true;
+    return isCurrent();
   }
 
   List<_ContinuousReaderPart> _continuousPartsFor(

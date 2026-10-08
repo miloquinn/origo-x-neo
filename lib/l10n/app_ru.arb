@@ -1568,7 +1568,7 @@
   "replaceRulesDeleteValue": "Убрать",
   "replaceRulesCreate": "Новое правило",
   "replaceRulesEmptyTitle": "Нет правил замены",
-  "replaceRulesEmptyBody": "Импортируйте JSON-файл источников чтения или создайте правило на основе регулярного выражения.",
+  "replaceRulesEmptyBody": "Импортируйте правила замены в JSON или создайте правило текста или регулярного выражения.",
   "replaceRulesNoSearchResults": "Подходящих правил нет",
   "replaceRulesCreateTitle": "Новое правило замены",
   "replaceRulesEditTitle": "Изменить правило замены",
@@ -1581,7 +1581,7 @@
   "replaceRulesScopeContentLabel": "Применять к содержимому глав",
   "replaceRulesGroupLabel": "Группа (необязательно)",
   "replaceRulesScopeLabel": "Область (необязательно)",
-  "replaceRulesScopeHelper": "Разделяйте названия книг или имена источников точкой с запятой",
+  "replaceRulesScopeHelper": "Разделяйте названия книг, URL или имена источников точкой с запятой",
   "replaceRulesExcludeScopeLabel": "Исключённая область (необязательно)",
   "replaceRulesDeleteConfirmTitle": "Удалить это правило?",
   "replaceRulesDeleteConfirmBody": "Правило будет удалено с этого устройства.",
@@ -2123,6 +2123,33 @@
   "welcomeStartReading": "Начать чтение",
   "welcomeTagline": "Хорошие истории. Не спешите.",
   "settingsWelcomeGuide": "Вводное руководство",
+  "readerPurifySelection": "Очистить выделенный текст",
+  "replaceRulesDefaultEnabledLabel": "Включать по умолчанию для всех книг",
+  "replaceRulesBookEnabledLabel": "Включить для «{bookTitle}»",
+  "replaceRulesEffectiveLabel": "Действуют сейчас",
+  "replaceRulesGroupAll": "Все группы",
+  "replaceRulesSelectionMode": "Выбрать правила",
+  "replaceRulesSelectedCount": "Выбрано: {count}",
+  "replaceRulesSelectAll": "Выбрать все",
+  "replaceRulesEnableSelected": "Включить",
+  "replaceRulesDisableSelected": "Отключить",
+  "replaceRulesDeleteSelected": "Удалить",
+  "replaceRulesDeleteSelectedConfirmTitle": "Удалить выбранные правила?",
+  "replaceRulesDeleteSelectedConfirmBody": "Будет удалено правил: {count}.",
+  "replaceRulesExportSelected": "Экспортировать",
+  "replaceRulesCopyJson": "Скопировать JSON",
+  "replaceRulesPasteJson": "Вставить JSON",
+  "replaceRulesCopied": "JSON правила скопирован",
+  "replaceRulesPasted": "Правило вставлено",
+  "replaceRulesMoveTop": "Переместить в начало",
+  "replaceRulesMoveBottom": "Переместить в конец",
+  "replaceRulesTimeoutLabel": "Время ожидания (миллисекунды)",
+  "replaceRulesTimeoutHelper": "Максимальное время выполнения правила",
+  "replaceRulesTimeoutInvalid": "Введите время ожидания больше 0",
+  "replaceRulesMissingTarget": "Выберите заголовки глав или текст",
+  "replaceRulesContextSubtitle": "{bookTitle} · {sourceName}",
+  "replaceRulesUnsupportedReplacement": "Замены с JavaScript здесь не поддерживаются. Используйте текст или регулярные выражения.",
+  "replaceRulesTimeoutNotice": "Правило отключено из-за превышения времени выполнения. Измените его и включите снова.",
   "accountInviteUnavailable": "Не удалось загрузить текущую акцию приглашений. Повторите попытку.",
   "accountInviteActiveProgress": "Активные новые пользователи",
   "accountInvitePaidProgress": "Друзья с первой покупкой",
@@ -2189,5 +2216,34 @@
         "type": "int"
       }
     }
-  }
+  },
+  "activityCenterTitle": "Акции",
+  "activityCenterSubtitle": "Узнавайте об акциях и следите за своим прогрессом.",
+  "activityCenterEmptyTitle": "Пока нет акций",
+  "activityCenterEmptyMessage": "Новые акции появятся здесь.",
+  "activityCenterLoadError": "Не удалось загрузить акции.",
+  "activityCenterOpenError": "Не удалось открыть акцию. Попробуйте ещё раз.",
+  "activityCenterLearnMore": "Об акции",
+  "activityCenterProgress": "Прогресс приглашений",
+  "activityCenterUpcoming": "Скоро",
+  "activityCenterPaused": "Приостановлена",
+  "activityCenterEnded": "Завершена",
+  "activityCenterActive": "Идёт",
+  "activityCenterStartsOn": "Начало: {date}",
+  "@activityCenterStartsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterEndsOn": "Окончание: {date}",
+  "@activityCenterEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCenterRefresh": "Обновить"
 }

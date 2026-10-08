@@ -55,53 +55,100 @@ extension _NativeReaderInteraction on _NativeReaderPageState {
     int index,
     int chapterCount, {
     bool recenterContinuousScroll = false,
+    bool Function()? shouldApply,
+    int Function(_NativeChapter chapter)? resolveOffset,
+    bool? centerInViewport,
   }) async {
+    if (!mounted || chapterCount <= 0 || !(shouldApply?.call() ?? true)) return;
     final next = index.clamp(0, chapterCount - 1);
-    if (next == _chapterIndex && !recenterContinuousScroll) return;
     final loadSerial = ++_chapterLoadSerial;
-    final chapters = _loadedChapters.isNotEmpty
-        ? _loadedChapters
-        : await _chaptersFuture;
-    if (next >= chapters.length) return;
-    await _loadIndexedChapterWindow(chapters, next);
-    if (!mounted || loadSerial != _chapterLoadSerial) return;
-    final previousPageController = _pageMode == NativePageMode.horizontalSlide
-        ? _pageController
-        : null;
-    if (previousPageController != null) {
-      _pageController = null;
-      _pageControllerGeneration++;
+    bool requestIsCurrent() =>
+        mounted &&
+        loadSerial == _chapterLoadSerial &&
+        (shouldApply?.call() ?? true);
+    _cancelInvalidPositionRestore();
+    if (next == _chapterIndex &&
+        resolveOffset == null &&
+        !recenterContinuousScroll) {
+      _setReaderState(() => _pendingChapterIndex = null);
+      return;
     }
-    Future<void>? chapterRestore;
-    if (_pageMode == NativePageMode.verticalScroll &&
-        _pendingRestoreChapterIndex != next) {
-      _anchorOffset = 0;
-      _pendingRestoreChapterIndex = next;
-      _requestPositionRestore();
-      chapterRestore = _continuousRestoreCompletion!.future;
-    }
-    _setReaderState(() {
-      _chapterIndex = next;
-      _pageIndex = 0;
-      _resetHorizontalPagingWindow(next, chapterCount: chapters.length);
-      if (previousPageController != null) {
-        _horizontalChapterJumpPending = true;
-        _horizontalChapterJumpRevealScheduled = false;
-        _initialPositionRestored = false;
+    _setReaderState(() => _pendingChapterIndex = next);
+    try {
+      final chapters = _loadedChapters.isNotEmpty
+          ? _loadedChapters
+          : await _chaptersFuture;
+      if (!requestIsCurrent() || next >= chapters.length) return;
+      final targetOnly = _pageMode == NativePageMode.horizontalSlide;
+      if (targetOnly) {
+        await _loadIndexedChapter(chapters, next);
+      } else {
+        await _loadIndexedChapterWindow(chapters, next);
       }
-    });
-    _restartReaderAloudFromCurrentPageAfterManualTurn();
-    if (previousPageController != null) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => previousPageController.dispose(),
-      );
+      if (!requestIsCurrent()) return;
+      if (targetOnly && _pageMode != NativePageMode.horizontalSlide) {
+        await _loadIndexedChapterWindow(chapters, next);
+        if (!requestIsCurrent()) return;
+      }
+
+      // Resolve EPUB fragments only after the target is prepared. Installing
+      // the anchor earlier lets unrelated rebuilds apply it to the old chapter.
+      final offset = resolveOffset?.call(chapters[next]) ?? 0;
+      _anchorOffset = offset;
+      if (resolveOffset != null ||
+          recenterContinuousScroll ||
+          _pageMode == NativePageMode.verticalScroll) {
+        _pendingRestoreChapterIndex = next;
+        _requestPositionRestore(shouldApply: requestIsCurrent);
+        _restoreContinuousAnchorCentered = centerInViewport ?? offset > 0;
+      } else {
+        _restoreAnchorAfterLayout = false;
+        _pendingRestoreChapterIndex = null;
+      }
+      final chapterRestore = _continuousRestoreCompletion?.future;
+      final previousPageController = _pageMode == NativePageMode.horizontalSlide
+          ? _pageController
+          : null;
+      if (previousPageController != null) {
+        _pageController = null;
+        _pageControllerGeneration++;
+      }
+      _setReaderState(() {
+        _chapterIndex = next;
+        _pageIndex = 0;
+        _pendingChapterIndex = null;
+        _resetHorizontalPagingWindow(
+          next,
+          chapterCount: chapters.length,
+          targetOnly: _pageMode == NativePageMode.horizontalSlide,
+        );
+      });
+      _retainIndexedChapterContent(chapters);
+      _restartReaderAloudFromCurrentPageAfterManualTurn();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        previousPageController?.dispose();
+        if (!requestIsCurrent() || _lastPaginationSize.isEmpty) return;
+        _commitHorizontalBackwardExpansion(
+          chapters,
+          _lastPaginationSize,
+          Directionality.of(context),
+          readerBodyTextScaler,
+          usesTwoPageLayout: _lastUsesTwoPageLayout ?? false,
+        );
+      });
+      _verticalScrollProgress.value = 0;
+      final bookId = widget.book.id;
+      if (bookId != null) await _queueBookProgress(bookId, next);
+      if (requestIsCurrent() && chapterRestore != null) await chapterRestore;
+    } finally {
+      if (mounted && loadSerial == _chapterLoadSerial) {
+        if (_pendingChapterIndex != null) {
+          _setReaderState(() => _pendingChapterIndex = null);
+        }
+        _cancelInvalidPositionRestore();
+      }
+      _retainIndexedChapterContent(_loadedChapters);
     }
-    _verticalScrollProgress.value = 0;
-    final bookId = widget.book.id;
-    if (bookId != null) {
-      await _queueBookProgress(bookId, next);
-    }
-    if (chapterRestore != null) await chapterRestore;
   }
 
   Future<void> _nextPage(
@@ -179,6 +226,16 @@ extension _NativeReaderInteraction on _NativeReaderPageState {
     if (_pageMode == NativePageMode.horizontalSlide &&
         pageController != null &&
         pageController.hasClients) {
+      if (pageController.page!.round() <= _horizontalPageIndexMap.origin) {
+        _commitHorizontalBackwardExpansion(
+          _loadedChapters,
+          _lastPaginationSize,
+          Directionality.of(context),
+          readerBodyTextScaler,
+          usesTwoPageLayout: usesTwoPageLayout,
+        );
+        return;
+      }
       if (animate) {
         _markReaderAloudForManualPageTurn();
         pageController.previousPage(

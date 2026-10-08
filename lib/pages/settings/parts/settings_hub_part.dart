@@ -68,20 +68,17 @@ extension _SettingsHubPart on _SettingsPageState {
 
   Widget _buildMyPageMenu(AppLocalizations l10n) {
     final palette = PageStyleHelper.palette(context);
-    final scheme = Theme.of(context).colorScheme;
-    final backup = context.watch<WebDavBackupController>();
-    final dataSummary = backup.busy
-        ? l10n.settingsWebDavWorking
-        : backup.isConfigured
-        ? l10n.settingsWebDavConfigured
-        : l10n.settingsDataSyncSubtitle;
     final entries = [
       (
         SettingsCategory.preferences,
         Icons.tune_rounded,
         l10n.settingsPreferencesSubtitle,
       ),
-      (SettingsCategory.dataSync, Icons.cloud_sync_outlined, dataSummary),
+      (
+        SettingsCategory.dataSync,
+        Icons.cloud_sync_outlined,
+        l10n.settingsDataSyncSubtitle,
+      ),
       (
         SettingsCategory.contentServices,
         Icons.auto_stories_outlined,
@@ -117,57 +114,27 @@ extension _SettingsHubPart on _SettingsPageState {
               for (var i = 0; i < entries.length; i++) ...[
                 if (i > 0)
                   Divider(height: 1, indent: 62, color: palette.border),
-                InkWell(
-                  key: ValueKey('settings-category-${entries[i].$1.name}'),
-                  onTap: () => _openCategory(entries[i].$1),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 13,
+                if (entries[i].$1 == SettingsCategory.dataSync)
+                  Selector<WebDavBackupController, (bool, bool)>(
+                    selector: (_, backup) => (backup.busy, backup.isConfigured),
+                    builder: (_, status, _) => _buildMyPageMenuRow(
+                      l10n,
+                      entries[i].$1,
+                      entries[i].$2,
+                      status.$1
+                          ? l10n.settingsWebDavWorking
+                          : status.$2
+                          ? l10n.settingsWebDavConfigured
+                          : l10n.settingsDataSyncSubtitle,
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: scheme.primary.withValues(alpha: 0.09),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            entries[i].$2,
-                            size: 19,
-                            color: scheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _categoryTitle(l10n, entries[i].$1),
-                                style: Theme.of(context).textTheme.bodyLarge
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                entries[i].$3,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: scheme.onSurfaceVariant),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ],
-                    ),
+                  )
+                else
+                  _buildMyPageMenuRow(
+                    l10n,
+                    entries[i].$1,
+                    entries[i].$2,
+                    entries[i].$3,
                   ),
-                ),
               ],
             ],
           ),
@@ -176,50 +143,121 @@ extension _SettingsHubPart on _SettingsPageState {
     );
   }
 
-  Widget _buildCategoryContent(
-    ThemeNotifier themeNotifier,
-    AppSettingsNotifier appSettings,
+  Widget _buildMyPageMenuRow(
+    AppLocalizations l10n,
+    SettingsCategory category,
+    IconData icon,
+    String subtitle,
   ) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return InkWell(
+      key: ValueKey('settings-category-${category.name}'),
+      onTap: () => _openCategory(category),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: scheme.primary.withValues(alpha: 0.09),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 19, color: scheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _categoryTitle(l10n, category),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryContent() {
     final l10n = context.l10n;
-    final webDavSync = context.watch<WebDavBackupController>();
-    final children = switch (widget.category!) {
-      SettingsCategory.preferences => <Widget>[
-        _buildAppearanceSettingsSection(l10n, themeNotifier, appSettings),
-        const SizedBox(height: 20),
-        _buildReadingSettingsSection(l10n),
-        const SizedBox(height: 20),
-        _buildGeneralSettingsSection(l10n, appSettings),
+    final themeNotifier = context.read<ThemeNotifier>();
+    final appSettings = context.read<AppSettingsNotifier>();
+    if (widget.category == SettingsCategory.preferences) {
+      context.select(
+        (ThemeNotifier theme) =>
+            (theme.themeMode, theme.accentColor, theme.uiStyle),
+      );
+      // Project displayed values, not freshly allocated FontOption instances.
+      context.select(
+        (AppSettingsNotifier settings) => (
+          FontCatalog.labelFor(l10n, settings.appFont),
+          FontCatalog.labelFor(l10n, settings.readerFont),
+          FontCatalog.labelFor(l10n, settings.epubReaderFont),
+          settings.customFonts.length,
+          settings.appTextScaleFactor,
+          settings.libraryLayoutMode,
+          settings.localeCode,
+          settings.powerSavingMode,
+        ),
+      );
+    } else if (widget.category == SettingsCategory.contentServices) {
+      context.select(
+        (AppSettingsNotifier settings) => (
+          settings.advancedFeaturesUnlocked,
+          settings.additionalSourceProtocolsEnabled,
+          settings.privateBookSourceNetworkEnabled,
+        ),
+      );
+    }
+    final sections = switch (widget.category!) {
+      SettingsCategory.preferences => <WidgetBuilder>[
+        (_) =>
+            _buildAppearanceSettingsSection(l10n, themeNotifier, appSettings),
+        (_) => _buildReadingSettingsSection(l10n),
+        (_) => _buildGeneralSettingsSection(l10n, appSettings),
       ],
-      SettingsCategory.dataSync => <Widget>[
-        _buildDataSyncSettingsSection(l10n, webDavSync),
+      SettingsCategory.dataSync => <WidgetBuilder>[
+        (_) => _buildDataSyncSettingsSection(l10n),
       ],
-      SettingsCategory.contentServices => <Widget>[
-        _buildContentServicesSection(l10n),
-        if (appSettings.advancedFeaturesUnlocked) ...[
-          const SizedBox(height: 20),
-          _buildAdvancedSettingsSection(l10n, appSettings),
-        ],
+      SettingsCategory.contentServices => <WidgetBuilder>[
+        (_) => _buildContentServicesSection(l10n),
+        if (appSettings.advancedFeaturesUnlocked)
+          (_) => _buildAdvancedSettingsSection(l10n, appSettings),
       ],
-      SettingsCategory.aboutSupport => <Widget>[
-        _buildSupportSettingsSection(l10n),
-        const SizedBox(height: 20),
-        _buildAboutCard(),
+      SettingsCategory.aboutSupport => <WidgetBuilder>[
+        (_) => _buildSupportSettingsSection(l10n),
+        (_) => _buildAboutCard(),
       ],
     };
-    return ListView(
+    return ListView.separated(
       controller: _scrollController,
       padding: floatingSubpagePadding(context, bottom: 40),
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
-            ),
-          ),
+      itemCount: sections.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 20),
+      itemBuilder: (context, index) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: sections[index](context),
         ),
-      ],
+      ),
     );
   }
 }

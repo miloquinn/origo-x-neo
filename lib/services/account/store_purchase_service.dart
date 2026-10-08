@@ -104,6 +104,7 @@ extension StoreProductKindDomain on StoreProductKind {
 enum StorePurchasePhase {
   idle,
   loadingProduct,
+  productUnavailable,
   purchasing,
   pending,
   verifying,
@@ -272,19 +273,26 @@ class StorePurchaseService extends ChangeNotifier {
           (kind) => kind.domain == domain,
         );
         if (configured.isEmpty) continue;
-        if (configured.every(_products.containsKey)) {
+        // Trial and retired bundles remain configured for transaction routing
+        // and restores. Their availability must not block current purchases.
+        final purchasable = configured.where(
+          (kind) =>
+              kind != StoreProductKind.readerTrial &&
+              kind != StoreProductKind.legacyBundle,
+        );
+        if (purchasable.isEmpty || purchasable.any(_products.containsKey)) {
           _setError(domain, null);
           _setPhase(domain, StorePurchasePhase.idle);
         } else {
-          _setError(domain, '商店商品尚未配置或不可用');
-          _setPhase(domain, StorePurchasePhase.failed);
+          _setError(domain, '暂时无法获取商店商品，请稍后重试');
+          _setPhase(domain, StorePurchasePhase.productUnavailable);
         }
       }
     } catch (error) {
       for (final domain in StorePurchaseDomain.values) {
         if (_productIds.keys.any((kind) => kind.domain == domain)) {
           _setError(domain, error);
-          _setPhase(domain, StorePurchasePhase.failed);
+          _setPhase(domain, StorePurchasePhase.productUnavailable);
         }
       }
       rethrow;

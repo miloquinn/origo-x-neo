@@ -124,8 +124,9 @@ Future<Uint8List> synthesizeNativeCloud(
   String text,
   double speed,
   int maxBytes,
-  int maxCharacters,
-) async {
+  int maxCharacters, {
+  CancelToken? cancelToken,
+}) async {
   validateReaderAloudCloudSettings(settings);
   if (apiKey.trim().isEmpty) {
     throw const ReaderAloudCloudException(
@@ -150,6 +151,7 @@ Future<Uint8List> synthesizeNativeCloud(
   try {
     final response = await dio.post<ResponseBody>(
       settings.baseUrl.trim(),
+      cancelToken: cancelToken,
       data: mimo
           ? {
               'model': settings.model,
@@ -315,6 +317,7 @@ Future<Uint8List> synthesizeNativeCloud(
   } on ReaderAloudCloudException {
     rethrow;
   } on DioException catch (e) {
+    if (CancelToken.isCancel(e)) rethrow;
     throw ReaderAloudCloudException(
       'request_failed',
       '语音服务请求失败，请检查网络与 API Key',

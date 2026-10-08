@@ -6,10 +6,25 @@ import 'package:xxread/book_sources/source_engine/source_login_session.dart';
 import 'package:xxread/book_sources/source_engine/source_request_template.dart';
 import 'package:xxread/book_sources/source_engine/source_response.dart';
 import 'package:xxread/book_sources/source_engine/source_runtime.dart';
+import 'package:xxread/book_sources/source_engine/source_runtime_requests.dart';
 import 'package:xxread/book_sources/source_engine/source_transport.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  test('typed URL payloads stay local while untyped URL wrappers fetch', () {
+    const wrapped = 'data:;base64,aHR0cHM6Ly9hcGkudGVzdC9jb250ZW50';
+    expect(decodeSourceDataTarget(wrapped), 'https://api.test/content');
+    expect(decodeSourceDataTarget('$wrapped,{"type":"novel"}'), isNull);
+    expect(
+      decodeSourceDataTarget('$wrapped,{"type":""}'),
+      'https://api.test/content,{"type":""}',
+    );
+    expect(
+      decodeSourceDataTarget('$wrapped,{"headers":{"X-Test":"fixture"}}'),
+      'https://api.test/content,{"headers":{"X-Test":"fixture"}}',
+    );
+  });
 
   test('typed local book and chapter URLs keep their options in JS baseUrl', () async {
     final source = ReadingSourceConfig.fromJson(const {

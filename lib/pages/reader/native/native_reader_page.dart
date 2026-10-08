@@ -21,6 +21,7 @@ import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import 'package:xxread/core/reader/canonical_locator.dart';
+import 'package:xxread/pages/reader/reader_replacement_anchor.dart';
 import 'package:xxread/core/reader/horizontal_page_turn_tracker.dart';
 import 'package:xxread/core/reader/platform_reader_aloud_media_session.dart';
 import 'package:xxread/core/reader/indexed_text_reader.dart';
@@ -54,6 +55,7 @@ import 'package:xxread/models/bookmark.dart';
 import 'package:xxread/models/book_note.dart';
 import 'package:xxread/pages/export/reading_data_export_dialog.dart';
 import 'package:xxread/pages/settings/font_selection_sheet.dart';
+import 'package:xxread/pages/settings/replace_rules_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/books/book_dao.dart';
 import 'package:xxread/services/books/book_format_support.dart';
@@ -123,6 +125,7 @@ part 'native_reader_horizontal_paging.dart';
 part 'native_reader_vertical_paging.dart';
 part 'native_reader_rendering.dart';
 part 'native_reader_loading.dart';
+part 'native_reader_replacement.dart';
 part 'native_reader_configuration.dart';
 part 'native_reader_interaction.dart';
 part 'native_reader_controls.dart';
@@ -280,8 +283,6 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   late Future<List<_NativeChapter>> _chaptersFuture;
   PageController? _pageController;
   int _pageControllerGeneration = 0;
-  bool _horizontalChapterJumpPending = false;
-  bool _horizontalChapterJumpRevealScheduled = false;
   bool _horizontalBackwardExpansionPending = false;
   bool _horizontalBackwardExpansionWarmPending = false;
   bool _horizontalForwardExpansionPending = false;
@@ -335,6 +336,7 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   bool _readerDependenciesInitialized = false;
   int _chapterIndex = 0;
   int _chapterLoadSerial = 0;
+  int? _pendingChapterIndex;
   int _horizontalFirstChapter = 0;
   int _horizontalLastChapter = 0;
   final _horizontalPageIndexMap = _HorizontalPageIndexMap();
@@ -351,6 +353,8 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   bool _initialPositionRestored = false;
   bool _initialPositionRestoreScheduled = false;
   Completer<void>? _continuousRestoreCompletion;
+  bool Function()? _positionRestoreShouldApply;
+  int? _positionRestorePreviousVerticalOffset;
   bool _exitInProgress = false;
   bool _exitPositionCommitted = false;
   String? _lastSavedLocation;
@@ -411,6 +415,11 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   bool _restartReaderAloudAfterManualPageTurn = false;
   bool _readerAloudNavigationDetached = false;
   int _readerAloudNavigationRevision = 0;
+  int _replaceRuleRefreshSerial = 0;
+  ({String chapterId, TextAnchor anchor, int textLength, double progress})?
+  _replacementPosition;
+  int _observedReplaceRuleRevision = -1;
+  Set<String> _effectiveReplaceRuleIds = const <String>{};
   final ReadingStatsDao _readingStatsDao = ReadingStatsDao();
   final ReadingCloudRecorder _cloudRecorder = ReadingCloudRecorder();
   final BookmarkDao _bookmarkDao = BookmarkDao();
@@ -451,6 +460,7 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   void initState() {
     super.initState();
     _activeBook = widget.book;
+    _replaceRules.addListener(_onReplaceRulesChanged);
     unawaited(_replaceRules.load());
     _autoPageTurnUiState = _currentAutoPageTurnUiState;
     _autoPageTurnController.addListener(_onAutoPageTurnChanged);
@@ -712,6 +722,8 @@ class _NativeReaderPageState extends State<NativeReaderPage>
 
   @override
   void dispose() {
+    _replaceRules.removeListener(_onReplaceRulesChanged);
+    ++_replaceRuleRefreshSerial;
     _continuousRestoreCompletion?.complete();
     _continuousRestoreCompletion = null;
     final cacheKey = _readerMemoryCacheKey;

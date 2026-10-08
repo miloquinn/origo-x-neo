@@ -74,6 +74,14 @@ extension _SettingsAboutPart on _SettingsPageState {
             onTap: _openChangelogHistory,
           ),
           _buildAboutNavigationLink(
+            key: const ValueKey('settings-activities-link'),
+            title: l10n.activityCenterTitle,
+            icon: Icons.local_activity_outlined,
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) => const ActivityCenterPage()),
+            ),
+          ),
+          _buildAboutNavigationLink(
             key: const ValueKey('settings-welcome-link'),
             title: l10n.settingsWelcomeGuide,
             icon: Icons.auto_stories_outlined,
@@ -444,7 +452,7 @@ extension _SettingsAboutPart on _SettingsPageState {
   Widget _buildActionSetting({
     required String title,
     required String subtitle,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     required IconData icon,
     String? badge,
     Widget? trailing,

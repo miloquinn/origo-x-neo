@@ -10,9 +10,14 @@ extension _NativeReaderContinuousLayout on _NativeReaderPageState {
     final anchor = _anchorOffset ?? 0;
     final centerAnchor = _restoreContinuousAnchorCentered;
     final revision = _verticalScrollRevision;
+    bool isCurrent() {
+      _cancelInvalidPositionRestore();
+      return mounted && revision == _verticalScrollRevision;
+    }
+
     _initialPositionRestoreScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || revision != _verticalScrollRevision) return;
+      if (!isCurrent()) return;
       final controller = _usesChapterScopedVerticalList
           ? _verticalPageScrollController
           : _verticalChapterScrollController;
@@ -25,7 +30,7 @@ extension _NativeReaderContinuousLayout on _NativeReaderPageState {
         index: _usesChapterScopedVerticalList ? partIndex : chapterIndex,
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || revision != _verticalScrollRevision) return;
+        if (!isCurrent()) return;
         unawaited(
           _scrollContinuousAnchorIntoView(
             chapter,
@@ -34,7 +39,7 @@ extension _NativeReaderContinuousLayout on _NativeReaderPageState {
             anchor,
             centerInViewport: centerAnchor,
           ).then((restored) {
-            if (!mounted || revision != _verticalScrollRevision) return;
+            if (!isCurrent()) return;
             _initialPositionRestoreScheduled = false;
             if (!restored) {
               _scheduleInitialContinuousScrollRestore(viewport);
@@ -43,6 +48,8 @@ extension _NativeReaderContinuousLayout on _NativeReaderPageState {
             _setReaderState(() {
               _initialPositionRestored = true;
               _restoreContinuousAnchorCentered = false;
+              _positionRestoreShouldApply = null;
+              _positionRestorePreviousVerticalOffset = null;
             });
             unawaited(
               _saveCanonicalProgress(

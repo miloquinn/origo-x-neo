@@ -25,7 +25,9 @@ extension _NativeReaderSession on _NativeReaderPageState {
     return pages[_pageIndex.clamp(0, pages.length - 1)];
   }
 
-  void _requestPositionRestore() {
+  void _requestPositionRestore({bool Function()? shouldApply}) {
+    _positionRestoreShouldApply = shouldApply;
+    _positionRestorePreviousVerticalOffset = _verticalCanonicalOffset;
     _restoreAnchorAfterLayout = true;
     _verticalPositionCapturePending = false;
     _verticalScrollRevision++;
@@ -38,6 +40,23 @@ extension _NativeReaderSession on _NativeReaderPageState {
     _initialPositionRestoreScheduled = false;
     _restoreContinuousAnchorCentered = true;
     _continuousRestoreCompletion = Completer<void>();
+  }
+
+  void _cancelInvalidPositionRestore() {
+    final shouldApply = _positionRestoreShouldApply;
+    if (shouldApply == null || shouldApply()) return;
+    _positionRestoreShouldApply = null;
+    ++_verticalScrollRevision;
+    _restoreAnchorAfterLayout = false;
+    _pendingRestoreChapterIndex = null;
+    _anchorOffset = null;
+    _verticalCanonicalOffset = _positionRestorePreviousVerticalOffset;
+    _positionRestorePreviousVerticalOffset = null;
+    _initialPositionRestoreScheduled = false;
+    _initialPositionRestored = true;
+    _restoreContinuousAnchorCentered = false;
+    _continuousRestoreCompletion?.complete();
+    _continuousRestoreCompletion = null;
   }
 
   void _startReadingSession() {

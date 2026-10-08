@@ -24,14 +24,47 @@ class _HorizontalPageIndexMap {
   }
 }
 
+class _HorizontalWindowScrollPhysics extends ScrollPhysics {
+  const _HorizontalWindowScrollPhysics({required this.firstPage, super.parent});
+
+  final int firstPage;
+
+  @override
+  _HorizontalWindowScrollPhysics applyTo(ScrollPhysics? ancestor) =>
+      _HorizontalWindowScrollPhysics(
+        firstPage: firstPage,
+        parent: buildParent(ancestor),
+      );
+
+  @override
+  double applyBoundaryConditions(ScrollMetrics position, double value) {
+    final firstPixels = firstPage * position.viewportDimension;
+    if (value < position.pixels && position.pixels <= firstPixels) {
+      return value - position.pixels;
+    }
+    if (value < firstPixels && firstPixels < position.pixels) {
+      return value - firstPixels;
+    }
+    return super.applyBoundaryConditions(position, value);
+  }
+}
+
 extension _NativeReaderHorizontalPaging on _NativeReaderPageState {
-  void _resetHorizontalPagingWindow(int chapterIndex, {int? chapterCount}) {
-    _horizontalFirstChapter = math.max(0, chapterIndex - 1);
-    _horizontalLastChapter = chapterCount == null || chapterCount <= 0
+  void _resetHorizontalPagingWindow(
+    int chapterIndex, {
+    int? chapterCount,
+    bool targetOnly = false,
+  }) {
+    _horizontalFirstChapter = targetOnly
+        ? chapterIndex
+        : math.max(0, chapterIndex - 1);
+    _horizontalLastChapter = targetOnly
+        ? chapterIndex
+        : chapterCount == null || chapterCount <= 0
         ? chapterIndex + 2
         : math.min(chapterCount - 1, chapterIndex + 2);
     _horizontalPageIndexMap.reset(chapterIndex);
-    _horizontalBackwardExpansionPending = false;
+    _horizontalBackwardExpansionPending = targetOnly && chapterIndex > 0;
     _horizontalBackwardExpansionWarmPending = false;
     _horizontalForwardExpansionPending = false;
     _horizontalForwardContractionPending = false;
@@ -69,7 +102,7 @@ extension _NativeReaderHorizontalPaging on _NativeReaderPageState {
       // and can overwrite the restored position with the previous chapter.
       // Forward chapters can still warm after the opening animation.
       if (chapterIndex != _chapterIndex &&
-          (!chapter.hasLoadedText ||
+          (!chapter.isReadyForLayout ||
               (chapterIndex > _chapterIndex &&
                   !_openingFlightSettledNow &&
                   !_pageCache.containsKey(layoutFingerprint)))) {
@@ -343,8 +376,15 @@ extension _NativeReaderHorizontalPaging on _NativeReaderPageState {
     // and page list from the same build so an in-flight gesture cannot map an
     // old child list through a newer origin.
     final controllerOrigin = _horizontalPageIndexMap.origin;
+    final pageController = _pageController;
+    final controllerGeneration = _pageControllerGeneration;
+    bool isCurrentController() =>
+        mounted &&
+        controllerGeneration == _pageControllerGeneration &&
+        identical(pageController, _pageController);
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
+        if (!isCurrentController()) return false;
         if (notification is ScrollStartNotification &&
             notification.dragDetails != null) {
           _markReadingPositionChanged();
@@ -362,26 +402,24 @@ extension _NativeReaderHorizontalPaging on _NativeReaderPageState {
         return false;
       },
       child: PageView.builder(
-        controller: _pageController,
+        key: ValueKey(controllerGeneration),
+        controller: pageController,
         physics: _annotationInteractionActive
             ? const NeverScrollableScrollPhysics()
-            : null,
+            : _HorizontalWindowScrollPhysics(firstPage: controllerOrigin),
         itemCount: _horizontalControllerPageCount(
           bookPages,
           usesTwoPageLayout: usesTwoPageLayout,
           controllerOrigin: controllerOrigin,
         ),
         onPageChanged: (index) {
+          if (!isCurrentController()) return;
           final bookPageIndex = _horizontalBookPageIndex(
             index,
             usesTwoPageLayout: usesTwoPageLayout,
             controllerOrigin: controllerOrigin,
           );
           if (bookPageIndex < 0 || bookPageIndex >= bookPages.length) {
-            debugPrint(
-              '[reader-horizontal] ignore virtual pageChanged '
-              'index=$index origin=${_horizontalPageIndexMap.origin}',
-            );
             return;
           }
           final page = bookPages[bookPageIndex];

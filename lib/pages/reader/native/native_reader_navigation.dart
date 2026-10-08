@@ -112,8 +112,11 @@ extension _NativeReaderNavigation on _NativeReaderPageState {
 
   Future<void> _jumpToBookmark(
     Bookmark bookmark,
-    List<_NativeChapter> chapters,
-  ) async {
+    List<_NativeChapter> chapters, {
+    bool Function()? shouldApply,
+    bool centerInViewport = true,
+  }) async {
+    if (!mounted || !(shouldApply?.call() ?? true)) return;
     if (!isTxtBookmarkLocatorResolved(bookmark.anchorKey)) return;
     _markReadingPositionChanged();
     final locatorRaw = bookmark.canonicalLocator;
@@ -130,55 +133,29 @@ extension _NativeReaderNavigation on _NativeReaderPageState {
         chapters.length - 1,
       );
     }
-    _anchorOffset = locator?.textAnchor?.startOffsetUtf16;
-    _pendingRestoreChapterIndex = chapterIndex;
-    _requestPositionRestore();
-    final completion = _continuousRestoreCompletion?.future;
-    final revision = _verticalScrollRevision;
-    final alreadyInChapter = chapterIndex == _chapterIndex;
     await _setChapter(
       chapterIndex,
       chapters.length,
-      recenterContinuousScroll: false,
+      shouldApply: shouldApply,
+      resolveOffset: (_) => locator?.textAnchor?.startOffsetUtf16 ?? 0,
+      centerInViewport: centerInViewport,
     );
-    if (!mounted || revision != _verticalScrollRevision) return;
-    if (alreadyInChapter) _setReaderState(() {});
-    if (completion == null) return;
-    await completion;
   }
 
   Future<void> _jumpToNavigationChapter(
     ReaderNavigationChapter navigation,
     List<_NativeChapter> chapters,
   ) async {
+    _markReadingPositionChanged();
     final navigationPosition = _navigationChapters.indexOf(navigation);
     _lastNavigationJumpPosition = navigationPosition < 0
         ? null
         : navigationPosition;
     final chapterIndex = navigation.index.clamp(0, chapters.length - 1);
-    await _loadIndexedChapterWindow(chapters, chapterIndex);
-    if (!mounted) return;
-    final chapter = chapters[chapterIndex];
-    final offset = chapter.navigationOffsetFor(navigation) ?? 0;
-    final excerptEnd = (offset + 72).clamp(offset, chapter.plainText.length);
-    final locator = CanonicalLocator.fromComponents(
-      format: BookFormat.fromFileExtension(widget.book.format),
-      chapterId: chapter.id,
-      offset: offset,
-      excerpt: chapter.plainText.substring(offset, excerptEnd),
-      progression: chapter.plainText.isEmpty
-          ? 0
-          : offset / chapter.plainText.length,
-    );
-    await _jumpToBookmark(
-      Bookmark(
-        bookId: widget.book.id ?? 0,
-        pageNumber: chapterIndex,
-        chapterIndex: chapterIndex,
-        chapterTitle: navigation.title,
-        canonicalLocator: LocatorCodec.encodeCanonicalLocator(locator),
-      ),
-      chapters,
+    await _setChapter(
+      chapterIndex,
+      chapters.length,
+      resolveOffset: (chapter) => chapter.navigationOffsetFor(navigation) ?? 0,
     );
   }
 
@@ -240,6 +217,14 @@ extension _NativeReaderNavigation on _NativeReaderPageState {
                       loadArguments: chapter.kindleLoadArguments,
                       replaceBookTitle: chapter.replaceBookTitle,
                     ))
+              ..configureReplacement(
+                bookTitle: chapter.replaceBookTitle,
+                bookId: chapter.replaceBookId ?? _replaceRuleBookId,
+                sourceName: chapter.replaceSourceName,
+                sourceUrl: chapter.replaceSourceUrl,
+                eligibleByDefault: chapter.replaceEligibleByDefault,
+              )
+              ..prepareReplacementRevision(_replaceRules.revision)
               ..applyPreparedTitle(chapter.title);
           })
           .toList(growable: false);

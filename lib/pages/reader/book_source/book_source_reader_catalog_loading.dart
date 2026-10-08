@@ -2,12 +2,19 @@ part of 'book_source_reader_page.dart';
 
 extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
   Future<void> _initialize() async {
+    final catalogLoadSerial = ++_catalogLoadSerial;
+    ++_chapterLoadSerial;
     _updateReaderState(() {
       _loadingCatalog = true;
+      _loadingContent = false;
+      _requestedChapterIndex = null;
       _error = null;
     });
     try {
       await _replaceRules.load();
+      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
+      await _resolveShelfBook(loadReadingData: false);
+      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
       final results = await Future.wait<Object?>([
         _client.getChapters(
           widget.source,
@@ -30,8 +37,6 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         for (final chapter in rawChapters) chapter.id: chapter.title,
       };
       final chapters = await _withReplacedChapterTitles(rawChapters);
-      final navigationChapters = _navigationFor(chapters);
-      final navigationCatalog = ReaderNavigationCatalog(navigationChapters);
       final saved = results[1] as BookSourceReadingProgress?;
       final settings = results[2]! as ReaderSettings;
       final scrollByChapter = results[3]! as bool;
@@ -48,16 +53,11 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
       if (chapters.isNotEmpty) {
         initialIndex = initialIndex.clamp(0, chapters.length - 1);
       }
-      if (!mounted) return;
+      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
       ReaderThemes.setCustomThemes(customThemes);
       ReaderThemes.setThemeOrder(themeOrder);
       _updateReaderState(() {
-        _rawChapterTitlesById = Map<String, String>.unmodifiable(
-          rawChapterTitlesById,
-        );
-        _chapters = chapters;
-        _navigationChapters = navigationChapters;
-        _navigationCatalog = navigationCatalog;
+        _replaceChapterCatalog(chapters, rawChapterTitlesById);
         _chapterIndex = initialIndex;
         _fontSize = settings.fontSize;
         _textBrightness = settings.textBrightness;
@@ -92,7 +92,7 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         );
       }
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || catalogLoadSerial != _catalogLoadSerial) return;
       _updateReaderState(() {
         _loadingCatalog = false;
         _error = error;
@@ -101,16 +101,53 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
     }
   }
 
+  void _replaceChapterCatalog(
+    List<BookSourceChapter> chapters,
+    Map<String, String> rawTitlesById,
+  ) {
+    ++_catalogGeneration;
+    _chapters = chapters;
+    _rawChapterTitlesById = Map<String, String>.unmodifiable(rawTitlesById);
+    _navigationChapters = _navigationFor(chapters);
+    _navigationCatalog = ReaderNavigationCatalog(_navigationChapters);
+    _content = null;
+    _prefetchedContent.clear();
+    _readableChapterText.clear();
+    _continuousContentLoads.clear();
+    _persistedOnlinePagination.clear();
+    _pagedLayouts.clear();
+    _pagedLayoutWarms.clear();
+    _verticalLayouts.clear();
+    _verticalPartKeys.clear();
+    _autoPreparingChapters.clear();
+    _autoScrollRestoring = false;
+    _paginationKey = null;
+    _paginatedPages = const [];
+    _pageIndex = 0;
+    _pageCount = 1;
+    _pendingSlideChapterIndex = null;
+    _pendingSlideBoundaryViewIndex = null;
+    _horizontalPageTurnTracker.clear();
+    _verticalCanonicalOffset = null;
+  }
+
   Future<List<BookSourceChapter>> _withReplacedChapterTitles(
     List<BookSourceChapter> chapters,
   ) async {
     if (chapters.isEmpty) return const <BookSourceChapter>[];
+    final replacementRevision = _replaceRules.revision;
     final cleaned = await _replaceRules.applyBatchAsync(
       chapters.map((chapter) => chapter.title).toList(growable: false),
       bookTitle: widget.book.title,
       sourceName: widget.source.name,
+      sourceUrl: _replaceRuleSourceUrl,
+      bookId: _replaceRuleBookId,
+      eligibleByDefault: _replaceRulesEligibleByDefault,
       title: true,
     );
+    if (replacementRevision != _replaceRules.revision) {
+      return _withReplacedChapterTitles(chapters);
+    }
     return List<BookSourceChapter>.generate(
       chapters.length,
       (index) => BookSourceChapter(
@@ -203,8 +240,13 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
   }
 
   Future<void> _saveProgress() {
-    if (_chapters.isEmpty || _chapterIndex >= _chapters.length) {
-      return Future<void>.value();
+    if (_loadingCatalog ||
+        _loadingContent ||
+        _error != null ||
+        _content == null ||
+        _chapters.isEmpty ||
+        _chapterIndex >= _chapters.length) {
+      return _progressSaveQueue;
     }
     final chapterIndex = _chapterIndex;
     final chapterId = _chapters[chapterIndex].id;
@@ -245,7 +287,7 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
     return _progressSaveQueue;
   }
 
-  Future<void> _resolveShelfBook() async {
+  Future<void> _resolveShelfBook({bool loadReadingData = true}) async {
     Book? shelfBook;
     try {
       shelfBook = await _shelfService.findShelfBook(
@@ -262,7 +304,7 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
       _shelfBookId = shelfBook?.id;
     });
     final shelfBookId = _shelfBookId;
-    if (shelfBookId == null) return;
+    if (shelfBookId == null || !loadReadingData) return;
     if (shelfBook != null && _chapters.isNotEmpty) {
       unawaited(
         SourceBookUpdateService()

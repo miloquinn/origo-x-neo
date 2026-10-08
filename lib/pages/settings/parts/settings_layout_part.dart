@@ -153,29 +153,36 @@ extension _SettingsLayoutPart on _SettingsPageState {
         _buildActionSetting(
           title: l10n.readerTopBarStyleTitle,
           subtitle: _readerTopBarStyleTitle(_readerTopBarStyle),
-          onTap: _showReaderTopBarStylePicker,
+          onTap: _loadedPreferences == null
+              ? null
+              : _showReaderTopBarStylePicker,
           icon: Icons.vertical_align_top_rounded,
         ),
       ],
     );
   }
 
-  Widget _buildDataSyncSettingsSection(
-    AppLocalizations l10n,
-    WebDavBackupController webDavSync,
-  ) {
+  Widget _buildDataSyncSettingsSection(AppLocalizations l10n) {
     return _buildSectionCard(
       title: l10n.settingsDataSyncTitle,
       icon: Icons.cloud_sync_outlined,
       children: [
         _buildActionSetting(
           title: BackupCopy.of(context).title,
-          subtitle: _webDavSyncSubtitle(webDavSync),
+          subtitle: BackupCopy.of(context).summary,
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const WebDavBackupPage()),
           ),
           icon: Icons.cloud_outlined,
-          trailing: _webDavSyncTrailing(webDavSync),
+          trailing: Selector<WebDavBackupController, bool>(
+            selector: (_, backup) => backup.busy,
+            builder: (_, busy, _) => busy
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.chevron_right_rounded),
+          ),
         ),
         _buildActionSetting(
           title: l10n.settingsCacheManagementTitle,

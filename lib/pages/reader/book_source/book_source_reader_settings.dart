@@ -222,64 +222,61 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
   };
 
   ReaderAloudController? _ensureReaderAloudController() {
+    final session = context.read<ReaderAloudSession>();
     final existing = _readerAloudController;
-    if (existing != null) return existing;
+    if (existing != null &&
+        identical(existing, session.controller) &&
+        session.sourceId == 'source:${widget.source.id}:${widget.book.id}') {
+      return existing;
+    }
+    existing?.removeListener(_onReaderAloudChanged);
     ReaderAloudService aloudService;
     try {
       aloudService = context.read<ReaderAloudService>();
     } on ProviderNotFoundException {
       return null;
     }
-    final session = context.read<ReaderAloudSession>();
+    final source = CallbackReaderAloudSource(
+      bookTitle: widget.book.title,
+      chapterCount: () => _chapters.length,
+      currentPosition: () async {
+        if (_chapters.isEmpty) {
+          return const ReaderAloudPosition(chapterIndex: 0, offset: 0);
+        }
+        final chapterIndex = _chapterIndex.clamp(0, _chapters.length - 1);
+        final content = await _continuousContentFor(chapterIndex);
+        final text =
+            _readableChapterText[chapterIndex] ??
+            await readableBookSourceChapterTextAsync(
+              content,
+              fallbackTitle: _chapters[chapterIndex].title,
+            );
+        final offset =
+            _currentTextOffset ??
+            (text.length * _currentReadingProgress).round();
+        return ReaderAloudPosition(
+          chapterIndex: chapterIndex,
+          offset: offset.clamp(0, text.length),
+        );
+      },
+      loadChapter: (index) => _loadReaderAloudChapter(index),
+      guardedLoadChapter: (index, isCurrent) =>
+          _loadReaderAloudChapter(index, isCurrent: isCurrent),
+      revealPosition: _revealReaderAloudPosition,
+      guardedRevealPosition: (position, isCurrent) =>
+          _revealReaderAloudPosition(position, isCurrent: isCurrent),
+      persistPosition: _persistReaderAloudPosition,
+    );
     final controller = session.acquire(
       sourceId: 'source:${widget.source.id}:${widget.book.id}',
       create: () => ReaderAloudController(
         engine: aloudService,
         notificationSink: PlatformReaderAloudMediaSession.instance,
-        source: CallbackReaderAloudSource(
-          bookTitle: widget.book.title,
-          chapterCount: () => _chapters.length,
-          currentPosition: () async {
-            if (_chapters.isEmpty) {
-              return const ReaderAloudPosition(chapterIndex: 0, offset: 0);
-            }
-            final chapterIndex = _chapterIndex.clamp(0, _chapters.length - 1);
-            final content = await _continuousContentFor(chapterIndex);
-            final text =
-                _readableChapterText[chapterIndex] ??
-                await readableBookSourceChapterTextAsync(
-                  content,
-                  fallbackTitle: _chapters[chapterIndex].title,
-                );
-            final offset =
-                _currentTextOffset ??
-                (text.length * _currentReadingProgress).round();
-            return ReaderAloudPosition(
-              chapterIndex: chapterIndex,
-              offset: offset.clamp(0, text.length),
-            );
-          },
-          loadChapter: (index) async {
-            if (index < 0 || index >= _chapters.length) return null;
-            final content = await _continuousContentFor(index);
-            final text =
-                _readableChapterText[index] ??
-                await readableBookSourceChapterTextAsync(
-                  content,
-                  fallbackTitle: _chapters[index].title,
-                );
-            return ReaderAloudChapter(
-              index: index,
-              id: _chapters[index].id,
-              title: _chapters[index].title,
-              text: text,
-            );
-          },
-          revealPosition: _revealReaderAloudPosition,
-          persistPosition: _persistReaderAloudPosition,
-        ),
+        source: source,
       ),
-    )..addListener(_onReaderAloudChanged);
+    );
+    controller.rebindSource(source);
+    controller.addListener(_onReaderAloudChanged);
     _readerAloudController = controller;
     return controller;
   }

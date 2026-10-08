@@ -47,6 +47,35 @@ void main() {
     expect(player.isPlaying, isFalse);
   });
 
+  test(
+    'adjacent queued sentences reuse session without redundant stops',
+    () async {
+      final native = _Player();
+      final player = AudioplayersReaderAloudBytesPlayer(player: native);
+      addTearDown(player.dispose);
+      for (var index = 0; index < 3; index++) {
+        await player.playNext(
+          Uint8List.fromList([index]),
+          mimeType: 'audio/mpeg',
+          volume: 0.6,
+          firstInQueue: index == 0,
+        );
+      }
+      expect(native.contexts, hasLength(1));
+      expect(native.playedContexts, hasLength(3));
+      expect(native.stops, 0);
+      await player.stop();
+      await player.playNext(
+        Uint8List.fromList([4]),
+        mimeType: 'audio/mpeg',
+        volume: 0.6,
+        firstInQueue: true,
+      );
+      expect(native.contexts, hasLength(2));
+      expect(native.stops, 1);
+    },
+  );
+
   for (final action in ['stop', 'pause', 'dispose']) {
     test('$action during session setup cancels late playback', () async {
       final gate = Completer<void>();
@@ -80,6 +109,25 @@ void main() {
     await _play(player);
     expect(native.playedContexts, hasLength(1));
   });
+  test('a late pause response cannot pause replacement audio', () async {
+    final gate = Completer<void>();
+    final native = _Player(pauseGate: gate, completeOnPlay: false);
+    final player = AudioplayersReaderAloudBytesPlayer(player: native);
+    addTearDown(player.dispose);
+    final old = _play(player);
+    await Future<void>.delayed(Duration.zero);
+    expect(player.isPlaying, isTrue);
+    final paused = player.pause();
+    final latest = _play(player);
+    await Future<void>.delayed(Duration.zero);
+    gate.complete();
+    await paused;
+    await old;
+    expect(player.isPlaying, isTrue);
+    expect(player.isPaused, isFalse);
+    native.complete();
+    await latest;
+  });
 }
 
 Future<void> _play(AudioplayersReaderAloudBytesPlayer player) => player.play(
@@ -93,17 +141,24 @@ class _Session {
 }
 
 class _Player implements AudioPlayer {
-  _Player({_Session? session, this.contextGate})
-    : session = session ?? _Session();
+  _Player({
+    _Session? session,
+    this.contextGate,
+    this.pauseGate,
+    this.completeOnPlay = true,
+  }) : session = session ?? _Session();
 
   final _Session session;
   final Completer<void>? contextGate;
+  final Completer<void>? pauseGate;
+  final bool completeOnPlay;
   final contextStarted = Completer<void>();
   final contexts = <AudioContext>[];
   final playedContexts = <AudioContextIOS>[];
   final volumes = <double?>[];
   final _completed = StreamController<void>.broadcast();
   bool failContext = false;
+  int stops = 0;
 
   @override
   Stream<Duration> get onPositionChanged => const Stream.empty();
@@ -132,11 +187,17 @@ class _Player implements AudioPlayer {
   }) async {
     playedContexts.add(session.context!);
     volumes.add(volume);
-    _completed.add(null);
+    if (completeOnPlay) complete();
   }
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async => stops++;
+  @override
+  Future<void> pause() async {
+    await pauseGate?.future;
+  }
+
+  void complete() => _completed.add(null);
   @override
   Future<void> dispose() => _completed.close();
   @override

@@ -146,8 +146,16 @@ abstract interface class ReaderAloudSource {
   int get chapterCount;
 
   Future<ReaderAloudPosition> currentPosition();
-  Future<ReaderAloudChapter?> loadChapter(int index);
-  Future<void> revealPosition(ReaderAloudPosition position);
+
+  /// Return null at the end, or refresh an online catalog to discover a chapter.
+  Future<ReaderAloudChapter?> loadChapter(
+    int index, {
+    bool Function()? isCurrent,
+  });
+  Future<void> revealPosition(
+    ReaderAloudPosition position, {
+    bool Function()? isCurrent,
+  });
   Future<void> persistPosition(ReaderAloudPosition position);
 }
 
@@ -157,7 +165,14 @@ class CallbackReaderAloudSource implements ReaderAloudSource {
     required int Function() chapterCount,
     required Future<ReaderAloudPosition> Function() currentPosition,
     required Future<ReaderAloudChapter?> Function(int index) loadChapter,
+    Future<ReaderAloudChapter?> Function(int index, bool Function() isCurrent)?
+    guardedLoadChapter,
     required Future<void> Function(ReaderAloudPosition position) revealPosition,
+    Future<void> Function(
+      ReaderAloudPosition position,
+      bool Function() isCurrent,
+    )?
+    guardedRevealPosition,
     required Future<void> Function(ReaderAloudPosition position)
     persistPosition,
   }) => CallbackReaderAloudSource._(
@@ -167,6 +182,8 @@ class CallbackReaderAloudSource implements ReaderAloudSource {
     loadChapter,
     revealPosition,
     persistPosition,
+    guardedRevealPosition,
+    guardedLoadChapter,
   );
 
   const CallbackReaderAloudSource._(
@@ -176,6 +193,8 @@ class CallbackReaderAloudSource implements ReaderAloudSource {
     this._loadChapter,
     this._revealPosition,
     this._persistPosition,
+    this._guardedRevealPosition,
+    this._guardedLoadChapter,
   );
 
   @override
@@ -183,8 +202,12 @@ class CallbackReaderAloudSource implements ReaderAloudSource {
   final int Function() _chapterCount;
   final Future<ReaderAloudPosition> Function() _currentPosition;
   final Future<ReaderAloudChapter?> Function(int index) _loadChapter;
+  final Future<ReaderAloudChapter?> Function(int, bool Function())?
+  _guardedLoadChapter;
   final Future<void> Function(ReaderAloudPosition position) _revealPosition;
   final Future<void> Function(ReaderAloudPosition position) _persistPosition;
+  final Future<void> Function(ReaderAloudPosition, bool Function())?
+  _guardedRevealPosition;
 
   @override
   int get chapterCount => _chapterCount();
@@ -193,15 +216,40 @@ class CallbackReaderAloudSource implements ReaderAloudSource {
   Future<ReaderAloudPosition> currentPosition() => _currentPosition();
 
   @override
-  Future<ReaderAloudChapter?> loadChapter(int index) => _loadChapter(index);
+  Future<ReaderAloudChapter?> loadChapter(
+    int index, {
+    bool Function()? isCurrent,
+  }) async {
+    final current = isCurrent ?? () => true;
+    if (!current() ||
+        index < 0 ||
+        (index >= chapterCount && _guardedLoadChapter == null)) {
+      return null;
+    }
+    final chapter = await (_guardedLoadChapter != null
+        ? _guardedLoadChapter(index, current)
+        : _loadChapter(index));
+    return current() ? chapter : null;
+  }
 
   @override
   Future<void> persistPosition(ReaderAloudPosition position) =>
       _persistPosition(position);
 
   @override
-  Future<void> revealPosition(ReaderAloudPosition position) =>
-      _revealPosition(position);
+  Future<void> revealPosition(
+    ReaderAloudPosition position, {
+    bool Function()? isCurrent,
+  }) async {
+    final current = isCurrent ?? () => true;
+    if (!current()) return;
+    final guarded = _guardedRevealPosition;
+    if (guarded != null) {
+      await guarded(position, current);
+    } else {
+      await _revealPosition(position);
+    }
+  }
 }
 
 class ReaderAloudNotificationData {
@@ -338,10 +386,13 @@ class ReaderAloudController extends ChangeNotifier {
 
   ReaderAloudController({
     required this.engine,
-    required this.source,
+    required ReaderAloudSource source,
     this.notificationSink = const NoopReaderAloudNotificationSink(),
     ReaderAloudSegmentBuilder? segmenter,
-  }) : _segmenter =
+    // Keep the public constructor name while controlling source replacement.
+    // ignore: prefer_initializing_formals
+  }) : _source = source,
+       _segmenter =
            segmenter ??
            ((chapter) => ReaderAloudSegmenter.split(
              chapterIndex: chapter.index,
@@ -354,7 +405,17 @@ class ReaderAloudController extends ChangeNotifier {
   }
 
   final ReaderAloudEngine engine;
-  final ReaderAloudSource source;
+  ReaderAloudSource _source;
+  ReaderAloudSource get source => _source;
+
+  /// Reattach the current book to a reopened reader without restarting audio.
+  /// Pending reveals from the previous route must not move the new reader.
+  void rebindSource(ReaderAloudSource source) {
+    if (_disposed || identical(source, _source)) return;
+    ++_revealSerial;
+    _source = source;
+  }
+
   final ReaderAloudNotificationSink notificationSink;
   final ReaderAloudSegmentBuilder _segmenter;
 
@@ -370,7 +431,9 @@ class ReaderAloudController extends ChangeNotifier {
   int? _continuousUtteranceStartOffset;
   int? _continuousUtteranceEndSegmentIndex;
   int _resumeOffset = 0;
+  bool _waitingForSpeech = false;
   int _generation = 0;
+  int _revealSerial = 0;
   bool _disposed = false;
   Object? _lastError;
   Duration? _sleepDuration;
@@ -378,10 +441,16 @@ class ReaderAloudController extends ChangeNotifier {
 
   ReaderAloudPlaybackState get state => _state;
   ReaderAloudChapter? get currentChapter => _currentChapter;
+  List<ReaderAloudSegment> get chapterSegments => _segments;
+  bool get isPreparing =>
+      _state == ReaderAloudPlaybackState.loading ||
+      ((_state == ReaderAloudPlaybackState.playing ||
+              _state == ReaderAloudPlaybackState.paused) &&
+          _waitingForSpeech);
   ReaderAloudSegment? get currentSegment =>
       _segments.isEmpty ? null : _segments[_segmentIndex];
   ReaderAloudHighlight? get highlight {
-    if (!isActive) return null;
+    if (!isActive || isPreparing) return null;
     final segment = currentSegment;
     if (segment == null) return null;
     return ReaderAloudHighlight(
@@ -414,12 +483,10 @@ class ReaderAloudController extends ChangeNotifier {
     if (segment == null) return 0;
     final continuousStart = _continuousUtteranceStartOffset;
     if (_state == ReaderAloudPlaybackState.playing && continuousStart != null) {
-      return (continuousStart + engine.currentPosition).clamp(
-        segment.startOffset,
-        segment.endOffset,
-      );
+      return (continuousStart + (isPreparing ? 0 : engine.currentPosition))
+          .clamp(segment.startOffset, segment.endOffset);
     }
-    final relative = _state == ReaderAloudPlaybackState.playing
+    final relative = _state == ReaderAloudPlaybackState.playing && !isPreparing
         ? _utteranceBaseOffset + engine.currentPosition
         : _resumeOffset;
     return (segment.startOffset + relative).clamp(
@@ -434,22 +501,38 @@ class ReaderAloudController extends ChangeNotifier {
     return (currentOffset / chapter.text.length).clamp(0.0, 1.0);
   }
 
-  Future<void> start({ReaderAloudPosition? position}) async {
+  Future<void> start({ReaderAloudPosition? position}) =>
+      _start(position: position);
+
+  /// Explicit sentence navigation always starts at the sentence's beginning,
+  /// even when the selected character is in the middle or on another page.
+  Future<void> playFromOffset(ReaderAloudPosition position) =>
+      _start(position: position, fromSentenceStart: true);
+
+  Future<void> _start({
+    ReaderAloudPosition? position,
+    bool fromSentenceStart = false,
+  }) async {
     if (_disposed) return;
     if (position == null && _state == ReaderAloudPlaybackState.paused) {
       await resume();
       return;
     }
     final generation = ++_generation;
+    _waitingForSpeech = true;
+    _clearContinuousUtterance();
     _setState(ReaderAloudPlaybackState.loading);
     _lastError = null;
     await engine.stop();
+    if (!_isCurrent(generation)) return;
     try {
       final target = position ?? await source.currentPosition();
       if (!_isCurrent(generation)) return;
       final loaded = await _loadChapterAt(
         target.chapterIndex,
         startOffset: target.offset,
+        fromSentenceStart: fromSentenceStart,
+        generation: generation,
       );
       if (!loaded || !_isCurrent(generation)) {
         if (_isCurrent(generation)) {
@@ -484,6 +567,7 @@ class ReaderAloudController extends ChangeNotifier {
       return;
     }
     final generation = ++_generation;
+    _waitingForSpeech = true;
     _setState(ReaderAloudPlaybackState.playing);
     unawaited(_playCurrent(generation));
   }
@@ -534,7 +618,7 @@ class ReaderAloudController extends ChangeNotifier {
     await engine.stop();
     if (!_isCurrent(generation)) return;
     try {
-      final loaded = await _loadChapterAt(chapterIndex);
+      final loaded = await _loadChapterAt(chapterIndex, generation: generation);
       if (!loaded || !_isCurrent(generation)) return;
       _resumeOffset = 0;
       _setState(ReaderAloudPlaybackState.playing);
@@ -599,12 +683,15 @@ class ReaderAloudController extends ChangeNotifier {
     if (!_isCurrent(generation)) return;
     bool moved;
     try {
-      moved = delta < 0 ? await _movePrevious() : await _moveNext();
+      moved = delta < 0
+          ? await _movePrevious(generation)
+          : await _moveNext(generation);
     } catch (error) {
       _fail(error, generation);
       return;
     }
-    if (!moved || !_isCurrent(generation)) {
+    if (!_isCurrent(generation)) return;
+    if (!moved) {
       if (delta > 0) {
         _resumeOffset = currentSegment?.text.length ?? _resumeOffset;
         await stop();
@@ -620,14 +707,18 @@ class ReaderAloudController extends ChangeNotifier {
     unawaited(_playCurrent(generation));
   }
 
-  Future<bool> _movePrevious() async {
+  Future<bool> _movePrevious(int generation) async {
     while (true) {
       if (_segmentIndex > 0) {
         _segmentIndex--;
       } else {
         final chapterIndex = (_currentChapter?.index ?? 0) - 1;
         if (chapterIndex < 0) return false;
-        if (!await _loadChapterAt(chapterIndex, startFromEnd: true)) {
+        if (!await _loadChapterAt(
+          chapterIndex,
+          startFromEnd: true,
+          generation: generation,
+        )) {
           return false;
         }
       }
@@ -638,31 +729,40 @@ class ReaderAloudController extends ChangeNotifier {
     }
   }
 
-  Future<bool> _moveNext() async {
+  Future<bool> _moveNext(int generation) async {
+    if (!_isCurrent(generation)) return false;
     if (_segmentIndex + 1 < _segments.length) {
       _segmentIndex++;
       notifyListeners();
       return true;
     }
     final chapterIndex = (_currentChapter?.index ?? -1) + 1;
-    if (chapterIndex >= source.chapterCount) return false;
-    return _loadChapterAt(chapterIndex);
+    return _loadChapterAt(chapterIndex, generation: generation);
   }
 
   Future<bool> _loadChapterAt(
     int chapterIndex, {
     int startOffset = 0,
     bool startFromEnd = false,
+    bool fromSentenceStart = false,
+    required int generation,
   }) async {
     var index = chapterIndex;
-    while (index >= 0 && index < source.chapterCount) {
-      final chapter = await source.loadChapter(index);
+    while (index >= 0 && _isCurrent(generation)) {
+      final loadingSource = source;
+      final chapter = await loadingSource.loadChapter(
+        index,
+        isCurrent: () =>
+            _isCurrent(generation) && identical(loadingSource, source),
+      );
+      if (!_isCurrent(generation)) return false;
+      if (!identical(loadingSource, source)) continue;
       if (chapter == null) return false;
       final segments = _segmenter(chapter);
       if (segments.isNotEmpty) {
         _clearContinuousUtterance();
         _currentChapter = chapter;
-        _segments = segments;
+        _segments = List.unmodifiable(segments);
         if (startFromEnd) {
           _segmentIndex = segments.length - 1;
         } else {
@@ -672,13 +772,13 @@ class ReaderAloudController extends ChangeNotifier {
           _segmentIndex = matching < 0 ? segments.length - 1 : matching;
         }
         final segment = _segments[_segmentIndex];
-        _resumeOffset = startFromEnd
+        _resumeOffset = startFromEnd || fromSentenceStart
             ? 0
             : (startOffset - segment.startOffset).clamp(0, segment.text.length);
         notifyListeners();
         return true;
       }
-      index += startFromEnd ? -1 : 1;
+      index = chapter.index + (startFromEnd ? -1 : 1);
       startOffset = 0;
     }
     return false;
@@ -738,11 +838,12 @@ class ReaderAloudController extends ChangeNotifier {
         _segmentIndex = utteranceEndSegmentIndex;
         bool moved;
         try {
-          moved = await _moveNext();
+          moved = await _moveNext(generation);
         } catch (error) {
           _fail(error, generation);
           return;
         }
+        if (!_isCurrent(generation)) return;
         if (!moved) {
           _resumeOffset = currentSegment!.text.length;
           await stop();
@@ -753,28 +854,35 @@ class ReaderAloudController extends ChangeNotifier {
       }
 
       _utteranceBaseOffset = startAt + speech.leadingOffset;
+      _resumeOffset = _utteranceBaseOffset;
+      _waitingForSpeech = true;
+      notifyListeners();
       if (queued) {
         final first = queuedTexts!.first;
         _segmentIndex = first.segmentIndex;
         _utteranceBaseOffset = first.startAt + first.speech.leadingOffset;
+        _resumeOffset = _utteranceBaseOffset;
       }
       if (continuous) {
         _continuousUtteranceStartOffset =
             utteranceStartOffset + speech.leadingOffset;
         _continuousUtteranceEndSegmentIndex = utteranceEndSegmentIndex;
         _syncContinuousSegmentAt(_continuousUtteranceStartOffset!);
+        _resumeOffset =
+            _continuousUtteranceStartOffset! - currentSegment!.startOffset;
       } else {
         _clearContinuousUtterance();
       }
       try {
         final revealedSegment = currentSegment!;
-        await source.revealPosition(
+        await _revealPosition(
           ReaderAloudPosition(
             chapterIndex: revealedSegment.chapterIndex,
             offset: continuous
                 ? _continuousUtteranceStartOffset!
                 : revealedSegment.startOffset + _utteranceBaseOffset,
           ),
+          generation,
         );
       } catch (error) {
         debugPrint('reveal reader aloud position failed: $error');
@@ -800,25 +908,29 @@ class ReaderAloudController extends ChangeNotifier {
               _segmentIndex = nextIndex;
               _utteranceBaseOffset = item.startAt + item.speech.leadingOffset;
               _resumeOffset = _utteranceBaseOffset;
+              _waitingForSpeech = !engine.isPlaying;
               final startedSegment = _segments[nextIndex];
               notifyListeners();
               unawaited(
-                source
-                    .revealPosition(
-                      ReaderAloudPosition(
-                        chapterIndex: startedSegment.chapterIndex,
-                        offset:
-                            startedSegment.startOffset + _utteranceBaseOffset,
-                      ),
-                    )
-                    .catchError((Object error) {
-                      debugPrint('reveal reader aloud position failed: $error');
-                    }),
+                _revealPosition(
+                  ReaderAloudPosition(
+                    chapterIndex: startedSegment.chapterIndex,
+                    offset: startedSegment.startOffset + _utteranceBaseOffset,
+                  ),
+                  generation,
+                ).catchError((Object error) {
+                  debugPrint('reveal reader aloud position failed: $error');
+                }),
               );
             },
           );
         } else {
-          await engine.speak(speech.text);
+          final playback = engine.speak(speech.text);
+          if (_isCurrent(generation)) {
+            _waitingForSpeech = !engine.isPlaying;
+            notifyListeners();
+          }
+          await playback;
         }
       } catch (error) {
         _fail(error, generation);
@@ -844,11 +956,12 @@ class ReaderAloudController extends ChangeNotifier {
       );
       bool moved;
       try {
-        moved = await _moveNext();
+        moved = await _moveNext(generation);
       } catch (error) {
         _fail(error, generation);
         return;
       }
+      if (!_isCurrent(generation)) return;
       if (!moved) {
         await stop();
         return;
@@ -859,6 +972,7 @@ class ReaderAloudController extends ChangeNotifier {
 
   void _handleEngineChanged() {
     if (_disposed || _state != ReaderAloudPlaybackState.playing) return;
+    _waitingForSpeech = !engine.isPlaying;
     if (engine.isPlaying) {
       _syncContinuousSegmentFromEngine();
     }
@@ -884,10 +998,11 @@ class ReaderAloudController extends ChangeNotifier {
   void _captureResumeOffset({bool keepFurthest = false}) {
     var segment = currentSegment;
     if (segment == null) return;
+    final enginePosition = isPreparing ? 0 : engine.currentPosition;
 
     final continuousStart = _continuousUtteranceStartOffset;
     if (continuousStart != null) {
-      final absoluteOffset = continuousStart + engine.currentPosition;
+      final absoluteOffset = continuousStart + enginePosition;
       _syncContinuousSegmentAt(absoluteOffset);
       segment = currentSegment;
       if (segment == null) return;
@@ -902,7 +1017,7 @@ class ReaderAloudController extends ChangeNotifier {
       return;
     }
 
-    final relative = (_utteranceBaseOffset + engine.currentPosition).clamp(
+    final relative = (_utteranceBaseOffset + enginePosition).clamp(
       0,
       segment.text.length,
     );
@@ -930,22 +1045,32 @@ class ReaderAloudController extends ChangeNotifier {
     _segmentIndex = matchingIndex;
     final segment = _segments[matchingIndex];
     unawaited(
-      source
-          .revealPosition(
-            ReaderAloudPosition(
-              chapterIndex: segment.chapterIndex,
-              offset: segment.startOffset,
-            ),
-          )
-          .catchError((Object error) {
-            debugPrint('reveal reader aloud position failed: $error');
-          }),
+      _revealPosition(
+        ReaderAloudPosition(
+          chapterIndex: segment.chapterIndex,
+          offset: segment.startOffset,
+        ),
+        _generation,
+      ).catchError((Object error) {
+        debugPrint('reveal reader aloud position failed: $error');
+      }),
     );
   }
 
   void _clearContinuousUtterance() {
     _continuousUtteranceStartOffset = null;
     _continuousUtteranceEndSegmentIndex = null;
+  }
+
+  Future<void> _revealPosition(ReaderAloudPosition position, int generation) {
+    final serial = ++_revealSerial;
+    return source.revealPosition(
+      position,
+      isCurrent: () =>
+          _isCurrent(generation) &&
+          serial == _revealSerial &&
+          _state == ReaderAloudPlaybackState.playing,
+    );
   }
 
   Future<void> _persistCurrentPosition() async {

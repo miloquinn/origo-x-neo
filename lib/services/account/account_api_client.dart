@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
+import '../activities/activity.dart';
 import 'account_models.dart';
 import 'account_token_store.dart';
 import 'avatar_image_processor.dart';
@@ -617,6 +618,31 @@ class MemberAccountApiClient {
       headers: _referralHeaders,
     ),
   );
+
+  Future<List<AppActivity>> activities({required String channel}) async {
+    if (channel != 'official' && channel != 'store') {
+      throw ArgumentError.value(channel, 'channel');
+    }
+    final json = await _jsonRequest(
+      'GET',
+      '/api/v1/activities?channel=$channel',
+      authenticated: false,
+    );
+    final rows = json['activities'];
+    if (rows is! List) {
+      throw const MemberAccountException('服务器返回了无法识别的数据');
+    }
+    try {
+      return rows
+          .map(
+            (row) => AppActivity.fromJson((row as Map).cast<String, dynamic>()),
+          )
+          .where((activity) => activity.visibleFor(channel))
+          .toList(growable: false);
+    } catch (_) {
+      throw const MemberAccountException('服务器返回了无法识别的活动数据');
+    }
+  }
 
   Future<MemberReferralCampaign> referralCampaign() async =>
       MemberReferralCampaign.fromJson(

@@ -15,7 +15,27 @@ class BookSourceProtocolException implements Exception {
   /// The source-supplied `error.code`, when the failure carried one.
   final String? code;
 
-  const BookSourceProtocolException(this.message, {this.code});
+  /// The HTTP response status, when the failure came from an HTTP response.
+  final int? statusCode;
+
+  /// Whether a cached response may be used after a transport/server failure.
+  /// Authentication, invalid responses and cancellation are never transient.
+  final bool isTransient;
+
+  const BookSourceProtocolException(
+    this.message, {
+    this.code,
+    this.statusCode,
+    this.isTransient = false,
+  });
+
+  /// Whether the source specifically reported that the requested chapter is
+  /// unavailable and refreshing the catalog may repair the chapter identity.
+  bool get isMissingChapter {
+    if (statusCode != null && statusCode != 404) return false;
+    if (code != null) return code == 'CHAPTER_NOT_FOUND';
+    return statusCode == 404;
+  }
 
   @override
   String toString() => message;

@@ -9,6 +9,76 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
+    'missing trial and legacy SKUs do not fail current reader products',
+    () async {
+      final store = _FakeStore(missingProductIds: const {_trialId, _legacyId});
+      final service = _service(store, legacy: true);
+      addTearDown(store.close);
+      addTearDown(service.dispose);
+
+      await service.initialize();
+
+      expect(service.productFor(StoreProductKind.readerLifetime), isNotNull);
+      expect(
+        service.phaseFor(StorePurchaseDomain.reader),
+        StorePurchasePhase.idle,
+      );
+      expect(service.errorFor(StorePurchaseDomain.reader), isNull);
+    },
+  );
+
+  test(
+    'missing current reader product stays retryable without breaking Premium',
+    () async {
+      final store = _FakeStore(missingProductIds: const {_readerId});
+      final service = _service(store);
+      addTearDown(store.close);
+      addTearDown(service.dispose);
+
+      await service.initialize();
+      expect(service.productFor(StoreProductKind.readerTrial), isNotNull);
+      expect(
+        service.phaseFor(StorePurchaseDomain.reader),
+        StorePurchasePhase.productUnavailable,
+      );
+      expect(
+        service.phaseFor(StorePurchaseDomain.premium),
+        StorePurchasePhase.idle,
+      );
+      expect(service.busy, isFalse);
+      await service.restoreDomain(StorePurchaseDomain.reader);
+      expect(
+        service.phaseFor(StorePurchaseDomain.reader),
+        StorePurchasePhase.nothingToRestore,
+      );
+    },
+  );
+
+  test(
+    'one available Explore offer is not blocked by the other missing offer',
+    () async {
+      const bundleId = 'explore-full';
+      final store = _FakeStore(missingProductIds: const {bundleId});
+      final service = _service(store);
+      service.configureProductIds(
+        premiumLifetime: _premiumId,
+        premiumBundle: bundleId,
+      );
+      addTearDown(store.close);
+      addTearDown(service.dispose);
+
+      await service.initialize();
+      expect(service.productFor(StoreProductKind.premiumBundle), isNull);
+      expect(
+        service.phaseFor(StorePurchaseDomain.premium),
+        StorePurchasePhase.idle,
+      );
+      await service.purchaseKind(StoreProductKind.premiumLifetime);
+      expect(store.lastPurchase?.productDetails.id, _premiumId);
+    },
+  );
+
+  test(
     'one listener routes reader and premium products independently',
     () async {
       final store = _FakeStore();
@@ -504,10 +574,12 @@ class _FakeStore implements PurchaseStore {
     this.onRestore,
     this.onRestoreAsync,
     this.restoreIds = const <String>{},
+    this.missingProductIds = const <String>{},
   });
   final void Function(_FakeStore store)? onRestore;
   final Future<void> Function(_FakeStore store)? onRestoreAsync;
   final Set<String>? restoreIds;
+  final Set<String> missingProductIds;
   final _controller = StreamController<List<PurchaseDetails>>.broadcast();
   final completed = <PurchaseDetails>[];
   PurchaseParam? lastPurchase;
@@ -527,17 +599,18 @@ class _FakeStore implements PurchaseStore {
   ) async => ProductDetailsResponse(
     productDetails: [
       for (final id in identifiers)
-        ProductDetails(
-          id: id,
-          title: id,
-          description: id,
-          price: id == _readerId ? r'$9.99' : r'$8.99',
-          rawPrice: id == _readerId ? 9.99 : 8.99,
-          currencyCode: 'USD',
-          currencySymbol: r'$',
-        ),
+        if (!missingProductIds.contains(id))
+          ProductDetails(
+            id: id,
+            title: id,
+            description: id,
+            price: id == _readerId ? r'$9.99' : r'$8.99',
+            rawPrice: id == _readerId ? 9.99 : 8.99,
+            currencyCode: 'USD',
+            currencySymbol: r'$',
+          ),
     ],
-    notFoundIDs: const [],
+    notFoundIDs: identifiers.where(missingProductIds.contains).toList(),
   );
   @override
   Future<bool> buyNonConsumable({required PurchaseParam purchaseParam}) async {

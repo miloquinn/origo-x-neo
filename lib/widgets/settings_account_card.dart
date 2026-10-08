@@ -15,10 +15,21 @@ class SettingsAccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final account = context.watch<MemberAccountController>();
-    final summary = account.summary;
+    final accountState = context.select((MemberAccountController account) {
+      final summary = account.summary;
+      return (
+        effectiveName: summary?.effectiveName,
+        username: summary?.username,
+        avatarUrl: summary?.avatarUrl,
+        loading: account.loading,
+        premium: account.hasPremiumAccess,
+        storeReader: account.hasStoreReaderEntitlement,
+        permanentReader: account.hasPermanentReaderAccess,
+      );
+    });
+    final account = context.read<MemberAccountController>();
     final l10n = context.l10n;
-    final explore = account.hasPremiumAccess;
+    final explore = accountState.premium;
     return Column(
       key: const ValueKey('settings-account-membership-group'),
       mainAxisSize: MainAxisSize.min,
@@ -27,22 +38,21 @@ class SettingsAccountCard extends StatelessWidget {
         AccountIdentityCard(
           tier: explore
               ? AccountIdentityTier.explore
-              : account.hasStoreReaderEntitlement ||
-                    (AppDistribution.isStore &&
-                        account.hasPermanentReaderAccess)
+              : accountState.storeReader ||
+                    (AppDistribution.isStore && accountState.permanentReader)
               ? AccountIdentityTier.read
               : AccountIdentityTier.none,
-          title: summary?.effectiveName ?? l10n.settingsGuestTitle,
-          subtitle: summary == null
+          title: accountState.effectiveName ?? l10n.settingsGuestTitle,
+          subtitle: accountState.username == null
               ? AppDistribution.readerLicenseRequired
                     ? l10n.storeReaderLicenseSubtitle
                     : l10n.settingsGuestSubtitle
-              : '@${summary.username}',
+              : '@${accountState.username}',
           avatar: _AccountAvatar(
-            effectiveName: summary?.effectiveName,
-            avatarUrl: summary?.avatarUrl,
+            effectiveName: accountState.effectiveName,
+            avatarUrl: accountState.avatarUrl,
           ),
-          loading: account.loading,
+          loading: accountState.loading,
           onTap: () => Navigator.of(
             context,
           ).push<void>(MaterialPageRoute(builder: (_) => const AccountPage())),

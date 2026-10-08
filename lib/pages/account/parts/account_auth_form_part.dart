@@ -334,7 +334,6 @@ extension _AccountAuthForm on _AccountPageState {
               _ExternalLoginMethods(
                 account: account,
                 polling: false,
-                authorization: null,
                 onLogin: _externalLogin,
                 onLoginApple: _loginWithApple,
                 onCancel: _backAuth,

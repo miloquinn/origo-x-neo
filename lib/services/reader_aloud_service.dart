@@ -349,7 +349,20 @@ abstract interface class ReaderAloudCloudClient {
   });
 }
 
-class OpenAiCompatibleReaderAloudCloudClient implements ReaderAloudCloudClient {
+/// Optional capability: cancellation also terminates a partially read response.
+abstract interface class ReaderAloudCancellableCloudClient
+    implements ReaderAloudCloudClient {
+  Future<Uint8List> synthesizeCancellable({
+    required ReaderAloudCloudSettings settings,
+    required String apiKey,
+    required String text,
+    required double speed,
+    required CancelToken cancelToken,
+  });
+}
+
+class OpenAiCompatibleReaderAloudCloudClient
+    implements ReaderAloudCancellableCloudClient {
   OpenAiCompatibleReaderAloudCloudClient({
     Dio? dio,
     this.maxResponseBytes = 12 * 1024 * 1024,
@@ -374,6 +387,30 @@ class OpenAiCompatibleReaderAloudCloudClient implements ReaderAloudCloudClient {
     required String apiKey,
     required String text,
     required double speed,
+  }) =>
+      _synthesize(settings: settings, apiKey: apiKey, text: text, speed: speed);
+
+  @override
+  Future<Uint8List> synthesizeCancellable({
+    required ReaderAloudCloudSettings settings,
+    required String apiKey,
+    required String text,
+    required double speed,
+    required CancelToken cancelToken,
+  }) => _synthesize(
+    settings: settings,
+    apiKey: apiKey,
+    text: text,
+    speed: speed,
+    cancelToken: cancelToken,
+  );
+
+  Future<Uint8List> _synthesize({
+    required ReaderAloudCloudSettings settings,
+    required String apiKey,
+    required String text,
+    required double speed,
+    CancelToken? cancelToken,
   }) async {
     if (settings.provider != ReaderAloudCloudProvider.openai) {
       return synthesizeNativeCloud(
@@ -384,6 +421,7 @@ class OpenAiCompatibleReaderAloudCloudClient implements ReaderAloudCloudClient {
         speed,
         maxResponseBytes,
         maxInputCharacters,
+        cancelToken: cancelToken,
       );
     }
     final normalizedSettings = settings.normalized();
@@ -404,6 +442,7 @@ class OpenAiCompatibleReaderAloudCloudClient implements ReaderAloudCloudClient {
     try {
       final response = await _dio.post<ResponseBody>(
         readerAloudCloudEndpoint(normalizedSettings.baseUrl).toString(),
+        cancelToken: cancelToken,
         data: <String, Object>{
           'model': normalizedSettings.model,
           'input': input,
@@ -472,6 +511,7 @@ class OpenAiCompatibleReaderAloudCloudClient implements ReaderAloudCloudClient {
     } on ReaderAloudCloudException {
       rethrow;
     } on DioException catch (error) {
+      if (CancelToken.isCancel(error)) rethrow;
       final statusCode = error.response?.statusCode;
       final message = switch (statusCode) {
         401 || 403 => 'TTS API 鉴权失败，请检查 API Key',
@@ -550,8 +590,19 @@ abstract interface class ReaderAloudBytesPlayer implements Listenable {
   void dispose();
 }
 
-class AudioplayersReaderAloudBytesPlayer extends ChangeNotifier
+/// Reuses the audio session only between adjacent sentences in one queue.
+abstract interface class ReaderAloudQueuedBytesPlayer
     implements ReaderAloudBytesPlayer {
+  Future<void> playNext(
+    Uint8List bytes, {
+    required String mimeType,
+    required double volume,
+    required bool firstInQueue,
+  });
+}
+
+class AudioplayersReaderAloudBytesPlayer extends ChangeNotifier
+    implements ReaderAloudQueuedBytesPlayer {
   AudioplayersReaderAloudBytesPlayer({AudioPlayer? player})
     : _player = player ?? AudioPlayer() {
     _subscriptions.addAll([
@@ -597,22 +648,34 @@ class AudioplayersReaderAloudBytesPlayer extends ChangeNotifier
     Uint8List bytes, {
     required String mimeType,
     required double volume,
+  }) => playNext(bytes, mimeType: mimeType, volume: volume, firstInQueue: true);
+
+  @override
+  Future<void> playNext(
+    Uint8List bytes, {
+    required String mimeType,
+    required double volume,
+    required bool firstInQueue,
   }) async {
     if (_disposed) return;
     final operation = ++_playbackGeneration;
-    await _stopPlayback();
+    if (_activePlayback != null || _isPlaying || _isPaused) {
+      await _stopPlayback();
+    }
     if (_disposed || operation != _playbackGeneration) return;
-    // iOS audio contexts are process-global. Configure only when playback is
-    // requested, including after a preview or another player changed the
-    // session. Keep the same nonmixable policy as TtsService and the media bridge.
-    await _player.setAudioContext(
-      AudioContext(
-        iOS: AudioContextIOS(
-          category: AVAudioSessionCategory.playback,
-          options: const <AVAudioSessionOptions>{},
+    // iOS audio contexts are process-global. Restore the session for every new
+    // queue or standalone playback, then reuse it between adjacent sentences.
+    // Keep the same nonmixable policy as TtsService and the media bridge.
+    if (firstInQueue) {
+      await _player.setAudioContext(
+        AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: const <AVAudioSessionOptions>{},
+          ),
         ),
-      ),
-    );
+      );
+    }
     if (_disposed || operation != _playbackGeneration) return;
     final completer = Completer<void>();
     _activePlayback = completer;
@@ -628,6 +691,7 @@ class AudioplayersReaderAloudBytesPlayer extends ChangeNotifier
       );
       await completer.future;
     } catch (error, stackTrace) {
+      if (_disposed || operation != _playbackGeneration) return;
       _isPlaying = false;
       _isPaused = false;
       _completeActivePlayback();
@@ -640,9 +704,10 @@ class AudioplayersReaderAloudBytesPlayer extends ChangeNotifier
 
   @override
   Future<void> pause() async {
-    ++_playbackGeneration;
+    final operation = ++_playbackGeneration;
     if (!_isPlaying || _disposed) return;
     await _player.pause();
+    if (_disposed || operation != _playbackGeneration) return;
     _isPlaying = false;
     _isPaused = true;
     _completeActivePlayback();
@@ -661,8 +726,10 @@ class AudioplayersReaderAloudBytesPlayer extends ChangeNotifier
 
   Future<void> _stopPlayback() async {
     if (_disposed) return;
+    final operation = _playbackGeneration;
     _completeActivePlayback();
     await _player.stop();
+    if (_disposed || operation != _playbackGeneration) return;
     _isPlaying = false;
     _isPaused = false;
     _position = Duration.zero;
@@ -727,6 +794,7 @@ class ReaderAloudService extends ChangeNotifier
       PreferencesReaderAloudCloudSettingsStore.legacyProfileId;
   ReaderAloudPresentation _presentation = ReaderAloudPresentation.player;
   bool _followPageTurns = false;
+  bool _tapToSeek = false;
 
   bool get supportsProfiles => _settingsStore is ReaderAloudProfileStore;
   List<ReaderAloudCloudProfile> get cloudProfiles =>
@@ -734,6 +802,17 @@ class ReaderAloudService extends ChangeNotifier
   String get activeProfileId => _activeProfileId;
   ReaderAloudPresentation get presentation => _presentation;
   bool get followPageTurns => _followPageTurns;
+  bool get tapToSeek => _tapToSeek;
+
+  Future<void> setTapToSeek(bool value) async {
+    await initialize();
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setBool('reader_aloud_tap_to_seek', value)) {
+      throw StateError('Could not save listening tap to seek');
+    }
+    _tapToSeek = value;
+    _notifySafe();
+  }
 
   Future<void> setFollowPageTurns(bool value) async {
     await initialize();
@@ -894,6 +973,9 @@ class ReaderAloudService extends ChangeNotifier
   String? _cloudError;
   bool _disposed = false;
   int _operationGeneration = 0;
+  int _cloudRequestsInFlight = 0;
+  Completer<void>? _cloudRequestSlotChanged;
+  final Set<CancelToken> _cloudRequestTokens = {};
 
   ReaderAloudEngineType get engineType => _engineType;
   ReaderAloudEngineType get activeEngineType => _activeEngineType;
@@ -954,6 +1036,7 @@ class ReaderAloudService extends ChangeNotifier
         final prefs = await SharedPreferences.getInstance();
         _followPageTurns =
             prefs.getBool('reader_aloud_follow_page_turns') ?? false;
+        _tapToSeek = prefs.getBool('reader_aloud_tap_to_seek') ?? false;
         _presentation =
             prefs.getString('reader_aloud_presentation') == 'controls'
             ? ReaderAloudPresentation.controls
@@ -1017,7 +1100,7 @@ class ReaderAloudService extends ChangeNotifier
   @override
   Future<void> speak(String text) async {
     await initialize();
-    final operation = ++_operationGeneration;
+    final operation = _nextCloudOperation();
     if (_engineType == ReaderAloudEngineType.system) {
       _activeEngineType = ReaderAloudEngineType.system;
       await systemEngine.speak(text);
@@ -1045,7 +1128,8 @@ class ReaderAloudService extends ChangeNotifier
         speed: cloudSpeed,
       );
       var audio = _cache.read(cacheKey);
-      audio ??= await _cloudClient.synthesize(
+      audio ??= await _synthesizeCloudAudio(
+        operation: operation,
         settings: settings,
         apiKey: apiKey,
         text: text,
@@ -1088,7 +1172,7 @@ class ReaderAloudService extends ChangeNotifier
         !(systemEngine as ReaderAloudQueuedEngine).supportsQueuedText) {
       throw UnsupportedError('queued_tts_unavailable');
     }
-    ++_operationGeneration;
+    _nextCloudOperation();
     _activeEngineType = ReaderAloudEngineType.system;
     await (systemEngine as ReaderAloudQueuedEngine).speakQueued(
       texts,
@@ -1096,14 +1180,14 @@ class ReaderAloudService extends ChangeNotifier
     );
   }
 
-  /// One synthesis ahead, while the current audio plays. Preparation returns
-  /// errors as values: a speculative failure must not surface until its turn.
+  /// Buffers four upcoming sentences with at most two synthesis requests.
+  /// The first sentence starts before speculative preparation begins.
   Future<void> _speakCloudQueued(
     List<String> texts, {
     required ValueChanged<int> onTextStarted,
   }) async {
     if (texts.isEmpty) return;
-    final operation = ++_operationGeneration;
+    final operation = _nextCloudOperation();
     final settings = _cloudSettings;
     final speed = (systemEngine.speechRate * 2).clamp(0.25, 2.0);
     // Capture credentials once for the queue, alongside its settings snapshot.
@@ -1136,14 +1220,36 @@ class ReaderAloudService extends ChangeNotifier
           text: texts[index],
           speed: speed,
         );
-        final audio =
-            _cache.read(cacheKey) ??
-            await _cloudClient.synthesize(
+        var audio = _cache.read(cacheKey);
+        if (audio == null) {
+          // Slots span generations: repeated seeks cannot accumulate unbounded
+          // HTTP requests. Invalidated waiters yield to the newest queue.
+          while (_cloudRequestsInFlight >= 2) {
+            final changed = _cloudRequestSlotChanged ??= Completer<void>();
+            await changed.future;
+            if (!_isCurrentOperation(operation)) {
+              return (audio: null, error: null, stack: null);
+            }
+          }
+          if (!_isCurrentOperation(operation)) {
+            return (audio: null, error: null, stack: null);
+          }
+          _cloudRequestsInFlight++;
+          try {
+            audio = await _synthesizeCloudAudio(
+              operation: operation,
               settings: settings,
               apiKey: apiKey,
               text: texts[index],
               speed: speed,
             );
+          } finally {
+            _cloudRequestsInFlight--;
+            final changed = _cloudRequestSlotChanged;
+            _cloudRequestSlotChanged = null;
+            changed?.complete();
+          }
+        }
         if (_isCurrentOperation(operation)) _cache.write(cacheKey, audio);
         return (audio: audio, error: null, stack: null);
       } catch (error, stack) {
@@ -1151,31 +1257,58 @@ class ReaderAloudService extends ChangeNotifier
       }
     }
 
-    var pending = prepare(0);
+    final pending =
+        <int, Future<({Uint8List? audio, Object? error, StackTrace? stack})>>{
+          0: prepare(0),
+        };
+    var currentIndex = 0;
+    var nextToPrepare = 1;
+    var preparing = 0;
+    void fillBuffer() {
+      while (_isCurrentOperation(operation) &&
+          preparing < 2 &&
+          nextToPrepare < texts.length &&
+          nextToPrepare <= currentIndex + 4) {
+        final next = nextToPrepare++;
+        preparing++;
+        pending[next] = prepare(next).then((result) {
+          preparing--;
+          fillBuffer();
+          return result;
+        });
+      }
+    }
+
+    var firstCloudPlayback = true;
     for (var index = 0; index < texts.length; index++) {
-      final prepared = await pending;
+      final prepared = await pending.remove(index)!;
       if (!_isCurrentOperation(operation)) return;
+      currentIndex = index;
       _currentCloudText = texts[index];
       _cloudError = null;
       _activeEngineType = ReaderAloudEngineType.cloud;
-      // Report progress only when this segment is about to play, never when
-      // prefetch finishes. A callback may synchronously stop or seek the queue.
-      onTextStarted(index);
-      if (!_isCurrentOperation(operation)) return;
-      var nextPrepared = false;
       try {
         if (prepared.error != null) {
           Error.throwWithStackTrace(prepared.error!, prepared.stack!);
         }
-        final playback = _bytesPlayer.play(
-          prepared.audio!,
-          mimeType: _mimeTypeFor(settings.responseFormat),
-          volume: systemEngine.speechVolume,
-        );
-        if (index + 1 < texts.length && _isCurrentOperation(operation)) {
-          pending = prepare(index + 1);
-          nextPrepared = true;
-        }
+        // A failed speculative request never advances the visible sentence.
+        onTextStarted(index);
+        if (!_isCurrentOperation(operation)) return;
+        final player = _bytesPlayer;
+        final playback = player is ReaderAloudQueuedBytesPlayer
+            ? player.playNext(
+                prepared.audio!,
+                mimeType: _mimeTypeFor(settings.responseFormat),
+                volume: systemEngine.speechVolume,
+                firstInQueue: firstCloudPlayback,
+              )
+            : player.play(
+                prepared.audio!,
+                mimeType: _mimeTypeFor(settings.responseFormat),
+                volume: systemEngine.speechVolume,
+              );
+        firstCloudPlayback = false;
+        fillBuffer();
         await playback;
       } catch (error, stack) {
         if (!_isCurrentOperation(operation)) return;
@@ -1185,14 +1318,13 @@ class ReaderAloudService extends ChangeNotifier
         _notifySafe();
         if (!settings.fallbackToSystem) Error.throwWithStackTrace(error, stack);
         _activeEngineType = ReaderAloudEngineType.system;
-        await systemEngine.speak(texts[index]);
-        // Synthesis failures have not scheduled the next segment. A playback
-        // failure may have; reuse its future rather than sending it twice.
-        if (!nextPrepared &&
-            index + 1 < texts.length &&
-            _isCurrentOperation(operation)) {
-          pending = prepare(index + 1);
-        }
+        // A synthesis failure has not announced this sentence yet.
+        if (prepared.error != null) onTextStarted(index);
+        if (!_isCurrentOperation(operation)) return;
+        final playback = systemEngine.speak(texts[index]);
+        firstCloudPlayback = true;
+        fillBuffer();
+        await playback;
       }
       if (!_isCurrentOperation(operation)) return;
     }
@@ -1200,7 +1332,7 @@ class ReaderAloudService extends ChangeNotifier
 
   @override
   Future<void> pause() async {
-    _operationGeneration++;
+    _nextCloudOperation();
     if (_activeEngineType == ReaderAloudEngineType.system) {
       await systemEngine.pause();
     } else {
@@ -1210,8 +1342,9 @@ class ReaderAloudService extends ChangeNotifier
 
   @override
   Future<void> stop() async {
-    _operationGeneration++;
+    final operation = _nextCloudOperation();
     await Future.wait<void>([systemEngine.stop(), _bytesPlayer.stop()]);
+    if (!_isCurrentOperation(operation)) return;
     _currentCloudText = '';
     _activeEngineType = _engineType;
     _notifySafe();
@@ -1231,6 +1364,50 @@ class ReaderAloudService extends ChangeNotifier
 
   void _relayEngineChange() => _notifySafe();
 
+  int _nextCloudOperation() {
+    final operation = ++_operationGeneration;
+    final previous = _cloudRequestTokens.toList();
+    _cloudRequestTokens.clear();
+    for (final token in previous) {
+      token.cancel('Listening target changed');
+    }
+    return operation;
+  }
+
+  Future<Uint8List> _synthesizeCloudAudio({
+    required int operation,
+    required ReaderAloudCloudSettings settings,
+    required String apiKey,
+    required String text,
+    required double speed,
+  }) async {
+    final client = _cloudClient;
+    if (client is! ReaderAloudCancellableCloudClient) {
+      return client.synthesize(
+        settings: settings,
+        apiKey: apiKey,
+        text: text,
+        speed: speed,
+      );
+    }
+    final token = CancelToken();
+    if (!_isCurrentOperation(operation)) {
+      token.cancel('Listening target changed');
+    }
+    _cloudRequestTokens.add(token);
+    try {
+      return await client.synthesizeCancellable(
+        settings: settings,
+        apiKey: apiKey,
+        text: text,
+        speed: speed,
+        cancelToken: token,
+      );
+    } finally {
+      _cloudRequestTokens.remove(token);
+    }
+  }
+
   bool _isCurrentOperation(int operation) =>
       !_disposed && operation == _operationGeneration;
 
@@ -1242,7 +1419,7 @@ class ReaderAloudService extends ChangeNotifier
   void dispose() {
     if (_disposed) return;
     _disposed = true;
-    _operationGeneration++;
+    _nextCloudOperation();
     systemEngine.removeListener(_relayEngineChange);
     _bytesPlayer.removeListener(_relayEngineChange);
     _bytesPlayer.dispose();

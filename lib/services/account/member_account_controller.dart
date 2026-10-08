@@ -13,6 +13,7 @@ import '../core/legacy_reader_access.dart';
 import '../reading/reading_account_scope.dart';
 import 'account_auth_callback_bridge.dart';
 import 'account_api_client.dart';
+import '../activities/activity.dart';
 import 'account_avatar_cache.dart';
 import 'account_models.dart';
 import 'account_summary_cache.dart';
@@ -24,6 +25,21 @@ import 'membership_cache.dart';
 import 'offline_reader_license.dart';
 
 class MemberAccountController extends ChangeNotifier {
+  Future<List<AppActivity>> loadActivities() => _api.activities(
+    channel: AppDistribution.usesStoreBilling ? 'store' : 'official',
+  );
+
+  Uri activityDetailUri(
+    AppActivity activity, {
+    required String locale,
+    bool dark = false,
+  }) => activity.detailUri(
+    _api.baseUri,
+    channel: AppDistribution.usesStoreBilling ? 'store' : 'official',
+    locale: locale,
+    dark: dark,
+  );
+
   MemberAccountController({
     MemberAccountApiClient? api,
     AccountAvatarCache? avatarCache,

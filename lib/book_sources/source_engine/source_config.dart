@@ -144,7 +144,13 @@ class ReadingSourceConfig {
       ? htmlContract.capabilities
       : <String>{
           if (searchUrl.isNotEmpty && rule('ruleSearch').isNotEmpty) 'search',
-          if (rule('ruleBookInfo').isNotEmpty) 'detail',
+          if (rule('ruleBookInfo').isNotEmpty ||
+              (searchUrl.isNotEmpty &&
+                  const ['bookList', 'name', 'bookUrl'].every(
+                    (key) => _string(rule('ruleSearch')[key]).isNotEmpty,
+                  ) &&
+                  _string(rule('ruleToc')['chapterList']).isNotEmpty))
+            'detail',
           if (rule('ruleToc').isNotEmpty) 'catalog',
           if (rule('ruleContent').isNotEmpty) 'content',
           if (exploreUrl.isNotEmpty || exploreCatalog.canBrowse) ...{

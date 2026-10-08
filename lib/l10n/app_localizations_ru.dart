@@ -5616,7 +5616,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get replaceRulesEmptyBody =>
-      'Импортируйте JSON-файл источников чтения или создайте правило на основе регулярного выражения.';
+      'Импортируйте правила замены в JSON или создайте правило текста или регулярного выражения.';
 
   @override
   String get replaceRulesNoSearchResults => 'Подходящих правил нет';
@@ -5658,7 +5658,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get replaceRulesScopeHelper =>
-      'Разделяйте названия книг или имена источников точкой с запятой';
+      'Разделяйте названия книг, URL или имена источников точкой с запятой';
 
   @override
   String get replaceRulesExcludeScopeLabel =>
@@ -7612,6 +7612,100 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsWelcomeGuide => 'Вводное руководство';
 
   @override
+  String get replaceRulesDefaultEnabledLabel =>
+      'Включать по умолчанию для всех книг';
+
+  @override
+  String replaceRulesBookEnabledLabel(String bookTitle) {
+    return 'Включить для «$bookTitle»';
+  }
+
+  @override
+  String get replaceRulesEffectiveLabel => 'Действуют сейчас';
+
+  @override
+  String get replaceRulesGroupAll => 'Все группы';
+
+  @override
+  String get replaceRulesSelectionMode => 'Выбрать правила';
+
+  @override
+  String replaceRulesSelectedCount(int count) {
+    return 'Выбрано: $count';
+  }
+
+  @override
+  String get replaceRulesSelectAll => 'Выбрать все';
+
+  @override
+  String get replaceRulesEnableSelected => 'Включить';
+
+  @override
+  String get replaceRulesDisableSelected => 'Отключить';
+
+  @override
+  String get replaceRulesDeleteSelected => 'Удалить';
+
+  @override
+  String get replaceRulesDeleteSelectedConfirmTitle =>
+      'Удалить выбранные правила?';
+
+  @override
+  String replaceRulesDeleteSelectedConfirmBody(int count) {
+    return 'Будет удалено правил: $count.';
+  }
+
+  @override
+  String get replaceRulesExportSelected => 'Экспортировать';
+
+  @override
+  String get replaceRulesCopyJson => 'Скопировать JSON';
+
+  @override
+  String get replaceRulesPasteJson => 'Вставить JSON';
+
+  @override
+  String get replaceRulesCopied => 'JSON правила скопирован';
+
+  @override
+  String get replaceRulesPasted => 'Правило вставлено';
+
+  @override
+  String get replaceRulesMoveTop => 'Переместить в начало';
+
+  @override
+  String get replaceRulesMoveBottom => 'Переместить в конец';
+
+  @override
+  String get replaceRulesTimeoutLabel => 'Время ожидания (миллисекунды)';
+
+  @override
+  String get replaceRulesTimeoutHelper =>
+      'Максимальное время выполнения правила';
+
+  @override
+  String get replaceRulesTimeoutInvalid => 'Введите время ожидания больше 0';
+
+  @override
+  String get replaceRulesMissingTarget => 'Выберите заголовки глав или текст';
+
+  @override
+  String replaceRulesContextSubtitle(String bookTitle, String sourceName) {
+    return '$bookTitle · $sourceName';
+  }
+
+  @override
+  String get replaceRulesUnsupportedReplacement =>
+      'Замены с JavaScript здесь не поддерживаются. Используйте текст или регулярные выражения.';
+
+  @override
+  String get replaceRulesTimeoutNotice =>
+      'Правило отключено из-за превышения времени выполнения. Измените его и включите снова.';
+
+  @override
+  String get readerPurifySelection => 'Очистить выделенный текст';
+
+  @override
   String get accountInviteUnavailable =>
       'Не удалось загрузить текущую акцию приглашений. Повторите попытку.';
 
@@ -7698,4 +7792,55 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountInviteRecordsTitle => 'История приглашений';
+
+  @override
+  String get activityCenterTitle => 'Акции';
+
+  @override
+  String get activityCenterSubtitle =>
+      'Узнавайте об акциях и следите за своим прогрессом.';
+
+  @override
+  String get activityCenterEmptyTitle => 'Пока нет акций';
+
+  @override
+  String get activityCenterEmptyMessage => 'Новые акции появятся здесь.';
+
+  @override
+  String get activityCenterLoadError => 'Не удалось загрузить акции.';
+
+  @override
+  String get activityCenterOpenError =>
+      'Не удалось открыть акцию. Попробуйте ещё раз.';
+
+  @override
+  String get activityCenterLearnMore => 'Об акции';
+
+  @override
+  String get activityCenterProgress => 'Прогресс приглашений';
+
+  @override
+  String get activityCenterUpcoming => 'Скоро';
+
+  @override
+  String get activityCenterPaused => 'Приостановлена';
+
+  @override
+  String get activityCenterEnded => 'Завершена';
+
+  @override
+  String get activityCenterActive => 'Идёт';
+
+  @override
+  String activityCenterStartsOn(String date) {
+    return 'Начало: $date';
+  }
+
+  @override
+  String activityCenterEndsOn(String date) {
+    return 'Окончание: $date';
+  }
+
+  @override
+  String get activityCenterRefresh => 'Обновить';
 }
