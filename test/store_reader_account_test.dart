@@ -133,6 +133,8 @@ void main() {
       var readerAvailable = false;
       var readerRequests = 0;
       var configRequests = 0;
+      final store = _TestStore();
+      addTearDown(store.close);
       final dio = Dio()
         ..httpClientAdapter = _Adapter((request) {
           if (request.uri.path.endsWith('/config')) configRequests++;
@@ -148,6 +150,7 @@ void main() {
         });
       final account = MemberAccountController(
         api: MemberAccountApiClient(dio: dio, tokenStore: _Tokens()),
+        purchaseStore: store,
         // Keep recovery deterministic: this test exercises a passive lifecycle
         // sync, rather than waiting for the scheduled retry timer.
         membershipRetryDelay: const Duration(hours: 1),
@@ -172,6 +175,152 @@ void main() {
       await account.synchronize();
       expect(readerRequests, 2);
       expect(configRequests, requestsAfterSuccess);
+    },
+  );
+
+  for (final lateBranch in ['authentication', 'configuration']) {
+    test(
+      'store startup listens for unfinished transactions after late $lateBranch',
+      () async {
+        AppDistribution.debugOverride(
+          channel: AppDistributionChannel.appleStore,
+          readerLicenseRequired: true,
+        );
+        final authGate = Completer<void>();
+        final configGate = Completer<void>();
+        final firstBranchApplied = Completer<void>();
+        final store = _TestStore();
+        var verifiedPurchases = 0;
+        final dio = Dio()
+          ..httpClientAdapter = _Adapter((request) async {
+            if (request.uri.path.endsWith('/config')) {
+              await configGate.future;
+            }
+            if (request.uri.path == '/api/v1/auth/me') {
+              await authGate.future;
+              return _json(_session());
+            }
+            if (request.uri.path ==
+                '/api/v1/membership/reader/apple/account-purchase') {
+              verifiedPurchases++;
+              return _json(_readerResult(request, 'lifetime'));
+            }
+            return _routes(request, access: 'locked');
+          });
+        final account = MemberAccountController(
+          api: MemberAccountApiClient(
+            dio: dio,
+            tokenStore: _Tokens(access: 'access', refresh: 'refresh'),
+          ),
+          purchaseStore: store,
+        );
+        account.addListener(() {
+          final ready = lateBranch == 'authentication'
+              ? account.membershipConfig != null
+              : account.isAuthenticated;
+          if (ready && !firstBranchApplied.isCompleted) {
+            firstBranchApplied.complete();
+          }
+        });
+        final initialization = account.initialize();
+        addTearDown(() async {
+          if (!authGate.isCompleted) authGate.complete();
+          if (!configGate.isCompleted) configGate.complete();
+          await initialization.catchError((_) {});
+          account.dispose();
+          await store.close();
+        });
+
+        if (lateBranch == 'authentication') {
+          configGate.complete();
+        } else {
+          authGate.complete();
+        }
+        await firstBranchApplied.future.timeout(const Duration(seconds: 5));
+        expect(store.hasListener, isFalse);
+        expect(store.purchaseStreamReads, 0);
+        expect(store.isAvailableCalls, 0);
+        expect(store.queryProductDetailsCalls, 0);
+        expect(store.restoreCalls, 0);
+
+        if (lateBranch == 'authentication') {
+          authGate.complete();
+        } else {
+          configGate.complete();
+        }
+        await initialization;
+        expect(account.isAuthenticated, isTrue);
+        expect(account.storeBillingReady, isTrue);
+        expect(store.hasListener, isTrue);
+        expect(store.purchaseStreamReads, 1);
+        expect(store.isAvailableCalls, 0);
+        expect(store.queryProductDetailsCalls, 0);
+        expect(store.restoreCalls, 0);
+
+        store.emit(
+          'com.niki.xxread.reader.lifetime',
+          'unfinished-before-restart',
+          pendingComplete: true,
+        );
+        await pumpEventQueue(times: 30);
+        expect(verifiedPurchases, 1);
+        expect(account.hasPermanentReaderAccess, isTrue);
+        expect(store.completed.map((p) => p.purchaseID), [
+          'unfinished-before-restart',
+        ]);
+        expect(store.isAvailableCalls, 0);
+        expect(store.queryProductDetailsCalls, 0);
+        expect(store.restoreCalls, 0);
+      },
+    );
+  }
+
+  test(
+    'store stream failure cannot invalidate a restored premium account',
+    () async {
+      final store = _TestStore(streamUnavailable: true);
+      addTearDown(store.close);
+      final dio = Dio()
+        ..httpClientAdapter = _Adapter((request) {
+          if (request.uri.path == '/api/v1/auth/me') {
+            return _json(_session());
+          }
+          if (request.uri.path == '/api/v1/membership') {
+            return _json({
+              'user_id': _userId,
+              'premium': true,
+              'features': const <String, bool>{},
+              'entitlements': const <Object>[],
+            });
+          }
+          return _routes(request, access: 'locked');
+        });
+      final account = MemberAccountController(
+        api: MemberAccountApiClient(
+          dio: dio,
+          tokenStore: _Tokens(access: 'access', refresh: 'refresh'),
+        ),
+        purchaseStore: store,
+      );
+      addTearDown(account.dispose);
+
+      await account.initialize();
+
+      expect(account.storeBillingReady, isTrue);
+      expect(store.purchaseStreamReads, greaterThan(0));
+      expect(store.hasListener, isFalse);
+      expect(account.initialized, isTrue);
+      expect(account.loading, isFalse);
+      expect(account.isAuthenticated, isTrue);
+      expect(account.user?.id, _userId);
+      expect(account.membership?.userId, _userId);
+      expect(account.hasPremiumAccess, isTrue);
+      expect(account.hasAdvancedSourceAccess, isTrue);
+      expect(account.membershipSyncFailed, isFalse);
+      expect(store.isAvailableCalls, 0);
+      expect(store.queryProductDetailsCalls, 0);
+      expect(store.restoreCalls, 0);
+      expect((await const MemberMembershipCache().load())?.userId, _userId);
     },
   );
 
@@ -1249,7 +1398,9 @@ Future<void> _expectEmailActionRejectsSessionInvalidation({
       return _routes(request, access: 'locked');
     });
   final api = MemberAccountApiClient(dio: dio, tokenStore: tokens);
-  final account = MemberAccountController(api: api);
+  final store = _TestStore();
+  addTearDown(store.close);
+  final account = MemberAccountController(api: api, purchaseStore: store);
   addTearDown(account.dispose);
   await account.initialize();
   await account.loginPassword('reader@example.com', 'password');
@@ -1303,6 +1454,11 @@ class _Fixture {
   _Fixture(this.handler);
   final FutureOr<ResponseBody> Function(RequestOptions request) handler;
   MemberAccountController account({PurchaseStore? store}) {
+    if (store == null) {
+      final testStore = _TestStore();
+      addTearDown(testStore.close);
+      store = testStore;
+    }
     final dio = Dio()..httpClientAdapter = _Adapter(handler);
     return MemberAccountController(
       purchaseStore: store,
@@ -1362,8 +1518,11 @@ MemberAccountController _accountWithRoutes(
   _Tokens tokens,
   FutureOr<ResponseBody> Function(RequestOptions request) routes,
 ) {
+  final store = _TestStore();
+  addTearDown(store.close);
   final dio = Dio()..httpClientAdapter = _Adapter(routes);
   return MemberAccountController(
+    purchaseStore: store,
     api: MemberAccountApiClient(dio: dio, tokenStore: tokens),
   );
 }
@@ -1484,17 +1643,24 @@ class _Tokens implements MemberTokenStore {
 }
 
 class _TestStore implements PurchaseStore {
-  _TestStore({this.restoreProducts = const <String>[]});
+  _TestStore({
+    this.restoreProducts = const <String>[],
+    this.streamUnavailable = false,
+  });
 
   final List<String> restoreProducts;
+  final bool streamUnavailable;
   PurchaseParam? lastPurchase;
   int restoreCalls = 0;
   int isAvailableCalls = 0;
   int queryProductDetailsCalls = 0;
+  int purchaseStreamReads = 0;
+  final completed = <PurchaseDetails>[];
+  bool get hasListener => _stream.hasListener;
   final _stream = StreamController<List<PurchaseDetails>>.broadcast();
   Future<void> close() => _stream.close();
-  void emit(String product, String id) => _stream.add([
-    PurchaseDetails(
+  void emit(String product, String id, {bool pendingComplete = false}) {
+    final purchase = PurchaseDetails(
       purchaseID: id,
       productID: product,
       verificationData: PurchaseVerificationData(
@@ -1504,10 +1670,18 @@ class _TestStore implements PurchaseStore {
       ),
       transactionDate: '1',
       status: PurchaseStatus.purchased,
-    ),
-  ]);
+    )..pendingCompletePurchase = pendingComplete;
+    _stream.add([purchase]);
+  }
+
   @override
-  Stream<List<PurchaseDetails>> get purchaseStream => _stream.stream;
+  Stream<List<PurchaseDetails>> get purchaseStream {
+    purchaseStreamReads++;
+    if (streamUnavailable)
+      throw StateError('Store transaction stream unavailable');
+    return _stream.stream;
+  }
+
   @override
   Future<bool> isAvailable() async {
     isAvailableCalls++;
@@ -1540,7 +1714,10 @@ class _TestStore implements PurchaseStore {
   }
 
   @override
-  Future<void> completePurchase(PurchaseDetails purchase) async {}
+  Future<void> completePurchase(PurchaseDetails purchase) async {
+    completed.add(purchase);
+  }
+
   @override
   Future<Set<String>?> restorePurchases({
     String? applicationUserName,

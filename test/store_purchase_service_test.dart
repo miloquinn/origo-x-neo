@@ -9,6 +9,76 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
+    'transaction-only listening is idempotent and finishes pending purchases',
+    () async {
+      final store = _FakeStore();
+      final verified = <StoreProductKind>[];
+      final service = _service(
+        store,
+        verify: (kind, _, accountId) async {
+          expect(accountId, _accountId);
+          verified.add(kind);
+          return const StorePurchaseVerification(authorized: true);
+        },
+      );
+      addTearDown(store.close);
+      addTearDown(service.dispose);
+
+      service.listenForTransactions();
+      service.listenForTransactions();
+      expect(store.hasListener, isTrue);
+      expect(store.purchaseStreamReads, 1);
+      expect(store.isAvailableCalls, 0);
+      expect(store.queryCalls, 0);
+      expect(store.restoreCalls, 0);
+      expect(service.productFor(StoreProductKind.readerLifetime), isNull);
+      expect(service.busy, isFalse);
+
+      final purchase = _purchase(
+        _readerId,
+        PurchaseStatus.purchased,
+        'unfinished-before-restart',
+      );
+      store.emit(purchase);
+      await pumpEventQueue();
+
+      expect(verified, [StoreProductKind.readerLifetime]);
+      expect(store.completed, [purchase]);
+      expect(
+        service.phaseFor(StorePurchaseDomain.reader),
+        StorePurchasePhase.purchased,
+      );
+      expect(store.isAvailableCalls, 0);
+      expect(store.queryCalls, 0);
+      expect(store.restoreCalls, 0);
+    },
+  );
+
+  test('disposed transaction listener cannot subscribe again', () async {
+    final store = _FakeStore();
+    final service = _service(store);
+    addTearDown(store.close);
+
+    service.listenForTransactions();
+    service.dispose();
+    await pumpEventQueue();
+    service.listenForTransactions();
+    expect(store.hasListener, isFalse);
+    expect(store.purchaseStreamReads, 1);
+    expect(store.isAvailableCalls, 0);
+    expect(store.queryCalls, 0);
+    expect(store.restoreCalls, 0);
+
+    final neverListenedStore = _FakeStore();
+    final neverListenedService = _service(neverListenedStore);
+    addTearDown(neverListenedStore.close);
+    neverListenedService.dispose();
+    neverListenedService.listenForTransactions();
+    expect(neverListenedStore.hasListener, isFalse);
+    expect(neverListenedStore.purchaseStreamReads, 0);
+  });
+
+  test(
     'missing trial and legacy SKUs do not fail current reader products',
     () async {
       final store = _FakeStore(missingProductIds: const {_trialId, _legacyId});
@@ -583,6 +653,10 @@ class _FakeStore implements PurchaseStore {
   final _controller = StreamController<List<PurchaseDetails>>.broadcast();
   final completed = <PurchaseDetails>[];
   PurchaseParam? lastPurchase;
+  int purchaseStreamReads = 0;
+  int isAvailableCalls = 0;
+  int queryCalls = 0;
+  int restoreCalls = 0;
   bool get hasListener => _controller.hasListener;
 
   void emit(PurchaseDetails purchase) => _controller.add([purchase]);
@@ -590,28 +664,40 @@ class _FakeStore implements PurchaseStore {
   Future<void> close() => _controller.close();
 
   @override
-  Stream<List<PurchaseDetails>> get purchaseStream => _controller.stream;
+  Stream<List<PurchaseDetails>> get purchaseStream {
+    purchaseStreamReads++;
+    return _controller.stream;
+  }
+
   @override
-  Future<bool> isAvailable() async => true;
+  Future<bool> isAvailable() async {
+    isAvailableCalls++;
+    return true;
+  }
+
   @override
   Future<ProductDetailsResponse> queryProductDetails(
     Set<String> identifiers,
-  ) async => ProductDetailsResponse(
-    productDetails: [
-      for (final id in identifiers)
-        if (!missingProductIds.contains(id))
-          ProductDetails(
-            id: id,
-            title: id,
-            description: id,
-            price: id == _readerId ? r'$9.99' : r'$8.99',
-            rawPrice: id == _readerId ? 9.99 : 8.99,
-            currencyCode: 'USD',
-            currencySymbol: r'$',
-          ),
-    ],
-    notFoundIDs: identifiers.where(missingProductIds.contains).toList(),
-  );
+  ) async {
+    queryCalls++;
+    return ProductDetailsResponse(
+      productDetails: [
+        for (final id in identifiers)
+          if (!missingProductIds.contains(id))
+            ProductDetails(
+              id: id,
+              title: id,
+              description: id,
+              price: id == _readerId ? r'$9.99' : r'$8.99',
+              rawPrice: id == _readerId ? 9.99 : 8.99,
+              currencyCode: 'USD',
+              currencySymbol: r'$',
+            ),
+      ],
+      notFoundIDs: identifiers.where(missingProductIds.contains).toList(),
+    );
+  }
+
   @override
   Future<bool> buyNonConsumable({required PurchaseParam purchaseParam}) async {
     lastPurchase = purchaseParam;
@@ -628,6 +714,7 @@ class _FakeStore implements PurchaseStore {
     String? applicationUserName,
     Set<String>? productIds,
   }) async {
+    restoreCalls++;
     onRestore?.call(this);
     await onRestoreAsync?.call(this);
     return restoreIds;

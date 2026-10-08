@@ -10,7 +10,7 @@
 
 ## 联网与失效
 
-登录配置与会话恢复并行；会话恢复后会员、阅读权益、邀请资料并行请求。启动不调用 StoreKit 产品查询；购买页面和明确购买/恢复动作按既有流程准备商店。商店或登录配置延迟不能阻止会员请求开始。
+登录配置与会话恢复并行；会话恢复后会员、阅读权益、邀请资料并行请求。启动在已恢复账号、商店配置就绪后仅监听未完成交易，不等待 StoreKit 产品查询；购买页面和明确购买/恢复动作按既有流程准备商店。商店或登录配置延迟不能阻止会员请求开始。
 
 生命周期和阅读云同步共用 `synchronize` 的进行中任务。成功同步后五分钟内的被动重复调用复用已有状态；`synchronize(force: true)`、显式 `loadMembership` 和购买前校验仍请求服务器。临时失败保留已有显示与当前会话已验证权益，按既有重试间隔恢复；失败不会获得五分钟缓存有效期。
 
@@ -22,7 +22,7 @@
 - `lib/services/account/membership_cache.dart` / `account_summary_cache.dart`：会员快照与身份摘要存储，沿用现有格式以兼容已安装版本。
 - `lib/widgets/settings_account_card.dart`、`lib/pages/account/account_page.dart`、`premium_membership_page.dart`：显示快照，有身份时不显示启动同步转圈；商店加载提示只对应实际商店操作。
 - `test/account_service_test.dart`：阻塞网络时的首屏、配置独立性、实时覆盖、账号隔离、失败保留、被动请求次数及严格授权。
-- `test/member_account_legal_gate_test.dart`、`store_reader_account_test.dart`、`offline_reader_license_refresh_test.dart`、`store_reader_access_gate_test.dart`：协议、签名阅读授权和商店契约。
+- `test/member_account_legal_gate_test.dart`、`store_reader_account_test.dart`、`offline_reader_license_refresh_test.dart`、`store_reader_access_gate_test.dart`、`store_purchase_service_test.dart`：协议、签名阅读授权、未完成交易监听和商店契约。
 - `test/account_page_test.dart`、`settings_premium_access_test.dart`、`premium_membership_page_test.dart`：缓存徽章、重复购买入口及加载提示。含全局状态的界面测试分别在独立 Flutter 进程运行。
 
 ## 已知边界

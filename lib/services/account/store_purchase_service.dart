@@ -227,6 +227,13 @@ class StorePurchaseService extends ChangeNotifier {
     );
   }
 
+  /// Resume transaction delivery without waiting for product metadata.
+  /// Call after account recovery so queued purchases have a verified owner.
+  void listenForTransactions() {
+    if (_disposed) return;
+    _ensureListening();
+  }
+
   Future<void> initialize() async {
     _ensureListening();
     final active = _productLoad;

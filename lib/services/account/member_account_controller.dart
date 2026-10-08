@@ -752,6 +752,7 @@ class MemberAccountController extends ChangeNotifier {
             _authConfig = configs[0] as MemberAuthConfig;
             _membershipConfig = configs[1] as MemberMembershipConfig;
             _configureStoreProducts();
+            _listenForStoreTransactions();
             notifyListeners();
           } on MemberAccountException catch (error) {
             if (!_isRetryableMembershipError(error)) rethrow;
@@ -1492,6 +1493,20 @@ class MemberAccountController extends ChangeNotifier {
     await _storePurchase.initialize();
   }
 
+  void _listenForStoreTransactions() {
+    if (_networkAllowed &&
+        AppDistribution.usesStoreBilling &&
+        storeBillingReady &&
+        _user != null) {
+      try {
+        _storePurchase.listenForTransactions();
+      } catch (_) {
+        // Billing availability must not invalidate a recovered account.
+        // Explicit purchase and restore actions can retry the store bridge.
+      }
+    }
+  }
+
   void _configureStoreProducts() {
     _storePurchase.configureProductIds(
       readerLifetime: AppDistribution.usesGoogleBilling
@@ -1878,6 +1893,7 @@ class MemberAccountController extends ChangeNotifier {
     }
     _pendingSession = null;
     _user = session.user;
+    _listenForStoreTransactions();
     _updateSummaryFromAccount();
     if (accountChanged) notifyListeners();
   }
