@@ -11,6 +11,16 @@ import 'account_token_store.dart';
 import 'avatar_image_processor.dart';
 import 'offline_reader_license.dart';
 
+class MemberEmailBindingRequired extends MemberAccountException {
+  const MemberEmailBindingRequired({
+    required this.bindingToken,
+    required this.provider,
+  }) : super('email_binding_required', code: 'email_binding_required');
+
+  final String bindingToken;
+  final String provider;
+}
+
 class MemberAccountException implements Exception {
   const MemberAccountException(
     this.message, {
@@ -188,6 +198,18 @@ class MemberAccountApiClient {
     '$authRoot/google/login',
     {'identity_token': identityToken.trim()},
   );
+
+  Future<MemberSession> bindProviderEmail({
+    required String bindingToken,
+    required String email,
+    required String challengeId,
+    required String code,
+  }) => _sessionRequest('$authRoot/oauth/bind-email', {
+    'binding_token': bindingToken,
+    'email': email.trim(),
+    'challenge_id': challengeId,
+    'code': code.trim(),
+  });
 
   Future<MemberEmailChallenge> requestCode(
     String email,
@@ -806,6 +828,25 @@ class MemberAccountApiClient {
           ? (token) => authorizationToken = token
           : null,
     );
+    if (json['email_binding_required'] == true) {
+      if (sessionIntent != _sessionIntentGeneration) {
+        throw const MemberAccountException(
+          '登录账号已变化，请重新操作',
+          code: 'session_changed',
+        );
+      }
+      final bindingToken = json['binding_token'];
+      final provider = json['provider'];
+      if (bindingToken is! String ||
+          bindingToken.length < 32 ||
+          provider is! String) {
+        throw const MemberAccountException('服务器返回了无法识别的数据');
+      }
+      throw MemberEmailBindingRequired(
+        bindingToken: bindingToken,
+        provider: provider,
+      );
+    }
     final session = MemberSession.fromJson(json, baseUri: baseUri);
     try {
       await _withTokenMutation(() async {

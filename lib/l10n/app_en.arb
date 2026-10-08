@@ -7065,5 +7065,13 @@
       }
     }
   },
-  "activityCenterRefresh": "Refresh"
+  "activityCenterRefresh": "Refresh",
+  "accountBindEmailTitle": "Verify your email",
+  "accountBindEmailHint": "Verify your email to link this sign-in method to your Origo account. Use your existing account email to keep the same account.",
+  "@accountBindEmailTitle": {
+    "description": "Email verification step after a provider authorization without a usable verified email."
+  },
+  "@accountBindEmailHint": {
+    "description": "Email verification step after a provider authorization without a usable verified email."
+  }
 }

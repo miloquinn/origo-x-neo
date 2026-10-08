@@ -7362,6 +7362,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get activityCenterRefresh => '刷新';
+
+  @override
+  String get accountBindEmailTitle => '绑定邮箱';
+
+  @override
+  String get accountBindEmailHint =>
+      '验证邮箱后，将此登录方式绑定到 Origo 账号。使用原账号邮箱即可关联同一个账号。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -14723,4 +14730,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get activityCenterRefresh => '重新整理';
+
+  @override
+  String get accountBindEmailTitle => '綁定電子郵件';
+
+  @override
+  String get accountBindEmailHint =>
+      '驗證電子郵件後，將此登入方式綁定到 Origo 帳號。使用原帳號的電子郵件即可關聯同一帳號。';
 }

@@ -7872,4 +7872,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activityCenterRefresh => 'Обновить';
+
+  @override
+  String get accountBindEmailTitle => 'Подтвердите почту';
+
+  @override
+  String get accountBindEmailHint =>
+      'Подтвердите почту, чтобы связать этот способ входа с аккаунтом Origo. Используйте почту существующего аккаунта.';
 }

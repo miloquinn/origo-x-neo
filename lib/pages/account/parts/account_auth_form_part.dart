@@ -160,12 +160,16 @@ extension _AccountAuthForm on _AccountPageState {
                   ),
                 ),
               _authHeading(
-                registrationCode
+                _emailBinding != null
+                    ? l10n.accountBindEmailTitle
+                    : registrationCode
                     ? l10n.accountVerificationCode
                     : _registerDetails
                     ? l10n.accountSetupTitle
                     : _modeTitle(),
-                _registerDetails
+                _emailBinding != null && !showingCode
+                    ? l10n.accountBindEmailHint
+                    : _registerDetails
                     ? l10n.accountSetupHint
                     : showingCode
                     ? _challenge!.message

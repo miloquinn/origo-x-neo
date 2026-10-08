@@ -7924,4 +7924,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get activityCenterRefresh => 'Actualizar';
+
+  @override
+  String get accountBindEmailTitle => 'Verifica tu correo';
+
+  @override
+  String get accountBindEmailHint =>
+      'Verifica tu correo para vincular este método de acceso a tu cuenta de Origo. Usa el correo de tu cuenta existente.';
 }

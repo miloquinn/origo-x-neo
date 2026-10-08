@@ -7494,4 +7494,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get activityCenterRefresh => '更新';
+
+  @override
+  String get accountBindEmailTitle => 'メールアドレスを確認';
+
+  @override
+  String get accountBindEmailHint =>
+      'メールアドレスを確認し、このログイン方法を Origo アカウントに紐付けます。既存のアカウントのメールアドレスを使用してください。';
 }

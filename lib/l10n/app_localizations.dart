@@ -13543,6 +13543,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get activityCenterRefresh;
+
+  /// Email verification step after a provider authorization without a usable verified email.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email'**
+  String get accountBindEmailTitle;
+
+  /// Email verification step after a provider authorization without a usable verified email.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email to link this sign-in method to your Origo account. Use your existing account email to keep the same account.'**
+  String get accountBindEmailHint;
 }
 
 class _AppLocalizationsDelegate

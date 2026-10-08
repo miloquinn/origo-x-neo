@@ -15,6 +15,74 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
+  test('provider email binding never saves a premature session', () async {
+    final storage = _MemoryTokenStore(
+      accessToken: 'existing-access',
+      refreshToken: 'existing-refresh',
+    );
+    final api = _client(
+      _RouteAdapter(
+        (_) => _json({
+          'email_binding_required': true,
+          'provider': 'apple',
+          'binding_token': 'test-binding-proof-01234567890123456789',
+          'expires_in': 600,
+        }),
+      ),
+      storage,
+    );
+    await expectLater(
+      api.loginApple(
+        identityToken: 'identity-token',
+        authorizationCode: 'code',
+      ),
+      throwsA(
+        isA<MemberEmailBindingRequired>().having(
+          (e) => e.provider,
+          'provider',
+          'apple',
+        ),
+      ),
+    );
+    expect(storage.accessToken, 'existing-access');
+    expect(storage.refreshToken, 'existing-refresh');
+  });
+
+  test(
+    'verified binding submits both proofs and restores the MFA gate',
+    () async {
+      final storage = _MemoryTokenStore();
+      final api = _client(
+        _RouteAdapter((options) {
+          expect(options.uri.path, '/api/v1/auth/oauth/bind-email');
+          expect(options.data, {
+            'binding_token': 'opaque-provider-proof',
+            'email': 'reader@example.com',
+            'challenge_id': 'email-proof',
+            'code': '123456',
+          });
+          return _json({
+            ..._session(
+              access: 'bound-access',
+              refresh: 'bound-refresh',
+              userId: _memberAccountId,
+            ),
+            'mfa_required': true,
+          });
+        }),
+        storage,
+      );
+      final session = await api.bindProviderEmail(
+        bindingToken: 'opaque-provider-proof',
+        email: 'reader@example.com',
+        challengeId: 'email-proof',
+        code: '123456',
+      );
+      expect(session.mfaRequired, isTrue);
+      expect(storage.mfaPending, isTrue);
+    },
+  );
+
   test('Apple purchase requires login and binds the member UUID', () async {
     SharedPreferences.setMockInitialValues({});
     final store = _AccountAppleStore();

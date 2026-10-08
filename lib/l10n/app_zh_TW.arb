@@ -3550,5 +3550,7 @@
       }
     }
   },
-  "activityCenterRefresh": "重新整理"
+  "activityCenterRefresh": "重新整理",
+  "accountBindEmailTitle": "綁定電子郵件",
+  "accountBindEmailHint": "驗證電子郵件後，將此登入方式綁定到 Origo 帳號。使用原帳號的電子郵件即可關聯同一帳號。"
 }

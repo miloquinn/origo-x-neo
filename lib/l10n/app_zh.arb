@@ -3829,5 +3829,7 @@
       }
     }
   },
-  "activityCenterRefresh": "刷新"
+  "activityCenterRefresh": "刷新",
+  "accountBindEmailTitle": "绑定邮箱",
+  "accountBindEmailHint": "验证邮箱后，将此登录方式绑定到 Origo 账号。使用原账号邮箱即可关联同一个账号。"
 }

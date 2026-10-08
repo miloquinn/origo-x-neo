@@ -7807,4 +7807,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityCenterRefresh => 'Refresh';
+
+  @override
+  String get accountBindEmailTitle => 'Verify your email';
+
+  @override
+  String get accountBindEmailHint =>
+      'Verify your email to link this sign-in method to your Origo account. Use your existing account email to keep the same account.';
 }

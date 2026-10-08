@@ -24,6 +24,7 @@ These rules are mandatory for every coding and release task in this repository.
 ## Commit protocol
 
 - Follow the workspace Lore commit format and include concrete `Tested:` and `Not-tested:` trailers.
+- Commit and push validated changes promptly, then synchronize Windows and `sloane.local:~/code/origo-x` through Git. Fetch before editing; use fast-forward updates, preserve unrelated local work, and independently verify both HEADs against the live remote. Never force-push over the other computer's work.
 
 ## Physical-device acceptance
 

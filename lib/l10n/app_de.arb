@@ -2254,5 +2254,7 @@
       }
     }
   },
-  "activityCenterRefresh": "Aktualisieren"
+  "activityCenterRefresh": "Aktualisieren",
+  "accountBindEmailTitle": "E-Mail bestätigen",
+  "accountBindEmailHint": "Bestätige deine E-Mail, um diese Anmeldemethode mit deinem Origo-Konto zu verknüpfen. Verwende die E-Mail deines bisherigen Kontos."
 }

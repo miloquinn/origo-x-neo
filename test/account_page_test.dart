@@ -195,6 +195,47 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
+  testWidgets(
+    'provider without usable email opens verification and binds before MFA',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final adapter = _AuthFlowAdapter(
+        nativeGoogle: true,
+        emailBindingRequired: true,
+      );
+      await _pumpAuthFlowPage(
+        tester,
+        adapter,
+        googleNativeSignIn: _FakeNativeGoogleSignIn('native-id-token'),
+      );
+      await tester.tap(find.byKey(const ValueKey('account-provider-google')));
+      await tester.pumpAndSettle();
+      expect(find.text('绑定邮箱'), findsOneWidget);
+      expect(find.byKey(const ValueKey('account-mfa-verify')), findsNothing);
+      await tester.enterText(
+        find.byKey(const ValueKey('account-auth-email')),
+        'reader@example.com',
+      );
+      await tester.tap(find.byKey(const ValueKey('account-auth-submit')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('account-auth-code')),
+        '123456',
+      );
+      await tester.tap(find.byKey(const ValueKey('account-auth-submit')));
+      await tester.pumpAndSettle();
+      expect(adapter.bindingBody, {
+        'binding_token': 'provider-proof-01234567890123456789',
+        'email': 'reader@example.com',
+        'challenge_id': 'binding-email-proof',
+        'code': '123456',
+      });
+      expect(find.byKey(const ValueKey('account-mfa-verify')), findsOneWidget);
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
+
   testWidgets('canceled native Google chooser stays on sign-in', (
     tester,
   ) async {
@@ -1930,10 +1971,13 @@ class _AuthFlowAdapter implements HttpClientAdapter {
   _AuthFlowAdapter({
     this.rejectFirstRegistration = false,
     this.nativeGoogle = false,
+    this.emailBindingRequired = false,
   });
 
   final bool rejectFirstRegistration;
   final bool nativeGoogle;
+  final bool emailBindingRequired;
+  Map<String, dynamic>? bindingBody;
   int registrationCodeRequests = 0;
   int registrationAttempts = 0;
   int googleLoginAttempts = 0;
@@ -2015,10 +2059,37 @@ class _AuthFlowAdapter implements HttpClientAdapter {
     if (path == '/api/v1/auth/google/login') {
       googleLoginAttempts++;
       googleIdentityToken = (options.data as Map)['identity_token'] as String?;
+      if (emailBindingRequired) {
+        return _response({
+          'email_binding_required': true,
+          'provider': 'google',
+          'binding_token': 'provider-proof-01234567890123456789',
+          'expires_in': 600,
+        });
+      }
       return _response({
         'token_type': 'bearer',
         'access_token': 'google-access',
         'refresh_token': 'google-refresh',
+        'access_expires_in': 900,
+        'refresh_expires_in': 2592000,
+        'mfa_required': true,
+        'user': _readerUser(),
+      });
+    }
+    if (path == '/api/v1/auth/email/code') {
+      return _response({
+        'challenge_id': 'binding-email-proof',
+        'expires_in': 600,
+        'message': '验证码已发送',
+      });
+    }
+    if (path == '/api/v1/auth/oauth/bind-email') {
+      bindingBody = Map<String, dynamic>.from(options.data as Map);
+      return _response({
+        'token_type': 'bearer',
+        'access_token': 'bound-access',
+        'refresh_token': 'bound-refresh',
         'access_expires_in': 900,
         'refresh_expires_in': 2592000,
         'mfa_required': true,

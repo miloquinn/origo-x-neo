@@ -57,6 +57,7 @@ class _AccountPageState extends State<AccountPage> {
   final _mfaLoginCode = TextEditingController();
   _AccountMode _mode = _AccountMode.email;
   MemberEmailChallenge? _challenge;
+  MemberEmailBindingRequired? _emailBinding;
   DeviceAuthorization? _deviceAuthorization;
   bool _polling = false;
   bool _openingExternal = false;
@@ -134,6 +135,7 @@ class _AccountPageState extends State<AccountPage> {
     context.read<MemberAccountController>().clearError();
     setState(() {
       _mode = mode;
+      if (mode != _AccountMode.code) _emailBinding = null;
       _challenge = null;
       _registerDetails = false;
       _authError = null;
@@ -279,11 +281,20 @@ class _AccountPageState extends State<AccountPage> {
         case _AccountMode.password:
           await account.loginPassword(_email.text.trim(), _password.text);
         case _AccountMode.code:
-          await account.verifyEmailCode(
-            email: _email.text.trim(),
-            challengeId: _challenge!.id,
-            code: _code.text.trim(),
-          );
+          if (_emailBinding case final binding?) {
+            await account.bindProviderEmail(
+              bindingToken: binding.bindingToken,
+              email: _email.text.trim(),
+              challengeId: _challenge!.id,
+              code: _code.text.trim(),
+            );
+          } else {
+            await account.verifyEmailCode(
+              email: _email.text.trim(),
+              challengeId: _challenge!.id,
+              code: _code.text.trim(),
+            );
+          }
         case _AccountMode.register:
           await account.registerPassword(
             email: _email.text.trim(),
@@ -395,6 +406,10 @@ class _AccountPageState extends State<AccountPage> {
       }
     } catch (error) {
       if (!mounted || generation != _authGeneration) return;
+      if (error is MemberEmailBindingRequired) {
+        _beginProviderEmailBinding(error);
+        return;
+      }
       if (mounted) {
         setState(() {
           _polling = false;
@@ -441,13 +456,32 @@ class _AccountPageState extends State<AccountPage> {
 
   Future<void> _loginWithApple() async {
     final account = context.read<MemberAccountController>();
+    final generation = ++_authGeneration;
     try {
       await account.loginWithApple();
-      if (!mounted) return;
+      if (!mounted || generation != _authGeneration) return;
       _completeSignIn(account);
     } catch (error) {
+      if (!mounted || generation != _authGeneration) return;
+      if (error is MemberEmailBindingRequired) {
+        _beginProviderEmailBinding(error);
+        return;
+      }
       _showError(error);
     }
+  }
+
+  void _beginProviderEmailBinding(MemberEmailBindingRequired binding) {
+    setState(() {
+      _openingExternal = false;
+      _polling = false;
+      _deviceAuthorization = null;
+    });
+    _switchMode(_AccountMode.code);
+    setState(() {
+      _emailBinding = binding;
+      _email.clear();
+    });
   }
 
   Future<void> _verifyMfaLogin() async {

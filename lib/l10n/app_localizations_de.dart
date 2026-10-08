@@ -7918,4 +7918,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get activityCenterRefresh => 'Aktualisieren';
+
+  @override
+  String get accountBindEmailTitle => 'E-Mail bestätigen';
+
+  @override
+  String get accountBindEmailHint =>
+      'Bestätige deine E-Mail, um diese Anmeldemethode mit deinem Origo-Konto zu verknüpfen. Verwende die E-Mail deines bisherigen Kontos.';
 }

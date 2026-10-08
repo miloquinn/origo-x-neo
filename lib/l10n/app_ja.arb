@@ -3514,5 +3514,7 @@
       }
     }
   },
-  "activityCenterRefresh": "更新"
+  "activityCenterRefresh": "更新",
+  "accountBindEmailTitle": "メールアドレスを確認",
+  "accountBindEmailHint": "メールアドレスを確認し、このログイン方法を Origo アカウントに紐付けます。既存のアカウントのメールアドレスを使用してください。"
 }

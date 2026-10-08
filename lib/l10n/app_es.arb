@@ -2254,5 +2254,7 @@
       }
     }
   },
-  "activityCenterRefresh": "Actualizar"
+  "activityCenterRefresh": "Actualizar",
+  "accountBindEmailTitle": "Verifica tu correo",
+  "accountBindEmailHint": "Verifica tu correo para vincular este método de acceso a tu cuenta de Origo. Usa el correo de tu cuenta existente."
 }

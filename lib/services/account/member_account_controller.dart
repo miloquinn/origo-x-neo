@@ -817,6 +817,20 @@ class MemberAccountController extends ChangeNotifier {
     ),
   );
 
+  Future<void> bindProviderEmail({
+    required String bindingToken,
+    required String email,
+    required String challengeId,
+    required String code,
+  }) => _authenticate(
+    () => _api.bindProviderEmail(
+      bindingToken: bindingToken,
+      email: email,
+      challengeId: challengeId,
+      code: code,
+    ),
+  );
+
   Future<void> registerPassword({
     required String email,
     required String challengeId,
