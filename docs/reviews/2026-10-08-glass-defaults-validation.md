@@ -10,4 +10,10 @@
 
 ## 交付
 
-构建号更新为 `261008007`，继承 006 的全部共享改动。正常产品构建、签名、原位安装和启动证据完成后补入本节。实体视觉体验尚未验收；已保存的个人设置优先于新默认值。
+正常入口 `lib/main.dart` 的 iOS 与 Android Release 均构建成功，构建号为 `261008007`，源码提交为 `545f7d28936c2bcb2d651c7c9de29efd65653461`。继承 006 的全部共享改动。构建前后源码不变，两个包共享源码 SHA-256 为 `4d5edc3599ec6e9b3ab6f8a53e18cb831f2e5aee714fdfc620c691b4be38a00b`；745 个 Git 管理的运行输入与 iOS 快照逐一匹配，Android 原生输入另做校验。已保存的个人设置优先于新默认值。
+
+- iOS：SloanePro / iPhone 16 Pro（`00008140-001979421E93001C`）原位安装 `com.niki.xxread / 2.7.3 / 261008007`。严格签名校验、安装版本回读、激活启动及进程 `15937` 的可执行路径通过。AOT SHA-256 为 `115622fc8b8d48cd4e349e458509919e362811d21b9d94a49098dc31c747f5a2`。收据在 `build/device-ios/glass-defaults-20261008/device-acceptance/`。
+- Android：OPPO PKT110 原位更新为同版本，保留首次安装时间与数据目录。安装前旧包哈希与 006 收据一致，安装后回读 APK SHA-256 为 `2b20ea78c10bb7e5c822d74c7a765f22a5981cd2bc65f3519740ae9db3d7be35`，与交付包一致；进程 `6396` 与 ResumedActivity 已核对。AOT SHA-256 为 `45f38eecb945090bd4effe6f0c8c7d290b0bd013e2ecc36a768988f0b9c68ed1`，对应符号单独保存。收据在 `build/device-android/glass-defaults-20261008/`。
+- 两个平台的 latest-unified 指向已安装且启动验证的 007。Windows 已 fast-forward 同步源码，保留未跟踪文件；本机四个用户 JPEG 未修改。
+
+渠道为开发者直接签名 Release，独立于 TestFlight、App Store 与公开 Android 发版。安卓继续用设备既有开发证书签署优化后的非 debuggable Release 代码，避免卸载丢失数据。安卓当前电源状态为 Dozing；进程与前台活动验证不等于实体视觉验收。两台设备实际玻璃观感和用户操作体验仍待确认。
