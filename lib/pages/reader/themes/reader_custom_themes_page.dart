@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:uuid/uuid.dart';
+import 'package:xxread/core/reader/reader_background_image_reference.dart';
 import 'package:xxread/core/reader/reader_custom_theme.dart';
 import 'package:xxread/core/reader/reader_theme_order.dart';
 import 'package:xxread/services/core/reader_theme_background_service.dart';
@@ -128,7 +129,10 @@ class _ReaderCustomThemesPageState extends State<ReaderCustomThemesPage> {
     if (index < 0) return;
     setState(() => _themes[index] = edited);
     await _persist();
-    if (theme.backgroundImagePath != edited.backgroundImagePath) {
+    if (!ReaderBackgroundImageReference.sameImage(
+      theme.backgroundImagePath,
+      edited.backgroundImagePath,
+    )) {
       await _backgroundService.delete(theme.backgroundImagePath);
     }
   }

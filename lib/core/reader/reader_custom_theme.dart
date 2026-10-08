@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'reader_background_image_reference.dart';
+
 @immutable
 class ReaderCustomTheme {
   const ReaderCustomTheme({
@@ -72,7 +74,9 @@ class ReaderCustomTheme {
     'background': background.toARGB32(),
     'text': text.toARGB32(),
     'controlBar': controlBar.toARGB32(),
-    'backgroundImagePath': backgroundImagePath,
+    'backgroundImagePath': backgroundImagePath == null
+        ? null
+        : ReaderBackgroundImageReference.normalize(backgroundImagePath!),
     'backgroundImageOpacity': backgroundImageOpacity,
   };
 
@@ -104,7 +108,8 @@ class ReaderCustomTheme {
       text: Color(colorValue('text', defaults.text)),
       controlBar: Color(colorValue('controlBar', defaults.controlBar)),
       backgroundImagePath: switch (map['backgroundImagePath']) {
-        final String value when value.isNotEmpty => value,
+        final String value when value.isNotEmpty =>
+          ReaderBackgroundImageReference.normalize(value),
         _ => null,
       },
       backgroundImageOpacity: storedOpacity is num

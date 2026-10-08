@@ -6,11 +6,19 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/reader/reader_background_image_reference.dart';
+
 class ReaderThemeBackgroundService {
-  ReaderThemeBackgroundService();
+  ReaderThemeBackgroundService({
+    Future<Directory> Function()? supportDirectoryProvider,
+  }) : _supportDirectoryProvider =
+           supportDirectoryProvider ?? getApplicationSupportDirectory;
+
+  final Future<Directory> Function() _supportDirectoryProvider;
 
   static const int maxImageBytes = 20 * 1024 * 1024;
-  static const String _directoryName = 'reader_theme_backgrounds';
+  static const String _directoryName =
+      ReaderBackgroundImageReference.directoryName;
   static const Set<String> _extensions = {'.jpg', '.jpeg', '.png', '.webp'};
 
   bool get isSupported => true;
@@ -41,7 +49,7 @@ class ReaderThemeBackgroundService {
         ReaderThemeBackgroundError.fileTooLarge,
       );
     }
-    final support = await getApplicationSupportDirectory();
+    final support = await _supportDirectoryProvider();
     final directory = Directory(path.join(support.path, _directoryName));
     await directory.create(recursive: true);
     final destination = File(
@@ -49,7 +57,7 @@ class ReaderThemeBackgroundService {
     );
     try {
       await destination.writeAsBytes(bytes, flush: true);
-      return destination.path;
+      return '$_directoryName/${path.basename(destination.path)}';
     } catch (error) {
       if (await destination.exists()) await destination.delete();
       throw ReaderThemeBackgroundException(
@@ -59,15 +67,22 @@ class ReaderThemeBackgroundService {
     }
   }
 
+  Future<String> resolvePath(String imagePath) async {
+    final reference = ReaderBackgroundImageReference.managedReference(
+      imagePath,
+    );
+    if (reference == null) return imagePath;
+    final support = await _supportDirectoryProvider();
+    return path.joinAll([support.path, ...reference.split('/')]);
+  }
+
   Future<void> delete(String? imagePath) async {
     if (imagePath == null || imagePath.isEmpty) return;
+    if (ReaderBackgroundImageReference.managedReference(imagePath) == null) {
+      return;
+    }
     try {
-      final support = await getApplicationSupportDirectory();
-      final managedDirectory = path.normalize(
-        path.absolute(path.join(support.path, _directoryName)),
-      );
-      final candidate = path.normalize(path.absolute(imagePath));
-      if (!path.isWithin(managedDirectory, candidate)) return;
+      final candidate = await resolvePath(imagePath);
       final file = File(candidate);
       if (await file.exists()) await file.delete();
     } catch (_) {
