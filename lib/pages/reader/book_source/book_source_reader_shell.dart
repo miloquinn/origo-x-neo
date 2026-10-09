@@ -131,6 +131,7 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
           final viewport = constraints.biggest;
           _verticalViewportSize = viewport;
           final paginationViewport = _stablePaginationViewport(viewport);
+          _prepareVerticalGeometry(paginationViewport);
           if (!_effectiveScrollByChapter) {
             return ReaderAutoScrollSurface(
               controller: _autoPageTurnController,

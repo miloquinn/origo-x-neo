@@ -446,6 +446,8 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   int _visibleChapterCount = 0;
   bool _visibleUsesTwoPageLayout = false;
   Size _verticalViewportSize = Size.zero;
+  String? _verticalGeometrySignature;
+  bool _appLifecycleActive = true;
   TextDirection _verticalTextDirection = TextDirection.ltr;
   TextScaler _verticalTextScaler = TextScaler.noScaling;
   Size _lastPaginationSize = Size.zero;
@@ -503,6 +505,13 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) _pauseAutoPageTurn();
     if (state == AppLifecycleState.resumed) {
+      _appLifecycleActive = true;
+      if (_pageMode == NativePageMode.verticalScroll &&
+          !_initialPositionRestored) {
+        // A hidden build may have consumed the layout request while its
+        // post-frame restore was suspended. Resume the same canonical anchor.
+        _setReaderState(() => _restoreAnchorAfterLayout = true);
+      }
       _startReadingSession();
       unawaited(ReaderKeepScreenOnController.reapply(this));
       if (_readerSystemUiApplied) unawaited(_applyReaderSystemUi());
@@ -515,6 +524,17 @@ class _NativeReaderPageState extends State<NativeReaderPage>
         state == AppLifecycleState.detached) {
       unawaited(_flushReadingSession());
       unawaited(_persistCurrentReaderPosition(reason: 'lifecycle'));
+      _appLifecycleActive = false;
+      if (_pageMode == NativePageMode.verticalScroll &&
+          _initialPositionRestored &&
+          !_exitInProgress) {
+        _requestPositionRestore();
+        _restoreContinuousAnchorCentered = (_anchorOffset ?? 0) > 0;
+      } else if (_pageMode == NativePageMode.verticalScroll &&
+          !_initialPositionRestored) {
+        ++_verticalScrollRevision;
+        _initialPositionRestoreScheduled = false;
+      }
       unawaited(_flushPendingPositionSave());
     }
   }

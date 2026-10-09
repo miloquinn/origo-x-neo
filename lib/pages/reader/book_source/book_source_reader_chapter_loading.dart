@@ -26,6 +26,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
       _loadingContent = true;
       // This load owns the next restore; old frame callbacks are now stale.
       _autoScrollRestoring = false;
+      _verticalRestoreShouldApply = null;
       _requestedChapterIndex = index;
       _error = null;
     });
@@ -63,6 +64,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
         targetIndex,
         content,
         restoreProgress: restoreProgress,
+        shouldApply: shouldApply,
       );
     } on BookDownloadCancelledException {
       return;
@@ -222,6 +224,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     int index,
     BookSourceChapterContent content, {
     required double restoreProgress,
+    bool Function()? shouldApply,
   }) {
     final normalizedProgress = restoreProgress.clamp(0.0, 1.0);
     final preparedLayout = _preparedPagedLayoutForChapter(index, content);
@@ -259,6 +262,8 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
       _paginationKey = preparedLayout?.fingerprint;
       _restorePageProgress = normalizedProgress;
       _restorePagedPosition = preparedLayout == null;
+      _verticalRestoreShouldApply =
+          _pageMode == BookSourcePageMode.verticalScroll ? shouldApply : null;
       if (preparedLayout != null) _restoreTextOffset = null;
       _ignoreSlidePageChanges = true;
       _horizontalPageTurnTracker.clear();
@@ -627,76 +632,14 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
   }) async {
     if (!(shouldApply?.call() ?? true)) return;
     if (index < 0 || index >= _chapters.length) return;
-    final loadSerial = _chapterLoadSerial + 1;
     _restoreTextOffset = textOffset;
+    // The loaded chapter keeps its canonical restore pending until the shared
+    // vertical layout commits it. Two-list scroll animations can duplicate
+    // keyed chapter cells and race a lifecycle or geometry restore.
     await _loadChapter(
       index,
       restoreProgress: progress,
       shouldApply: shouldApply,
     );
-    if (!mounted ||
-        !(shouldApply?.call() ?? true) ||
-        loadSerial != _chapterLoadSerial ||
-        _error != null ||
-        _content == null) {
-      return;
-    }
-    index = _chapterIndex;
-    final content = _content!;
-    final generation = _catalogGeneration;
-    bool isCurrent() =>
-        mounted &&
-        generation == _catalogGeneration &&
-        loadSerial == _chapterLoadSerial &&
-        (shouldApply?.call() ?? true);
-    var targetPage = 0;
-    _BookSourceVerticalLayout? layout;
-    if (!_verticalViewportSize.isEmpty) {
-      layout = _verticalLayoutFor(index, content, _verticalViewportSize);
-      targetPage = textOffset != null
-          ? bookSourcePageIndexForOffset(layout.pages, textOffset)
-          : ((layout.pages.length - 1) * progress.clamp(0.0, 1.0)).round();
-    }
-    _updateReaderState(() {
-      _chapterIndex = index;
-      _content = content;
-      _pageIndex = targetPage;
-      _verticalPageIndex = targetPage;
-      _verticalPageCount = layout?.pages.length ?? 1;
-      _restorePagedPosition = false;
-      _restoreTextOffset = null;
-    });
-    _scrollProgress.value = _verticalPageCount <= 1
-        ? 0
-        : targetPage / (_verticalPageCount - 1);
-    await WidgetsBinding.instance.endOfFrame;
-    if (!isCurrent()) return;
-    if (_effectiveScrollByChapter) {
-      if (_verticalPageScrollController.isAttached) {
-        await _verticalPageScrollController.scrollTo(
-          index: targetPage,
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
-        );
-      }
-      if (!isCurrent()) return;
-      _scheduleProgressSave();
-      return;
-    }
-    if (!_verticalChapterScrollController.isAttached) return;
-    await _verticalChapterScrollController.scrollTo(
-      index: index,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-    );
-    if (!isCurrent()) return;
-    if (targetPage > 0) {
-      await _verticalChapterOffsetController.animateScroll(
-        offset: targetPage * _verticalPageExtentFor(_verticalViewportSize),
-        duration: const Duration(milliseconds: 1),
-      );
-      if (!isCurrent()) return;
-    }
-    _scheduleProgressSave();
   }
 }

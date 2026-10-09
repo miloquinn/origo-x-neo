@@ -56,6 +56,7 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
 
   void _onVerticalPagePositionsChanged() {
     if (!mounted ||
+        !_appLifecycleActive ||
         !_initialPositionRestored ||
         !_verticalPositionCapturePending ||
         _pageMode != NativePageMode.verticalScroll ||
@@ -93,6 +94,7 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
 
   void _onVerticalChapterPositionsChanged() {
     if (!mounted ||
+        !_appLifecycleActive ||
         !_initialPositionRestored ||
         !_verticalPositionCapturePending ||
         _pageMode != NativePageMode.verticalScroll ||

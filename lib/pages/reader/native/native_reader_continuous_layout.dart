@@ -2,7 +2,11 @@ part of 'native_reader_page.dart';
 
 extension _NativeReaderContinuousLayout on _NativeReaderPageState {
   void _scheduleInitialContinuousScrollRestore(Size viewport) {
-    if (_initialPositionRestored || _initialPositionRestoreScheduled) return;
+    if (!_appLifecycleActive ||
+        _initialPositionRestored ||
+        _initialPositionRestoreScheduled) {
+      return;
+    }
     final chapterIndex = _chapterIndex;
     final chapter = _loadedChapters[chapterIndex];
     final parts = _continuousPartsFor(chapter, viewport);
@@ -12,7 +16,9 @@ extension _NativeReaderContinuousLayout on _NativeReaderPageState {
     final revision = _verticalScrollRevision;
     bool isCurrent() {
       _cancelInvalidPositionRestore();
-      return mounted && revision == _verticalScrollRevision;
+      return mounted &&
+          _appLifecycleActive &&
+          revision == _verticalScrollRevision;
     }
 
     _initialPositionRestoreScheduled = true;

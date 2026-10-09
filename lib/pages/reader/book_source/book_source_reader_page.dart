@@ -312,6 +312,9 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   bool _chapterTitlePageEnabled = true;
   Size _pagedViewportSize = Size.zero;
   Size _verticalViewportSize = Size.zero;
+  String? _verticalGeometrySignature;
+  int _verticalRestoreSerial = 0;
+  bool Function()? _verticalRestoreShouldApply;
   final ReaderDesktopResizeController _desktopResizeController =
       ReaderDesktopResizeController();
   bool _exitPromptVisible = false;
@@ -537,6 +540,10 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _appLifecycleActive = true;
+      if (_pageMode == BookSourcePageMode.verticalScroll &&
+          _restorePagedPosition) {
+        _updateReaderState(() {});
+      }
       _startReadingSession();
       unawaited(ReaderKeepScreenOnController.reapply(this));
       if (_readerSystemUiApplied) unawaited(_applyReaderSystemUi());
@@ -552,6 +559,12 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
       _appLifecycleActive = false;
       _pauseAutoPageTurn();
       unawaited(_saveProgress());
+      if (_pageMode == BookSourcePageMode.verticalScroll &&
+          !_loadingCatalog &&
+          !_loadingContent &&
+          _error == null) {
+        _requestVerticalPositionRestore();
+      }
       unawaited(_flushReadingSession());
     }
   }

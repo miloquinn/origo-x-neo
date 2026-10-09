@@ -3,7 +3,9 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -26,9 +28,11 @@ import 'package:xxread/pages/settings/replace_rules_page.dart';
 import 'package:xxread/widgets/reader_navigation_sheet.dart';
 import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
+import 'package:xxread/widgets/reader_text_page_content.dart';
 import 'package:xxread/widgets/reader_theme_background.dart';
 
 import 'support/controllable_replace_rule_service.dart';
+import 'support/reader_cache_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1001,6 +1005,213 @@ void main() {
   }
 
   testWidgets(
+    'iOS vertical TXT keeps its canonical center anchor across all lifecycle layout configurations',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(393, 852);
+      tester.view.padding = const FakeViewPadding(top: 59, bottom: 34);
+      tester.view.viewPadding = const FakeViewPadding(top: 59, bottom: 34);
+      try {
+        for (final chapterTitlePageEnabled in [true, false]) {
+          for (final scrollByChapter in [true, false]) {
+            SharedPreferences.setMockInitialValues({
+              ReaderSettingsStore.pageModeKey:
+                  ReaderPageMode.verticalScroll.name,
+              ReaderSettingsStore.chapterTitlePageKey: chapterTitlePageEnabled,
+              ReaderSettingsStore.scrollByChapterKey: scrollByChapter,
+            });
+            bookFile.writeAsStringSync(
+              List.generate(12, (chapterIndex) {
+                final chapterNumber = chapterIndex + 1;
+                final body = List.generate(
+                  32,
+                  (paragraphIndex) =>
+                      '第$chapterNumber章第$paragraphIndex段正文，用于验证前后台恢复后的中心阅读位置。',
+                ).join('\n\n');
+                return '第$chapterNumber章 生命周期测试\n\n$body';
+              }).join('\n\n'),
+            );
+
+            await tester.pumpWidget(
+              MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: NativeReaderPage(
+                  replaceRuleService: replaceRuleService,
+                  paginationCacheDao: MemoryPaginationCacheDao(),
+                  usePaginationMemoryCache: false,
+                  book: Book(
+                    title: 'iOS 生命周期回归',
+                    filePath: bookFile.path,
+                    format: 'txt',
+                    textEncoding: 'utf8',
+                    fileModifiedTime: bookFile
+                        .lastModifiedSync()
+                        .millisecondsSinceEpoch,
+                  ),
+                ),
+              ),
+            );
+
+            final readingWindow = find.byKey(
+              const ValueKey('native-vertical-reading-window'),
+            );
+            await tester.runAsync(() async {
+              for (var attempt = 0; attempt < 200; attempt++) {
+                await Future<void>.delayed(const Duration(milliseconds: 50));
+                await tester.pump();
+                if (readingWindow.evaluate().isNotEmpty) return;
+              }
+            });
+            await _pumpUntilFound(tester, readingWindow);
+
+            await _jumpToTxtChapter(tester, '第6章 生命周期测试');
+            await tester.pumpAndSettle();
+            _NativeCenterAnchor? before;
+            for (var attempt = 0; attempt < 12; attempt++) {
+              await tester.drag(readingWindow, const Offset(0, -680));
+              await tester.pumpAndSettle();
+              try {
+                final candidate = _nativeCenterAnchor(tester);
+                if (candidate.chapterIndex == 5 &&
+                    candidate.sourceOffset > 200) {
+                  before = candidate;
+                  break;
+                }
+              } on TestFailure {
+                // A dedicated title page or chapter gap can briefly cover center.
+              }
+            }
+            expect(
+              before,
+              isNotNull,
+              reason:
+                  'The fixture must reach the middle of a later TXT chapter.',
+            );
+
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.inactive,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.hidden,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.paused,
+            );
+            tester.view.padding = FakeViewPadding.zero;
+            tester.view.viewPadding = FakeViewPadding.zero;
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 100));
+
+            tester.view.padding = const FakeViewPadding(top: 59, bottom: 34);
+            tester.view.viewPadding = const FakeViewPadding(
+              top: 59,
+              bottom: 34,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.hidden,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.inactive,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.resumed,
+            );
+            await tester.pumpAndSettle();
+
+            final after = _nativeCenterAnchor(tester);
+            _expectSameNativeCenterAnchor(before!, after);
+
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.inactive,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.hidden,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.paused,
+            );
+            await tester.pump();
+            expect(
+              find.byKey(const ValueKey('native-reader-content')),
+              findsOneWidget,
+            );
+            expect(
+              find.byKey(const ValueKey('native-reader-opening-placeholder')),
+              findsNothing,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.hidden,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.inactive,
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.resumed,
+            );
+            await tester.pumpAndSettle();
+            expect(
+              find.byKey(const ValueKey('native-reader-content')),
+              findsOneWidget,
+            );
+            expect(
+              find.byKey(const ValueKey('native-reader-opening-placeholder')),
+              findsNothing,
+            );
+            final stableMetricsAfter = _nativeCenterAnchor(tester);
+            _expectSameNativeCenterAnchor(after, stableMetricsAfter);
+
+            tester
+                .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+                .onTableOfContents!();
+            await tester.pumpAndSettle();
+            final navigation = tester.widget<ReaderNavigationSheet>(
+              find.byType(ReaderNavigationSheet),
+            );
+            expect(
+              navigation.currentChapterIndex,
+              stableMetricsAfter.chapterIndex,
+            );
+            expect(
+              navigation.currentChapterOffset,
+              closeTo(stableMetricsAfter.sourceOffset, 2),
+            );
+            expect(
+              navigation.chapters
+                  .where(
+                    (chapter) =>
+                        chapter.index == stableMetricsAfter.chapterIndex,
+                  )
+                  .map((chapter) => chapter.title),
+              contains(stableMetricsAfter.chapterTitle),
+            );
+            expect(tester.takeException(), isNull);
+            final navigationSheet = find.byType(ReaderNavigationSheet);
+            Navigator.of(tester.element(navigationSheet)).pop();
+            await tester.pumpAndSettle();
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pumpAndSettle();
+          }
+        }
+      } finally {
+        final navigationSheet = find.byType(ReaderNavigationSheet);
+        if (navigationSheet.evaluate().isNotEmpty) {
+          Navigator.of(tester.element(navigationSheet)).pop();
+          await tester.pumpAndSettle();
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        debugDefaultTargetPlatformOverride = null;
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        tester.view.resetPadding();
+        tester.view.resetViewPadding();
+      }
+    },
+  );
+
+  testWidgets(
     'horizontal TOC jump mounts the target title on the first frame and keeps the previous page ready',
     (tester) async {
       SharedPreferences.setMockInitialValues({
@@ -1359,6 +1570,73 @@ class _ControllableAppSettingsNotifier extends AppSettingsNotifier {
 Finder _richTextContaining(String text) => find.byWidgetPredicate(
   (widget) => widget is RichText && widget.text.toPlainText().contains(text),
 );
+
+typedef _NativeCenterAnchor = ({
+  int chapterIndex,
+  String chapterTitle,
+  int sourceOffset,
+  double caretY,
+});
+
+void _expectSameNativeCenterAnchor(
+  _NativeCenterAnchor before,
+  _NativeCenterAnchor after,
+) {
+  expect(after.chapterIndex, before.chapterIndex);
+  expect(
+    after.sourceOffset,
+    closeTo(before.sourceOffset, 2),
+    reason: 'The restored body must keep the same canonical text anchor.',
+  );
+  expect(
+    after.caretY,
+    closeTo(before.caretY, 20),
+    reason: 'The canonical text anchor must remain at viewport center.',
+  );
+}
+
+_NativeCenterAnchor _nativeCenterAnchor(WidgetTester tester) {
+  final center =
+      tester.view.physicalSize.height / tester.view.devicePixelRatio / 2;
+  for (final element in find.byType(ReaderAnnotatedTextPage).evaluate()) {
+    final page = element.widget as ReaderAnnotatedTextPage;
+    final paragraphs = find.descendant(
+      of: find.byWidget(page),
+      matching: find.byElementPredicate((candidate) {
+        if (candidate.widget is! RichText) return false;
+        var isBody = false;
+        candidate.visitAncestorElements((ancestor) {
+          if (ancestor.widget is ReaderInlineChapterTitle ||
+              ancestor.widget is ReaderChapterTitlePage) {
+            return false;
+          }
+          if (ancestor.widget is ReaderTextPageContent) {
+            isBody = true;
+            return false;
+          }
+          if (ancestor.widget == page) return false;
+          return true;
+        });
+        return isBody;
+      }),
+    );
+    for (final rich in paragraphs.evaluate()) {
+      final paragraph = rich.renderObject as RenderParagraph;
+      final top = paragraph.localToGlobal(Offset.zero).dy;
+      if (top > center || top + paragraph.size.height < center) continue;
+      final position = paragraph.getPositionForOffset(
+        Offset(paragraph.size.width / 2, center - top),
+      );
+      return (
+        chapterIndex: page.chapterIndex,
+        chapterTitle: page.chapterTitle,
+        sourceOffset: page.page.sourceOffsetForTextOffset(position.offset),
+        caretY: top + paragraph.getOffsetForCaret(position, Rect.zero).dy,
+      );
+    }
+  }
+  throw TestFailure('No native TXT body paragraph at viewport center');
+}
 
 Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 60; attempt++) {

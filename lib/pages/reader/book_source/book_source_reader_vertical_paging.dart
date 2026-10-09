@@ -136,17 +136,64 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
     return layout;
   }
 
+  void _requestVerticalPositionRestore() {
+    if (!_restorePagedPosition) {
+      final offset = _verticalCanonicalOffset;
+      _restoreTextOffset = offset == 0 ? null : offset;
+      _restorePageProgress = _scrollProgress.value;
+      _autoRestoreCentered = offset != null && offset > 0;
+    }
+    ++_verticalRestoreSerial;
+    _autoScrollRestoring = false;
+    _restorePagedPosition = true;
+  }
+
+  void _prepareVerticalGeometry(Size viewport) {
+    final signature = '$viewport:${_verticalChrome.paginationSignature}';
+    if (_verticalGeometrySignature != null &&
+        _verticalGeometrySignature != signature) {
+      _requestVerticalPositionRestore();
+    }
+    _verticalGeometrySignature = signature;
+  }
+
   void _restoreVerticalPosition(
     _BookSourceVerticalLayout layout, {
     required bool wholeBook,
   }) {
-    if (!_restorePagedPosition) return;
+    if (!_restorePagedPosition || !_appLifecycleActive) return;
     final generation = _catalogGeneration;
     final loadSerial = _chapterLoadSerial;
-    bool isCurrent() =>
+    final restoreSerial = ++_verticalRestoreSerial;
+    final shouldApply = _verticalRestoreShouldApply;
+    bool ownsRestore() =>
         mounted &&
+        _appLifecycleActive &&
+        restoreSerial == _verticalRestoreSerial &&
         generation == _catalogGeneration &&
         loadSerial == _chapterLoadSerial;
+    bool isCurrent() {
+      if (!ownsRestore()) return false;
+      if (shouldApply?.call() ?? true) return true;
+      _verticalRestoreShouldApply = null;
+      _autoScrollRestoring = false;
+      _restorePagedPosition = false;
+      _restoreTextOffset = null;
+      // Cancellation releases the restore gate. Publish the actual painted
+      // position after layout rather than persisting an abandoned target.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!ownsRestore()) return;
+        if (wholeBook) {
+          _onVerticalChapterPositionsChanged();
+        } else {
+          _onVerticalPagePositionsChanged();
+        }
+      });
+      WidgetsBinding.instance.scheduleFrame();
+      return false;
+    }
+
+    if (!isCurrent()) return;
     _autoScrollRestoring = true;
     final chapterIndex = _chapterIndex;
     final textLength = _readableChapterText[chapterIndex]?.length ?? 0;
@@ -182,7 +229,10 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
         if (!isCurrent()) return;
         final targetContext = partKey.currentContext;
         if (targetContext == null) {
-          _updateReaderState(() => _autoScrollRestoring = false);
+          _updateReaderState(() {
+            _autoScrollRestoring = false;
+            _verticalRestoreShouldApply = null;
+          });
           return;
         }
         unawaited(
@@ -204,7 +254,10 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
           final scrollable = currentTarget == null
               ? null
               : Scrollable.maybeOf(currentTarget);
-          _updateReaderState(() => _autoScrollRestoring = false);
+          _updateReaderState(() {
+            _autoScrollRestoring = false;
+            _verticalRestoreShouldApply = null;
+          });
           if (!restoresChapterStart &&
               caretOffset != null &&
               scrollable != null) {
@@ -227,6 +280,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
 
   void _onVerticalPagePositionsChanged() {
     if (!mounted ||
+        !_appLifecycleActive ||
         _loadingCatalog ||
         _loadingContent ||
         _error != null ||
@@ -266,6 +320,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
 
   void _onVerticalChapterPositionsChanged() {
     if (!mounted ||
+        !_appLifecycleActive ||
         _loadingCatalog ||
         _loadingContent ||
         _error != null ||

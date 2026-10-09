@@ -132,10 +132,35 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                           !_lastPaginationSize.isEmpty &&
                           (_lastPaginationSize != paginationSize ||
                               _lastUsesTwoPageLayout != usesTwoPageLayout);
-                      if (paginationGeometryChanged) {
-                        _requestPositionRestore();
+                      final verticalGeometrySignature =
+                          _pageMode == NativePageMode.verticalScroll
+                          ? '$paginationViewport:${_verticalChrome.paginationSignature}'
+                          : null;
+                      final verticalGeometryChanged =
+                          _verticalGeometrySignature != null &&
+                          _verticalGeometrySignature !=
+                              verticalGeometrySignature;
+                      if (paginationGeometryChanged ||
+                          verticalGeometryChanged) {
+                        if (_pageMode == NativePageMode.verticalScroll &&
+                            !_initialPositionRestored) {
+                          // Reflow the pending intent without dropping its
+                          // cancellation predicate or completing it early.
+                          ++_verticalScrollRevision;
+                          _initialPositionRestoreScheduled = false;
+                          _restoreAnchorAfterLayout = true;
+                        } else {
+                          final wasAtChapterStart =
+                              (_anchorOffset ?? 0) == 0 &&
+                              !_restoreContinuousAnchorCentered;
+                          _requestPositionRestore();
+                          if (wasAtChapterStart) {
+                            _restoreContinuousAnchorCentered = false;
+                          }
+                        }
                         _lastSavedLocation = null;
                       }
+                      _verticalGeometrySignature = verticalGeometrySignature;
                       _lastPaginationSize = paginationSize;
                       _lastUsesTwoPageLayout = usesTwoPageLayout;
                       final textDirection = Directionality.of(context);

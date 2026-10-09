@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -22,6 +23,7 @@ import 'package:xxread/services/tts_service.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 import 'package:xxread/widgets/reader_desktop_input.dart';
 import 'package:xxread/widgets/reader_annotated_text_page.dart';
+import 'package:xxread/widgets/reader_navigation_sheet.dart';
 
 import 'support/no_shelf_book_source_service.dart';
 
@@ -294,6 +296,165 @@ void main() {
     await _pumpUntil(tester, () => stopped);
     await stopping;
   });
+
+  testWidgets(
+    'vertical reader cancels a stopped aloud restore and keeps syncing scroll',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: BookSourcePageMode.verticalScroll.name,
+        ReaderSettingsStore.scrollByChapterKey: false,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+        'reader_aloud_presentation': 'controls',
+        'reader_aloud_follow_page_turns': false,
+      });
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      const mediaChannel = MethodChannel('com.niki.xxread/reader_aloud');
+      messenger.setMockMethodCallHandler(mediaChannel, (_) async => null);
+      addTearDown(() => messenger.setMockMethodCallHandler(mediaChannel, null));
+      final client = _DelayedClient(
+        openingText: _longChapter('Opening', 18),
+        delayedText: _longChapter('Middle', 18),
+        newestText: _longChapter('Newest', 18),
+      )..finishDelayed();
+      final rules = ReplaceRuleService();
+      final tts = _HeldTts();
+      final service = ReaderAloudService(
+        systemEngine: tts,
+        settingsStore: _SettingsStore(),
+        bytesPlayer: _SilentPlayer(),
+      );
+      final session = ReaderAloudSession();
+      addTearDown(() async {
+        var stopped = false;
+        final stopping = session.stop().then((_) => stopped = true);
+        await _pumpUntil(tester, () => stopped);
+        await stopping;
+        await tester.pumpWidget(const SizedBox.shrink());
+        session.dispose();
+        service.dispose();
+        tts.dispose();
+        client.close();
+        await rules.close();
+      });
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<ReaderAloudSession>.value(value: session),
+            ChangeNotifierProvider<ReaderAloudService>.value(value: service),
+            ChangeNotifierProvider<TtsService>.value(value: tts),
+          ],
+          child: MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BookSourceReaderPage(
+              source: _source,
+              book: _book,
+              client: client,
+              shelfServiceFactory: NoShelfBookSourceService.new,
+              replaceRuleService: rules,
+              progressStore: _MemoryProgress(),
+              paginationCacheDao: _NoDiskPagination(),
+            ),
+          ),
+        ),
+      );
+      final surface = find.byKey(const ValueKey('book-source-reader-surface'));
+      await _pumpUntil(tester, () => surface.evaluate().isNotEmpty);
+      await tester.pumpAndSettle();
+      await tester.tapAt(tester.getCenter(find.byType(BookSourceReaderPage)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      final aloudButton = find.byWidgetPredicate(
+        (widget) =>
+            widget is ReaderControlIconButton &&
+            widget.icon == Icons.headphones_rounded,
+      );
+      expect(aloudButton, findsOneWidget);
+      tester.widget<ReaderControlIconButton>(aloudButton).onPressed!();
+      await tester.pump();
+      await _pumpUntil(tester, () => tts.isPlaying);
+      final controller = session.controller!;
+      final highlight = controller.highlight!;
+      Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+      await _pumpUntil(
+        tester,
+        () => find.byType(BottomSheet).evaluate().isEmpty,
+      );
+      await tester.pump(const Duration(milliseconds: 350));
+
+      await tester.drag(surface, const Offset(0, -420));
+      await tester.pumpAndSettle();
+      final scrollable = find.descendant(
+        of: surface,
+        matching: find.byType(Scrollable),
+      );
+      final beforeRestore = tester
+          .state<ScrollableState>(scrollable.first)
+          .position
+          .pixels;
+      expect(beforeRestore, greaterThan(0));
+
+      final reveal = controller.source.revealPosition(
+        const ReaderAloudPosition(chapterIndex: 0, offset: 0),
+        isCurrent: () =>
+            controller.isActive && controller.highlight == highlight,
+      );
+      var revealDone = false;
+      unawaited(reveal.then((_) => revealDone = true));
+      await tester.runAsync(() async {
+        for (var attempt = 0; attempt < 50 && !revealDone; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+        }
+      });
+      expect(revealDone, isTrue);
+      var stopDone = false;
+      final stopping = session.stop().then((_) => stopDone = true);
+      await _pumpUntil(tester, () => stopDone);
+      await stopping;
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      final afterCancelledRestore = tester
+          .state<ScrollableState>(scrollable.first)
+          .position
+          .pixels;
+      expect(afterCancelledRestore, closeTo(beforeRestore, 1));
+
+      var visibleChapter = _chapterAtViewportCenter(tester);
+      for (var attempt = 0; attempt < 8 && visibleChapter == '0'; attempt++) {
+        await tester.drag(surface, const Offset(0, -650));
+        await tester.pumpAndSettle();
+        visibleChapter = _chapterAtViewportCenter(tester);
+      }
+      expect(visibleChapter, isNot('0'));
+      expect(
+        tester.state<ScrollableState>(scrollable.first).position.pixels,
+        greaterThan(afterCancelledRestore),
+      );
+
+      await tester.tapAt(tester.getCenter(find.byType(BookSourceReaderPage)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      tester
+          .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+          .onTableOfContents!();
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<ReaderNavigationSheet>(find.byType(ReaderNavigationSheet))
+            .currentChapterIndex,
+        int.parse(visibleChapter),
+      );
+      debugDefaultTargetPlatformOverride = null;
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 Future<void> _startReadAloud(WidgetTester tester) async {
@@ -340,12 +501,17 @@ const _book = BookSourceBook(
 );
 
 class _DelayedClient extends BookSourceClient {
-  _DelayedClient({this.openingText = 'Opening body.'});
+  _DelayedClient({
+    this.openingText = 'Opening body.',
+    this.delayedText = 'Obsolete target body.',
+    this.newestText = 'Newest target body.',
+  });
 
   final String openingText;
+  final String delayedText;
+  final String newestText;
   final delayed = Completer<BookSourceChapterContent>();
-  void finishDelayed() =>
-      delayed.complete(_content('1', 'Obsolete target body.'));
+  void finishDelayed() => delayed.complete(_content('1', delayedText));
   @override
   Future<List<BookSourceChapter>> getChapters(
     RegisteredBookSource source,
@@ -365,10 +531,27 @@ class _DelayedClient extends BookSourceClient {
     cancellation,
   }) async => chapterId == '1'
       ? delayed.future
-      : _content(
-          chapterId,
-          chapterId == '0' ? openingText : 'Newest target body.',
-        );
+      : _content(chapterId, chapterId == '0' ? openingText : newestText);
+}
+
+String _longChapter(String prefix, int paragraphs) => List.generate(
+  paragraphs,
+  (index) =>
+      '$prefix paragraph $index has enough words to occupy several lines '
+      'and make vertical scrolling observable in the real reader.',
+).join('\n');
+
+String _chapterAtViewportCenter(WidgetTester tester) {
+  final center =
+      tester.view.physicalSize.height / tester.view.devicePixelRatio / 2;
+  for (final element in find.byType(ReaderAnnotatedTextPage).evaluate()) {
+    final page = element.widget as ReaderAnnotatedTextPage;
+    final box = element.renderObject;
+    if (box is! RenderBox || !box.hasSize) continue;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+    if (rect.top <= center && rect.bottom >= center) return page.chapterId;
+  }
+  throw TestFailure('No source chapter is visible at the viewport center');
 }
 
 BookSourceChapterContent _content(String id, String text) =>

@@ -100,6 +100,10 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
         ReaderMarginSettings.max,
       );
       _readerThemeId = ReaderThemes.byId(themeId ?? _readerThemeId).id;
+      if (pageMode != null && pageMode != _pageMode) {
+        ++_verticalRestoreSerial;
+        _verticalRestoreShouldApply = null;
+      }
       _pageMode = pageMode ?? _pageMode;
       _pullBookmarkEnabled = pullBookmarkEnabled ?? _pullBookmarkEnabled;
       _tapPageAnimationEnabled =

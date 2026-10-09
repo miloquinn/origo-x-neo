@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
@@ -1721,6 +1722,178 @@ void main() {
     expect(body.text.style?.fontWeight, FontWeight.w600);
     expect(body.text.style?.letterSpacing, 0.7);
   });
+
+  for (final scrollByChapter in [false, true]) {
+    for (final titlePage in [false, true]) {
+      testWidgets('vertical source keeps its anchor across background relayout '
+          '(scrollByChapter=$scrollByChapter, titlePage=$titlePage)', (
+        tester,
+      ) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey:
+              BookSourcePageMode.verticalScroll.name,
+          ReaderSettingsStore.scrollByChapterKey: scrollByChapter,
+          ReaderSettingsStore.chapterTitlePageKey: titlePage,
+        });
+        await tester.binding.setSurfaceSize(const Size(400, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final text = _tabletChapterText(150);
+        final client = _ConfigurableBookSourceClient({
+          for (var index = 1; index <= 12; index++) 'chapter-$index': text,
+        });
+        addTearDown(client.close);
+        await _progressFixture.store.save(
+          sourceId: _testSource().id,
+          bookId: 'book-1',
+          progress: BookSourceReadingProgress(
+            chapterId: 'chapter-8',
+            chapterIndex: 7,
+            chapterProgress: 0.35,
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        );
+        await tester.pumpWidget(_buildTabletSourceReader(client));
+        final surface = find.byKey(
+          const ValueKey('book-source-reader-surface'),
+        );
+        await _pumpUntilFound(tester, surface);
+        await tester.pumpAndSettle();
+        await tester.drag(surface, const Offset(0, -240));
+        await tester.pumpAndSettle();
+        final anchor = _sourceCenterAnchor(tester);
+        expect(anchor.$1, 'chapter-8');
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        // OS transition metrics can rebuild the reader while it is hidden.
+        await tester.binding.setSurfaceSize(const Size(430, 760));
+        await tester.pumpAndSettle();
+        await tester.binding.setSurfaceSize(const Size(400, 800));
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pumpAndSettle();
+        final resumed = _sourceCenterAnchor(tester);
+        expect(resumed.$1, anchor.$1);
+        expect(resumed.$2, closeTo(anchor.$2, 40));
+        tester
+            .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+            .onTableOfContents!();
+        await tester.pumpAndSettle();
+        final navigation = tester.widget<ReaderNavigationSheet>(
+          find.byType(ReaderNavigationSheet),
+        );
+        expect(navigation.currentChapterIndex, 7);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        final saved = await _progressFixture.store.load(
+          sourceId: _testSource().id,
+          bookId: 'book-1',
+        );
+        expect(saved!.chapterId, anchor.$1);
+        expect(
+          (saved.chapterProgress * text.length).round(),
+          closeTo(anchor.$2, 40),
+        );
+        debugDefaultTargetPlatformOverride = null;
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  testWidgets(
+    'vertical source resumes its pending TOC target after backgrounding',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: BookSourcePageMode.verticalScroll.name,
+        ReaderSettingsStore.scrollByChapterKey: false,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+      });
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final text = _tabletChapterText(150);
+      final client = _ConfigurableBookSourceClient({
+        for (var index = 1; index <= 12; index++) 'chapter-$index': text,
+      });
+      addTearDown(client.close);
+      await _progressFixture.store.save(
+        sourceId: _testSource().id,
+        bookId: 'book-1',
+        progress: BookSourceReadingProgress(
+          chapterId: 'chapter-8',
+          chapterIndex: 7,
+          chapterProgress: 0.35,
+          updatedAt: DateTime.now().toUtc(),
+        ),
+      );
+      await tester.pumpWidget(_buildTabletSourceReader(client));
+      final surface = find.byKey(const ValueKey('book-source-reader-surface'));
+      await _pumpUntilFound(tester, surface);
+      await tester.pumpAndSettle();
+      expect(_sourceCenterAnchor(tester).$2, greaterThan(1500));
+      tester
+          .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+          .onTableOfContents!();
+      await tester.pumpAndSettle();
+      tester
+          .widget<ReaderNavigationSheet>(find.byType(ReaderNavigationSheet))
+          .onChapterSelected(9);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(milliseconds: 100));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      final target = find.byWidgetPredicate(
+        (widget) =>
+            widget is ReaderAnnotatedTextPage &&
+            widget.chapterId == 'chapter-10' &&
+            widget.pageIndex == 0,
+      );
+      expect(target, findsOneWidget);
+      final window = find.byKey(
+        const ValueKey('book-source-vertical-reading-window'),
+      );
+      final viewport = tester.getRect(
+        find.descendant(of: window, matching: find.byType(ClipRect)).first,
+      );
+      expect(
+        tester
+            .getTopLeft(
+              find.descendant(
+                of: target,
+                matching: find.byType(ReaderInlineChapterTitle),
+              ),
+            )
+            .dy,
+        closeTo(viewport.top, 1),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      final saved = await _progressFixture.store.load(
+        sourceId: _testSource().id,
+        bookId: 'book-1',
+      );
+      expect(saved!.chapterId, 'chapter-10');
+      expect(saved.chapterProgress, lessThan(0.05));
+      debugDefaultTargetPlatformOverride = null;
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   for (final scrollByChapter in [false, true]) {
     for (final titlePage in [false, true]) {
