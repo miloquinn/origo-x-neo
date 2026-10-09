@@ -10,6 +10,8 @@
 
 共用 `com.niki.xxread/fullscreen` 通道，方法 `setKeepScreenOn`，参数 `{enabled: bool}`。Android 在 `android/app/src/main/kotlin/com/niki/xxread/MainActivity.kt` 设置/清除窗口 `FLAG_KEEP_SCREEN_ON`；iOS 在 `ios/Runner/AppDelegate.swift` 的通道处理器设置 `UIApplication.shared.isIdleTimerDisabled`。保留现有插件注册和主线程调用方式，不新增依赖。其他平台不发送此原生方法。
 
+iOS API 合同见 [Apple `isIdleTimerDisabled` 文档](https://developer.apple.com/documentation/uikit/uiapplication/isidletimerdisabled)：默认允许系统空闲休眠，设置为 `true` 才禁用空闲计时器。
+
 常亮用于阅读期间的系统自动锁屏；不阻止用户主动锁屏，也不保证系统中断期间屏幕持续点亮。阅读器登记采用对象身份集合，叠加或切换阅读器不会由旧页面单独解除新页面所需的常亮。
 
 ## 回归与验收
