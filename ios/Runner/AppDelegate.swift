@@ -187,6 +187,20 @@ final class AuthCallbackBridge {
     )
     frameRateChannel.setMethodCallHandler { (call: FlutterMethodCall, result: @escaping FlutterResult) in
       switch call.method {
+      case "setKeepScreenOn":
+        guard let args = call.arguments as? [String: Any],
+              let enabled = args["enabled"] as? Bool else {
+          result(
+            FlutterError(
+              code: "invalid_args",
+              message: "expected {enabled: bool}",
+              details: nil
+            )
+          )
+          return
+        }
+        UIApplication.shared.isIdleTimerDisabled = enabled
+        result(nil)
       case "setPowerSavingMode":
         guard let args = call.arguments as? [String: Any],
               let enabled = args["enabled"] as? Bool else {

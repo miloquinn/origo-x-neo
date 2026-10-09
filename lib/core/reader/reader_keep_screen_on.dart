@@ -60,7 +60,9 @@ abstract final class ReaderKeepScreenOnController {
           (_preferenceEnabled ?? false) && _activeReaders.isNotEmpty;
       if (!force && _applied == shouldKeepScreenOn) return;
 
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      if (!kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS)) {
         try {
           await _channel.invokeMethod<void>('setKeepScreenOn', <String, bool>{
             'enabled': shouldKeepScreenOn,
