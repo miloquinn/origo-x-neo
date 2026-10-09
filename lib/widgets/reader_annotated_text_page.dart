@@ -406,7 +406,7 @@ Future<void> showReaderAnnotationDetails(
   builder: (context) {
     final note = annotation.readerNote?.trim() ?? '';
     final quote = annotation.content.replaceAll(RegExp(r'\s+'), ' ').trim();
-    final theme = palette.toThemeData(typography: Theme.of(context).textTheme);
+    final theme = palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
       child: Material(
@@ -572,9 +572,7 @@ class _ReaderAnnotationEditorSheetState
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final theme = widget.palette.toThemeData(
-      typography: Theme.of(context).textTheme,
-    );
+    final theme = widget.palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
       child: Material(

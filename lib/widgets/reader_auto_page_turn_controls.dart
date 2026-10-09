@@ -56,7 +56,7 @@ class _ReaderAutoPageTurnSheetState extends State<_ReaderAutoPageTurnSheet> {
   @override
   Widget build(BuildContext context) {
     final textTheme = widget.palette
-        .toThemeData(typography: Theme.of(context).textTheme)
+        .toThemeData(parentTheme: Theme.of(context))
         .textTheme;
     final seconds = _seconds[_mode]!;
     final roundedSeconds = seconds.round();

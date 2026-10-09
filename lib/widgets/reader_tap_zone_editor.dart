@@ -51,7 +51,7 @@ class ReaderTapZoneEditorOverlay extends StatelessWidget {
 
   Future<void> _editZone(BuildContext context, int zoneIndex) async {
     final current = zones[zoneIndex];
-    final theme = palette.toThemeData(typography: Theme.of(context).textTheme);
+    final theme = palette.toThemeData(parentTheme: Theme.of(context));
     final selected = await showModalBottomSheet<ReaderTapZoneAction>(
       context: context,
       backgroundColor: palette.surface,

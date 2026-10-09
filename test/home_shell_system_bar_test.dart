@@ -120,7 +120,15 @@ void main() {
     expect(topBar, findsOneWidget);
     expect(tester.getTopLeft(topBar), Offset.zero);
     expect(tester.getSize(topBar).height, 84);
-    expect(find.byType(GradientTopBackdrop), findsNothing);
+    expect(find.byType(GradientTopBackdrop), findsOneWidget);
+    expect(find.byType(BackdropFilter), findsNothing);
+    final solid = tester.widget<ColoredBox>(
+      find.descendant(
+        of: find.byType(GradientTopBackdrop),
+        matching: find.byType(ColoredBox),
+      ),
+    );
+    expect(solid.color.a, 1);
   });
 
   testWidgets('mobile liquid glass top bar uses the shared gradient backdrop', (

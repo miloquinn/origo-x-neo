@@ -371,7 +371,7 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   bool get _canPopWithoutPrompt => _allowPop || _shelfBookId != null;
 
   ThemeData get _readerThemeData =>
-      _readerTheme.toThemeData(typography: Theme.of(context).textTheme);
+      _readerTheme.toThemeData(parentTheme: Theme.of(context));
 
   ReaderSettings get _readerSettings => ReaderSettings(
     fontSize: _fontSize,

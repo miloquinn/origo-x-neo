@@ -11,6 +11,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book_note.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_annotated_text_page.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_tap_observer.dart';
 
@@ -449,8 +450,11 @@ void main() {
       );
       expect(toolbar.color, Colors.transparent);
       expect(
-        find.ancestor(
-          of: find.byKey(const ValueKey('reader-selection-toolbar')),
+        find.descendant(
+          of: find.ancestor(
+            of: find.byKey(const ValueKey('reader-selection-toolbar')),
+            matching: find.byType(GlassSurface),
+          ),
           matching: find.byType(BackdropFilter),
         ),
         findsOneWidget,

@@ -12,9 +12,8 @@ import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/widgets/home_bounce_navigation_item.dart';
 import 'package:xxread/pages/home/widgets/home_navigation_item.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
-import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/localization_extension.dart';
-import 'package:xxread/utils/ui_style.dart';
+import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
@@ -270,12 +269,6 @@ class _NavigationPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isMaterial3Style =
-        Theme.of(
-          context,
-        ).extension<UiStyleThemeExtension>()?.isMaterial3Style ??
-        false;
     final visibleOrder = settings.visibleHomeNavigationOrder;
     final mediaQuery = MediaQuery.of(context);
     final dimensions = homeMobileFloatingNavDimensionsFor(
@@ -292,33 +285,10 @@ class _NavigationPreview extends StatelessWidget {
     );
 
     return Center(
-      child: Container(
+      child: FloatingPillNavigationSurface(
         key: const ValueKey('floating-navigation-live-preview'),
         width: dimensions.width,
         height: dimensions.height,
-        padding: const EdgeInsets.symmetric(
-          horizontal: kHomeMobileFloatingNavHorizontalPadding,
-          vertical: 4,
-        ),
-        decoration: BoxDecoration(
-          color: isMaterial3Style
-              ? scheme.surfaceContainerHigh
-              : GlassEffectConfig.chromeSurfaceColor(context),
-          borderRadius: BorderRadius.circular(dimensions.height / 2),
-          border: Border.all(
-            color: scheme.outline.withValues(
-              alpha: isMaterial3Style ? 0.18 : 0.1,
-            ),
-            width: 0.6,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: scheme.shadow.withValues(alpha: 0.12),
-              blurRadius: 22,
-              offset: const Offset(0, 9),
-            ),
-          ],
-        ),
         child: ExcludeSemantics(
           child: IgnorePointer(
             child: Row(

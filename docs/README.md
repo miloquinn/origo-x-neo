@@ -16,6 +16,7 @@
 | 朗读展示、书籍字体、跳读与连续播放 | [听书维护](tts-jump-reading-design.md) |
 | 书籍格式能力 | [格式支持](book-format-support.md) |
 | 备份与恢复 | [WebDAV 备份](webdav-backup.md) |
+| 共用玻璃背景、材质角色与外观设置继承 | [共用玻璃材质](glass-material.md) |
 | 共用视觉与组件规范 | [DESIGN.md](../DESIGN.md) |
 | 阅读选中文字工具栏、玻璃背景与更多操作 | [选中文字工具栏](reader-selection-toolbar.md) |
 | 协议正文、官网接口、缓存与同意记录 | [协议与隐私](legal-documents.md) |
@@ -37,6 +38,7 @@
 
 ## 近期功能交付证据
 
+- [2026-10-09 共用玻璃背景](reviews/2026-10-09-shared-glass-background-validation.md)：统一材质与背景所有权，239 项独立回归、六种真实模拟器组件场景及设备交付边界。
 - [2026-10-09 Google 登录恢复](reviews/2026-10-09-legal-resume-validation.md)：协议复查保留已有许可，真实更新显示同意入口；124 项回归与合并设备交付边界。
 
 - [2026-10-09 朗读正文排版](reviews/2026-10-09-aloud-typography-validation.md)：共用书籍字体、EPUB 字体切换与章节快照回归；002 两端构建通过，设备连接中断，尚未安装。

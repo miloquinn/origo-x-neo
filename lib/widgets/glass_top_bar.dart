@@ -2,8 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../utils/glass_config.dart';
-import '../utils/ui_style.dart';
+import '../utils/glass_material.dart';
 import 'gradient_top_backdrop.dart';
 
 /// The single glass chrome surface shared by the home shell and pushed pages.
@@ -38,15 +37,14 @@ class GlassTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final topInset = systemTopInset ?? MediaQuery.viewPaddingOf(context).top;
-    final isMaterial3Style =
-        Theme.of(
-          context,
-        ).extension<UiStyleThemeExtension>()?.isMaterial3Style ??
-        false;
-    final useBlur = !isMaterial3Style && !GlassEffectConfig.shouldDisableBlur;
+    final material = GlassMaterial.resolve(
+      context,
+      role: GlassSurfaceRole.floating,
+    );
+    final useBlur = material.mode != GlassMaterialMode.solid;
     final height = topInset + contentHeight;
     final peakSigma = math.min(
-      GlassEffectConfig.appBarBlur * 2,
+      material.blurSigma * (material.mode == GlassMaterialMode.liquid ? 1 : 2),
       math.max(0, height - 16) / 3,
     );
     final titleStyle = TextStyle(
@@ -63,16 +61,9 @@ class GlassTopBar extends StatelessWidget {
             ]
           : null,
     );
-    final content = Container(
+    final content = SizedBox(
       key: const ValueKey('glass-top-bar-surface'),
       height: height,
-      decoration: BoxDecoration(
-        color: useBlur
-            ? Colors.transparent
-            : isMaterial3Style
-            ? scheme.surfaceContainerHigh
-            : scheme.surface,
-      ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           horizontalPadding,
@@ -116,15 +107,14 @@ class GlassTopBar extends StatelessWidget {
     return ClipRect(
       child: Stack(
         children: [
-          if (useBlur)
-            Positioned.fill(
-              child: GradientTopBackdrop(
-                height: height,
-                clearTail: _clearTail,
-                fallbackBands: 16,
-                maxSigma: peakSigma,
-              ),
+          Positioned.fill(
+            child: GradientTopBackdrop(
+              height: height,
+              clearTail: _clearTail,
+              fallbackBands: 16,
+              maxSigma: peakSigma,
             ),
+          ),
           content,
         ],
       ),

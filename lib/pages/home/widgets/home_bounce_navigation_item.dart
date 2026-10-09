@@ -6,10 +6,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../home_mobile_chrome.dart';
-import 'package:xxread/utils/ui_style.dart';
-import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
-import 'package:xxread/widgets/liquid_glass_surface.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 
 import 'home_navigation_item.dart';
 
@@ -149,27 +147,11 @@ class _FloatingPillNavigationButtonState
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isMaterial3Style =
-        Theme.of(
-          context,
-        ).extension<UiStyleThemeExtension>()?.isMaterial3Style ??
-        false;
     final isLightTheme = scheme.brightness == Brightness.light;
-    final selectedSurface = Color.lerp(
-      isMaterial3Style ? scheme.surfaceContainerHighest : scheme.surface,
-      scheme.primary,
-      isLightTheme ? 0.13 : 0.24,
-    )!;
     final selectedForeground = scheme.primary;
     final unselectedForeground = scheme.onSurface.withValues(
       alpha: isLightTheme ? 0.9 : 0.88,
     );
-    final selectedBorder = scheme.primary.withValues(
-      alpha: isLightTheme ? 0.08 : 0.16,
-    );
-    final usesLiquidGlass =
-        GlassEffectConfig.usesLiquidGlass && !isMaterial3Style;
-
     return Semantics(
       button: true,
       selected: widget.isSelected,
@@ -255,42 +237,12 @@ class _FloatingPillNavigationButtonState
                                 ),
                                 width: indicatorWidth,
                                 height: indicatorHeight,
-                                child: usesLiquidGlass
-                                    ? ClipPath(
-                                        clipper: ShapeBorderClipper(
-                                          shape: indicatorShape,
-                                        ),
-                                        child: LiquidGlassSurface(
-                                          shape: indicatorShape,
-                                          color: selectedSurface,
-                                          visibility: selection,
-                                          child: const SizedBox.expand(),
-                                        ),
-                                      )
-                                    : DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: Color.lerp(
-                                            selectedSurface.withValues(
-                                              alpha: 0,
-                                            ),
-                                            selectedSurface,
-                                            selection,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            indicatorRadius,
-                                          ),
-                                          border: Border.all(
-                                            color: Color.lerp(
-                                              selectedBorder.withValues(
-                                                alpha: 0,
-                                              ),
-                                              selectedBorder,
-                                              selection,
-                                            )!,
-                                            width: 0.8,
-                                          ),
-                                        ),
-                                      ),
+                                child: GlassSurface(
+                                  role: GlassSurfaceRole.selection,
+                                  shape: indicatorShape,
+                                  visibility: selection,
+                                  child: const SizedBox.expand(),
+                                ),
                               ),
                             ),
                           ),

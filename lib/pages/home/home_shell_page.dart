@@ -2,7 +2,6 @@
 // 技术要点：Flutter UI、渲染层。
 
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, listEquals;
 import 'package:flutter/material.dart';
@@ -26,7 +25,6 @@ import 'package:xxread/services/core/first_home_support_intro_service.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 import 'package:xxread/services/library/download_task_controller.dart';
 import 'package:xxread/utils/book_open_transition.dart';
-import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/layout_helper.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_style_helper.dart';
@@ -38,6 +36,7 @@ import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 import 'package:xxread/widgets/page_system_ui.dart';
 
 import 'home_dashboard_page.dart';

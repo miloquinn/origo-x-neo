@@ -2,10 +2,9 @@
 // 技术要点：Flutter UI、渲染层。
 
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import '../utils/glass_config.dart';
+import 'glass_surface.dart';
 import '../utils/ui_style.dart';
 
 OverlayEntry? _activeSideToastEntry;
@@ -171,14 +170,9 @@ class _SideToastState extends State<_SideToast>
           context,
         ).extension<UiStyleThemeExtension>()?.isMaterial3Style ??
         false;
-    final useBlur = !isMaterial3Style && !GlassEffectConfig.shouldDisableBlur;
     final mediaQuery = MediaQuery.of(context);
     final compact = mediaQuery.size.width < 700;
-    final background =
-        widget.backgroundColor ??
-        (isMaterial3Style
-            ? scheme.surfaceContainerHigh
-            : GlassEffectConfig.surfaceColor(context, opacity: 0.88));
+    final background = widget.backgroundColor ?? scheme.surfaceContainerHigh;
     final foreground = widget.textColor ?? scheme.onSurface;
     final accent = switch (widget.kind) {
       SideToastKind.info => scheme.primary,
@@ -194,69 +188,48 @@ class _SideToastState extends State<_SideToast>
           SideToastKind.warning => Icons.warning_amber_rounded,
           SideToastKind.error => Icons.error_outline_rounded,
         };
-    final toastCard = Container(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: scheme.outline.withValues(
-            alpha: isMaterial3Style ? 0.18 : 0.16,
+    final toastCard = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: isMaterial3Style ? 0.13 : 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: accent),
           ),
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadow.withValues(
-              alpha: isMaterial3Style ? 0.08 : 0.16,
+          const SizedBox(width: 9),
+          Flexible(
+            child: Text(
+              widget.message,
+              style: TextStyle(
+                color: foreground,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
-            blurRadius: isMaterial3Style ? 14 : 20,
-            offset: const Offset(0, 8),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: isMaterial3Style ? 0.13 : 0.15),
-                borderRadius: BorderRadius.circular(8),
+          if (widget.actionLabel != null && widget.onAction != null) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: _runAction,
+              style: TextButton.styleFrom(
+                foregroundColor: accent,
+                minimumSize: const Size(0, 36),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Icon(icon, size: 16, color: accent),
+              child: Text(widget.actionLabel!),
             ),
-            const SizedBox(width: 9),
-            Flexible(
-              child: Text(
-                widget.message,
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (widget.actionLabel != null && widget.onAction != null) ...[
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: _runAction,
-                style: TextButton.styleFrom(
-                  foregroundColor: accent,
-                  minimumSize: const Size(0, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(widget.actionLabel!),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
 
@@ -270,28 +243,35 @@ class _SideToastState extends State<_SideToast>
         label: widget.message,
         child: SlideTransition(
           position: _slideAnimation,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: compact ? mediaQuery.size.width - 24 : 420,
-              ),
-              child: Dismissible(
-                key: _dismissibleKey,
-                direction: DismissDirection.horizontal,
-                resizeDuration: null,
-                onDismissed: (_) => _dismissAfterSwipe(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: compact ? mediaQuery.size.width - 24 : 420,
+            ),
+            child: Dismissible(
+              key: _dismissibleKey,
+              direction: DismissDirection.horizontal,
+              resizeDuration: null,
+              onDismissed: (_) => _dismissAfterSwipe(),
+              child: AnimatedBuilder(
+                animation: _fadeAnimation,
+                builder: (context, child) => GlassSurface(
+                  role: GlassSurfaceRole.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  color: background,
+                  visibility: _fadeAnimation.value,
+                  child: child!,
+                ),
                 child: Material(
                   color: Colors.transparent,
-                  child: ClipRRect(
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    child: useBlur
-                        ? BackdropFilter(
-                            enabled: useBlur,
-                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                            child: toastCard,
-                          )
-                        : toastCard,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: toastCard,
                   ),
                 ),
               ),

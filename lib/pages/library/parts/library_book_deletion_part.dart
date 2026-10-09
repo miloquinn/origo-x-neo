@@ -5,18 +5,10 @@ part of '../library_page.dart';
 
 extension _LibraryPageBookDeletion on _LibraryPageState {
   void _confirmDeleteBook(Book book) {
-    final isMaterial3Style = _isMaterial3Style;
-    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) {
-        final dialog = AlertDialog(
-          backgroundColor: isMaterial3Style
-              ? scheme.surfaceContainerHigh
-              : GlassEffectConfig.surfaceColor(context, opacity: 0.95),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+        return GlassDialog(
           title: Text(
             context.l10n.libraryConfirmDeleteTitle,
             style: Theme.of(context).textTheme.headlineSmall,
@@ -38,15 +30,7 @@ extension _LibraryPageBookDeletion on _LibraryPageState {
                   barrierDismissible: false,
                   builder: (context) => PopScope(
                     canPop: false,
-                    child: AlertDialog(
-                      backgroundColor: isMaterial3Style
-                          ? scheme.surfaceContainerHigh
-                          : Theme.of(
-                              context,
-                            ).colorScheme.surface.withValues(alpha: 0.95),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                    child: GlassDialog(
                       content: Row(
                         children: [
                           const CircularProgressIndicator(),
@@ -94,18 +78,6 @@ extension _LibraryPageBookDeletion on _LibraryPageState {
             ),
           ],
         );
-
-        if (isMaterial3Style || GlassEffectConfig.shouldDisableBlur) {
-          return dialog;
-        }
-
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: dialog,
-          ),
-        );
       },
     );
   }
@@ -121,7 +93,7 @@ extension _LibraryPageBookDeletion on _LibraryPageState {
     final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => GlassDialog(
         title: Text(l10n.libraryBatchDeleteTitle),
         content: Text(l10n.libraryBatchDeleteMessage(selectedBooks.length)),
         actions: [
@@ -153,7 +125,7 @@ extension _LibraryPageBookDeletion on _LibraryPageState {
       barrierDismissible: false,
       builder: (dialogContext) => PopScope(
         canPop: false,
-        child: AlertDialog(
+        child: GlassDialog(
           content: ValueListenableBuilder<int>(
             valueListenable: progress,
             builder: (context, done, _) => Row(

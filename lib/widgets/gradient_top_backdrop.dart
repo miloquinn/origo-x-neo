@@ -3,8 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../utils/glass_config.dart';
-import '../utils/ui_style.dart';
+import '../utils/glass_material.dart';
 
 /// Full-width, top-aligned backdrop with a Gaussian radius that decreases with y.
 /// Callers paint controls above this filter so they stay sharp.
@@ -47,8 +46,8 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
   final _fallbackBackdrop = BackdropKey();
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _ensureShader();
   }
 
@@ -59,7 +58,8 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
   }
 
   void _ensureShader() {
-    if (!widget.blurEnabled ||
+    if (GlassMaterial.modeOf(context, useGlass: widget.blurEnabled) ==
+            GlassMaterialMode.solid ||
         !ui.ImageFilter.isShaderFilterSupported ||
         _shaderLoading ||
         _loadFailed ||
@@ -78,7 +78,11 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
             'shaders/top_variable_gaussian.frag',
           );
       _program = program;
-      if (!mounted) return;
+      if (!mounted ||
+          GlassMaterial.modeOf(context, useGlass: widget.blurEnabled) ==
+              GlassMaterialMode.solid) {
+        return;
+      }
       // Configure the input sampler's filtering. ImageFilter.shader replaces
       // sampler 0's texture with the live backdrop, retaining this descriptor.
       // Linear sampling combines adjacent Gaussian taps in one GPU lookup.
@@ -122,22 +126,20 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
   @override
   Widget build(BuildContext context) {
     final clearHeight = math.max(0.0, widget.height - widget.clearTail);
+    final material = GlassMaterial.resolve(
+      context,
+      role: GlassSurfaceRole.floating,
+      useGlass: widget.blurEnabled,
+    );
     // Keep every downward sample inside the top region: radius is 3 sigma.
     final sigma = math.min(
-      widget.maxSigma ?? GlassEffectConfig.appBarBlur * 2,
+      widget.maxSigma ??
+          material.blurSigma *
+              (material.mode == GlassMaterialMode.liquid ? 1 : 2),
       clearHeight / 3,
     );
-    final enabled =
-        widget.blurEnabled && !GlassEffectConfig.shouldDisableBlur && sigma > 0;
-    final appearance = Theme.of(context).extension<UiStyleThemeExtension>();
-    final opacity = normalizeLiquidGlassOpacity(
-      appearance?.liquidGlassOpacity ?? GlassEffectConfig.liquidGlassOpacity,
-    );
-    final tintEnabled =
-        enabled &&
-        GlassEffectConfig.usesLiquidGlass &&
-        appearance?.isMaterial3Style != true &&
-        opacity > 0;
+    final enabled = material.mode != GlassMaterialMode.solid && sigma > 0;
+    final tint = enabled ? material.progressiveTint : null;
     Widget? filter;
     if (enabled && !_loadFailed && _vertical != null && _horizontal != null) {
       final pixelRatio = MediaQuery.devicePixelRatioOf(context);
@@ -197,7 +199,7 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
       child: SizedBox(
         width: double.infinity,
         height: widget.height,
-        child: tintEnabled
+        child: tint != null
             ? Stack(
                 children: [
                   if (filter != null) Positioned.fill(child: filter),
@@ -208,33 +210,13 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
                     height: clearHeight,
                     child: DecoratedBox(
                       key: const ValueKey('gradient-top-backdrop-liquid-tint'),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            GlassEffectConfig.chromeSurfaceColor(
-                              context,
-                            ).withValues(
-                              alpha: GlassEffectConfig.liquidTintOpacity(
-                                0,
-                                opacity,
-                              ),
-                            ),
-                            GlassEffectConfig.chromeSurfaceColor(
-                              context,
-                            ).withValues(alpha: 0.55 * opacity),
-                            GlassEffectConfig.chromeSurfaceColor(
-                              context,
-                            ).withValues(alpha: 0),
-                          ],
-                          stops: const [0, 0.45, 1],
-                        ),
-                      ),
+                      decoration: BoxDecoration(gradient: tint),
                     ),
                   ),
                 ],
               )
+            : widget.blurEnabled && material.mode == GlassMaterialMode.solid
+            ? ColoredBox(color: material.color)
             : filter,
       ),
     );

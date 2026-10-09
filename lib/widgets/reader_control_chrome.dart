@@ -1,16 +1,14 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
 import '../core/reader/reader_leaf_status.dart';
 import '../core/reader/reader_auto_page_turn_controller.dart';
-import '../utils/glass_config.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'glass_buttons.dart';
 import 'reader_top_information_bar.dart';
-import 'liquid_glass_surface.dart';
+import 'glass_surface.dart';
 
 typedef ReaderStatusBuilder =
     Widget Function(BuildContext context, TextStyle? style, Key? key);
@@ -629,13 +627,11 @@ class _ReaderAutoPageTurnShortcut extends StatelessWidget {
         onPressed: running
             ? () => controller.pause(smooth: true)
             : (onResume ?? controller.start),
-        color: palette.controlBar.withValues(alpha: running ? 0.96 : 0.8),
+        color: palette.controlBar,
         foregroundColor: palette.text,
         brightness: palette.brightness,
         highlighted: running,
-        border: BorderSide(
-          color: palette.text.withValues(alpha: running ? 0.22 : 0.1),
-        ),
+        border: BorderSide(color: palette.border),
         icon: AnimatedSwitcher(
           duration: duration,
           switchInCurve: Curves.easeOutCubic,
@@ -667,114 +663,21 @@ class ReaderControlBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBorderRadius = borderRadius ?? BorderRadius.circular(999);
-    final blurEnabled = !GlassEffectConfig.shouldDisableBlur;
-    final liquid = blurEnabled && GlassEffectConfig.usesLiquidGlass;
-    final surfaceOpacity = blurEnabled
-        ? GlassEffectConfig.chromeOpacityFor(palette.brightness)
-        : 1.0;
-    final blur = isTopBar
-        ? GlassEffectConfig.readingTopBarBlur
-        : GlassEffectConfig.readingBottomBarBlur;
-    final cleanSurface = blurEnabled
-        ? GlassEffectConfig.chromeBaseColor(
-            palette.controlBar,
-            palette.brightness,
-            lightBlend: 0.28,
-          )
-        : palette.controlBar;
-    final highlight = blurEnabled
-        ? Color.lerp(
-            cleanSurface,
-            Colors.white,
-            palette.brightness == Brightness.dark ? 0.06 : 0.1,
-          )!
-        : cleanSurface;
-    final panel = liquid
-        ? LiquidGlassSurface(
-            shape: RoundedRectangleBorder(borderRadius: effectiveBorderRadius),
-            color: cleanSurface,
-            brightness: palette.brightness,
-            child: Material(color: Colors.transparent, child: child),
-          )
-        : DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: effectiveBorderRadius,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  highlight.withValues(
-                    alpha: (surfaceOpacity + (blurEnabled ? 0.08 : 0.0)).clamp(
-                      0.0,
-                      1.0,
-                    ),
-                  ),
-                  cleanSurface.withValues(
-                    alpha: (surfaceOpacity - (blurEnabled ? 0.02 : 0.0)).clamp(
-                      0.0,
-                      1.0,
-                    ),
-                  ),
-                ],
-              ),
-              border: Border.all(
-                color: blurEnabled
-                    ? Color.lerp(
-                        palette.border,
-                        Colors.white,
-                        palette.brightness == Brightness.dark ? 0.16 : 0.14,
-                      )!.withValues(
-                        alpha: palette.brightness == Brightness.light
-                            ? 0.28
-                            : 0.54,
-                      )
-                    : palette.border,
-                width: 1,
-              ),
-            ),
-            child: Material(color: Colors.transparent, child: child),
-          );
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: effectiveBorderRadius,
-        boxShadow: [
-          BoxShadow(
-            color: blurEnabled
-                ? GlassEffectConfig.chromeShadowColor(
-                    source: palette.shadow,
-                    brightness: palette.brightness,
-                    darkOpacity: 0.46,
-                  )
-                : palette.shadow.withValues(
-                    alpha: palette.brightness == Brightness.dark ? 0.46 : 0.22,
-                  ),
-            blurRadius: blurEnabled && palette.brightness == Brightness.light
-                ? 24
-                : 32,
-            spreadRadius: -5,
-            offset: Offset(
-              0,
-              blurEnabled && palette.brightness == Brightness.light ? 8 : 16,
-            ),
-          ),
-          if (!blurEnabled || palette.brightness == Brightness.dark)
-            BoxShadow(
-              color: palette.shadow.withValues(alpha: 0.10),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: effectiveBorderRadius,
-        child: blurEnabled && !liquid
-            ? BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-                child: panel,
-              )
-            : panel,
+    final shape = RoundedRectangleBorder(
+      borderRadius: borderRadius ?? BorderRadius.circular(999),
+    );
+    return GlassSurface(
+      role: GlassSurfaceRole.floating,
+      shape: shape,
+      color: palette.controlBar,
+      outlineColor: palette.border,
+      shadowColor: palette.shadow,
+      brightness: palette.brightness,
+      child: Material(
+        color: Colors.transparent,
+        shape: shape,
+        clipBehavior: Clip.antiAlias,
+        child: child,
       ),
     );
   }
@@ -796,35 +699,16 @@ class ReaderControlIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final glassEnabled = !GlassEffectConfig.shouldDisableBlur;
-    final cleanControlFill = glassEnabled
-        ? GlassEffectConfig.chromeBaseColor(
-            palette.controlFill,
-            palette.brightness,
-            lightBlend: 0.22,
-          )
-        : palette.controlFill;
     return GlassIconButton(
       onPressed: onPressed,
       tooltip: tooltip,
       icon: Icon(icon, size: 22),
       foregroundColor: palette.text,
       brightness: palette.brightness,
-      border: BorderSide(
-        color: glassEnabled
-            ? Color.lerp(palette.border, Colors.white, 0.12)!.withValues(
-                alpha: palette.brightness == Brightness.light ? 0.28 : 0.48,
-              )
-            : palette.border,
-        width: 0.8,
-      ),
+      border: BorderSide(color: palette.border),
       blurBackground:
           context.findAncestorWidgetOfExactType<ReaderControlBar>() == null,
-      color: cleanControlFill.withValues(
-        alpha: glassEnabled
-            ? (palette.brightness == Brightness.light ? 0.76 : 0.58)
-            : 1.0,
-      ),
+      color: palette.controlFill,
     );
   }
 }

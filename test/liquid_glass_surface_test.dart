@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/utils/glass_config.dart';
+import 'package:xxread/utils/glass_material.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
@@ -235,16 +236,21 @@ Widget _surfaceHost({
           child: SizedBox(
             width: 160,
             height: 64,
-            child: LiquidGlassSurface(
-              shape: const StadiumBorder(),
-              color: Colors.indigo,
-              filterBackground: filterBackground,
-              visibility: visibility,
-              child: GestureDetector(
-                key: const ValueKey('liquid-surface-child'),
-                behavior: HitTestBehavior.opaque,
-                onTap: onTap,
-                child: const Center(child: Text('Liquid')),
+            child: Builder(
+              builder: (context) => LiquidGlassSurface(
+                shape: const StadiumBorder(),
+                material: GlassMaterial.resolve(
+                  context,
+                  color: Colors.indigo,
+                  visibility: visibility,
+                ),
+                filterBackground: filterBackground,
+                child: GestureDetector(
+                  key: const ValueKey('liquid-surface-child'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onTap,
+                  child: const Center(child: Text('Liquid')),
+                ),
               ),
             ),
           ),

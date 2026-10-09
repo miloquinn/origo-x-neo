@@ -14,7 +14,8 @@ class PillInputSurface extends StatelessWidget {
     this.enabled = true,
     this.blurBackground = true,
     this.focusColor,
-    this.shadows,
+    this.elevated = false,
+    this.shadowColor,
   });
 
   final Widget child;
@@ -24,7 +25,8 @@ class PillInputSurface extends StatelessWidget {
   final bool enabled;
   final bool blurBackground;
   final Color? focusColor;
-  final List<BoxShadow>? shadows;
+  final bool elevated;
+  final Color? shadowColor;
 
   static const shape = RoundedSuperellipseBorder(
     borderRadius: BorderRadius.all(Radius.circular(999)),
@@ -42,10 +44,11 @@ class PillInputSurface extends StatelessWidget {
               shape: shape,
               color: fillColor ?? scheme.surfaceContainerLow,
               brightness: brightness,
-              border: BorderSide(
-                color: borderColor ?? scheme.outline.withValues(alpha: .18),
-                width: .8,
-              ),
+              outlineColor: borderColor,
+              shadowColor: shadowColor,
+              role: elevated
+                  ? GlassSurfaceRole.floating
+                  : GlassSurfaceRole.control,
               enabled: enabled,
               blurBackground: blurBackground,
               child: const SizedBox.expand(),
@@ -69,12 +72,7 @@ class PillInputSurface extends StatelessWidget {
     );
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 52),
-      child: shadows == null
-          ? content
-          : DecoratedBox(
-              decoration: ShapeDecoration(shape: shape, shadows: shadows),
-              child: content,
-            ),
+      child: content,
     );
   }
 }

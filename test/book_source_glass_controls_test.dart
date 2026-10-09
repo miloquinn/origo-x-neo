@@ -6,6 +6,7 @@ import 'package:xxread/pages/book_sources/widgets/book_source_discovery_sections
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 
 void main() {
   tearDown(() => GlassEffectConfig.setDisableAllGlassEffects(false));
@@ -20,6 +21,14 @@ void main() {
       find.descendant(of: track, matching: find.byType(BackdropFilter)),
       findsOneWidget,
     );
+    final selection = tester.widget<GlassSurface>(
+      find.descendant(
+        of: find.byKey(const Key('bookSourceSectionSelectionPill')),
+        matching: find.byType(GlassSurface),
+      ),
+    );
+    expect(selection.role, GlassSurfaceRole.selection);
+    expect(selection.filterBackground, isFalse);
     await tester.tap(find.text('Categories'));
     await tester.pumpAndSettle();
     expect(selected, BookSourcesSection.categories);

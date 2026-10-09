@@ -8,6 +8,7 @@ import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 import 'package:xxread/widgets/liquid_glass_surface.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 import 'package:xxread/widgets/reader_selection_toolbar.dart';
@@ -90,8 +91,8 @@ void main() {
       closeTo(surfaceHeight / 2, 0.01),
     );
     expect(
-      find.ancestor(
-        of: find.byKey(const ValueKey('reader-selection-toolbar')),
+      find.descendant(
+        of: find.byType(GlassSurface),
         matching: find.byType(BackdropFilter),
       ),
       findsOneWidget,
@@ -355,12 +356,8 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(
-      tester
-          .widget<GlassControlSurface>(find.byType(GlassControlSurface))
-          .useGlass,
-      isFalse,
-    );
+    expect(find.byType(BackdropFilter), findsNothing);
+    expect(find.byType(LiquidGlassSurface), findsNothing);
     await tester.tap(find.byKey(const ValueKey('reader-selection-copy')));
     expect(copies, 1);
     expect(find.byType(GlassControlSurface), findsOneWidget);

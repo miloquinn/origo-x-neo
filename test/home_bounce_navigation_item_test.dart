@@ -6,6 +6,7 @@ import 'package:xxread/pages/home/widgets/home_navigation_item.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/liquid_glass_surface.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 
 void main() {
   const label = 'Library';
@@ -355,7 +356,7 @@ void main() {
         of: indicator,
         matching: find.byType(LiquidGlassSurface),
       );
-      expect(tester.widget<LiquidGlassSurface>(liquid).visibility, 0);
+      expect(liquid, findsNothing);
       expect(
         find.descendant(of: indicator, matching: find.byType(BackdropFilter)),
         findsNothing,
@@ -410,25 +411,38 @@ double _indicatorScaleY(WidgetTester tester, String label) {
 
 Color _indicatorColor(WidgetTester tester, String label) {
   final indicator = find.byKey(ValueKey('home-nav-indicator-$label'));
-  final decoratedBox = find.descendant(
-    of: indicator,
-    matching: find.byType(DecoratedBox),
+  final surface = tester.widget<GlassSurface>(
+    find.descendant(of: indicator, matching: find.byType(GlassSurface)),
   );
+  if (surface.visibility == 0) {
+    expect(
+      find.descendant(of: indicator, matching: find.byType(AnimatedContainer)),
+      findsNothing,
+    );
+    return Colors.transparent;
+  }
   final decoration =
-      tester.widget<DecoratedBox>(decoratedBox).decoration as BoxDecoration;
+      tester
+              .widget<AnimatedContainer>(
+                find.descendant(
+                  of: indicator,
+                  matching: find.byType(AnimatedContainer),
+                ),
+              )
+              .decoration!
+          as ShapeDecoration;
   return decoration.color!;
 }
 
 double _indicatorCornerRadius(WidgetTester tester, String label) {
   final indicator = find.byKey(ValueKey('home-nav-indicator-$label'));
-  final decoratedBox = find.descendant(
-    of: indicator,
-    matching: find.byType(DecoratedBox),
+  final surface = tester.widget<GlassSurface>(
+    find.descendant(of: indicator, matching: find.byType(GlassSurface)),
   );
-  final decoration =
-      tester.widget<DecoratedBox>(decoratedBox).decoration as BoxDecoration;
-  final borderRadius = decoration.borderRadius! as BorderRadius;
-  return borderRadius.topLeft.x;
+  return (surface.shape as RoundedRectangleBorder).borderRadius
+      .resolve(TextDirection.ltr)
+      .topLeft
+      .x;
 }
 
 double _selectedIconSize(WidgetTester tester) {
@@ -452,7 +466,12 @@ Widget _testApp({
   return MaterialApp(
     theme: ThemeData(
       extensions: [
-        UiStyleThemeExtension(style: uiStyle, glassStyle: GlassStyle.liquid),
+        UiStyleThemeExtension(
+          style: uiStyle,
+          glassStyle: GlassEffectConfig.usesLiquidGlass
+              ? GlassStyle.liquid
+              : GlassStyle.frosted,
+        ),
       ],
     ),
     home: Scaffold(

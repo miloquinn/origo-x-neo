@@ -219,7 +219,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
   Timer? _navigationResolveTimer;
   ThemeData? _sheetTheme;
   ReaderThemePalette? _themePalette;
-  TextTheme? _themeTypography;
+  ThemeData? _themeParent;
 
   @override
   void initState() {
@@ -459,13 +459,13 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).textTheme;
+    final parentTheme = Theme.of(context);
     if (_sheetTheme == null ||
         !identical(widget.palette, _themePalette) ||
-        !identical(typography, _themeTypography)) {
+        !identical(parentTheme, _themeParent)) {
       _themePalette = widget.palette;
-      _themeTypography = typography;
-      _sheetTheme = widget.palette.toThemeData(typography: typography);
+      _themeParent = parentTheme;
+      _sheetTheme = widget.palette.toThemeData(parentTheme: parentTheme);
     }
     return Theme(
       data: _sheetTheme!,

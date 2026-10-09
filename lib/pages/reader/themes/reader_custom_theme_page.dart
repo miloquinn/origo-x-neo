@@ -140,9 +140,7 @@ class _ReaderCustomThemePageState extends State<ReaderCustomThemePage> {
   @override
   Widget build(BuildContext context) {
     final palette = _palette;
-    final themeData = palette.toThemeData(
-      typography: Theme.of(context).textTheme,
-    );
+    final themeData = palette.toThemeData(parentTheme: Theme.of(context));
     final contrast = _contrastRatio(_theme.text, _theme.background);
     return Theme(
       data: themeData,
@@ -678,7 +676,7 @@ class _ReaderColorPickerSheetState extends State<_ReaderColorPickerSheet> {
   Widget build(BuildContext context) {
     final palette = widget.palette;
     return Theme(
-      data: palette.toThemeData(typography: Theme.of(context).textTheme),
+      data: palette.toThemeData(parentTheme: Theme.of(context)),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           18,

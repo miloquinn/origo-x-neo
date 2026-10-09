@@ -367,43 +367,37 @@ extension _LibraryPageChrome on _LibraryPageState {
       );
     }
 
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    );
     return Container(
       margin: EdgeInsets.only(bottom: bottomMargin),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          enabled: !GlassEffectConfig.shouldDisableBlur,
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: FloatingActionButton(
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ImportBookPage()),
-              );
-              // 导入完成后刷新书籍列表
-              if (result == true && mounted) {
-                _loadBooks();
-              }
-            },
-            backgroundColor: Theme.of(context).colorScheme.primary.withValues(
-              alpha: GlassEffectConfig.effectiveOpacity(0.9),
-            ),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            heroTag: "add_book_fab", // 添加唯一标识避免冲突
-            child: const Icon(Icons.add, size: 28),
-          ),
+      child: GlassSurface(
+        role: GlassSurfaceRole.floating,
+        shape: shape,
+        color: scheme.primary,
+        outlineColor: scheme.primary,
+        shadowColor: scheme.primary,
+        child: FloatingActionButton(
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ImportBookPage()),
+            );
+            // 导入完成后刷新书籍列表
+            if (result == true && mounted) {
+              _loadBooks();
+            }
+          },
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          focusElevation: 0,
+          hoverElevation: 0,
+          highlightElevation: 0,
+          shape: shape,
+          heroTag: "add_book_fab", // 添加唯一标识避免冲突
+          child: const Icon(Icons.add, size: 28),
         ),
       ),
     );

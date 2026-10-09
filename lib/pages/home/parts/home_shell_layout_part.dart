@@ -16,9 +16,6 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
         false;
   }
 
-  bool get _disableShellBlur =>
-      _isMaterial3Style || GlassEffectConfig.shouldDisableBlur;
-
   /// 桌面布局：左侧 NavigationRail + 右侧页面内容。
   ///
   /// 说明：
@@ -26,81 +23,76 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
   /// - 右侧直接渲染当前 index 对应页面，结构更直观。
   Widget _buildNavigationRail() {
     final scheme = Theme.of(context).colorScheme;
-    final palette = PageStyleHelper.palette(context);
     final currentPage = _navigationItems[_selectedIndex].page;
     final showImportAction =
         (currentPage is HomeDashboardPage || currentPage is LibraryPage) &&
         !_libraryController.selection.value.isActive;
-    final railPanel = Container(
-      width: LayoutHelper.getValue(
-        context,
-        mobile: 80, // 不会用到，但保持一致性
-        tablet: 200, // 平板使用中等宽度
-        desktop: 250, // 桌面使用最大宽度
-      ),
-      decoration: BoxDecoration(
-        color: _isMaterial3Style
-            ? scheme.surfaceContainerLow
-            : GlassEffectConfig.surfaceColor(context, opacity: 0.8),
-        border: Border(
-          right: BorderSide(
-            color: scheme.outline.withValues(
-              alpha: _isMaterial3Style ? 0.24 : 0.2,
-            ),
-            width: 1,
+    final importActionShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    );
+    final railPanel = GlassSurface(
+      role: GlassSurfaceRole.panel,
+      shape: const RoundedRectangleBorder(),
+      color: scheme.surfaceContainerLow,
+      outlineColor: scheme.outline,
+      child: SizedBox(
+        width: LayoutHelper.getValue(
+          context,
+          mobile: 80, // 不会用到，但保持一致性
+          tablet: 200, // 平板使用中等宽度
+          desktop: 250, // 桌面使用最大宽度
+        ),
+        child: NavigationRail(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _updateSelectedIndex,
+          extended: LayoutHelper.getValue(
+            context,
+            mobile: false,
+            tablet: true, // 平板显示扩展导航，方便使用
+            desktop: true, // 桌面也显示扩展导航
           ),
+          labelType: LayoutHelper.getValue(
+            context,
+            mobile: NavigationRailLabelType.all,
+            tablet: NavigationRailLabelType.none, // 平板使用扩展模式，不需要额外标签
+            desktop: NavigationRailLabelType.none, // 桌面同样
+          ),
+          leading: LayoutHelper.isWideScreen(context)
+              ? _buildNavigationHeader()
+              : null,
+          minWidth: 60,
+          minExtendedWidth: LayoutHelper.getValue(
+            context,
+            mobile: 200,
+            tablet: 200,
+            desktop: 250,
+          ),
+          backgroundColor: Colors.transparent,
+          indicatorColor: scheme.primary.withValues(
+            alpha: _isMaterial3Style ? 0.18 : 0.2,
+          ),
+          selectedIconTheme: IconThemeData(color: scheme.primary),
+          unselectedIconTheme: IconThemeData(
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          ),
+          selectedLabelTextStyle: TextStyle(
+            color: scheme.primary,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelTextStyle: TextStyle(
+            color: scheme.onSurface.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w500,
+          ),
+          destinations: _navigationItems
+              .map(
+                (item) => NavigationRailDestination(
+                  icon: Icon(item.icon),
+                  selectedIcon: Icon(item.selectedIcon),
+                  label: Text(item.label),
+                ),
+              )
+              .toList(),
         ),
-      ),
-      child: NavigationRail(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _updateSelectedIndex,
-        extended: LayoutHelper.getValue(
-          context,
-          mobile: false,
-          tablet: true, // 平板显示扩展导航，方便使用
-          desktop: true, // 桌面也显示扩展导航
-        ),
-        labelType: LayoutHelper.getValue(
-          context,
-          mobile: NavigationRailLabelType.all,
-          tablet: NavigationRailLabelType.none, // 平板使用扩展模式，不需要额外标签
-          desktop: NavigationRailLabelType.none, // 桌面同样
-        ),
-        leading: LayoutHelper.isWideScreen(context)
-            ? _buildNavigationHeader()
-            : null,
-        minWidth: 60,
-        minExtendedWidth: LayoutHelper.getValue(
-          context,
-          mobile: 200,
-          tablet: 200,
-          desktop: 250,
-        ),
-        backgroundColor: Colors.transparent,
-        indicatorColor: scheme.primary.withValues(
-          alpha: _isMaterial3Style ? 0.18 : 0.2,
-        ),
-        selectedIconTheme: IconThemeData(color: scheme.primary),
-        unselectedIconTheme: IconThemeData(
-          color: scheme.onSurface.withValues(alpha: 0.6),
-        ),
-        selectedLabelTextStyle: TextStyle(
-          color: scheme.primary,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelTextStyle: TextStyle(
-          color: scheme.onSurface.withValues(alpha: 0.6),
-          fontWeight: FontWeight.w500,
-        ),
-        destinations: _navigationItems
-            .map(
-              (item) => NavigationRailDestination(
-                icon: Icon(item.icon),
-                selectedIcon: Icon(item.selectedIcon),
-                label: Text(item.label),
-              ),
-            )
-            .toList(),
       ),
     );
 
@@ -112,15 +104,7 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
         ),
         child: Row(
           children: [
-            ClipRRect(
-              child: _disableShellBlur
-                  ? railPanel
-                  : BackdropFilter(
-                      enabled: !_disableShellBlur,
-                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                      child: railPanel,
-                    ),
-            ),
+            railPanel,
             Expanded(
               child: NavigationContext(
                 useRailNavigation: true,
@@ -140,34 +124,23 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
                     icon: const Icon(Icons.add),
                     label: Text(context.l10n.importBooks),
                   )
-                : Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: palette.backgroundStart.withValues(
-                            alpha: 0.28,
-                          ),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: BackdropFilter(
-                        enabled: !_disableShellBlur,
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: FloatingActionButton.extended(
-                          onPressed: () => _navigateToImport(),
-                          backgroundColor: scheme.primary.withValues(
-                            alpha: GlassEffectConfig.effectiveOpacity(0.9),
-                          ),
-                          foregroundColor: scheme.onPrimary,
-                          icon: const Icon(Icons.add),
-                          label: Text(context.l10n.importBooks),
-                        ),
-                      ),
+                : GlassSurface(
+                    role: GlassSurfaceRole.floating,
+                    shape: importActionShape,
+                    color: scheme.primary,
+                    outlineColor: scheme.primary,
+                    shadowColor: scheme.primary,
+                    child: FloatingActionButton.extended(
+                      onPressed: () => _navigateToImport(),
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: scheme.onPrimary,
+                      elevation: 0,
+                      focusElevation: 0,
+                      hoverElevation: 0,
+                      highlightElevation: 0,
+                      shape: importActionShape,
+                      icon: const Icon(Icons.add),
+                      label: Text(context.l10n.importBooks),
                     ),
                   ))
           : null,
@@ -306,10 +279,7 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: GradientTopBackdrop(
-                  height: metrics.pageTopPadding,
-                  blurEnabled: !_disableShellBlur,
-                ),
+                child: GradientTopBackdrop(height: metrics.pageTopPadding),
               ),
             _buildMobileTopBarOverlay(
               topNavigation: wideTopNavigation,

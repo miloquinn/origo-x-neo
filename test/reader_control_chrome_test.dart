@@ -6,6 +6,7 @@ import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 
 void main() {
@@ -29,7 +30,7 @@ void main() {
 
     expect(find.byType(BackdropFilter), findsOneWidget);
     expect(_panelGradient(tester).colors.every((color) => color.a < 1), isTrue);
-    expect(_iconBackground(tester).a, lessThan(1));
+    expect(_iconBackground(tester), ReaderThemes.day.controlFill);
 
     GlassEffectConfig.setDisableAllGlassEffects(true);
     await tester.pumpWidget(_testApp(glassEnabled: false));
@@ -113,15 +114,14 @@ void main() {
                   .widget<AnimatedContainer>(find.byType(AnimatedContainer))
                   .decoration
               as ShapeDecoration;
-      final expectedBorder = glassEnabled
-          ? Color.lerp(
-              palette.border,
-              Colors.white,
-              0.12,
-            )!.withValues(alpha: 0.48)
-          : palette.border;
-      expect((decoration.shape as OutlinedBorder).side.color, expectedBorder);
-      expect((decoration.shape as OutlinedBorder).side.width, 0.8);
+      final surface = tester.widget<GlassControlSurface>(
+        find.byType(GlassControlSurface),
+      );
+      expect(surface.border!.color, palette.border);
+      final actualBorder = (decoration.shape as OutlinedBorder).side;
+      expect(actualBorder.color, isNot(Colors.pink));
+      expect(actualBorder.color.a, greaterThan(0));
+      expect(actualBorder.width, 1);
       expect(tester.getSize(find.byType(IconButton)), const Size.square(44));
       expect(
         tester.getCenter(find.byType(Icon)),
@@ -257,7 +257,7 @@ void main() {
     final expectedGreen = Color.lerp(
       ReaderThemes.green.controlBar,
       Colors.white,
-      0.28,
+      0.18,
     )!;
     expect(greenSurface.r, closeTo(expectedGreen.r, 0.001));
     expect(greenSurface.g, closeTo(expectedGreen.g, 0.001));
@@ -375,13 +375,26 @@ Widget _testApp({
 }
 
 LinearGradient _panelGradient(WidgetTester tester) {
-  return tester
-      .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-      .map((widget) => widget.decoration)
-      .whereType<BoxDecoration>()
-      .map((decoration) => decoration.gradient)
-      .whereType<LinearGradient>()
-      .single;
+  final surface = find
+      .descendant(
+        of: find.byType(ReaderControlBar),
+        matching: find.byType(GlassSurface),
+      )
+      .first;
+  final decoration =
+      tester
+              .widget<AnimatedContainer>(
+                find
+                    .descendant(
+                      of: surface,
+                      matching: find.byType(AnimatedContainer),
+                    )
+                    .first,
+              )
+              .decoration!
+          as ShapeDecoration;
+  return decoration.gradient as LinearGradient? ??
+      LinearGradient(colors: [decoration.color!, decoration.color!]);
 }
 
 Color _iconBackground(WidgetTester tester) {

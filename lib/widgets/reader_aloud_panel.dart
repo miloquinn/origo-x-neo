@@ -1683,9 +1683,7 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (sheetContext) => Theme(
-        data: widget.palette.toThemeData(
-          typography: Theme.of(context).textTheme,
-        ),
+        data: widget.palette.toThemeData(parentTheme: Theme.of(context)),
         child: StatefulBuilder(
           builder: (context, setSheetState) => Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),

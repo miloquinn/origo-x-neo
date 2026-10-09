@@ -6,42 +6,16 @@ part of '../library_page.dart';
 extension _LibraryPageBookDetails on _LibraryPageState {
   void _showBookOptions(Book book) {
     final libraryContext = context;
-    final scheme = Theme.of(context).colorScheme;
     final isMaterial3Style = _isMaterial3Style;
-    final useBlur = !isMaterial3Style && !GlassEffectConfig.shouldDisableBlur;
     showModalBottomSheet(
       context: context,
-      backgroundColor: isMaterial3Style
-          ? scheme.surfaceContainerHigh
-          : Colors.transparent,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
         final localScheme = Theme.of(context).colorScheme;
         final progress = book.progress;
-        final content = Container(
-          decoration: BoxDecoration(
-            color: isMaterial3Style
-                ? localScheme.surfaceContainerHigh
-                : GlassEffectConfig.surfaceColor(context, opacity: 0.95),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border(
-              top: BorderSide(
-                color: localScheme.outline.withValues(
-                  alpha: isMaterial3Style ? 0.24 : 0.2,
-                ),
-                width: 1,
-              ),
-            ),
-            boxShadow: isMaterial3Style
-                ? [
-                    BoxShadow(
-                      color: localScheme.shadow.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, -2),
-                    ),
-                  ]
-                : null,
-          ),
+        final content = Material(
+          type: MaterialType.transparency,
           child: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -356,14 +330,14 @@ extension _LibraryPageBookDetails on _LibraryPageState {
           ),
         );
 
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          child: useBlur
-              ? BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-                  child: content,
-                )
-              : content,
+        return GlassSurface(
+          role: GlassSurfaceRole.panel,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          color: localScheme.surfaceContainerHigh,
+          outlineColor: localScheme.outline,
+          child: content,
         );
       },
     );
@@ -388,16 +362,10 @@ extension _LibraryPageBookDetails on _LibraryPageState {
   /// 重命名书籍：更新书名，若存在本地文件则同步重命名磁盘文件。
   Future<void> _renameBook(Book book) async {
     final controller = TextEditingController(text: book.title);
-    final isMaterial3Style = _isMaterial3Style;
-    final scheme = Theme.of(context).colorScheme;
     final l10n = context.l10n;
     final newTitle = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: isMaterial3Style
-            ? scheme.surfaceContainerHigh
-            : GlassEffectConfig.surfaceColor(dialogContext, opacity: 0.95),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      builder: (dialogContext) => GlassDialog(
         title: Text(l10n.libraryRenameBook),
         content: TextField(
           controller: controller,
@@ -563,15 +531,9 @@ extension _LibraryPageBookDetails on _LibraryPageState {
 
   /// 显示书籍详细信息
   void _showBookInfo(Book book) {
-    final scheme = Theme.of(context).colorScheme;
-    final isMaterial3Style = _isMaterial3Style;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isMaterial3Style
-            ? scheme.surfaceContainerHigh
-            : scheme.surface.withValues(alpha: 0.95),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      builder: (context) => GlassDialog(
         title: Row(
           children: [
             Icon(

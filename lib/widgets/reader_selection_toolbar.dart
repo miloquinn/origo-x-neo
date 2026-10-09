@@ -202,68 +202,49 @@ class _ReaderSelectionToolbarState extends State<ReaderSelectionToolbar> {
             );
             return SizedBox(
               width: width,
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
+              child: GlassControlSurface(
+                shape: surfaceShape,
+                color: palette.controlBar,
+                brightness: palette.brightness,
+                outlineColor: palette.border,
+                shadowColor: palette.shadow,
+                role: GlassSurfaceRole.floating,
+                emphasized: true,
+                child: Material(
+                  key: const ValueKey('reader-selection-toolbar'),
+                  color: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
                   shape: surfaceShape,
-                  shadows: [
-                    BoxShadow(
-                      color: palette.shadow.withValues(
-                        alpha: palette.brightness == Brightness.dark
-                            ? 0.25
-                            : 0.12,
-                      ),
-                      blurRadius: 16,
-                      offset: const Offset(0, 5),
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: _inset,
+                      vertical: 2,
                     ),
-                  ],
-                ),
-                child: GlassControlSurface(
-                  shape: surfaceShape,
-                  color: palette.controlBar,
-                  brightness: palette.brightness,
-                  border: BorderSide(
-                    color: palette.border,
-                    width: _surfaceBorder,
-                  ),
-                  emphasized: true,
-                  useGlass: !MediaQuery.highContrastOf(context),
-                  child: Material(
-                    key: const ValueKey('reader-selection-toolbar'),
-                    color: Colors.transparent,
-                    surfaceTintColor: Colors.transparent,
-                    shape: surfaceShape,
-                    clipBehavior: Clip.antiAlias,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: _inset,
-                        vertical: 2,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          mainRow,
-                          if (open) ...[
-                            Divider(
-                              height: 1,
-                              thickness: 0.5,
-                              color: palette.border,
-                            ),
-                            Flexible(
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    for (final action in overflow)
-                                      _button(action, style, expanded: true),
-                                  ],
-                                ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        mainRow,
+                        if (open) ...[
+                          Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: palette.border,
+                          ),
+                          Flexible(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  for (final action in overflow)
+                                    _button(action, style, expanded: true),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ),

@@ -4,31 +4,28 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-import '../utils/glass_config.dart';
-import '../utils/ui_style.dart';
+import '../utils/glass_material.dart';
 import 'liquid_glass_transform.dart';
 
-/// A live refracting backdrop with a lightly tinted, readable foreground.
-/// Callers own clipping and shadows; content is painted after the filter.
+/// Capability renderer used by GlassSurface. It paints a resolved material,
+/// loads the refraction shader and retains the unsupported-backend blur.
+/// All material policy and tuning belongs to GlassMaterial.
 class LiquidGlassSurface extends StatefulWidget {
   const LiquidGlassSurface({
     super.key,
     required this.shape,
-    required this.color,
+    required this.material,
     required this.child,
-    this.brightness,
     this.filterBackground = true,
-    this.visibility = 1,
-  }) : assert(visibility >= 0 && visibility <= 1);
+  });
 
   final OutlinedBorder shape;
-  final Color color;
+  final GlassMaterial material;
   final Widget child;
-  final Brightness? brightness;
   final bool filterBackground;
 
   /// Fades the tint, rim and refraction together without a backdrop saveLayer.
-  final double visibility;
+  double get visibility => material.visibility;
 
   @override
   State<LiquidGlassSurface> createState() => _LiquidGlassSurfaceState();
@@ -102,52 +99,28 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
   @override
   Widget build(BuildContext context) {
     if (widget.visibility == 0) return widget.child;
-    final brightness = widget.brightness ?? Theme.of(context).brightness;
-    final highContrast = MediaQuery.highContrastOf(context);
-    final light = brightness == Brightness.light;
-    final opacity =
-        Theme.of(
-          context,
-        ).extension<UiStyleThemeExtension>()?.liquidGlassOpacity ??
-        GlassEffectConfig.liquidGlassOpacity;
-    final leadingAlpha = highContrast
-        ? 0.94
-        : GlassEffectConfig.liquidTintOpacity(light ? 0.32 : 0.26, opacity);
-    final trailingAlpha = highContrast
-        ? 0.94
-        : GlassEffectConfig.liquidTintOpacity(0.18, opacity);
+    final material = widget.material;
     final surface = CustomPaint(
       foregroundPainter: _LiquidRimPainter(
         shape: widget.shape,
-        light: light,
+        gradient: material.rimGradient,
         textDirection: Directionality.of(context),
         visibility: widget.visibility,
       ),
       child: DecoratedBox(
         decoration: ShapeDecoration(
           shape: widget.shape,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.lerp(
-                widget.color,
-                Colors.white,
-                light ? 0.35 : 0.12,
-              )!.withValues(alpha: leadingAlpha * widget.visibility),
-              widget.color.withValues(alpha: trailingAlpha * widget.visibility),
-            ],
-          ),
+          gradient: material.liquidGradient,
         ),
         child: widget.child,
       ),
     );
     if (!widget.filterBackground) return surface;
-    if (_shader == null || highContrast) {
+    if (_shader == null || material.mode != GlassMaterialMode.liquid) {
       return BackdropFilter(
         filter: ui.ImageFilter.blur(
-          sigmaX: 2.5 * widget.visibility,
-          sigmaY: 2.5 * widget.visibility,
+          sigmaX: GlassMaterial.liquidFallbackSigma * widget.visibility,
+          sigmaY: GlassMaterial.liquidFallbackSigma * widget.visibility,
         ),
         child: surface,
       );
@@ -156,7 +129,7 @@ class _LiquidGlassSurfaceState extends State<LiquidGlassSurface> {
       shader: _shader!,
       shape: widget.shape,
       pixelRatio: MediaQuery.devicePixelRatioOf(context),
-      strength: GlassEffectConfig.liquidRefractionStrength,
+      strength: material.refractionStrength,
       visibility: widget.visibility,
       textDirection: Directionality.of(context),
       child: surface,
@@ -238,8 +211,8 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
     final transform = invertLiquidGlassSceneTransform(localToScene, pixelRatio);
     if (transform == null) {
       return ui.ImageFilter.blur(
-        sigmaX: 2.5 * visibility,
-        sigmaY: 2.5 * visibility,
+        sigmaX: GlassMaterial.liquidFallbackSigma * visibility,
+        sigmaY: GlassMaterial.liquidFallbackSigma * visibility,
       );
     }
     final origin = MatrixUtils.transformPoint(transform, Offset.zero);
@@ -266,7 +239,7 @@ class _RenderLiquidBackdrop extends RenderProxyBox {
       size.height * pixelRatio,
       math.min(radius, size.shortestSide / 2) * pixelRatio,
       strength * pixelRatio * visibility,
-      0.75 * pixelRatio * visibility,
+      GlassMaterial.liquidSamplingSigma * pixelRatio * visibility,
       visibility,
     ];
     for (var i = 0; i < values.length; i++) {
@@ -306,42 +279,32 @@ class _LiquidBackdropLayer extends ContainerLayer {
 class _LiquidRimPainter extends CustomPainter {
   const _LiquidRimPainter({
     required this.shape,
-    required this.light,
+    required this.gradient,
     required this.textDirection,
     required this.visibility,
   });
 
   final OutlinedBorder shape;
-  final bool light;
+  final LinearGradient gradient;
   final TextDirection textDirection;
   final double visibility;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final bounds = (Offset.zero & size).deflate(0.75);
+    final bounds = (Offset.zero & size).deflate(GlassMaterial.rimInset);
     if (bounds.isEmpty) return;
     final path = shape.getOuterPath(bounds, textDirection: textDirection);
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.25
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withValues(alpha: (light ? 0.88 : 0.60) * visibility),
-          Colors.white.withValues(alpha: 0.08 * visibility),
-          Colors.white.withValues(alpha: (light ? 0.06 : 0.03) * visibility),
-          Colors.white.withValues(alpha: (light ? 0.58 : 0.36) * visibility),
-        ],
-        stops: const [0, 0.42, 0.65, 1],
-      ).createShader(bounds);
+      ..strokeWidth = GlassMaterial.rimWidth
+      ..shader = gradient.createShader(bounds);
     canvas.drawPath(path, paint);
   }
 
   @override
   bool shouldRepaint(_LiquidRimPainter old) =>
       old.shape != shape ||
-      old.light != light ||
+      old.gradient != gradient ||
       old.textDirection != textDirection ||
       old.visibility != visibility;
 }

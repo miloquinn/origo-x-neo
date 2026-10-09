@@ -891,7 +891,7 @@ class PagedReaderMessageScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: palette.toThemeData(typography: Theme.of(context).textTheme),
+      data: palette.toThemeData(parentTheme: Theme.of(context)),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: ReaderThemeBackground(

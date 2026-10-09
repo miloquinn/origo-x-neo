@@ -581,9 +581,7 @@ class _ComicCatalogSheetState extends State<_ComicCatalogSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = widget.palette.toThemeData(
-      typography: Theme.of(context).textTheme,
-    );
+    final theme = widget.palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
       child: Material(
@@ -705,7 +703,7 @@ class _ComicReaderSettingsSheetState extends State<_ComicReaderSettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = _palette.toThemeData(typography: Theme.of(context).textTheme);
+    final theme = _palette.toThemeData(parentTheme: Theme.of(context));
     return ReaderSettingsSheetFrame(
       palette: _palette,
       child: Column(

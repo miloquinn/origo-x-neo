@@ -60,8 +60,9 @@ class GlassEffectConfig {
   static double _scaled(double value) => value * _blurScale;
 
   // 顶部应用栏 (AppBar)
-  static double get appBarBlur =>
-      _scaled(_chromeBlurBase) * (usesLiquidGlass ? 0.5 : 1);
+  static double get chromeBlur => _scaled(_chromeBlurBase);
+
+  static double get appBarBlur => chromeBlur * (usesLiquidGlass ? 0.5 : 1);
 
   // 导航栏
   static double get navigationBarBlur => appBarBlur;

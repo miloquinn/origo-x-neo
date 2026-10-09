@@ -216,7 +216,16 @@ Widget _testApp({
   AppUiStyle uiStyle = AppUiStyle.glass,
 }) {
   return MaterialApp(
-    theme: ThemeData(extensions: [UiStyleThemeExtension(style: uiStyle)]),
+    theme: ThemeData(
+      extensions: [
+        UiStyleThemeExtension(
+          style: uiStyle,
+          glassStyle: GlassEffectConfig.usesLiquidGlass
+              ? GlassStyle.liquid
+              : GlassStyle.frosted,
+        ),
+      ],
+    ),
     builder: (context, child) =>
         Directionality(textDirection: textDirection, child: child!),
     home: MediaQuery(

@@ -3,10 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import '../utils/glass_config.dart';
-import '../utils/ui_style.dart';
 import 'elastic_motion.dart';
-import 'liquid_glass_surface.dart';
+import 'glass_surface.dart';
 
 /// A row of navigation destinations with one spring-driven selection lens.
 ///
@@ -157,20 +155,6 @@ class _ElasticPillNavigationBarState extends State<ElasticPillNavigationBar>
   @override
   Widget build(BuildContext context) {
     if (widget.children.isEmpty) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
-    final isMaterial3Style =
-        Theme.of(
-          context,
-        ).extension<UiStyleThemeExtension>()?.isMaterial3Style ??
-        false;
-    final selectedColor = Color.lerp(
-      isMaterial3Style ? scheme.surfaceContainerHighest : scheme.surface,
-      scheme.primary,
-      scheme.brightness == Brightness.light ? 0.13 : 0.24,
-    )!;
-    final usesLiquidGlass =
-        GlassEffectConfig.usesLiquidGlass && !isMaterial3Style;
-
     return Listener(
       behavior: HitTestBehavior.opaque,
       onPointerDown: _handlePointerDown,
@@ -204,34 +188,12 @@ class _ElasticPillNavigationBarState extends State<ElasticPillNavigationBar>
                     width: width,
                     height: height,
                     child: IgnorePointer(
-                      child: usesLiquidGlass
-                          ? ClipPath(
-                              clipper: ShapeBorderClipper(shape: lensShape),
-                              child: LiquidGlassSurface(
-                                shape: lensShape,
-                                color: selectedColor,
-                                child: const SizedBox.expand(),
-                              ),
-                            )
-                          : DecoratedBox(
-                              decoration: ShapeDecoration(
-                                color: selectedColor,
-                                shape: RoundedSuperellipseBorder(
-                                  side: BorderSide(
-                                    color: scheme.primary.withValues(
-                                      alpha:
-                                          scheme.brightness == Brightness.light
-                                          ? 0.08
-                                          : 0.16,
-                                    ),
-                                    width: 0.8,
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                    height / 2,
-                                  ),
-                                ),
-                              ),
-                            ),
+                      child: GlassSurface(
+                        role: GlassSurfaceRole.selection,
+                        shape: lensShape,
+                        visibility: 1,
+                        child: const SizedBox.expand(),
+                      ),
                     ),
                   );
                 },

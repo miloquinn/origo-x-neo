@@ -272,7 +272,7 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       _themeId,
       platformBrightness: MediaQuery.platformBrightnessOf(context),
     );
-    final theme = palette.toThemeData(typography: Theme.of(context).textTheme);
+    final theme = palette.toThemeData(parentTheme: Theme.of(context));
     return ReaderSettingsSheetFrame(
       palette: palette,
       child: Column(
@@ -813,7 +813,7 @@ class ReaderTopBarStyleSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = palette.toThemeData(typography: Theme.of(context).textTheme);
+    final theme = palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
       child: SafeArea(
@@ -971,7 +971,7 @@ class ReaderPageModeSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = palette.toThemeData(typography: Theme.of(context).textTheme);
+    final theme = palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
       child: SafeArea(
@@ -1040,7 +1040,7 @@ class ReaderSettingsSheetFrame extends StatelessWidget {
     // 拖动横条必须留在滚动视图之外：放进滚动区后，下拉手势会被
     // 滚动视图消费，弹窗无法通过拖动收起。
     return Theme(
-      data: palette.toThemeData(typography: Theme.of(context).textTheme),
+      data: palette.toThemeData(parentTheme: Theme.of(context)),
       child: Material(
         color: palette.surface,
         surfaceTintColor: Colors.transparent,

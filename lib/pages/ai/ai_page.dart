@@ -771,13 +771,8 @@ class _AiPageState extends State<AiPage> {
     final scheme = Theme.of(context).colorScheme;
     return PillInputSurface(
       fillColor: scheme.surfaceContainerHigh,
-      shadows: [
-        BoxShadow(
-          color: scheme.shadow.withValues(alpha: 0.16),
-          blurRadius: 22,
-          offset: const Offset(0, 9),
-        ),
-      ],
+      elevated: true,
+      shadowColor: scheme.shadow,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
         // 全部元素垂直居中：加号、输入文字与发送键保持同一水平线；

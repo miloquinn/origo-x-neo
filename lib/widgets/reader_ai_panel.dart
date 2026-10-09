@@ -466,15 +466,8 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
       fillColor: palette.surface,
       borderColor: palette.border,
       brightness: palette.brightness,
-      shadows: [
-        BoxShadow(
-          color: palette.shadow.withValues(
-            alpha: palette.brightness == Brightness.dark ? 0.4 : 0.18,
-          ),
-          blurRadius: 18,
-          offset: const Offset(0, 6),
-        ),
-      ],
+      elevated: true,
+      shadowColor: palette.shadow,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 5, 5, 5),
         child: Row(

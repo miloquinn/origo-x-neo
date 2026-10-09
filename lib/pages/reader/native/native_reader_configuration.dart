@@ -102,7 +102,7 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
       : ReaderThemes.byId(_readerThemeId);
 
   ThemeData get _readerThemeData =>
-      _readerTheme.toThemeData(typography: Theme.of(context).textTheme);
+      _readerTheme.toThemeData(parentTheme: Theme.of(context));
 
   ReaderSettings get _readerSettings => ReaderSettings(
     fontSize: _fontSize,

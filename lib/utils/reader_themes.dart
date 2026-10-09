@@ -50,7 +50,8 @@ class ReaderThemePalette {
       '${backgroundImagePath ?? ''}:'
       '${backgroundImageOpacity.toStringAsFixed(3)}';
 
-  ThemeData toThemeData({TextTheme? typography}) {
+  /// Retain app appearance policy while the reading palette owns its colors.
+  ThemeData toThemeData({TextTheme? typography, ThemeData? parentTheme}) {
     final baseScheme = ColorScheme.fromSeed(
       seedColor: accent,
       brightness: brightness,
@@ -77,12 +78,11 @@ class ReaderThemePalette {
       brightness: brightness,
       colorScheme: scheme,
     );
-    final textTheme = (typography ?? base.textTheme).apply(
-      bodyColor: text,
-      displayColor: text,
-    );
+    final textTheme = (typography ?? parentTheme?.textTheme ?? base.textTheme)
+        .apply(bodyColor: text, displayColor: text);
 
     return base.copyWith(
+      extensions: parentTheme?.extensions.values,
       scaffoldBackgroundColor: background,
       canvasColor: background,
       cardColor: surface,

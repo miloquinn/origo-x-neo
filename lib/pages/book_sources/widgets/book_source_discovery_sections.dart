@@ -12,6 +12,7 @@ import 'package:xxread/pages/book_sources/widgets/sourced_book_cards.dart';
 import 'book_source_pill.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 
 class BookSourceRailHeader extends StatelessWidget {
   final String title;
@@ -280,7 +281,6 @@ class _SectionTrack extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final glassEnabled = GlassControlSurface.usesGlass(context);
     final selectedIndex = sections
         .indexOf(selectedSection)
         .clamp(0, sections.length - 1);
@@ -308,28 +308,11 @@ class _SectionTrack extends StatelessWidget {
                 child: FractionallySizedBox(
                   widthFactor: 1 / sections.length,
                   heightFactor: 1,
-                  child: DecoratedBox(
-                    decoration: ShapeDecoration(
-                      color: glassEnabled ? null : scheme.surface,
-                      gradient: glassEnabled
-                          ? LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                scheme.surface.withValues(alpha: 0.76),
-                                scheme.primaryContainer.withValues(alpha: 0.48),
-                              ],
-                            )
-                          : null,
-                      shadows: [
-                        BoxShadow(
-                          color: scheme.shadow.withValues(alpha: 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                      shape: const StadiumBorder(),
-                    ),
+                  child: const GlassSurface(
+                    role: GlassSurfaceRole.selection,
+                    shape: StadiumBorder(),
+                    filterBackground: false,
+                    child: SizedBox.expand(),
                   ),
                 ),
               ),
