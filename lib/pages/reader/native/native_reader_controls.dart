@@ -139,12 +139,15 @@ extension _NativeReaderControls on _NativeReaderPageState {
     }
   }
 
-  ReaderAloudController? _ensureReaderAloudController() {
+  ReaderAloudController? _ensureReaderAloudController({
+    bool refreshPresentation = false,
+  }) {
     final session = context.read<ReaderAloudSession>();
     final existing = _readerAloudController;
     if (existing != null &&
         identical(existing, session.controller) &&
-        session.sourceId == 'local:${widget.book.id}') {
+        session.sourceId == 'local:${widget.book.id}' &&
+        !refreshPresentation) {
       return existing;
     }
     existing?.removeListener(_onReaderAloudChanged);
@@ -154,8 +157,12 @@ extension _NativeReaderControls on _NativeReaderPageState {
     } on ProviderNotFoundException {
       return null;
     }
+    final readerTextStyle = _readerTextStyle;
+    final preserveDocumentFont = _preserveDocumentFont;
     final source = CallbackReaderAloudSource(
       bookTitle: widget.book.title,
+      textStyle: readerTextStyle,
+      preserveDocumentFont: preserveDocumentFont,
       chapterCount: () => _loadedChapters.length,
       currentPosition: () async {
         final chapterIndex = _chapterIndex
@@ -178,14 +185,29 @@ extension _NativeReaderControls on _NativeReaderPageState {
         return ReaderAloudPosition(chapterIndex: chapterIndex, offset: offset);
       },
       loadChapter: (index) async {
-        if (index < 0 || index >= _loadedChapters.length) return null;
-        final chapter = _loadedChapters[index];
-        await chapter.loadTextAsync();
+        if (index < 0 || index >= _loadedChapters.length) {
+          return null;
+        }
+        final chapters = _loadedChapters;
+        await _loadIndexedChapter(chapters, index);
+        if (!identical(chapters, _loadedChapters)) return null;
+        final chapter = chapters[index];
+        final text = chapter.plainText;
+        final blocks = List<_NativeBlock>.unmodifiable(chapter.textBlocks);
         return ReaderAloudChapter(
           index: index,
           id: chapter.id,
           title: chapter.title,
-          text: chapter.plainText,
+          text: text,
+          buildTextSpan: (start, end, base, preserveDocumentFont) =>
+              _styledSpanForNativeTextRange(
+                text,
+                blocks,
+                start,
+                end,
+                base,
+                preserveDocumentFont: preserveDocumentFont,
+              ),
         );
       },
       revealPosition: _revealReaderAloudPosition,
@@ -386,7 +408,7 @@ extension _NativeReaderControls on _NativeReaderPageState {
   }
 
   Future<void> _showReaderAloudPlayer() async {
-    final controller = _ensureReaderAloudController();
+    final controller = _ensureReaderAloudController(refreshPresentation: true);
     if (controller == null) return;
     final ttsService = context.read<TtsService>();
     final aloudService = context.read<ReaderAloudService>();

@@ -658,11 +658,26 @@ TextSpan _styledSpanForRange(
   int end,
   TextStyle base, {
   bool preserveDocumentFont = true,
+}) => _styledSpanForNativeTextRange(
+  chapter.plainText,
+  chapter.textBlocks,
+  start,
+  end,
+  base,
+  preserveDocumentFont: preserveDocumentFont,
+);
+
+TextSpan _styledSpanForNativeTextRange(
+  String text,
+  List<_NativeBlock> blocks,
+  int start,
+  int end,
+  TextStyle base, {
+  bool preserveDocumentFont = true,
 }) {
   if (start >= end) return TextSpan(style: base, text: '');
   final children = <InlineSpan>[];
   var cursor = start;
-  final blocks = chapter.textBlocks;
   var low = 0;
   var high = blocks.length;
   while (low < high) {
@@ -680,15 +695,12 @@ TextSpan _styledSpanForRange(
     final overlapEnd = block.endOffset.clamp(start, end);
     if (overlapStart > cursor) {
       children.add(
-        TextSpan(
-          text: chapter.plainText.substring(cursor, overlapStart),
-          style: base,
-        ),
+        TextSpan(text: text.substring(cursor, overlapStart), style: base),
       );
     }
     children.add(
       TextSpan(
-        text: chapter.plainText.substring(overlapStart, overlapEnd),
+        text: text.substring(overlapStart, overlapEnd),
         style: _styleForNativeBlock(
           block,
           base,
@@ -699,9 +711,7 @@ TextSpan _styledSpanForRange(
     cursor = overlapEnd;
   }
   if (cursor < end) {
-    children.add(
-      TextSpan(text: chapter.plainText.substring(cursor, end), style: base),
-    );
+    children.add(TextSpan(text: text.substring(cursor, end), style: base));
   }
   return TextSpan(style: base, children: children);
 }

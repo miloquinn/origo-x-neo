@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
 
 import 'reader_aloud_text.dart';
 
@@ -40,18 +41,30 @@ class ReaderAloudPosition {
   int get hashCode => Object.hash(chapterIndex, offset);
 }
 
+typedef ReaderAloudTextSpanBuilder =
+    TextSpan Function(
+      int start,
+      int end,
+      TextStyle base,
+      bool preserveDocumentFont,
+    );
+
 class ReaderAloudChapter {
   const ReaderAloudChapter({
     required this.index,
     required this.id,
     required this.title,
     required this.text,
+    this.buildTextSpan,
   });
 
   final int index;
   final String id;
   final String title;
   final String text;
+
+  /// Presentation of this exact text revision, independent of reader lifetime.
+  final ReaderAloudTextSpanBuilder? buildTextSpan;
 }
 
 class ReaderAloudSegment {
@@ -159,7 +172,14 @@ abstract interface class ReaderAloudSource {
   Future<void> persistPosition(ReaderAloudPosition position);
 }
 
-class CallbackReaderAloudSource implements ReaderAloudSource {
+/// Optional reading typography; player controls retain the application theme.
+abstract interface class ReaderAloudTextSource {
+  TextStyle? get textStyle;
+  bool get preserveDocumentFont;
+}
+
+class CallbackReaderAloudSource
+    implements ReaderAloudSource, ReaderAloudTextSource {
   factory CallbackReaderAloudSource({
     required String bookTitle,
     required int Function() chapterCount,
@@ -175,6 +195,8 @@ class CallbackReaderAloudSource implements ReaderAloudSource {
     guardedRevealPosition,
     required Future<void> Function(ReaderAloudPosition position)
     persistPosition,
+    TextStyle? textStyle,
+    bool preserveDocumentFont = false,
   }) => CallbackReaderAloudSource._(
     bookTitle,
     chapterCount,
@@ -184,6 +206,8 @@ class CallbackReaderAloudSource implements ReaderAloudSource {
     persistPosition,
     guardedRevealPosition,
     guardedLoadChapter,
+    textStyle,
+    preserveDocumentFont,
   );
 
   const CallbackReaderAloudSource._(
@@ -195,10 +219,16 @@ class CallbackReaderAloudSource implements ReaderAloudSource {
     this._persistPosition,
     this._guardedRevealPosition,
     this._guardedLoadChapter,
+    this.textStyle,
+    this.preserveDocumentFont,
   );
 
   @override
   final String bookTitle;
+  @override
+  final TextStyle? textStyle;
+  @override
+  final bool preserveDocumentFont;
   final int Function() _chapterCount;
   final Future<ReaderAloudPosition> Function() _currentPosition;
   final Future<ReaderAloudChapter?> Function(int index) _loadChapter;

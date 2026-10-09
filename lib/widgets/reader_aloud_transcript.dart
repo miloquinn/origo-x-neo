@@ -117,6 +117,33 @@ class _ReaderAloudTranscriptState extends State<ReaderAloudTranscript> {
     );
   }
 
+  TextSpan _textSpanForSegment(ReaderAloudSegment segment, Color color) {
+    final source = widget.controller.source;
+    final ReaderAloudTextSource? typography = source is ReaderAloudTextSource
+        ? source as ReaderAloudTextSource
+        : null;
+    final style =
+        (typography?.textStyle ??
+                const TextStyle(inherit: false, fontSize: 16, height: 1.7))
+            .copyWith(inherit: false, color: color);
+    final chapter = widget.controller.currentChapter;
+    final builder = chapter?.buildTextSpan;
+    if (chapter != null &&
+        builder != null &&
+        chapter.index == segment.chapterIndex &&
+        chapter.id == segment.chapterId &&
+        segment.startOffset >= 0 &&
+        segment.endOffset <= chapter.text.length) {
+      return builder(
+        segment.startOffset,
+        segment.endOffset,
+        style,
+        typography?.preserveDocumentFont ?? false,
+      );
+    }
+    return TextSpan(text: segment.text, style: style);
+  }
+
   @override
   Widget build(BuildContext context) {
     final segments = widget.controller.chapterSegments;
@@ -207,20 +234,16 @@ class _ReaderAloudTranscriptState extends State<ReaderAloudTranscript> {
                                       horizontal: 12,
                                       vertical: 10,
                                     ),
-                                    child: Text(
-                                      segment.text,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge
-                                          ?.copyWith(
-                                            color: selected
-                                                ? widget.palette.accent
-                                                : widget.palette.text,
-                                            height: 1.7,
-                                            fontWeight: selected
-                                                ? FontWeight.w600
-                                                : FontWeight.w400,
-                                          ),
+                                    child: Text.rich(
+                                      _textSpanForSegment(
+                                        segment,
+                                        selected
+                                            ? widget.palette.accent
+                                            : widget.palette.text,
+                                      ),
+                                      // Even an unspecified reader family must
+                                      // not inherit the app's decorative font.
+                                      style: const TextStyle(inherit: false),
                                     ),
                                   ),
                                 ),

@@ -255,7 +255,7 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
 
   Future<void> _showReaderAloudPlayer() async {
     _pauseAutoPageTurn();
-    final controller = _ensureReaderAloudController();
+    final controller = _ensureReaderAloudController(refreshPresentation: true);
     if (controller == null) return;
     final ttsService = context.read<TtsService>();
     final aloudService = context.read<ReaderAloudService>();

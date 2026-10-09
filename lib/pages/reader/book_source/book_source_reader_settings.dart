@@ -221,12 +221,15 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
     ReaderTopBarStyle.hidden => context.l10n.readerTopBarStyleHiddenHint,
   };
 
-  ReaderAloudController? _ensureReaderAloudController() {
+  ReaderAloudController? _ensureReaderAloudController({
+    bool refreshPresentation = false,
+  }) {
     final session = context.read<ReaderAloudSession>();
     final existing = _readerAloudController;
     if (existing != null &&
         identical(existing, session.controller) &&
-        session.sourceId == 'source:${widget.source.id}:${widget.book.id}') {
+        session.sourceId == 'source:${widget.source.id}:${widget.book.id}' &&
+        !refreshPresentation) {
       return existing;
     }
     existing?.removeListener(_onReaderAloudChanged);
@@ -236,8 +239,10 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
     } on ProviderNotFoundException {
       return null;
     }
+    final bodyTextStyle = _bodyTextStyle;
     final source = CallbackReaderAloudSource(
       bookTitle: widget.book.title,
+      textStyle: bodyTextStyle,
       chapterCount: () => _chapters.length,
       currentPosition: () async {
         if (_chapters.isEmpty) {
