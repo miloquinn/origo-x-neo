@@ -20,7 +20,9 @@
 
 ## 交付边界
 
-待发布元数据合并本修复与另一聊天的 iOS 常亮修复，继承 002 的朗读字体和 001 的背景图修复。最终 SloanePro 构建与安装由常亮聊天统一负责，共享协调收据 `build/device-ios/coordination.json`；源码阶段标记 ready。设备结果以该聊天 `build/device-ios/keep-screen-on-261009003/` 的实际签名、安装与启动收据为准，不能把本地回归当成实际 Google OAuth 验收。
+待发布元数据合并本修复与另一聊天的 iOS 常亮修复，继承 002 的朗读字体和 001 的背景图修复。最终 SloanePro 构建与安装由常亮聊天统一负责，共享协调收据 `build/device-ios/coordination.json`。合并后的 iOS Release 已通过产品构建与签名验证，并原地安装至物理 iPhone 16 Pro、UDID `00008140-001979421E93001C`；读回 bundle `com.niki.xxread`、版本 `2.7.3`、build `261009003`，启动 PID `21528`，后续进程收据确认运行。使用 Apple Store 渠道配置的开发签名，本地验收，未上传 TestFlight。
+
+已独立核对 `build/device-ios/keep-screen-on-261009003/signed-build.json`、`source-final.json` 和 `device-acceptance/` 的应用身份、启动及进程输出。最终源码指纹 `a3eb344b5051b695d093dd64309101f0d2b21abd40ef58d8cb778dcaa183db92` 与交付收据一致，其中 `lib/main.dart` 的 hash 与本修复一致。构建基线 `be472090` 包含当时已完成但尚未提交的导航修改，交付后核对提交 `b972ecf3`；本次没有重装第二份包。不能把安装与启动当成实际 Google OAuth 验收；用户报告的 Android Google 登录与覆盖安装流程仍未在该用户设备验证。
 
 当前主机是 `sloane.local`；源码完成后推送并核对 live remote。Windows `192.168.1.10:22` 连接超时，未同步。四张无关预览 JPEG 保留。
 
