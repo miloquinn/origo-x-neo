@@ -36,6 +36,8 @@
 
 ## 近期功能交付证据
 
+- [2026-10-09 Google 登录恢复](reviews/2026-10-09-legal-resume-validation.md)：协议复查保留已有许可，真实更新显示同意入口；124 项回归与合并设备交付边界。
+
 - [2026-10-09 朗读正文排版](reviews/2026-10-09-aloud-typography-validation.md)：共用书籍字体、EPUB 字体切换与章节快照回归；002 两端构建通过，设备连接中断，尚未安装。
 - [2026-10-08 会员启动同步](reviews/2026-10-08-membership-startup-sync.md)：缓存优先、并行请求、被动同步节流及 012 本地验收边界。
 

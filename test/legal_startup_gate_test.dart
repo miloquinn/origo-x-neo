@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +14,9 @@ import 'package:xxread/models/legal_document.dart';
 import 'package:xxread/pages/legal/legal_document_page.dart';
 import 'package:xxread/pages/legal/user_agreement_page.dart';
 import 'package:xxread/services/account/member_account_controller.dart';
+import 'package:xxread/services/account/account_api_client.dart';
+import 'package:xxread/services/account/account_token_store.dart';
+import 'package:xxread/services/account/account_models.dart';
 import 'package:xxread/services/core/core_services.dart';
 import 'package:xxread/services/diagnostics/diagnostics_controller.dart';
 import 'package:xxread/services/legal/legal_document_repository.dart';
@@ -20,7 +27,10 @@ import 'support/legal_fixture.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+  });
 
   testWidgets(
     'cold start keeps account and reading cloud gated through a material update',
@@ -116,6 +126,123 @@ void main() {
     await fixture.dispose(tester);
   });
 
+  for (final publication in ['current', 'editorial', 'offline', 'material']) {
+    testWidgets('resume during Google exchange with $publication policy', (
+      tester,
+    ) async {
+      final response = Completer<ResponseBody>();
+      final adapter = LegalTestAdapter((options) => response.future);
+      final tokens = SecureMemberTokenStore();
+      final api = MemberAccountApiClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        tokenStore: tokens,
+      );
+      final fixture = await _mountAcceptedApp(tester, api: api);
+      fixture.repository.complete(
+        LegalCatalogSnapshot(
+          catalog: legalFixtureCatalog(),
+          source: LegalContentSource.network,
+        ),
+      );
+      await _pumpUntil(tester, () => fixture.cloud.initializeCalls == 1);
+      fixture.repository.holdNextRefresh();
+
+      final login = api.loginGoogle('native-google-id-token');
+      await _pumpUntil(tester, () => adapter.requests.isNotEmpty);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await _pumpUntil(tester, () => fixture.repository.refreshCalls == 2);
+      // Returning from the native chooser is not a withdrawal of consent.
+      expect(fixture.account.networkAllowed, isTrue);
+      expect(fixture.cloud.networkAllowed, isTrue);
+      expect(fixture.diagnostics.networkAllowed, isTrue);
+      expect(find.byKey(const Key('welcomeAgreements')), findsNothing);
+
+      fixture.repository.complete(
+        LegalCatalogSnapshot(
+          catalog: legalFixtureCatalog(
+            revision: publication == 'current' || publication == 'offline'
+                ? '2026-10-08.1'
+                : '2026-10-08.2',
+            consentVersion: publication == 'material'
+                ? '2026-10-08.2'
+                : '2026-10-08.1',
+          ),
+          source: publication == 'offline'
+              ? LegalContentSource.bundled
+              : LegalContentSource.network,
+          refreshError: publication == 'offline',
+        ),
+      );
+      await _pumpFrames(tester);
+      final revoked = publication == 'material';
+      expect(fixture.account.networkAllowed, !revoked);
+      expect(fixture.cloud.networkAllowed, !revoked);
+      expect(fixture.diagnostics.networkAllowed, !revoked);
+      expect(
+        find.byKey(const Key('welcomeAgreements')),
+        revoked ? findsOneWidget : findsNothing,
+      );
+      final result = revoked
+          ? expectLater(
+              login,
+              throwsA(
+                isA<MemberAccountException>().having(
+                  (error) => error.isLegalConsentRequired,
+                  'consent required',
+                  true,
+                ),
+              ),
+            )
+          : expectLater(
+              login,
+              completion(
+                isA<MemberSession>().having(
+                  (session) => session.user.id,
+                  'signed-in user',
+                  'reader-id',
+                ),
+              ),
+            );
+      response.complete(
+        ResponseBody.fromString(
+          jsonEncode({
+            'token_type': 'bearer',
+            'access_token': 'google-access',
+            'refresh_token': 'google-refresh',
+            'access_expires_in': 900,
+            'refresh_expires_in': 2592000,
+            'mfa_required': false,
+            'user': {
+              'id': 'reader-id',
+              'email': 'reader@example.com',
+              'username': 'reader',
+              'display_name': 'Reader',
+              'auth_methods': ['google'],
+              'created_at': '2026-10-08T00:00:00Z',
+            },
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: ['application/json'],
+          },
+        ),
+      );
+      await _pumpFrames(tester);
+      await result;
+      expect(
+        await tokens.readAccessToken(),
+        revoked ? isNull : 'google-access',
+      );
+      expect(
+        await tokens.readRefreshToken(),
+        revoked ? isNull : 'google-refresh',
+      );
+      expect(adapter.requests, hasLength(1));
+      await fixture.dispose(tester);
+    });
+  }
+
   testWidgets('diagnostics consent appears only after the legal gate opens', (
     tester,
   ) async {
@@ -210,11 +337,12 @@ void main() {
 Future<_Fixture> _mountAcceptedApp(
   WidgetTester tester, {
   bool offerDiagnosticsConsent = false,
+  MemberAccountApiClient? api,
 }) async {
   final accepted = legalFixtureCatalog();
   await UserAgreementService.acceptAgreement(locale: 'en', catalog: accepted);
   final repository = _ControlledLegalRepository(accepted);
-  final account = _CountingAccount();
+  final account = _CountingAccount(api: api);
   final cloud = _CountingCloud(account);
   final diagnostics = _CountingDiagnostics(
     account,
@@ -271,7 +399,9 @@ class _ControlledLegalRepository extends LegalDocumentRepository {
   _ControlledLegalRepository(this.localCatalog);
 
   final LegalCatalog localCatalog;
-  final Completer<LegalCatalogSnapshot> _refresh = Completer();
+  Completer<LegalCatalogSnapshot> _refresh = Completer();
+
+  void holdNextRefresh() => _refresh = Completer();
   int refreshCalls = 0;
 
   @override
@@ -294,7 +424,7 @@ class _ControlledLegalRepository extends LegalDocumentRepository {
 }
 
 class _CountingAccount extends MemberAccountController {
-  _CountingAccount() : super(networkAllowed: false);
+  _CountingAccount({super.api}) : super(networkAllowed: false);
   int synchronizeCalls = 0;
 
   @override

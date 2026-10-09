@@ -30,7 +30,7 @@
 
 启动同意检查完成前，[阅读云控制器](../lib/services/reading/reading_cloud_controller.dart) 必须以 `networkAllowed: false` 创建。此状态只读取本地阅读缓存、访客时长和待同步计数；定时器、账号监听、owner 监听、`initialize`、`synchronize`、公开偏好和访客记录认领均不得触发账号同步或阅读 API。主启动流程确认当前协议仍有效后，显式调用 `setNetworkAllowed(true)`，再调用 `initialize` 或 `synchronize`；开关本身不自动发请求。权限被撤回会使正在进行的同步代次失效，每次网络等待前后都重新检查，避免旧请求继续上传、读取榜单或保存偏好。
 
-[账号控制器](../lib/services/account/member_account_controller.dart) 同样在生产 Provider 以 `networkAllowed: false` 创建。主流程同时开放或关闭账号与阅读许可；关闭时取消会员重试，并在共享 [账号 API](../lib/services/account/account_api_client.dart) 请求边界失效旧代次，防止旧响应继续刷新令牌或触发下一请求。权限暂停不会退出登录、清除凭据、删除会员缓存或变更账号归属。已经发送的单个请求无法撤回，其过时结果不能推动后续联网链。
+[账号控制器](../lib/services/account/member_account_controller.dart) 同样在生产 Provider 以 `networkAllowed: false` 创建。主流程同时开放或关闭账号与阅读许可；从 Google 等原生授权页面恢复前台时，协议复查保留已获同意的网络许可，仅在确认出现需要重新同意的版本后关闭许可并覆盖协议入口，避免复查本身使登录请求代次失效；关闭时取消会员重试，并在共享 [账号 API](../lib/services/account/account_api_client.dart) 请求边界失效旧代次，防止旧响应继续刷新令牌或触发下一请求。权限暂停不会退出登录、清除凭据、删除会员缓存或变更账号归属。已经发送的单个请求无法撤回，其过时结果不能推动后续联网链。
 
 ## 缓存与同意边界
 
@@ -49,7 +49,7 @@ receipt 使用 `member_legal_acceptance_v1`，沿用备份排除的设备本地�
 - [欢迎回归](../test/user_agreement_page_test.dart) 与 [摘要回归](../test/agreement_summary_test.dart)：明确操作、多次点击保护、拒绝和多语言大字布局；状态相关 Flutter 测试隔离进程运行。
 - [根路由回归](../test/legal_agreement_gate_test.dart)：运行中的重要协议覆盖既有阅读路由、系统返回与详情导航、接受后原路由保留。
 - [阅读禁网回归](../test/reading_cloud_network_gate_test.dart)：未同意零网络、恢复授权、进行中撤销不再发后续请求。
-- [账号禁网回归](../test/member_account_legal_gate_test.dart)：暂停共享传输、后台重试失效、旧 401 不刷新及登录/会员/凭据保留；[实际冷启动回归](../test/legal_startup_gate_test.dart) 验证等待政策、重要版本、普通修订和离线降级时的真实启动顺序。
+- [账号禁网回归](../test/member_account_legal_gate_test.dart)：暂停共享传输、后台重试失效、旧 401 不刷新及登录/会员/凭据保留；[实际冷启动回归](../test/legal_startup_gate_test.dart) 验证等待政策、重要版本、普通修订和离线降级时的真实启动顺序，以及 Google 令牌交换过程中恢复前台的四种政策复查结果（当前、普通修订、离线、重要更新）。
 - [入站回归](../test/incoming_book_service_test.dart)：处理中的外部文件在最终路由边界等待同意恢复，不重复导入或提前清除临时文件；销毁可解除等待。
 
 文本仅说明当前真实功能与处理方式，不构成商店交易、法律审核或真机视觉验收证明。接口和原生页面完成后需要独立记录公开 HTTPS 验证、共享源码构建、SloanePro 原位安装和启动证据；具体手感与用户接受仍由真实设备流程验证。

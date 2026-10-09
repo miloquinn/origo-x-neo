@@ -428,18 +428,10 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
 
   Future<void> _resumeAuthorizedServices() async {
     if (_hasAcceptedAgreement != true) return;
-    provider.Provider.of<MemberAccountController>(
-      context,
-      listen: false,
-    ).setNetworkAllowed(false);
-    provider.Provider.of<DiagnosticsController>(
-      context,
-      listen: false,
-    ).setNetworkAllowed(false);
-    provider.Provider.of<ReadingCloudController>(
-      context,
-      listen: false,
-    ).setNetworkAllowed(false);
+    // Native sign-in and permission sheets also resume the app. Revalidation
+    // does not revoke accepted consent: doing so invalidates their in-flight
+    // account requests even when the policy has not changed. The refresh path
+    // closes all network gates only after confirming a new consent version.
     await _refreshAgreementStatus();
     if (!mounted || _hasAcceptedAgreement != true) return;
     await _startAuthorizedServices();
