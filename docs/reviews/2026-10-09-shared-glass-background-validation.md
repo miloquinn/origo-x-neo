@@ -26,4 +26,11 @@
 
 ## 设备交付
 
-源代码已验证，最新共享源码的 SloanePro 原地构建、安装与启动收据将在交付后补充。本次不发布 TestFlight 或 App Store。
+- 源码提交：`33231d91d82666edcf1c3007b0dae9eecb4b0751`；从最新合并共享 checkout、`lib/main.dart` 构建，包含其他已完成任务的修复。
+- iOS Release 产品构建通过，签名校验通过；Apple Store 配置的本地开发签名安装，版本 `2.7.3+261009003`。这不是 TestFlight 或 App Store 发布。
+- SloanePro 身份核对为 iPhone 16 Pro，UDID `00008140-001979421E93001C`；使用原地更新，没有卸载或清数据操作。iOS 更新后数据容器 UUID 改变，未把路径相等作为数据保留证据，也未逐文件比较用户数据。
+- 安装后读回 `com.niki.xxread`、版本及构建号；正常启动成功，独立进程列表确认 PID `22768` 运行。
+- 774 个产品输入在构建前、构建后、安装前指纹一致：`34ffa3167be729f67bb5b6dedd130ff7534cc8acdb6e48321b73dd509fb6c92c`；AOT SHA-256：`b85733c013363c9d3f7b82ebb906828ddf150e1bcfa617f7a2e27035400c7a94`。
+- 本地完整收据：`build/device-ios/shared-glass-background-261009003/signed-build.json`。Mac 当前主机为 Sloane，代码已推送；Windows 以 fast-forward 同步并核对远端 HEAD，保留原有未跟踪文件且哈希不变。
+
+成功安装/启动已验证；实际阅读页面的真机视觉与交互验收仍未完成。Android、Web、桌面产品构建未在本次重跑，跨平台组件行为以 Flutter 回归为证据。
