@@ -21,8 +21,8 @@
 
 ## 启动与实机验收
 
-覆盖安装成功后，前台启动被 iOS 明确拒绝，原因 `Locked`（CoreDevice 10002、FBSOpenApplicationErrorDomain 7）。已向主代理报告，请用户解锁 SloanePro 后重试启动；本记录不宣称已成功启动或完成活动页面实机验收。
+覆盖安装后的两次启动曾被 iOS 以 `Locked` 拒绝（CoreDevice 10002、FBSOpenApplicationErrorDomain 7）。用户随后确认解锁，已直接前台启动现有安装包，无需重建或重装。启动收据显示 `activatedWhenStarted=true`、PID `25085`，独立进程列表确认同一 PID 与同一安装路径仍在运行。设备再次核对为 SloanePro / iPhone 16 Pro / 指定 UDID，读回的 bundle、版本、构建号及安装位置均与本次 direct 安装收据一致。
 
-本次私有安装、设备身份、测试日志、源码清单及启动错误收据位于忽略目录 `build/device-ios/activity-channel-recovery-261009003/`。`build/device-ios/coordination.json` 新增本次安装 owner；安装期间持有 `build/device-ios/installation.lock`，避免其他聊天覆盖渠道。
+本次私有安装、设备身份、测试日志、源码清单及启动收据位于忽略目录 `build/device-ios/activity-channel-recovery-261009003/`；解锁后的证据为 `launch-after-unlock.json`、`installed-after-unlock.json`、`devices-after-unlock.json` 和 `processes-after-unlock.json`。`build/device-ios/coordination.json` 已标记本次安装与启动完成。安装期间的全局锁已原子归档至本次目录的 `installation-lock-completed`，不阻塞后续交付；后续本地验收仍须遵循当前版本指南的渠道保持约定。
 
-解锁后仍需验证前台启动及进程存活，再由用户打开「设置 → 关于与支持 → 活动中心」确认活动卡片、详情浏览器打开返回和原生邀请进度。自动化测试及安装成功不替代这些 UI 验收。
+前台启动和进程存活已验证。用户仍需打开「设置 → 关于与支持 → 活动中心」确认活动卡片、详情浏览器打开返回和原生邀请进度；尚未收到这项实机 UI 确认，自动化测试、安装及启动成功不替代它。官网的新 Google/GitHub 授权回跳亦单独等待用户确认。
