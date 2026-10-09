@@ -13,7 +13,7 @@ import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_top_bar.dart';
-import 'package:xxread/widgets/reader_annotated_text_page.dart';
+import 'package:xxread/widgets/reader_selection_toolbar.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 
 // flutter run -d B747AC4A-A940-4BBC-A2BB-DE72F5EDE816 \
@@ -313,8 +313,8 @@ class _GlassButtonsPreviewAppState extends State<GlassButtonsPreviewApp> {
       ),
     );
 
-    // Dispose the held tooltip/gesture state, then use a fresh short tap for
-    // the route so the capture proves the real popup path rather than a mock.
+    // Dispose the held tooltip/gesture state, then open the real inline panel
+    // with a fresh short tap.
     await _setCaptureState(
       mode: _PreviewMode.liquid,
       dark: false,
@@ -353,9 +353,11 @@ class _GlassButtonsPreviewAppState extends State<GlassButtonsPreviewApp> {
       'reader-selection-liquid-narrow-320-menu-open',
     );
 
-    const dismissPosition = Offset(12, 210);
+    final dismissPosition = _elementCenter(
+      const ValueKey('reader-selection-more'),
+    );
     _dispatchPointer(
-      const PointerDownEvent(
+      PointerDownEvent(
         pointer: 53,
         position: dismissPosition,
         kind: PointerDeviceKind.touch,
@@ -363,7 +365,7 @@ class _GlassButtonsPreviewAppState extends State<GlassButtonsPreviewApp> {
       ),
     );
     _dispatchPointer(
-      const PointerUpEvent(
+      PointerUpEvent(
         pointer: 53,
         position: dismissPosition,
         kind: PointerDeviceKind.touch,
@@ -579,6 +581,9 @@ class _ReaderControlsPreviewPage extends StatelessWidget {
                               onHighlight: () {},
                               onNote: () {},
                               onCopy: null,
+                              onSearch: () {},
+                              onPurify: () {},
+                              onAskAi: () {},
                             ),
                           ],
                         ),

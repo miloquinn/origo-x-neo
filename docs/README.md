@@ -17,6 +17,7 @@
 | 书籍格式能力 | [格式支持](book-format-support.md) |
 | 备份与恢复 | [WebDAV 备份](webdav-backup.md) |
 | 共用视觉与组件规范 | [DESIGN.md](../DESIGN.md) |
+| 阅读选中文字工具栏、玻璃背景与更多操作 | [选中文字工具栏](reader-selection-toolbar.md) |
 | 协议正文、官网接口、缓存与同意记录 | [协议与隐私](legal-documents.md) |
 | 会员快照、启动同步、失效与授权边界 | [会员状态缓存](account-membership-sync.md) |
 | 主动反馈、性能摘要与采集边界 | [反馈与诊断](feedback-diagnostics.md) |
