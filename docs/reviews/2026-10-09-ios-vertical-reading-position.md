@@ -52,12 +52,28 @@ isolation rather than a product build failure. Logs are saved under ignored
 
 ## Delivery boundary
 
-The shared checkout build is `2.7.3+261009003`. The keep-screen-on chat owns the
-combined SloanePro local development-signed Release build/install and uses
-`build/device-ios/coordination.json`; this repair must be included in its source
-manifest before the in-place update. At creation of this record, combined build,
-installation and launch are pending. Actual repeated app switches on the
-reported book/source remain unverified even after a successful installation.
+The combined shared-checkout build `2.7.3+261009003` passed, its signature was
+verified, and the keep-screen-on installation owner updated SloanePro in place
+from build `261009001` to `261009003`. Device receipts identify SloanePro as an
+iPhone 16 Pro with UDID `00008140-001979421E93001C`; the installed identity is
+`com.niki.xxread`, version `2.7.3`, build `261009003`. Launch succeeded with PID
+`21528`. This was a local development-signed Release using the Apple Store
+channel configuration, with installed data retained.
+
+The build base was `be472090`, plus finalized reader changes that were still
+uncommitted at build time and subsequently committed as `b972ecf3`. All nine
+reader file hashes independently match the build-before, build-after and
+preinstall manifests, the finalized coordination record, and current sources.
+The combined product fingerprint is
+`a3eb344b5051b695d093dd64309101f0d2b21abd40ef58d8cb778dcaa183db92`;
+the delivered AOT binary SHA-256 is
+`e4041db1c57f56da3c4c68a113ba730dd0bbdff843d1feab7fa856351d46deae`.
+
+Delivery receipts are under
+`build/device-ios/keep-screen-on-261009003/signed-build.json` and
+`device-acceptance/` in that directory. Independent reader verification is in
+`build/reader-vertical-20261009/device-verification.json` (ignored build output).
+Actual repeated app switches on the reported book/source remain unverified.
 No GitHub public release, TestFlight or App Store publication is implied.
 
 The current host is `sloane.local`. Windows synchronization is unavailable:
