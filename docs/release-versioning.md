@@ -54,6 +54,27 @@ configuration and import the already-published, checksum-verified bytes; keep
 the product tag and packages unchanged. Record manual recovery separately from
 the original workflow result.
 
+Local device acceptance must also preserve the accepted distribution channel.
+Record `ORIGO_DISTRIBUTION_CHANNEL` alongside version, build, source digest and
+signature in `build/device-ios/coordination.json` and the installation receipt.
+Do not infer the channel from development signing or the iOS platform: a local
+developer-signed package can contain either `direct` or `appleStore` behavior.
+Keep the previous acceptance channel when installing combined changes unless
+the current task explicitly calls for testing another channel. SloanePro's
+official activity acceptance uses `direct`; an App Store/TestFlight candidate
+continues to use `appleStore` and its existing store restrictions.
+
+`lib/services/account/member_account_controller.dart` selects the public
+activity API's `official` or `store` channel from
+`AppDistribution.usesStoreBilling`. The only initialized invitation activity
+is official-only, and `lib/services/activities/activity.dart` filters it again
+in store builds. Switching a local acceptance package to `appleStore` can
+therefore legitimately turn its activity list empty without deleting the
+activity, participation or rewards. Validate with the two isolated suites
+`test/activity_service_test.dart` and `test/activity_center_test.dart`, then
+the official public directory and the actual installed package's channel.
+See the dated [SloanePro channel recovery record](reviews/2026-10-09-activity-channel-recovery.md).
+
 Android split-per-ABI APKs have a package `versionCode` offset added by Flutter.
 The Android bridge exposes the unmodified release build separately: update
 selection, the About page and changelog use that shared release build; APK
