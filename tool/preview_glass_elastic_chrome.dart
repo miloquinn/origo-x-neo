@@ -1,4 +1,6 @@
+// Historical motion fixture; current material preview: preview_shared_glass_background.dart.
 // flutter test --no-pub tool/preview_glass_elastic_chrome.dart
+// Requires ffmpeg in PATH and a Chinese font (macOS system default or CHROME_PREVIEW_FONT).
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -8,21 +10,25 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/pages/home/widgets/home_bounce_navigation_item.dart';
 import 'package:xxread/widgets/app_menu.dart';
+import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/elastic_pill_navigation_bar.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 
+const _font = String.fromEnvironment(
+  'CHROME_PREVIEW_FONT',
+  defaultValue: '/System/Library/Fonts/Hiragino Sans GB.ttc',
+);
+
 const _output = String.fromEnvironment(
   'CHROME_PREVIEW_OUTPUT',
-  defaultValue: 'docs/previews/glass-elastic-20261007',
+  defaultValue: 'build/previews/glass-elastic',
 );
 
 void main() {
   testWidgets('render glass navigation and shared menu motion', (tester) async {
     await tester.runAsync(() async {
-      final font = await File(
-        '/System/Library/Fonts/Hiragino Sans GB.ttc',
-      ).readAsBytes();
+      final font = await File(_font).readAsBytes();
       await (FontLoader(
         'ChromePreview',
       )..addFont(Future.value(ByteData.sublistView(font)))).load();
@@ -96,7 +102,7 @@ void main() {
 
       await tester.runAsync(() async {
         for (final kind in ['nav', 'menu']) {
-          final result = await Process.run('/opt/homebrew/bin/ffmpeg', [
+          final result = await Process.run('ffmpeg', [
             '-y',
             '-framerate',
             '33.333',
@@ -174,6 +180,12 @@ class _ChromePreviewState extends State<_ChromePreview> {
         brightness: widget.dark ? Brightness.dark : Brightness.light,
       ),
       fontFamily: 'ChromePreview',
+      extensions: const [
+        UiStyleThemeExtension(
+          style: AppUiStyle.glass,
+          glassStyle: GlassStyle.frosted,
+        ),
+      ],
     );
     return MaterialApp(
       theme: theme,

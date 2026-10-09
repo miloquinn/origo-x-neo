@@ -1,5 +1,7 @@
 # Shared spring glass button validation
 
+历史记录：本文描述标题日期对应的实现与交付，不作为当前待办或配置说明。当前维护入口为 [共用玻璃材质](../glass-material.md)。
+
 The existing floating navigation spring is now reused by chrome actions. This change preserves role sizes and native interaction, replaces duplicate toolbar decoration/gesture code, and repairs liquid refraction coordinates while retaining stationary layout and popup anchors.
 
 ## Scope and simplifications

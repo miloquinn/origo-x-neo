@@ -44,7 +44,7 @@ class GlassTopBar extends StatelessWidget {
     final useBlur = material.mode != GlassMaterialMode.solid;
     final height = topInset + contentHeight;
     final peakSigma = math.min(
-      material.blurSigma * (material.mode == GlassMaterialMode.liquid ? 1 : 2),
+      material.progressiveBlurSigma,
       math.max(0, height - 16) / 3,
     );
     final titleStyle = TextStyle(

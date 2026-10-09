@@ -7,6 +7,7 @@ import 'package:xxread/utils/glass_material.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 import 'package:xxread/widgets/liquid_glass_surface.dart';
 
 void main() {
@@ -137,18 +138,42 @@ void main() {
     },
   );
 
-  testWidgets('high contrast keeps liquid tint at 0.94', (tester) async {
+  testWidgets('high contrast selects an opaque shared background', (
+    tester,
+  ) async {
     await tester.pumpWidget(
-      _surfaceHost(
-        filterBackground: false,
-        liquidGlassOpacity: 0,
-        highContrast: true,
+      MaterialApp(
+        theme: ThemeData(
+          extensions: const [
+            UiStyleThemeExtension(
+              style: AppUiStyle.glass,
+              glassStyle: GlassStyle.liquid,
+            ),
+          ],
+        ),
+        home: const MediaQuery(
+          data: MediaQueryData(highContrast: true),
+          child: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 160,
+                height: 64,
+                child: GlassSurface(child: Text('Control')),
+              ),
+            ),
+          ),
+        ),
       ),
     );
-
-    final gradient = _surfaceGradient(tester);
-    expect(gradient.colors.first.a, closeTo(0.94, 0.001));
-    expect(gradient.colors.last.a, closeTo(0.94, 0.001));
+    expect(find.byType(LiquidGlassSurface), findsNothing);
+    expect(find.byType(BackdropFilter), findsNothing);
+    final decoration =
+        tester
+                .widget<AnimatedContainer>(find.byType(AnimatedContainer))
+                .decoration!
+            as ShapeDecoration;
+    expect(decoration.gradient, isNull);
+    expect(decoration.color!.a, 1);
   });
 
   testWidgets('disabled glass switches shared controls to a solid surface', (
@@ -216,7 +241,6 @@ Widget _surfaceHost({
   required bool filterBackground,
   double visibility = 1,
   double liquidGlassOpacity = 0,
-  bool highContrast = false,
   VoidCallback? onTap,
 }) {
   return MaterialApp(
@@ -230,7 +254,7 @@ Widget _surfaceHost({
       ],
     ),
     home: MediaQuery(
-      data: MediaQueryData(highContrast: highContrast),
+      data: const MediaQueryData(),
       child: Scaffold(
         body: Center(
           child: SizedBox(

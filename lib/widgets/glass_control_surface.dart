@@ -5,7 +5,7 @@ import 'glass_surface.dart';
 
 export '../utils/glass_material.dart' show GlassSurfaceRole;
 
-/// Source-compatible control adapter. Material decisions belong to GlassSurface.
+/// Control layout adapter. Material decisions belong to GlassSurface.
 /// The legacy one-pixel layout inset is explicit here, never in the background.
 class GlassControlSurface extends StatelessWidget {
   const GlassControlSurface({
@@ -14,7 +14,6 @@ class GlassControlSurface extends StatelessWidget {
     this.shape = const StadiumBorder(),
     this.color,
     this.brightness,
-    this.border,
     this.outlineColor,
     this.shadowColor,
     this.role = GlassSurfaceRole.control,
@@ -31,8 +30,6 @@ class GlassControlSurface extends StatelessWidget {
   final Color? color;
   final Brightness? brightness;
 
-  /// Compatibility palette input; shared material owns opacity and stroke width.
-  final BorderSide? border;
   final Color? outlineColor;
   final Color? shadowColor;
   final GlassSurfaceRole role;
@@ -52,7 +49,7 @@ class GlassControlSurface extends StatelessWidget {
     shape: shape,
     role: role,
     color: color,
-    outlineColor: outlineColor ?? border?.color,
+    outlineColor: outlineColor,
     shadowColor: shadowColor,
     brightness: brightness,
     enabled: enabled,

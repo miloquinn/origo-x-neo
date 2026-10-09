@@ -1,5 +1,7 @@
 # 毛玻璃导航与弹性菜单验证
 
+历史记录：本文描述标题日期对应的实现与交付，不作为当前待办或配置说明。当前维护入口为 [共用玻璃材质](../glass-material.md)。
+
 已在本地代码完成：首页悬浮底栏与共用三点菜单融合 FlClash 的超椭圆形状和弹性动效，保留开元阅读原有玻璃配置。没有新增运行时依赖。
 
 ## 变更文件
@@ -13,7 +15,7 @@
 - `lib/widgets/app_menu.dart`：三点按压反馈，尺寸/X/Y 独立弹簧，超椭圆卡片、内容缩放/淡入与单轮廓实色表面；保持原菜单数据、键盘、关闭后回调等接口。
 - `test/app_menu_test.dart`、`test/elastic_motion_test.dart`、`test/elastic_press_test.dart`、`test/elastic_pill_navigation_bar_test.dart`、`test/home_bounce_navigation_item_test.dart`：定向回归。
 - `tool/preview_glass_elastic_chrome.dart`：使用真实 Flutter 组件采集浅色/深色按压、拖动、松手、展开和收起动画。
-- `DESIGN.md`、`docs/plans/2026-10-07-glass-elastic-chrome.md`：更新现有菜单与导航规范，保留其他已有修改。
+- `DESIGN.md`：当时更新现有菜单与导航规范，保留其他已有修改；已完成方案归入当前材质指南。
 
 ## 验证证据
 
@@ -46,7 +48,7 @@
 flutter test --no-pub tool/preview_glass_elastic_chrome.dart
 ```
 
-预览脚本使用当前 macOS 中文字体和已有 `/opt/homebrew/bin/ffmpeg`。可通过 `--dart-define=CHROME_PREVIEW_OUTPUT=/absolute/output/path` 将输出放到独立目录。
+当时预览使用 macOS 中文字体和 ffmpeg。当前脚本从 PATH 查找 ffmpeg，可通过 `CHROME_PREVIEW_FONT` 指定字体，默认输出到忽略的 `build/previews/glass-elastic/`；仍可用 `--dart-define=CHROME_PREVIEW_OUTPUT=/absolute/output/path` 指定独立目录，不自动覆盖历史截图。
 
 ## 验证边界
 

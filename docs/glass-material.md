@@ -5,7 +5,7 @@
 ## 更新入口
 
 - 底色渐变、透明度、描边、阴影、液态高光与可读性密度：修改 `GlassMaterial`。
-- 全局性能缩放、用户偏好及保存值：沿用 `GlassEffectConfig`、`UiStyleThemeExtension` 和已有设置服务，不新增存储或依赖。
+- 用户偏好、总开关和性能状态：`GlassEffectConfig` 仅保存状态与 `blurScale`，沿用 `UiStyleThemeExtension` 和已有设置服务，不新增存储或依赖。模糊基数、密度、染色及折射值全部属于 `GlassMaterial`。
 - 背景合成、裁切与普通毛玻璃滤镜：修改 `GlassSurface`。
 - 液态采样、shader 加载和变换坐标：`LiquidGlassSurface` 是能力渲染器，接收已解析材质，不自行读取主题决定外观。shader 不支持或加载失败时保留轻模糊，失败有日志。
 
@@ -22,7 +22,7 @@
 | 侧栏、导入按钮、书籍操作和提示条 | 页面行为、尺寸、内容与动作 | 共用材质角色 |
 | 设置预览 | 预览状态 | 直接复用生产导航组件 |
 
-`GlassSurface` 不增加内容内边距，背景在独立图层绘制，阴影在裁切之外。形状裁切、内容留白及按钮 ripple 由专属组件管理。`GlassControlSurface` 仅是旧控件适配入口，明确保留原一像素留白并委托公共背景。旧 `border` 参数只提供兼容配色意图，描边透明度与宽度统一由材质解析；新消费者传 `outlineColor`，不再传数字配方。
+`GlassSurface` 不增加内容内边距，背景在独立图层绘制，阴影在裁切之外。形状裁切、内容留白及按钮 ripple 由专属组件管理。`GlassControlSurface` 仅是控件布局适配入口，明确保留原一像素留白并委托公共背景。消费者统一传语义 `outlineColor`，没有只读取颜色却接收宽度/样式的旧 `BorderSide` 接口；描边透明度与宽度由材质解析。
 
 阅读器传自己的背景、描边、阴影与亮暗主题。`ReaderThemePalette.toThemeData(parentTheme: ...)` 保留应用的外观扩展及文字排版，再应用阅读配色；目录面板缓存也以父主题身份失效，切换阅读配色不会丢掉玻璃设置。
 
@@ -32,7 +32,7 @@
 
 可见度直接缩放背景染色、边缘、阴影和滤镜；不要在移动背景滤镜外套 `Opacity` 或 `FadeTransition`。提示条只让前景单独淡入淡出。关闭玻璃、切换材质与可见度归零都不改变布局或命中范围。
 
-`GradientTopBackdrop` 是全宽顶部的专用渐进渲染器：材质策略、底色与模糊基准来自公共解析层，保留自己的 clear tail、可变 sigma、镜像边缘和分段兼容算法。`GlassTopBar` 与宽屏首页消费这个背景，实色策略下同样有不透明底色。实色模式不初始化渐进 shader，之后切换玻璃仍可加载。
+`GradientTopBackdrop` 是全宽顶部的专用渐进渲染器：材质策略、底色与 `progressiveBlurSigma` 来自公共解析层，保留自己的 clear tail、可变 sigma、镜像边缘和分段兼容算法。`GlassTopBar` 与宽屏首页消费这个背景，实色策略下同样有不透明底色。实色模式不初始化渐进 shader，之后切换玻璃仍可加载。
 
 首次支持引导的全屏暗化遮罩，以及移动弹出菜单的实底，属于不同用途。菜单保持实底，避免移动时在玻璃导航上叠加模糊产生重影。这些不会被强行换成液态玻璃。
 

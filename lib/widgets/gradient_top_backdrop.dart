@@ -133,9 +133,7 @@ class _GradientTopBackdropState extends State<GradientTopBackdrop> {
     );
     // Keep every downward sample inside the top region: radius is 3 sigma.
     final sigma = math.min(
-      widget.maxSigma ??
-          material.blurSigma *
-              (material.mode == GlassMaterialMode.liquid ? 1 : 2),
+      widget.maxSigma ?? material.progressiveBlurSigma,
       clearHeight / 3,
     );
     final enabled = material.mode != GlassMaterialMode.solid && sigma > 0;

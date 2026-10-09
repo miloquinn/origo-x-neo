@@ -38,6 +38,13 @@ class GlassMaterial {
   final double visibility;
   final LinearGradient? progressiveTint;
 
+  /// Progressive consumers apply only their height/clear-tail geometry limits.
+  double get progressiveBlurSigma =>
+      blurSigma * (mode == GlassMaterialMode.liquid ? 1 : 2);
+
+  static double _liquidTintOpacity(double clearOpacity, double amount) =>
+      clearOpacity + (0.88 - clearOpacity) * amount;
+
   // Capability renderers consume these values, never invent another recipe.
   static const liquidFallbackSigma = 2.5;
   static const liquidSamplingSigma = 0.75;
@@ -107,16 +114,11 @@ class GlassMaterial {
         };
     final solid = (enabled ? base : Color.lerp(base, scheme.surface, 0.42)!)
         .withValues(alpha: visibility);
-    final clean = GlassEffectConfig.chromeBaseColor(
-      base,
-      resolvedBrightness,
-      lightBlend: 0.18,
-    );
+    final clean = light ? Color.lerp(base, Colors.white, 0.18)! : base;
     final highlight = Color.lerp(clean, Colors.white, light ? 0.24 : 0.12)!;
     final density = switch (role) {
       GlassSurfaceRole.control => light ? 0.68 : 0.52,
-      GlassSurfaceRole.floating =>
-        GlassEffectConfig.chromeOpacityFor(resolvedBrightness) + 0.08,
+      GlassSurfaceRole.floating => (light ? 0.60 : 0.30) + 0.08,
       GlassSurfaceRole.panel => light ? 0.90 : 0.84,
       GlassSurfaceRole.selection => 1.0,
     };
@@ -153,24 +155,18 @@ class GlassMaterial {
     final opacity = normalizeLiquidGlassOpacity(
       appearance?.liquidGlassOpacity ?? GlassEffectConfig.liquidGlassOpacity,
     );
-    final highContrast = MediaQuery.highContrastOf(context);
-    final liquidLead = highContrast
-        ? 0.94
-        : GlassEffectConfig.liquidTintOpacity(
-            role == GlassSurfaceRole.panel ? 0.72 : (light ? 0.32 : 0.26),
-            opacity,
-          );
-    final liquidTrail = highContrast
-        ? 0.94
-        : GlassEffectConfig.liquidTintOpacity(
-            role == GlassSurfaceRole.panel ? 0.64 : 0.18,
-            opacity,
-          );
-    final blur = switch (role) {
-      GlassSurfaceRole.control ||
-      GlassSurfaceRole.selection => GlassEffectConfig.lightCardBlur,
-      GlassSurfaceRole.floating => GlassEffectConfig.chromeBlur,
-      GlassSurfaceRole.panel => GlassEffectConfig.modalBlur,
+    final liquidLead = _liquidTintOpacity(
+      role == GlassSurfaceRole.panel ? 0.72 : (light ? 0.32 : 0.26),
+      opacity,
+    );
+    final liquidTrail = _liquidTintOpacity(
+      role == GlassSurfaceRole.panel ? 0.64 : 0.18,
+      opacity,
+    );
+    final blurBase = switch (role) {
+      GlassSurfaceRole.control || GlassSurfaceRole.selection => 8.0,
+      GlassSurfaceRole.floating => 15.0,
+      GlassSurfaceRole.panel => 25.0,
     };
     return GlassMaterial._(
       mode: mode,
@@ -198,7 +194,7 @@ class GlassMaterial {
               ),
             ]
           : const [],
-      blurSigma: blur,
+      blurSigma: blurBase * GlassEffectConfig.blurScale,
       liquidGradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -222,15 +218,13 @@ class GlassMaterial {
         ],
         stops: const [0, 0.42, 0.65, 1],
       ),
-      refractionStrength: GlassEffectConfig.liquidRefractionStrength,
+      refractionStrength: GlassEffectConfig.reduceEffects ? 3 : 6,
       progressiveTint: mode == GlassMaterialMode.liquid && opacity > 0
           ? LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                base.withValues(
-                  alpha: GlassEffectConfig.liquidTintOpacity(0, opacity),
-                ),
+                base.withValues(alpha: _liquidTintOpacity(0, opacity)),
                 base.withValues(alpha: 0.55 * opacity),
                 base.withValues(alpha: 0),
               ],

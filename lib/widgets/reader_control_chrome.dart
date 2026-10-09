@@ -631,7 +631,7 @@ class _ReaderAutoPageTurnShortcut extends StatelessWidget {
         foregroundColor: palette.text,
         brightness: palette.brightness,
         highlighted: running,
-        border: BorderSide(color: palette.border),
+        outlineColor: palette.border,
         icon: AnimatedSwitcher(
           duration: duration,
           switchInCurve: Curves.easeOutCubic,
@@ -705,7 +705,7 @@ class ReaderControlIconButton extends StatelessWidget {
       icon: Icon(icon, size: 22),
       foregroundColor: palette.text,
       brightness: palette.brightness,
-      border: BorderSide(color: palette.border),
+      outlineColor: palette.border,
       blurBackground:
           context.findAncestorWidgetOfExactType<ReaderControlBar>() == null,
       color: palette.controlFill,

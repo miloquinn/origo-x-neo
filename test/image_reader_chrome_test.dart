@@ -78,7 +78,7 @@ void main() {
     );
     expect(surface.blurBackground, isFalse);
     expect(surface.brightness, ReaderThemes.green.brightness);
-    expect(surface.border?.color, ReaderThemes.green.border);
+    expect(surface.outlineColor, ReaderThemes.green.border);
 
     await tester.tap(directionButton);
     await tester.pump();

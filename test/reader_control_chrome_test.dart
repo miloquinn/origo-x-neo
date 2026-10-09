@@ -117,7 +117,7 @@ void main() {
       final surface = tester.widget<GlassControlSurface>(
         find.byType(GlassControlSurface),
       );
-      expect(surface.border!.color, palette.border);
+      expect(surface.outlineColor, palette.border);
       final actualBorder = (decoration.shape as OutlinedBorder).side;
       expect(actualBorder.color, isNot(Colors.pink));
       expect(actualBorder.color.a, greaterThan(0));

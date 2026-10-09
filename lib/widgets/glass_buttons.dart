@@ -16,7 +16,7 @@ class GlassIconButton extends StatelessWidget {
     this.color,
     this.foregroundColor,
     this.brightness,
-    this.border,
+    this.outlineColor,
     this.blurBackground = true,
     this.highlighted = false,
     this.animatePress = true,
@@ -31,7 +31,7 @@ class GlassIconButton extends StatelessWidget {
   final Color? color;
   final Color? foregroundColor;
   final Brightness? brightness;
-  final BorderSide? border;
+  final Color? outlineColor;
   final bool blurBackground;
   final bool highlighted;
   final bool animatePress;
@@ -46,7 +46,7 @@ class GlassIconButton extends StatelessWidget {
       shape: const CircleBorder(),
       color: color ?? Theme.of(context).colorScheme.surfaceContainerHigh,
       brightness: brightness,
-      border: border,
+      outlineColor: outlineColor,
       highlighted: highlighted,
       blurBackground: blurBackground,
       child: IconButton(
@@ -125,7 +125,7 @@ class GlassTextButton extends StatelessWidget {
     this.highlighted = false,
     this.brightness,
     this.minimumHeight = 44,
-    this.border,
+    this.outlineColor,
     this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
   });
 
@@ -138,7 +138,7 @@ class GlassTextButton extends StatelessWidget {
   final bool highlighted;
   final Brightness? brightness;
   final double minimumHeight;
-  final BorderSide? border;
+  final Color? outlineColor;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -152,7 +152,7 @@ class GlassTextButton extends StatelessWidget {
           (highlighted ? scheme.primaryContainer : scheme.surfaceContainerHigh),
       highlighted: highlighted,
       brightness: brightness,
-      border: border,
+      outlineColor: outlineColor,
       blurBackground: blurBackground,
       child: TextButton(
         onPressed: onPressed,
@@ -181,7 +181,7 @@ class _GlassButtonFrame extends StatelessWidget {
     required this.color,
     required this.child,
     this.brightness,
-    this.border,
+    this.outlineColor,
     this.animatePress = true,
     this.highlighted = false,
     this.blurBackground = true,
@@ -192,7 +192,7 @@ class _GlassButtonFrame extends StatelessWidget {
   final Color color;
   final Widget child;
   final Brightness? brightness;
-  final BorderSide? border;
+  final Color? outlineColor;
   final bool animatePress;
   final bool highlighted;
   final bool blurBackground;
@@ -208,7 +208,7 @@ class _GlassButtonFrame extends StatelessWidget {
               shape: shape,
               color: color,
               brightness: brightness,
-              border: border,
+              outlineColor: outlineColor,
               enabled: enabled,
               emphasized: highlighted,
               blurBackground: blurBackground,

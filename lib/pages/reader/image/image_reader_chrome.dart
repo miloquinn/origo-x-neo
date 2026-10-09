@@ -105,10 +105,10 @@ class ImageReaderChrome extends StatelessWidget {
                       GlassTextButton(
                         onPressed: () => unawaited(_showJumpDialog(context)),
                         blurBackground: false,
-                        color: palette.controlFill.withValues(alpha: 0.58),
+                        color: palette.controlFill,
                         foregroundColor: palette.secondaryText,
                         brightness: palette.brightness,
-                        border: BorderSide(color: palette.border),
+                        outlineColor: palette.border,
                         child: Text(
                           '$_displayPage / $pageCount',
                           style: const TextStyle(
@@ -335,10 +335,10 @@ class _ImageReaderChromeAction extends StatelessWidget {
   Widget build(BuildContext context) => GlassTextButton(
     onPressed: onTap,
     blurBackground: false,
-    color: palette.controlFill.withValues(alpha: 0.58),
+    color: palette.controlFill,
     foregroundColor: palette.text,
     brightness: palette.brightness,
-    border: BorderSide(color: palette.border),
+    outlineColor: palette.border,
     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
     child: Column(
       mainAxisSize: MainAxisSize.min,
