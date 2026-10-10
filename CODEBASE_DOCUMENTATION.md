@@ -92,8 +92,7 @@ https://github.com/miloquinn/origo-source-protocol
 
 ### `lib/services/ai/` 与 `lib/reader_core/ai/`
 
-可选 AI 能力。负责提供商配置、模型列表、请求参数和阅读场景提示。API 密钥由用户配置，
-不得写入仓库。
+可选 AI 能力。负责提供商配置、模型列表、普通聊天和原生工具循环；阅读 Agent 复用书架、统计与书源门面，偏好记忆由用户管理。书籍摘要与用户偏好是独立数据。当前调用链、权限、预算、存储和回归入口见 [阅读 AI 与内置 Agent](docs/reading-ai-agent.md)。API 密钥由用户配置，不得写入仓库。
 
 ### `lib/l10n/`
 

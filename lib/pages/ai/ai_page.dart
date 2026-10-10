@@ -2,18 +2,30 @@
 // 技术要点：壳层内嵌聊天、选书注入知识库与笔记上下文、AiChatHistoryStore 落盘。
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show mapEquals;
+import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
+import 'package:xxread/models/home_navigation_destination.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/models/book_note.dart';
 import 'package:xxread/pages/ai/ai_history_page.dart';
+import 'package:xxread/pages/ai/reading_agent_panel.dart';
+import 'package:xxread/pages/book_sources/widgets/sourced_book_actions.dart';
 import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
+import 'package:xxread/pages/home/widgets/home_page_wrappers.dart';
 import 'package:xxread/reader_core/ai/ai_error_translator.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 import 'package:xxread/services/ai/ai_request_coordinator.dart';
 import 'package:xxread/services/ai/global_ai_reading_service.dart';
+import 'package:xxread/services/ai/reading_agent_data_source.dart';
+import 'package:xxread/services/ai/reading_agent_memory_store.dart';
+import 'package:xxread/services/ai/reading_agent_service.dart';
 import 'package:xxread/services/books/book_dao.dart';
 import 'package:xxread/services/books/book_note_dao.dart';
 import 'package:xxread/utils/layout_helper.dart';
@@ -24,21 +36,29 @@ import 'package:xxread/widgets/pill_input_surface.dart';
 import 'package:xxread/widgets/measured_size.dart';
 
 class _AiChatEntry {
-  _AiChatEntry({required this.role, required this.text, String? content})
-    : content = content ?? text,
-      at = DateTime.now();
+  _AiChatEntry({
+    required this.role,
+    required this.text,
+    String? content,
+    this.agentResult,
+  }) : content = content ?? text,
+       historyRecommendations = const [],
+       at = DateTime.now();
 
   _AiChatEntry.restored({
     required this.role,
     required this.text,
     required this.content,
     required this.at,
-  });
+    this.historyRecommendations = const [],
+  }) : agentResult = null;
 
   final String role;
   final String text;
   final String content;
   final DateTime at;
+  final ReadingAgentResult? agentResult;
+  final List<AiChatBookRecommendation> historyRecommendations;
 }
 
 /// 壳层顶栏与 AI 页之间的轻量桥：顶栏右侧工具按钮驱动页面行为。
@@ -60,23 +80,39 @@ class AiPage extends StatefulWidget {
     required this.historyStore,
     this.controller,
     this.aiService,
+    this.agentMemoryStore,
+    this.agentDataSource,
   });
 
   final AiChatHistoryStore historyStore;
   final AiPageController? controller;
   final ConfigurableAIService? aiService;
+  final ReadingAgentMemoryStore? agentMemoryStore;
+  final ReadingAgentDataSource? agentDataSource;
 
   @override
   State<AiPage> createState() => _AiPageState();
 }
 
-class _AiPageState extends State<AiPage> {
+class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
   late final ConfigurableAIService _ai =
       widget.aiService ?? ReaderHttpAIService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late final AiChatHistoryStore _historyStore = widget.historyStore;
   final List<_AiChatEntry> _entries = [];
+  late final ReadingAgentMemoryStore _agentMemory =
+      widget.agentMemoryStore ?? ReadingAgentMemoryStore();
+  ReadingAgentDataSource? _agentData;
+  ReadingAgentService? _agent;
+  BookSourceShelfService? _agentShelf;
+  ReadingAgentPermissions _lastPermissions = const ReadingAgentPermissions();
+  bool _agentLoaded = false;
+  bool _agentTabActive = false;
+  bool _checkingConfiguration = false;
+  DateTime? _proactiveAttemptedAt;
+  String? _activeTool;
+  int _sendGeneration = 0;
 
   bool _configured = false;
   bool _configChecked = false;
@@ -95,7 +131,105 @@ class _AiPageState extends State<AiPage> {
   void initState() {
     super.initState();
     widget.controller?._state = this;
+    WidgetsBinding.instance.addObserver(this);
+    _agentMemory.addListener(_agentChanged);
+    unawaited(_loadAgentMemory());
     unawaited(_checkConfigured());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = HomeTabFocusScope.maybeActiveOf(context);
+    final wasActive = _agentTabActive;
+    _agentTabActive = active == null || active == HomeNavigationDestination.ai;
+    if (!_agentTabActive && _sending) _agent?.cancel();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_agentTabActive && !wasActive) {
+        unawaited(_checkConfigured());
+      } else {
+        _maybeProactive();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_checkConfigured());
+    } else if (state != AppLifecycleState.inactive) {
+      _agent?.cancel();
+    }
+  }
+
+  Future<void> _loadAgentMemory() async {
+    try {
+      await _agentMemory.ensureLoaded();
+      if (!mounted) return;
+      setState(() => _agentLoaded = true);
+      _maybeProactive();
+    } catch (_) {}
+  }
+
+  void _agentChanged() {
+    final permissions = _agentMemory.permissions;
+    if (!mapEquals(_lastPermissions.toJson(), permissions.toJson())) {
+      _agent?.cancel();
+      _lastPermissions = permissions;
+    }
+    if (mounted) setState(() {});
+  }
+
+  ReadingAgentService? _ensureAgent() {
+    final ai = _ai;
+    if (ai is! AgentAIService) return null;
+    if (_agent != null) return _agent;
+    final data = _agentData ??=
+        widget.agentDataSource ?? LocalReadingAgentDataSource();
+    return _agent = ReadingAgentService(
+      ai: ai as AgentAIService,
+      data: data,
+      memory: _agentMemory,
+    );
+  }
+
+  Future<void> _openAgentSettings() async {
+    await _agentMemory.ensureLoaded();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => ReadingAgentSettingsSheet(store: _agentMemory),
+    );
+    if (mounted) _maybeProactive();
+  }
+
+  void _maybeProactive() {
+    if (!mounted ||
+        !_agentLoaded ||
+        !_configured ||
+        !_agentTabActive ||
+        _sending ||
+        _entries.isNotEmpty ||
+        (WidgetsBinding.instance.lifecycleState != null &&
+            WidgetsBinding.instance.lifecycleState !=
+                AppLifecycleState.resumed) ||
+        (_proactiveAttemptedAt != null &&
+            DateTime.now().difference(_proactiveAttemptedAt!) <
+                const Duration(minutes: 30))) {
+      return;
+    }
+    if (!_agentMemory.permissions.proactive ||
+        !_agentMemory.permissions.enabled) {
+      return;
+    }
+    final agent = _ensureAgent();
+    if (agent == null || !agent.proactiveDue(DateTime.now())) return;
+    _proactiveAttemptedAt = DateTime.now();
+    unawaited(_handleSend(proactive: true));
   }
 
   @override
@@ -103,21 +237,31 @@ class _AiPageState extends State<AiPage> {
     if (widget.controller?._state == this) {
       widget.controller?._state = null;
     }
+    WidgetsBinding.instance.removeObserver(this);
+    _agent?.cancel();
+    _agentShelf?.close();
+    if (widget.agentDataSource == null) _agentData?.dispose();
+    _agentMemory.removeListener(_agentChanged);
+    if (widget.agentMemoryStore == null) _agentMemory.dispose();
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _checkConfigured() async {
+    if (_checkingConfiguration || !mounted) return;
+    _checkingConfiguration = true;
     var configured = false;
     try {
       configured = (await _ai.loadSettings()).isConfigured;
     } catch (_) {}
+    _checkingConfiguration = false;
     if (!mounted) return;
     setState(() {
       _configured = configured;
       _configChecked = true;
     });
+    _maybeProactive();
   }
 
   Future<void> _openHistory() async {
@@ -159,6 +303,7 @@ class _AiPageState extends State<AiPage> {
               text: message.text,
               content: message.content,
               at: message.at,
+              historyRecommendations: message.recommendations,
             ),
           ),
         );
@@ -201,11 +346,15 @@ class _AiPageState extends State<AiPage> {
   /// 开启新对话：当前会话已持久化，直接清空重来。
   void _startNewChat() {
     if (_entries.isEmpty && _error == null) return;
+    _agent?.cancel();
+    _sendGeneration++;
     setState(() {
       _entries.clear();
       _error = null;
       _sessionId = null;
       _sessionCreatedAt = null;
+      _sending = false;
+      _activeTool = null;
     });
   }
 
@@ -221,6 +370,18 @@ class _AiPageState extends State<AiPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              key: const ValueKey('ai-page-agent-settings'),
+              leading: const Icon(Icons.psychology_outlined),
+              title: Text(
+                readingAgentText(
+                  sheetContext,
+                  '阅读 Agent 与记忆',
+                  'Reading Agent & memory',
+                ),
+              ),
+              onTap: () => Navigator.of(sheetContext).pop('agent'),
+            ),
             ListTile(
               leading: const Icon(Icons.menu_book_outlined),
               title: Text(sheetContext.l10n.aiChatSelectBook),
@@ -245,6 +406,8 @@ class _AiPageState extends State<AiPage> {
     );
     if (!mounted) return;
     switch (action) {
+      case 'agent':
+        await _openAgentSettings();
       case 'pick':
         await _pickBook();
       case 'clear':
@@ -366,55 +529,124 @@ class _AiPageState extends State<AiPage> {
     return buffer.toString().trim();
   }
 
-  Future<void> _handleSend() async {
-    final text = _inputController.text.trim();
+  Future<void> _handleSend({bool proactive = false}) async {
+    final text = proactive
+        ? readingAgentText(
+            context,
+            '根据我的阅读偏好，在启用书源中为我推荐下一本书。',
+            'Recommend my next book from enabled sources based on my reading preferences.',
+          )
+        : _inputController.text.trim();
     if (text.isEmpty || _sending || !_configured) return;
-    _inputController.clear();
+    if (!proactive) _inputController.clear();
+    final generation = ++_sendGeneration;
     setState(() {
-      _entries.add(_AiChatEntry(role: 'user', text: text));
+      if (!proactive) _entries.add(_AiChatEntry(role: 'user', text: text));
       _sending = true;
       _error = null;
     });
     _scrollToBottomSoon();
     try {
-      final history = _entries
-          .map(
-            (entry) => AIChatMessage(role: entry.role, content: entry.content),
-          )
-          .toList(growable: false);
-      // 交互式请求登记到协调器：后台预处理会让行，对话不排队。
-      final answer = await AiRequestCoordinator().runInteractive(
-        () => _ai.chat(
+      final history = proactive
+          ? [AIChatMessage(role: 'user', content: text)]
+          : _entries
+                .map(
+                  (entry) =>
+                      AIChatMessage(role: entry.role, content: entry.content),
+                )
+                .toList(growable: false);
+      ReadingAgentResult? agentResult;
+      final String answer;
+      await _agentMemory.ensureLoaded();
+      if (_agentMemory.permissions.enabled) {
+        final agent = _ensureAgent();
+        if (agent == null) {
+          throw const AIServiceException(code: 'agent_not_supported');
+        }
+        agentResult = await agent.chat(
           history: history,
-          pageText: _bookContext,
-          meta: AIRequestMeta(
-            bookId: _selectedBook?.id?.toString() ?? '',
-            chapterId: 'ai-page-chat',
+          bookContext: _bookContext,
+          onTool: (name) {
+            if (mounted && generation == _sendGeneration) {
+              setState(() => _activeTool = name);
+            }
+          },
+        );
+        answer = agentResult.answer;
+      } else {
+        // 交互式请求登记到协调器：后台预处理会让行，对话不排队。
+        answer = await AiRequestCoordinator().runInteractive(
+          () => _ai.chat(
+            history: history,
+            pageText: _bookContext,
+            meta: AIRequestMeta(
+              bookId: _selectedBook?.id?.toString() ?? '',
+              chapterId: 'ai-page-chat',
+            ),
           ),
-        ),
-      );
-      if (!mounted) return;
+        );
+      }
+      if (!mounted || generation != _sendGeneration) return;
       setState(() {
         _entries.add(
           _AiChatEntry(
             role: 'assistant',
-            text: translateMockAiResponse(context, answer),
-            content: answer,
+            text:
+                '${proactive ? '${readingAgentText(context, '为你推荐', 'For you')}\n\n' : ''}${translateMockAiResponse(context, answer)}',
+            content: agentResult?.conversationContent ?? answer,
+            agentResult: agentResult,
           ),
         );
         _sending = false;
+        _activeTool = null;
       });
+      if (proactive) await _agentMemory.markProactiveDelivered(DateTime.now());
       unawaited(_persistHistory());
     } on AIServiceException catch (exception) {
-      if (!mounted) return;
+      if (!mounted || generation != _sendGeneration) return;
       setState(() {
         _sending = false;
-        _error = translateAIServiceException(context, exception);
+        _activeTool = null;
+        _error = exception.code == 'agent_cancelled'
+            ? null
+            : switch (exception.code) {
+                'agent_message_too_long' => readingAgentText(
+                  context,
+                  '问题过长，请缩短至 12000 字符以内',
+                  'Please shorten your question to 12,000 characters.',
+                ),
+                'agent_timeout' => readingAgentText(
+                  context,
+                  '本次查询已超时，请缩小推荐范围后重试',
+                  'This request timed out. Narrow your request and try again.',
+                ),
+                'tool_round_limit_exceeded' => readingAgentText(
+                  context,
+                  '已达到本次查询上限，请缩小范围后重试',
+                  'The query limit was reached. Narrow your request and retry.',
+                ),
+                'agent_not_supported' => readingAgentText(
+                  context,
+                  '当前 AI 服务不支持阅读 Agent，请检查模型配置',
+                  'This AI service does not support the reading Agent. Check your model settings.',
+                ),
+                _ => translateAIServiceException(context, exception),
+              };
+      });
+    } on DioException catch (exception) {
+      if (!mounted || generation != _sendGeneration) return;
+      setState(() {
+        _sending = false;
+        _activeTool = null;
+        _error = CancelToken.isCancel(exception)
+            ? null
+            : context.l10n.readerAiUnknownError;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || generation != _sendGeneration) return;
       setState(() {
         _sending = false;
+        _activeTool = null;
         _error = context.l10n.readerAiUnknownError;
       });
     }
@@ -440,11 +672,165 @@ class _AiPageState extends State<AiPage> {
               text: entry.text,
               content: entry.content,
               at: entry.at,
+              recommendations:
+                  entry.agentResult?.recommendations
+                      .map(
+                        (item) => AiChatBookRecommendation(
+                          sourceKey: sha256
+                              .convert(utf8.encode(item.book.source.id))
+                              .toString(),
+                          sourceName: item.book.source.name,
+                          title: item.book.book.title,
+                          author: item.book.book.author,
+                          reason: item.reason,
+                        ),
+                      )
+                      .where(
+                        (item) =>
+                            AiChatBookRecommendation.fromJson(item.toJson()) !=
+                            null,
+                      )
+                      .toList() ??
+                  entry.historyRecommendations,
             ),
         ],
       ),
     );
   }
+
+  void _openAgentBook(ReadingAgentRecommendation recommendation) {
+    final data = _agentData;
+    if (data is! LocalReadingAgentDataSource) return;
+    final shelf = _agentShelf ??= BookSourceShelfService(client: data.client);
+    SourcedBookActions(
+      context: context,
+      client: data.client,
+      shelfService: shelf,
+    ).showBookDetails(recommendation.book);
+  }
+
+  Future<void> _openHistoricalAgentBook(
+    AiChatBookRecommendation recommendation,
+  ) async {
+    final data = _agentData ??=
+        widget.agentDataSource ?? LocalReadingAgentDataSource();
+    if (data is! LocalReadingAgentDataSource) return;
+    try {
+      final book = await data.resolveRecommendation(
+        sourceKey: recommendation.sourceKey,
+        title: recommendation.title,
+        author: recommendation.author,
+      );
+      if (!mounted) return;
+      if (book == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              readingAgentText(
+                context,
+                '该书暂不可用，请检查书源或让 AI 重新搜索',
+                'This book is unavailable. Check the source or ask the Agent to search again.',
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+      _openAgentBook(
+        ReadingAgentRecommendation(book: book, reason: recommendation.reason),
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = readingAgentText(
+            context,
+            '书源查询失败，请稍后重试',
+            'The book source could not be reached. Please retry.',
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveAgentPreference(String text) async {
+    try {
+      await _agentMemory.saveMemory(text: text, origin: 'agent_suggestion');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            readingAgentText(context, '已保存阅读偏好', 'Reading preference saved'),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = readingAgentText(
+            context,
+            '偏好保存失败，请重试',
+            'Could not save the preference.',
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _recordAgentFeedback(
+    ReadingAgentRecommendation recommendation,
+    bool interested,
+  ) async {
+    try {
+      await _agentMemory.recordFeedback(
+        title: recommendation.book.book.title,
+        author: recommendation.book.book.author,
+        interested: interested,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            readingAgentText(
+              context,
+              '已记录推荐反馈',
+              'Recommendation feedback saved',
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = readingAgentText(
+            context,
+            '反馈保存失败，请重试',
+            'Could not save the feedback.',
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildEntry(_AiChatEntry entry) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _AiChatBubble(entry: entry),
+      if (entry.agentResult case final result?)
+        ReadingAgentResultPanel(
+          result: result,
+          onOpen: _openAgentBook,
+          onFeedback: (book, interested) =>
+              unawaited(_recordAgentFeedback(book, interested)),
+          onSaveMemory: (text) => unawaited(_saveAgentPreference(text)),
+          onSettings: () => unawaited(_openAgentSettings()),
+        ),
+      if (entry.historyRecommendations.isNotEmpty)
+        ReadingAgentHistoryPanel(
+          recommendations: entry.historyRecommendations,
+          onOpen: (item) => unawaited(_openHistoricalAgentBook(item)),
+        ),
+    ],
+  );
 
   void _scrollToBottomSoon() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -520,6 +906,40 @@ class _AiPageState extends State<AiPage> {
                       height: 1.5,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    key: const ValueKey('ai-page-agent-setup'),
+                    onPressed: () => unawaited(_openAgentSettings()),
+                    icon: const Icon(Icons.psychology_outlined),
+                    label: Text(
+                      readingAgentText(
+                        context,
+                        '阅读 Agent 与记忆',
+                        'Reading Agent & memory',
+                      ),
+                    ),
+                  ),
+                  if (_configured &&
+                      _agentLoaded &&
+                      _agentMemory.permissions.enabled)
+                    FilledButton.tonal(
+                      key: const ValueKey('ai-page-agent-recommend'),
+                      onPressed: () {
+                        _inputController.text = readingAgentText(
+                          context,
+                          '根据我的阅读偏好，在启用书源中为我推荐下一本书。',
+                          'Recommend my next book from enabled sources based on my reading preferences.',
+                        );
+                        unawaited(_handleSend());
+                      },
+                      child: Text(
+                        readingAgentText(
+                          context,
+                          '推荐下一本',
+                          'Recommend my next book',
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -615,7 +1035,7 @@ class _AiPageState extends State<AiPage> {
                                 ),
                                 children: [
                                   for (final entry in _entries)
-                                    _AiChatBubble(entry: entry),
+                                    _buildEntry(entry),
                                   if (_sending)
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -632,7 +1052,13 @@ class _AiPageState extends State<AiPage> {
                                           ),
                                           const SizedBox(width: 10),
                                           Text(
-                                            l10n.readerAiThinking,
+                                            _activeTool == null
+                                                ? l10n.readerAiThinking
+                                                : readingAgentText(
+                                                    context,
+                                                    '正在查询阅读数据与书源…',
+                                                    'Checking reading data and book sources…',
+                                                  ),
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall

@@ -14,6 +14,7 @@ class _RecordingAIService implements AIService {
 
   final List<String> chatCalls = <String>[];
   final List<int> promptLengths = <int>[];
+  final List<String> prompts = <String>[];
 
   final int? maxPromptChars;
   final String Function(AIRequestMeta meta)? answerForMeta;
@@ -32,6 +33,7 @@ class _RecordingAIService implements AIService {
       0,
       (total, message) => total + message.content.length,
     );
+    prompts.add(history.map((message) => message.content).join('\n'));
     promptLengths.add(promptLength);
     if (maxPromptChars != null && promptLength > maxPromptChars!) {
       throw const AIServiceException(
@@ -59,6 +61,24 @@ class _RecordingAIService implements AIService {
     required String pageText,
     required AIRequestMeta meta,
   }) async => 'page';
+}
+
+class _InFlightAIService extends _RecordingAIService {
+  final Completer<void> started = Completer<void>();
+  final Completer<String> response = Completer<String>();
+
+  @override
+  Future<String> chat({
+    required List<AIChatMessage> history,
+    required String pageText,
+    required AIRequestMeta meta,
+  }) async {
+    if (!started.isCompleted) {
+      started.complete();
+      return response.future;
+    }
+    return '# Final summary';
+  }
 }
 
 class _FakeExtractor extends BookTextExtractionService {
@@ -256,6 +276,78 @@ void main() {
       await expectLater(preprocess, throwsA(isA<BookPreprocessCancelled>()));
       expect(ai.chatCalls, isEmpty);
       expect(knowledge.summaries, isEmpty);
+    });
+
+    test('模型请求执行中取消后不更新进度或保存摘要', () async {
+      final coordinator = AiRequestCoordinator.forTesting();
+      final ai = _InFlightAIService();
+      final knowledge = _MemoryKnowledge();
+      final service = _testService(
+        ai: ai,
+        knowledge: knowledge,
+        coordinator: coordinator,
+      );
+      final cancelToken = BookPreprocessCancelToken();
+      final progress = <(int, int)>[];
+
+      final preprocess = service.preprocessBook(
+        book: _testBook(),
+        cancelToken: cancelToken,
+        onProgress: (done, total) => progress.add((done, total)),
+      );
+      await ai.started.future;
+      cancelToken.cancel();
+      ai.response.complete('Part summary');
+
+      await expectLater(preprocess, throwsA(isA<BookPreprocessCancelled>()));
+      expect(progress.last.$1, 0);
+      expect(knowledge.summaries, isEmpty);
+    });
+
+    test('最终进度回调同步取消后不保存摘要', () async {
+      final coordinator = AiRequestCoordinator.forTesting();
+      final ai = _RecordingAIService();
+      final knowledge = _MemoryKnowledge();
+      final service = _testService(
+        ai: ai,
+        knowledge: knowledge,
+        coordinator: coordinator,
+      );
+      final cancelToken = BookPreprocessCancelToken();
+
+      final preprocess = service.preprocessBook(
+        book: _testBook(),
+        cancelToken: cancelToken,
+        onProgress: (done, total) {
+          if (done == total) cancelToken.cancel();
+        },
+      );
+
+      await expectLater(preprocess, throwsA(isA<BookPreprocessCancelled>()));
+      expect(knowledge.summaries, isEmpty);
+    });
+
+    test('中间摘要截断不会把 UTF-16 代理对切成两半', () async {
+      final coordinator = AiRequestCoordinator.forTesting();
+      final boundaryAnswer = '${'a' * 899}😀tail';
+      final ai = _RecordingAIService(
+        answerForMeta: (meta) => meta.chapterId == 'preprocess-merge'
+            ? '# Final summary'
+            : boundaryAnswer,
+      );
+      final knowledge = _MemoryKnowledge();
+      final service = _testService(
+        ai: ai,
+        knowledge: knowledge,
+        coordinator: coordinator,
+      );
+
+      await service.preprocessBook(book: _testBook());
+
+      final mergePrompt = ai.prompts.last;
+      expect(mergePrompt.codeUnits, isNot(contains(0xD83D)));
+      expect(mergePrompt.codeUnits, isNot(contains(0xDE00)));
+      expect(knowledge.summaries['7'], '# Final summary');
     });
 
     test('无对话在途时预处理立即执行', () async {

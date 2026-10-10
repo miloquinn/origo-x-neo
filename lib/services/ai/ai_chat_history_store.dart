@@ -6,12 +6,65 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Historical recommendation references contain no source URL, request headers,
+/// scripts or private book locator. A user tap resolves it against the current
+/// enabled source and fresh search results.
+class AiChatBookRecommendation {
+  const AiChatBookRecommendation({
+    required this.sourceKey,
+    required this.sourceName,
+    required this.title,
+    required this.author,
+    required this.reason,
+  });
+
+  final String sourceKey;
+  final String sourceName;
+  final String title;
+  final String author;
+  final String reason;
+
+  Map<String, String> toJson() => {
+    'sourceKey': sourceKey,
+    'sourceName': sourceName,
+    'title': title,
+    'author': author,
+    'reason': reason,
+  };
+
+  static AiChatBookRecommendation? fromJson(Object? value) {
+    if (value is! Map) return null;
+    final fields = ['sourceKey', 'sourceName', 'title', 'author', 'reason'];
+    if (fields.any((key) => value[key] is! String)) return null;
+    final sourceKey = value['sourceKey'] as String;
+    final title = value['title'] as String;
+    final reason = value['reason'] as String;
+    if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(sourceKey) ||
+        title.trim().isEmpty ||
+        title.length > 200 ||
+        (value['author'] as String).length > 200 ||
+        (value['sourceName'] as String).length > 200 ||
+        reason.trim().isEmpty ||
+        reason.length > 500) {
+      return null;
+    }
+    return AiChatBookRecommendation(
+      sourceKey: sourceKey,
+      sourceName: value['sourceName'] as String,
+      title: title,
+      author: value['author'] as String,
+      reason: reason,
+    );
+  }
+}
+
 class AiChatHistoryMessage {
   const AiChatHistoryMessage({
     required this.role,
     required this.text,
     String? content,
     required this.at,
+    this.recommendations = const [],
   }) : content = content ?? text;
 
   /// `user` 或 `assistant`。
@@ -24,12 +77,18 @@ class AiChatHistoryMessage {
   final String content;
 
   final DateTime at;
+  final List<AiChatBookRecommendation> recommendations;
 
   Map<String, dynamic> toJson() => {
     'role': role,
     'text': text,
     'content': content,
     'at': at.toUtc().toIso8601String(),
+    if (recommendations.isNotEmpty)
+      'recommendations': recommendations
+          .take(6)
+          .map((item) => item.toJson())
+          .toList(),
   };
 
   static AiChatHistoryMessage? fromJson(Object? json) {
@@ -46,6 +105,14 @@ class AiChatHistoryMessage {
       text: text,
       content: rawContent as String?,
       at: (at ?? DateTime.now()).toLocal(),
+      recommendations: role == 'assistant' && json['recommendations'] is List
+          ? List.unmodifiable(
+              (json['recommendations'] as List)
+                  .map(AiChatBookRecommendation.fromJson)
+                  .whereType<AiChatBookRecommendation>()
+                  .take(6),
+            )
+          : const [],
     );
   }
 }

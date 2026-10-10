@@ -98,6 +98,8 @@
 模型和参数。AI 功能需要用户自行提供合法可用的服务与凭据；相关请求会直接发送给用户
 选择的第三方服务商。
 
+AI 页可按用户授权查询本设备的阅读统计、书架和启用书源，推荐真实书籍并管理长期偏好。默认由用户提问，应用内主动推荐需单独开启。数据存储、权限和维护入口见 [阅读 AI 与内置 Agent](docs/reading-ai-agent.md)。
+
 ## 本地格式支持
 
 格式支持以 [`BookFormatRegistry`](lib/services/books/book_format_support.dart) 为准。当前不要把

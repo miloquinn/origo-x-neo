@@ -61,11 +61,12 @@ class GlobalAIReadingService {
   }) async {
     final memoryFile = await _bookMemoryFile(bookId);
     final memory = await _readJson(memoryFile) ?? <String, dynamic>{};
+    final now = DateTime.now().toIso8601String();
     await _writeJson(memoryFile, <String, dynamic>{
       ...memory,
       'summary': summary,
-      'summaryCreatedAt': DateTime.now().toIso8601String(),
-      'updatedAt': DateTime.now().toIso8601String(),
+      'summaryCreatedAt': now,
+      'updatedAt': now,
     });
   }
 
@@ -133,6 +134,7 @@ class GlobalAIReadingService {
       await file.writeAsString(encoder.convert(json), flush: true);
     } catch (error) {
       debugPrint('[GlobalAI] write json failed: ${file.path}, $error');
+      rethrow;
     }
   }
 }

@@ -12,6 +12,8 @@ part 'ai_protocol_adapter.dart';
 part 'ai_http_error_translator.dart';
 part 'ai_model_presets.dart';
 part 'ai_configuration.dart';
+part 'ai_agent_protocol.dart';
+part 'ai_agent_service.dart';
 
 class AIRequestMeta {
   final String bookId;
@@ -82,7 +84,7 @@ class AIServiceException implements Exception {
   String toString() => code;
 }
 
-class ReaderHttpAIService implements ConfigurableAIService {
+class ReaderHttpAIService implements ConfigurableAIService, AgentAIService {
   ReaderHttpAIService({
     Dio? dio,
     AISettingsStore? settingsStore,
@@ -105,6 +107,23 @@ class ReaderHttpAIService implements ConfigurableAIService {
   @override
   Future<void> saveSettings(AIProviderSettings settings) =>
       _settingsStore.save(settings);
+
+  @override
+  Future<String> chatWithTools({
+    required List<AIChatMessage> history,
+    required String systemPrompt,
+    required List<AIToolDefinition> tools,
+    required Future<Map<String, dynamic>> Function(AIToolCall) onToolCall,
+    CancelToken? cancelToken,
+    int maxToolRounds = 6,
+  }) => _ReaderAIAgentTurn(this).run(
+    history: history,
+    systemPrompt: systemPrompt,
+    tools: tools,
+    onToolCall: onToolCall,
+    cancelToken: cancelToken,
+    maxToolRounds: maxToolRounds,
+  );
 
   Future<List<String>> fetchAvailableModels(AIProviderSettings settings) async {
     final normalized = settings.normalized();
@@ -244,23 +263,16 @@ class ReaderHttpAIService implements ConfigurableAIService {
       throw const AIServiceException(code: 'enter_question_first');
     }
 
-    final endpoint = _protocolAdapter.chatEndpoint(settings);
     final payload = _protocolAdapter.buildPayload(
       settings: settings,
       messages: messages,
     );
+    final responseData = await _postDecodedChatPayload(
+      settings: settings,
+      payload: payload,
+    );
 
     try {
-      final response = await _dio.post<String>(
-        endpoint,
-        data: payload,
-        options: _protocolAdapter.requestOptions(settings),
-      );
-      final responseData = _decodeResponseBody(
-        rawBody: response.data,
-        endpoint: endpoint,
-        settings: settings,
-      );
       final answer = _protocolAdapter.extractAssistantContent(
         settings: settings,
         responseData: responseData,
@@ -269,10 +281,38 @@ class ReaderHttpAIService implements ConfigurableAIService {
         throw const AIServiceException(code: 'empty_response');
       }
       return answer.trim();
-    } on DioException catch (e) {
-      throw _errorTranslator.translate(e);
+    } on AIServiceException {
+      rethrow;
     } catch (e) {
       throw AIServiceException(code: 'request_failed', error: e.toString());
+    }
+  }
+
+  Future<dynamic> _postDecodedChatPayload({
+    required AIProviderSettings settings,
+    required Map<String, dynamic> payload,
+    CancelToken? cancelToken,
+  }) async {
+    final endpoint = _protocolAdapter.chatEndpoint(settings);
+    try {
+      final response = await _dio.post<String>(
+        endpoint,
+        data: payload,
+        options: _protocolAdapter.requestOptions(settings),
+        cancelToken: cancelToken,
+      );
+      return _decodeResponseBody(
+        rawBody: response.data,
+        endpoint: endpoint,
+        settings: settings,
+      );
+    } on DioException catch (error) {
+      if (CancelToken.isCancel(error)) rethrow;
+      throw _errorTranslator.translate(error);
+    } on AIServiceException {
+      rethrow;
+    } catch (error) {
+      throw AIServiceException(code: 'request_failed', error: error.toString());
     }
   }
 

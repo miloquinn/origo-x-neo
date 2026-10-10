@@ -112,6 +112,7 @@ class BookPreprocessService {
         meta: AIRequestMeta(bookId: bookId, chapterId: chapterId),
         cancelToken: cancelToken,
       );
+      _throwIfCancelled(cancelToken);
       done += 1;
       onProgress?.call(done, total);
       return answer.trim();
@@ -182,9 +183,9 @@ class BookPreprocessService {
       'preprocess-merge',
     );
 
-    final document = markdown;
-    await _knowledge.saveBookSummary(bookId: bookId, summary: document);
-    return document;
+    _throwIfCancelled(cancelToken);
+    await _knowledge.saveBookSummary(bookId: bookId, summary: markdown);
+    return markdown;
   }
 
   int _mergeRequestCount(int summaryCount) {
@@ -200,7 +201,9 @@ class BookPreprocessService {
   String _limitSummary(String text) {
     final compact = text.trim();
     if (compact.length <= intermediateSummaryChars) return compact;
-    return '${compact.substring(0, intermediateSummaryChars)}…';
+    var end = intermediateSummaryChars;
+    if (_splitsSurrogatePair(compact, end)) end -= 1;
+    return '${compact.substring(0, end)}…';
   }
 
   String _summaryRangeLabel(List<_BookSummary> summaries) {

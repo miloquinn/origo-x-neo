@@ -3,14 +3,18 @@
 
 import 'dart:math' as math;
 
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:xxread/services/core/database_service.dart';
 
 class ReadingStatsDao {
-  final dbService = DatabaseService();
+  ReadingStatsDao({Future<Database> Function()? database})
+    : _database = database ?? (() => DatabaseService().database);
+
+  final Future<Database> Function() _database;
 
   Future<void> insertReadingTime(DateTime date, int durationInSeconds) async {
     if (durationInSeconds <= 0) return;
-    final db = await dbService.database;
+    final db = await _database();
     final dateString = _dateKey(date);
     await _upsertReadingDuration(
       db: db,
@@ -34,7 +38,7 @@ class ReadingStatsDao {
       return;
     }
 
-    final db = await dbService.database;
+    final db = await _database();
     final chunks = _splitSessionByDate(startTime: startTime, endTime: endTime);
     if (chunks.isEmpty) {
       return;
@@ -130,7 +134,7 @@ class ReadingStatsDao {
   }
 
   Future<Map<String, dynamic>> getAchievementStats() async {
-    final db = await dbService.database;
+    final db = await _database();
     final today = DateTime.now();
     final durationByDate = await _loadMergedDurationByDate(
       startDate: _dateKey(today.subtract(const Duration(days: 365))),
@@ -160,7 +164,7 @@ class ReadingStatsDao {
 
   /// 最近阅读书籍（真实）：基于 reading_sessions 的最近结束时间排序。
   Future<List<int>> getRecentBookIds({int limit = 5}) async {
-    final db = await dbService.database;
+    final db = await _database();
     final safeLimit = limit.clamp(1, 50);
     final rows = await db.rawQuery('''
       SELECT bookId, MAX(endTimeMs) AS lastEnd
@@ -181,12 +185,38 @@ class ReadingStatsDao {
     return ids;
   }
 
+  /// 最近阅读会话明细（真实），供需要逐条事实的本地功能按页读取。
+  ///
+  /// 页大小始终限制在 50 以内，且 LIMIT/OFFSET 使用绑定参数，避免调用方
+  /// 将任意查询片段带入数据库。
+  Future<List<Map<String, dynamic>>> getReadingSessions({
+    int offset = 0,
+    int limit = 20,
+  }) async {
+    final db = await _database();
+    final safeOffset = math.max(0, offset);
+    final safeLimit = limit.clamp(1, 50);
+    final rows = await db.rawQuery(
+      '''
+      SELECT id, date, bookId, startTimeMs, endTimeMs,
+             durationInSeconds, pagesRead
+      FROM reading_sessions
+      ORDER BY endTimeMs DESC, id DESC
+      LIMIT ? OFFSET ?
+      ''',
+      [safeLimit, safeOffset],
+    );
+    return rows
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList(growable: false);
+  }
+
   /// 每日统计（真实）：时长来自 reading_stats；页数/当日阅读书籍数来自 reading_sessions。
   Future<List<Map<String, dynamic>>> getDailyStatsRange(
     DateTime startDate,
     DateTime endDate,
   ) async {
-    final db = await dbService.database;
+    final db = await _database();
     final startDateStr = _dateKey(startDate);
     final endDateStr = _dateKey(endDate);
     final durationByDate = await _loadMergedDurationByDate(
@@ -245,7 +275,7 @@ class ReadingStatsDao {
 
   /// 读取小时分布（真实）：根据会话时间窗口切分到每个小时。
   Future<Map<int, int>> getHourlyReadingDistribution({int days = 30}) async {
-    final db = await dbService.database;
+    final db = await _database();
     final now = DateTime.now();
     final startWindow = now.subtract(Duration(days: days));
     final startMs = startWindow.millisecondsSinceEpoch;
@@ -331,7 +361,7 @@ class ReadingStatsDao {
 
   /// 每本书的真实阅读统计（来自 reading_sessions）。
   Future<Map<int, Map<String, dynamic>>> getBookReadingStats() async {
-    final db = await dbService.database;
+    final db = await _database();
     final rows = await db.rawQuery('''
       SELECT
         bookId,
@@ -362,7 +392,7 @@ class ReadingStatsDao {
 
   /// 阅读会话概览（真实）。
   Future<Map<String, int>> getSessionSummary({int recentDays = 90}) async {
-    final db = await dbService.database;
+    final db = await _database();
     final startDate = _dateKey(
       DateTime.now().subtract(Duration(days: recentDays)),
     );
@@ -397,7 +427,7 @@ class ReadingStatsDao {
     DateTime date, {
     int minDurationSeconds = 0,
   }) async {
-    final db = await dbService.database;
+    final db = await _database();
     final rows = await db.rawQuery(
       '''
       SELECT COUNT(*) as count
@@ -411,7 +441,7 @@ class ReadingStatsDao {
 
   /// 最近 N 天的平均单次会话时长（分钟）。
   Future<double> getAverageSessionMinutes({int days = 30}) async {
-    final db = await dbService.database;
+    final db = await _database();
     final startDate = _dateKey(DateTime.now().subtract(Duration(days: days)));
     final rows = await db.rawQuery(
       '''
@@ -446,7 +476,7 @@ class ReadingStatsDao {
     String? startDate,
     String? endDate,
   }) async {
-    final db = await dbService.database;
+    final db = await _database();
     final args = <Object?>[];
     final whereClause = _buildDateRangeClause(
       startDate: startDate,

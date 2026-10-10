@@ -240,4 +240,142 @@ void main() {
       ]);
     });
   });
+
+  group('ReaderHttpAIService.chat transport errors', () {
+    Future<ReaderHttpAIService> serviceFor(
+      void Function(RequestOptions, RequestInterceptorHandler) respond,
+    ) async {
+      final dio = Dio()
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) => respond(options, handler),
+          ),
+        );
+      final service = ReaderHttpAIService(
+        dio: dio,
+        settingsStore: _MemoryAISettingsStore(),
+      );
+      await service.saveSettings(
+        const AIProviderSettings(
+          provider: AIProviderType.custom,
+          protocol: AIProtocolType.openai,
+          apiKey: 'test-key',
+          baseUrl: 'https://gateway.example.com/v1',
+          model: 'reader-model',
+          temperature: 0.7,
+        ),
+      );
+      return service;
+    }
+
+    Future<String> chat(ReaderHttpAIService service) => service.chat(
+      history: const [AIChatMessage(role: 'user', content: '测试')],
+      pageText: '正文',
+      meta: const AIRequestMeta(bookId: 'book', chapterId: 'chapter'),
+    );
+
+    test('preserves empty response diagnostics', () async {
+      final service = await serviceFor(
+        (options, handler) => handler.resolve(
+          Response<String>(requestOptions: options, statusCode: 200, data: ''),
+        ),
+      );
+
+      await expectLater(
+        chat(service),
+        throwsA(
+          isA<AIServiceException>().having(
+            (error) => error.code,
+            'code',
+            'empty_response_error',
+          ),
+        ),
+      );
+    });
+
+    test('preserves invalid JSON diagnostics', () async {
+      final service = await serviceFor(
+        (options, handler) => handler.resolve(
+          Response<String>(
+            requestOptions: options,
+            statusCode: 200,
+            data: '<html>gateway failure</html>',
+          ),
+        ),
+      );
+
+      await expectLater(
+        chat(service),
+        throwsA(
+          isA<AIServiceException>()
+              .having((error) => error.code, 'code', 'invalid_json_error')
+              .having(
+                (error) => error.snippet,
+                'snippet',
+                '<html>gateway failure</html>',
+              ),
+        ),
+      );
+    });
+
+    test('preserves semantic empty assistant responses', () async {
+      final service = await serviceFor(
+        (options, handler) => handler.resolve(
+          Response<String>(
+            requestOptions: options,
+            statusCode: 200,
+            data: jsonEncode({
+              'choices': [
+                {
+                  'message': {'role': 'assistant', 'content': ''},
+                },
+              ],
+            }),
+          ),
+        ),
+      );
+
+      await expectLater(
+        chat(service),
+        throwsA(
+          isA<AIServiceException>().having(
+            (error) => error.code,
+            'code',
+            'empty_response',
+          ),
+        ),
+      );
+    });
+
+    test('keeps provider HTTP errors on the shared translator path', () async {
+      final service = await serviceFor((options, handler) {
+        handler.reject(
+          DioException(
+            requestOptions: options,
+            response: Response<dynamic>(
+              requestOptions: options,
+              statusCode: 401,
+              data: {
+                'error': {'message': 'Invalid API key'},
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+      });
+
+      await expectLater(
+        chat(service),
+        throwsA(
+          isA<AIServiceException>()
+              .having(
+                (error) => error.code,
+                'code',
+                'request_failed_provider_mismatch_hint',
+              )
+              .having((error) => error.status, 'status', '401'),
+        ),
+      );
+    });
+  });
 }
