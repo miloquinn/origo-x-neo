@@ -146,6 +146,8 @@ class _PreviewState extends State<_Preview> {
         child: SizedBox.fromSize(
           size: size,
           child: MaterialApp(
+            key: ValueKey(scene.name),
+            themeAnimationDuration: Duration.zero,
             debugShowCheckedModeBanner: false,
             locale: const Locale('zh'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -176,6 +178,7 @@ class _PreviewState extends State<_Preview> {
     await directory.create(recursive: true);
     for (var i = 0; i < _scenes.length; i++) {
       if (!mounted) return;
+      hideSideToast();
       setState(() => _index = i);
       await WidgetsBinding.instance.endOfFrame;
       final context = _sceneContext.currentContext!;

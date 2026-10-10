@@ -21,3 +21,9 @@
 - `tool/preview_side_toast.dart`：生产根浮层实际 Flutter 渲染，三种材质的明暗模式、320 点大字带操作及长错误文案。
 
 继承主题在显示时捕获；已显示的短暂提示不会订阅调用页后续主题变化，下一条读取最新主题。原生截图、安装启动与用户真实推荐反馈体验是分别验证的信号，不能互相替代。
+
+## 2026-10-10 验证状态
+
+82 项独立回归、最终静态分析和直接 AI 点踩路径通过；六个产品文件与提交 `ed482f40` 的 SHA-256 一致。iOS 原生预览构建通过，首次八组实际采样确认 `shaderFilterSupported=true`；macOS 八组同时覆盖实色、毛玻璃及液态公共降级。有效的首个独立主题截图见 [无玻璃反馈预览](previews/shared-feedback-20261010/solid-light.png)。
+
+连续场景的默认文字样式受前一个主题影响，预览已改为每个场景创建独立 MaterialApp、取消主题插值并提前关闭旧提示，修正后的原生编译通过。补录被当前 CoreSimulator 服务调用卡住，因此其余初次截图只保留在忽略的 `build/unified-feedback/ios-initial-captures/`，不作为全页主题验收。收据为 `build/unified-feedback/validation.json`。SloanePro 已核对为 iPhone 16 Pro，统一安装负责人已接收冻结源码；共享 iCloud、段评等改动尚未定稿，当前没有新合并包的安装或物理 UI 验收证据。
