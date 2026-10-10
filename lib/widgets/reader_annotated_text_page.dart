@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'glass_bottom_sheet.dart';
 import 'package:flutter/rendering.dart';
 
 import 'package:xxread/core/reader/canonical_locator.dart';
@@ -395,9 +396,10 @@ Future<void> showReaderAnnotationDetails(
   BuildContext context, {
   required ReaderThemePalette palette,
   required BookNote annotation,
-}) => showModalBottomSheet<void>(
+}) => showGlassBottomSheet<void>(
   context: context,
-  backgroundColor: Colors.transparent,
+  backgroundColor: palette.surface,
+  theme: palette.toThemeData(parentTheme: Theme.of(context)),
   barrierColor: palette.shadow.withValues(
     alpha: palette.brightness == Brightness.dark ? 0.72 : 0.36,
   ),
@@ -409,12 +411,12 @@ Future<void> showReaderAnnotationDetails(
     final theme = palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
-      child: Material(
+      child: GlassBottomSheetSurface(
         key: const ValueKey('reader-annotation-detail-sheet'),
         color: palette.surface,
-        surfaceTintColor: Colors.transparent,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        clipBehavior: Clip.antiAlias,
+        outlineColor: palette.border,
+        shadowColor: palette.shadow,
+        brightness: palette.brightness,
         child: SafeArea(
           top: false,
           child: Padding(
@@ -424,17 +426,6 @@ Future<void> showReaderAnnotationDetails(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Align(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: palette.secondaryText.withValues(alpha: 0.32),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Icon(Icons.mode_comment_outlined, color: palette.accent),
@@ -505,9 +496,10 @@ Future<ReaderAnnotationEditorResult?> showReaderAnnotationEditor(
   required ReaderThemePalette palette,
   required ReaderSelectionSnapshot selection,
   required bool withNote,
-}) => showModalBottomSheet<ReaderAnnotationEditorResult>(
+}) => showGlassBottomSheet<ReaderAnnotationEditorResult>(
   context: context,
-  backgroundColor: Colors.transparent,
+  backgroundColor: palette.surface,
+  theme: palette.toThemeData(parentTheme: Theme.of(context)),
   barrierColor: palette.shadow.withValues(
     alpha: palette.brightness == Brightness.dark ? 0.72 : 0.36,
   ),
@@ -575,11 +567,11 @@ class _ReaderAnnotationEditorSheetState
     final theme = widget.palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
-      child: Material(
+      child: GlassBottomSheetSurface(
         color: widget.palette.surface,
-        surfaceTintColor: Colors.transparent,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        clipBehavior: Clip.antiAlias,
+        outlineColor: widget.palette.border,
+        shadowColor: widget.palette.shadow,
+        brightness: widget.palette.brightness,
         child: SafeArea(
           top: false,
           child: Padding(
@@ -588,19 +580,6 @@ class _ReaderAnnotationEditorSheetState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Align(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: widget.palette.secondaryText.withValues(
-                        alpha: 0.32,
-                      ),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Text(
                   widget.withNote
                       ? context.l10n.readerAddAnnotation

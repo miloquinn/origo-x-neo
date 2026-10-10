@@ -5,7 +5,7 @@ extension _BookSourceManagementAddSource on _BookSourceManagementPageState {
     final additionalEnabled = _additionalProtocolsEnabled();
     final BookSourceAddCommitResult? result;
     if (LayoutHelper.isMobile(context)) {
-      result = await showModalBottomSheet<BookSourceAddCommitResult>(
+      result = await showGlassBottomSheet<BookSourceAddCommitResult>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,

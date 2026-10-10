@@ -20,6 +20,7 @@ import 'package:xxread/services/core/app_settings_service.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/layout_helper.dart';
 import 'package:xxread/utils/page_style_helper.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 import 'book_source_management_page.dart';
 import 'controllers/book_sources_controller.dart';
@@ -317,6 +318,7 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
       title: context.l10n.discoverCategories,
       searchLabel: context.l10n.search,
       noResultsLabel: context.l10n.bookSourcesNoResults,
+      transparentBackground: size.width < 720,
     );
     final SourcedBookCategory? selected;
     if (size.width >= 720) {
@@ -332,11 +334,10 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
         ),
       );
     } else {
-      selected = await showModalBottomSheet<SourcedBookCategory>(
+      selected = await showGlassBottomSheet<SourcedBookCategory>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        clipBehavior: Clip.antiAlias,
         builder: (context) => SizedBox(
           height: MediaQuery.sizeOf(context).height * 0.82,
           child: Padding(

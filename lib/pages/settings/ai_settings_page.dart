@@ -12,6 +12,7 @@ import 'package:xxread/services/ai/book_preprocess_service.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_style_helper.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_dialog.dart';
 import 'package:xxread/widgets/ai_provider_logo.dart';
@@ -702,7 +703,7 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
   }
 
   Future<void> _showAiQuickModelMenu(_AiQuickModel item) async {
-    final action = await showModalBottomSheet<String>(
+    final action = await showGlassBottomSheet<String>(
       context: context,
       useSafeArea: true,
       builder: (sheetContext) {

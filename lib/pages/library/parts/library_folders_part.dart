@@ -186,9 +186,8 @@ extension _LibraryPageFolders on _LibraryPageState {
   }
 
   Future<void> _showAddMenu() async {
-    final action = await showModalBottomSheet<String>(
+    final action = await showGlassBottomSheet<String>(
       context: context,
-      showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -279,9 +278,8 @@ extension _LibraryPageFolders on _LibraryPageState {
 
   Future<({String? id})?> _pickFolderDestination({ShelfFolder? movingFolder}) {
     String? location = movingFolder?.parentId ?? _currentFolderId;
-    return showModalBottomSheet<({String? id})>(
+    return showGlassBottomSheet<({String? id})>(
       context: context,
-      showDragHandle: true,
       isScrollControlled: true,
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, updateSheet) {
@@ -377,9 +375,8 @@ extension _LibraryPageFolders on _LibraryPageState {
 
   Future<void> _showFolderOptions(ShelfFolder folder) async {
     if (_selection.isActive || _folderMutationInProgress) return;
-    final action = await showModalBottomSheet<String>(
+    final action = await showGlassBottomSheet<String>(
       context: context,
-      showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

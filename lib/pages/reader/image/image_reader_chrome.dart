@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/reader_themes.dart';
-import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/app_skin_icon.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 
 /// The single control overlay used by every comic reading direction.
@@ -102,13 +102,14 @@ class ImageReaderChrome extends StatelessWidget {
                           ),
                         ),
                       ),
-                      GlassTextButton(
+                      TextButton(
                         onPressed: () => unawaited(_showJumpDialog(context)),
-                        blurBackground: false,
-                        color: palette.controlFill,
-                        foregroundColor: palette.secondaryText,
-                        brightness: palette.brightness,
-                        outlineColor: palette.border,
+                        style: TextButton.styleFrom(
+                          foregroundColor: palette.secondaryText,
+                          backgroundColor: Colors.transparent,
+                          minimumSize: const Size(44, 44),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                         child: Text(
                           '$_displayPage / $pageCount',
                           style: const TextStyle(
@@ -332,18 +333,19 @@ class _ImageReaderChromeAction extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GlassTextButton(
+  Widget build(BuildContext context) => TextButton(
     onPressed: onTap,
-    blurBackground: false,
-    color: palette.controlFill,
-    foregroundColor: palette.text,
-    brightness: palette.brightness,
-    outlineColor: palette.border,
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+    style: TextButton.styleFrom(
+      foregroundColor: palette.text,
+      backgroundColor: Colors.transparent,
+      minimumSize: const Size(44, 44),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    ),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: palette.text, size: 20),
+        AppSkinIcon.adapt(Icon(icon, color: palette.text, size: 20)),
         const SizedBox(height: 2),
         Text(
           label,

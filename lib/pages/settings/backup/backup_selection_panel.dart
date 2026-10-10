@@ -3,6 +3,7 @@ import '../../../utils/page_style_helper.dart';
 import '../../../services/backup/backup_selection.dart';
 import '../../../services/backup/webdav_backup_controller.dart';
 import '../../../widgets/pill_search_field.dart';
+import '../../../widgets/glass_bottom_sheet.dart';
 import 'backup_copy.dart';
 
 class BackupSelectionPanel extends StatelessWidget {
@@ -85,16 +86,11 @@ class BackupSelectionPanel extends StatelessWidget {
           onTap: controller.busy
               ? null
               : () async {
-                  final result = await showModalBottomSheet<Set<int>>(
+                  final result = await showGlassBottomSheet<Set<int>>(
                     context: context,
                     isScrollControlled: true,
                     useSafeArea: true,
                     backgroundColor: Theme.of(context).colorScheme.surface,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(28),
-                      ),
-                    ),
                     constraints: const BoxConstraints(maxWidth: 680),
                     builder: (_) => _BookPicker(controller: controller, zh: zh),
                   );
@@ -221,17 +217,6 @@ class _BookPickerState extends State<_BookPicker> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                margin: EdgeInsets.only(top: 10, bottom: compact ? 8 : 22),
-                decoration: BoxDecoration(
-                  color: palette.border,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Row(

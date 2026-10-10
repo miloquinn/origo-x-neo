@@ -5,6 +5,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/bookmark.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/origo_x_icons.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/reader_navigation_sheet.dart';
 
 void main() {
@@ -119,18 +120,12 @@ void main() {
               theme.data.colorScheme.primary == ReaderThemes.green.accent &&
               theme.data.colorScheme.surface == ReaderThemes.green.surface,
         );
-    final handle = tester.widget<Container>(
-      find.byKey(const ValueKey('reader-navigation-drag-handle')),
-    );
-    final handleDecoration = handle.decoration! as BoxDecoration;
+    final handle = find.byKey(GlassBottomSheetSurface.dragHandleKey);
     final navigationTitle = tester.widget<Text>(find.text('阅读导航'));
 
     expect(themed, isTrue);
     expect(navigationTitle.style?.color, ReaderThemes.green.text);
-    expect(
-      handleDecoration.color,
-      ReaderThemes.green.secondaryText.withValues(alpha: 0.32),
-    );
+    expect(handle, findsOneWidget);
 
     await tester.tap(find.text('书签'));
     await tester.pumpAndSettle();
@@ -248,7 +243,10 @@ void main() {
     expect(scrollbar.interactive, isTrue);
     expect(scrollbar.controller, same(chapterList.controller));
     final rootTitleLeft = tester.getTopLeft(find.text('序章 远方的灯火').first).dx;
-    expect(rootTitleLeft, lessThan(28));
+    final panelLeft = tester
+        .getTopLeft(find.byKey(GlassBottomSheetSurface.dragHandleKey))
+        .dx;
+    expect(rootTitleLeft - panelLeft, lessThan(28));
     expect(find.text('01'), findsNothing);
     expect(find.text('04'), findsNothing);
     expect(find.text('第三章 雨夜重逢'), findsWidgets);

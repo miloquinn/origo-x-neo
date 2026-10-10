@@ -190,31 +190,17 @@ extension _SettingsAppearancePart on _SettingsPageState {
           ),
         ];
 
-    showModalBottomSheet<void>(
+    showGlassBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (modalContext) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(modalContext).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
+      builder: (modalContext) => Material(
+        type: MaterialType.transparency,
         child: SafeArea(
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 14),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      modalContext,
-                    ).colorScheme.onSurface.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 2, 24, 12),
                   child: Row(
@@ -390,31 +376,17 @@ extension _SettingsAppearancePart on _SettingsPageState {
           ),
         ];
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(modalContext).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
+        return Material(
+          type: MaterialType.transparency,
           child: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 14),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      modalContext,
-                    ).colorScheme.onSurface.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 2, 24, 12),
                   child: Row(
@@ -563,10 +535,9 @@ extension _SettingsAppearancePart on _SettingsPageState {
           '${(appSettings.appTextScaleFactor * 100).round()}% · '
           '${l10n.appTextSizeDescription}',
       icon: Icons.format_size_rounded,
-      onTap: () => showModalBottomSheet<void>(
+      onTap: () => showGlassBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        showDragHandle: true,
         builder: (_) => const AppTextSizeSheet(),
       ),
     );
@@ -630,7 +601,7 @@ extension _SettingsAppearancePart on _SettingsPageState {
     final l10n = context.l10n;
     await appSettings.prepareCustomFontPreviews();
     if (!mounted) return;
-    final importStatus = await showModalBottomSheet<CustomFontImportStatus>(
+    final importStatus = await showGlassBottomSheet<CustomFontImportStatus>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -729,30 +700,16 @@ extension _SettingsAppearancePart on _SettingsPageState {
       _LanguageOption(code: 'ru', label: l10n.languageRussian),
     ];
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
+      builder: (context) => Material(
+        type: MaterialType.transparency,
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 16),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(

@@ -7,7 +7,7 @@ extension _LibraryPageBookDetails on _LibraryPageState {
   void _showBookOptions(Book book) {
     final libraryContext = context;
     final isMaterial3Style = _isMaterial3Style;
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -20,17 +20,6 @@ extension _LibraryPageBookDetails on _LibraryPageState {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 12, bottom: 8),
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: localScheme.onSurface.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                   child: Row(
@@ -330,15 +319,7 @@ extension _LibraryPageBookDetails on _LibraryPageState {
           ),
         );
 
-        return GlassSurface(
-          role: GlassSurfaceRole.panel,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          color: localScheme.surfaceContainerHigh,
-          outlineColor: localScheme.outline,
-          child: content,
-        );
+        return content;
       },
     );
   }

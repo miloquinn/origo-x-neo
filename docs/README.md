@@ -18,6 +18,7 @@
 | 备份与恢复 | [WebDAV 备份](webdav-backup.md) |
 | 应用配色、素材主题、社区市场与玻璃隔离 | [应用主题与主题市场](app-skins.md) |
 | 共用玻璃背景、材质角色与外观设置继承 | [共用玻璃材质](glass-material.md) |
+| 共用底部菜单、圆角、下拉关闭与动效 | [共用底部菜单](bottom-sheets.md) |
 | 阅读文字、版式、调节范围与共用玻璃滑条 | [阅读调节控件](reader-adjustments.md) |
 | 共用视觉与组件规范 | [DESIGN.md](../DESIGN.md) |
 | 阅读选中文字工具栏、玻璃背景与更多操作 | [选中文字工具栏](reader-selection-toolbar.md) |

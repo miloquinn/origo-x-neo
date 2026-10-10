@@ -9,6 +9,7 @@ import '../models/bookmark.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'app_menu.dart';
+import 'glass_bottom_sheet.dart';
 import 'origo_x_icons.dart';
 import 'pill_search_field.dart';
 
@@ -470,16 +471,15 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     return Theme(
       data: _sheetTheme!,
       child: Builder(
-        builder: (themedContext) => Material(
+        builder: (themedContext) => GlassBottomSheetSurface(
           color: widget.palette.surface,
-          surfaceTintColor: Colors.transparent,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          clipBehavior: Clip.antiAlias,
+          outlineColor: widget.palette.border,
+          shadowColor: widget.palette.shadow,
+          brightness: widget.palette.brightness,
           child: SafeArea(
             top: false,
             child: Column(
               children: [
-                _buildDragHandle(),
                 _buildHeader(themedContext),
                 _buildTabs(themedContext),
                 Expanded(
@@ -502,19 +502,6 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDragHandle() {
-    return Container(
-      key: const ValueKey('reader-navigation-drag-handle'),
-      width: 36,
-      height: 4,
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        color: widget.palette.secondaryText.withValues(alpha: 0.32),
-        borderRadius: BorderRadius.circular(99),
       ),
     );
   }

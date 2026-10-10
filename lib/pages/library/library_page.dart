@@ -53,6 +53,7 @@ import 'package:xxread/widgets/app_menu.dart';
 import 'package:xxread/widgets/generated_book_cover.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_dialog.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/glass_surface.dart';
 import 'package:xxread/widgets/pill_search_field.dart';
 import 'package:xxread/widgets/scrolling_text.dart';

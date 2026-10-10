@@ -8,6 +8,7 @@ import '../../book_sources/source_engine/source_debug.dart';
 import '../../book_sources/source_engine/source_debug_session.dart';
 import '../../utils/localization_extension.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/glass_bottom_sheet.dart';
 import '../../widgets/side_toast.dart';
 
 class SourceDebugPage extends StatefulWidget {
@@ -82,7 +83,7 @@ class _SourceDebugPageState extends State<SourceDebugPage> {
   void _showDetail(SourceDebugEvent event) {
     final detail = event.detail;
     if (detail == null || detail.isEmpty) return;
-    showModalBottomSheet<void>(
+    showGlassBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (sheetContext) {

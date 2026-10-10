@@ -6,6 +6,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/ui_style.dart';
+import 'package:xxread/widgets/elastic_press.dart';
 import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
 import 'package:xxread/widgets/glass_surface.dart';
@@ -63,7 +64,7 @@ void main() {
     },
   );
 
-  testWidgets('reader chrome samples the frosted background only once', (
+  testWidgets('reader chrome owns one glass bar with plain embedded actions', (
     tester,
   ) async {
     await _pump(
@@ -83,13 +84,28 @@ void main() {
     );
 
     expect(find.byType(BackdropFilter), findsOneWidget);
-    final embeddedSurface = tester.widget<GlassControlSurface>(
+    expect(
+      find.descendant(
+        of: find.byType(ReaderControlBar),
+        matching: find.byType(GlassSurface),
+      ),
+      findsOneWidget,
+    );
+    expect(
       find.descendant(
         of: find.byType(ReaderControlIconButton),
         matching: find.byType(GlassControlSurface),
       ),
+      findsNothing,
     );
-    expect(embeddedSurface.blurBackground, isFalse);
+    expect(
+      find.descendant(
+        of: find.byType(ReaderControlBar),
+        matching: find.byType(ElasticPress),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.getSize(find.byType(IconButton)), const Size.square(44));
   });
 
   testWidgets('reader selection keeps its rounded geometry across materials', (

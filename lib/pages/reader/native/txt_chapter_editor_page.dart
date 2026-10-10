@@ -5,6 +5,7 @@ import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/txt_edit_service.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
 import 'txt_editor_copy.dart';
@@ -182,7 +183,7 @@ class _TxtChapterEditorPageState extends State<TxtChapterEditorPage> {
     final versions = await widget.service.listVersions(widget.book);
     if (!mounted) return;
     final copy = TxtEditorCopy.of(context);
-    final selected = await showModalBottomSheet<TxtEditVersion>(
+    final selected = await showGlassBottomSheet<TxtEditVersion>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(

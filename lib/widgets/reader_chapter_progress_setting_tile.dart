@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/reader/reader_settings.dart';
 import '../utils/localization_extension.dart';
+import 'glass_bottom_sheet.dart';
 
 class ReaderChapterProgressSettingTile extends StatelessWidget {
   const ReaderChapterProgressSettingTile({
@@ -32,8 +33,9 @@ class ReaderChapterProgressSettingTile extends StatelessWidget {
     subtitle: Text(_label(context, style)),
     trailing: const Icon(Icons.chevron_right),
     onTap: () async {
-      final selected = await showModalBottomSheet<ReaderChapterProgressStyle>(
+      final selected = await showGlassBottomSheet<ReaderChapterProgressStyle>(
         context: context,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         builder: (sheetContext) => SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,

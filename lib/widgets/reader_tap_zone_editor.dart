@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/reader/reader_tap_zones.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
+import 'glass_bottom_sheet.dart';
 
 /// 全屏点击区域编辑层。
 ///
@@ -52,10 +53,10 @@ class ReaderTapZoneEditorOverlay extends StatelessWidget {
   Future<void> _editZone(BuildContext context, int zoneIndex) async {
     final current = zones[zoneIndex];
     final theme = palette.toThemeData(parentTheme: Theme.of(context));
-    final selected = await showModalBottomSheet<ReaderTapZoneAction>(
+    final selected = await showGlassBottomSheet<ReaderTapZoneAction>(
       context: context,
       backgroundColor: palette.surface,
-      showDragHandle: true,
+      theme: theme,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxWidth: 620),
       builder: (sheetContext) => Theme(

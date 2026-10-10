@@ -12,6 +12,7 @@ import '../core/reader/reader_system_ui.dart';
 import '../utils/reader_themes.dart';
 import '../utils/localization_extension.dart';
 import 'glass_adjustment_slider.dart';
+import 'glass_bottom_sheet.dart';
 import 'reader_theme_background.dart';
 import 'reader_chapter_progress_setting_tile.dart';
 
@@ -1046,49 +1047,27 @@ class ReaderSettingsSheetFrame extends StatelessWidget {
     // 滚动视图消费，弹窗无法通过拖动收起。
     return Theme(
       data: palette.toThemeData(parentTheme: Theme.of(context)),
-      child: Material(
+      child: GlassBottomSheetSurface(
         color: palette.surface,
-        surfaceTintColor: Colors.transparent,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        clipBehavior: Clip.antiAlias,
+        outlineColor: palette.border,
+        shadowColor: palette.shadow,
+        brightness: palette.brightness,
         child: SafeArea(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * 0.5,
+              maxHeight:
+                  MediaQuery.sizeOf(context).height * 0.5 -
+                  GlassBottomSheetSurface.dragHandleExtent,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: ReaderSettingsDragHandle(palette: palette),
-                ),
                 Flexible(
                   child: SingleChildScrollView(padding: padding, child: child),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class ReaderSettingsDragHandle extends StatelessWidget {
-  const ReaderSettingsDragHandle({super.key, required this.palette});
-
-  final ReaderThemePalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 36,
-        height: 4,
-        decoration: BoxDecoration(
-          color: palette.secondaryText.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(99),
         ),
       ),
     );

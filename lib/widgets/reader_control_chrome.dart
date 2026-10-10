@@ -6,6 +6,8 @@ import '../core/reader/reader_leaf_status.dart';
 import '../core/reader/reader_auto_page_turn_controller.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
+import 'app_skin_icon.dart';
+import 'elastic_press.dart';
 import 'glass_buttons.dart';
 import 'reader_top_information_bar.dart';
 import 'glass_surface.dart';
@@ -666,18 +668,20 @@ class ReaderControlBar extends StatelessWidget {
     final shape = RoundedRectangleBorder(
       borderRadius: borderRadius ?? BorderRadius.circular(999),
     );
-    return GlassSurface(
-      role: GlassSurfaceRole.floating,
-      shape: shape,
-      color: palette.controlBar,
-      outlineColor: palette.border,
-      shadowColor: palette.shadow,
-      brightness: palette.brightness,
-      child: Material(
-        color: Colors.transparent,
+    return ElasticPress(
+      child: GlassSurface(
+        role: GlassSurfaceRole.floating,
         shape: shape,
-        clipBehavior: Clip.antiAlias,
-        child: child,
+        color: palette.controlBar,
+        outlineColor: palette.border,
+        shadowColor: palette.shadow,
+        brightness: palette.brightness,
+        child: Material(
+          color: Colors.transparent,
+          shape: shape,
+          clipBehavior: Clip.antiAlias,
+          child: child,
+        ),
       ),
     );
   }
@@ -699,6 +703,26 @@ class ReaderControlIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.findAncestorWidgetOfExactType<ReaderControlBar>() != null) {
+      return SizedBox.square(
+        dimension: 44,
+        child: IconButton(
+          tooltip: tooltip,
+          onPressed: onPressed,
+          icon: AppSkinIcon.adapt(Icon(icon, size: 22)),
+          style: IconButton.styleFrom(
+            foregroundColor: palette.text,
+            disabledForegroundColor: palette.text.withValues(alpha: 0.58),
+            backgroundColor: Colors.transparent,
+            disabledBackgroundColor: Colors.transparent,
+            minimumSize: const Size.square(44),
+            padding: EdgeInsets.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: const CircleBorder(),
+          ),
+        ),
+      );
+    }
     return GlassIconButton(
       onPressed: onPressed,
       tooltip: tooltip,
@@ -706,8 +730,6 @@ class ReaderControlIconButton extends StatelessWidget {
       foregroundColor: palette.text,
       brightness: palette.brightness,
       outlineColor: palette.border,
-      blurBackground:
-          context.findAncestorWidgetOfExactType<ReaderControlBar>() == null,
       color: palette.controlFill,
     );
   }

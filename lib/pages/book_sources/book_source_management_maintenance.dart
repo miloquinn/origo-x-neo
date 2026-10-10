@@ -50,10 +50,9 @@ extension _BookSourceManagementMaintenance on _BookSourceManagementPageState {
     _dedupeRunning = true;
     try {
       final analysis =
-          await showModalBottomSheet<BookSourceInstalledDedupeResult>(
+          await showGlassBottomSheet<BookSourceInstalledDedupeResult>(
             context: context,
             useSafeArea: true,
-            showDragHandle: true,
             isScrollControlled: true,
             builder: (_) => _InstalledDedupeScanSheet(
               scan: () async {
@@ -81,10 +80,9 @@ extension _BookSourceManagementMaintenance on _BookSourceManagementPageState {
         );
         return;
       }
-      final toDisable = await showModalBottomSheet<Set<String>>(
+      final toDisable = await showGlassBottomSheet<Set<String>>(
         context: context,
         useSafeArea: true,
-        showDragHandle: true,
         isScrollControlled: true,
         builder: (_) => BookSourceInstalledDedupeReviewSheet(
           result: analysis.result,

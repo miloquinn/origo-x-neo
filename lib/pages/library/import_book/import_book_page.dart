@@ -11,6 +11,7 @@ import 'package:xxread/services/books/book_services.dart';
 import 'package:xxread/services/storage/android_book_folder_registry.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
 import 'import_book_controller.dart';
@@ -249,7 +250,7 @@ class _ImportBookPageState extends State<ImportBookPage> {
 
   Future<void> _showSourcePicker() async {
     if (_isBusy) return;
-    await showModalBottomSheet<void>(
+    await showGlassBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: false,
@@ -265,17 +266,10 @@ class _ImportBookPageState extends State<ImportBookPage> {
               minChildSize: 0.5,
               maxChildSize: 0.94,
               builder: (context, scrollController) {
-                return Material(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(28),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: ListView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
-                    children: [_buildSourcePanel(dismissContext: sheetContext)],
-                  ),
+                return ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+                  children: [_buildSourcePanel(dismissContext: sheetContext)],
                 );
               },
             ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../book_sources/services/book_source_import_analyzer.dart';
 import '../../../services/core/advanced_feature_access.dart';
 import '../../../utils/localization_extension.dart';
+import '../../../widgets/glass_bottom_sheet.dart';
 import '../controllers/book_source_add_controller.dart';
 import 'book_source_add_panel.dart';
 import 'book_source_dedupe_review_sheet.dart';
@@ -121,10 +122,9 @@ class _BookSourceAddFlowState extends State<BookSourceAddFlow> {
     }
     final generation = _controller.state.generation;
     final selection =
-        await showModalBottomSheet<BookSourceImportDedupeSelection>(
+        await showGlassBottomSheet<BookSourceImportDedupeSelection>(
           context: context,
           useSafeArea: true,
-          showDragHandle: true,
           isScrollControlled: true,
           builder: (_) => BookSourceImportDedupeReviewSheet(preview: preview),
         );

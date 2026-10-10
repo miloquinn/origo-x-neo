@@ -339,10 +339,11 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
     final appSettings = context.read<AppSettingsNotifier>();
     await appSettings.prepareCustomFontPreviews();
     if (!mounted) return null;
-    await showModalBottomSheet<void>(
+    await showGlassBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _readerTheme.surface,
+      theme: _readerThemeData,
       builder: (_) => FontSelectionSheet(
         settings: appSettings,
         domain: FontDomain.reader,
@@ -376,10 +377,12 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
   Future<void> _showReadingSettings() async {
     _pauseAutoPageTurn();
     _controlsTimer?.cancel();
-    final selectedMode = await showModalBottomSheet<BookSourcePageMode>(
+    final selectedMode = await showGlassBottomSheet<BookSourcePageMode>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _readerTheme.surface,
+      theme: _readerThemeData,
       isScrollControlled: true,
+      builderOwnsSurface: true,
       builder: (sheetContext) => ReaderSettingsSheet(
         chapterProgressStyle: _chapterProgressStyle,
         onChapterProgressStyleChanged: (style) =>
@@ -660,10 +663,10 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
   Future<void> _showPageModeSettings() async {
     _pauseAutoPageTurn();
     var previewScrollByChapter = _scrollByChapter;
-    final selectedMode = await showModalBottomSheet<BookSourcePageMode>(
+    final selectedMode = await showGlassBottomSheet<BookSourcePageMode>(
       context: context,
       backgroundColor: _readerTheme.surface,
-      showDragHandle: true,
+      theme: _readerThemeData,
       isScrollControlled: true,
       builder: (menuContext) => StatefulBuilder(
         builder: (context, setMenuState) => ReaderPageModeSheet(
@@ -694,10 +697,10 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
 
   Future<void> _showTopBarStyleSettings() async {
     _pauseAutoPageTurn();
-    final selectedStyle = await showModalBottomSheet<ReaderTopBarStyle>(
+    final selectedStyle = await showGlassBottomSheet<ReaderTopBarStyle>(
       context: context,
       backgroundColor: _readerTheme.surface,
-      showDragHandle: true,
+      theme: _readerThemeData,
       isScrollControlled: true,
       builder: (menuContext) => ReaderTopBarStyleSheet(
         palette: _readerTheme,

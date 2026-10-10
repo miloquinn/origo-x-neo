@@ -16,6 +16,7 @@ import '../../utils/localization_extension.dart';
 import '../../widgets/account_avatar_image.dart';
 import '../../widgets/app_brand_icon.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/glass_bottom_sheet.dart';
 import '../../widgets/qr_code_view.dart';
 import '../../widgets/side_toast.dart';
 import '../../widgets/store_reader_account_entry.dart';

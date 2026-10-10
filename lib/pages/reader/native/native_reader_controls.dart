@@ -472,10 +472,11 @@ extension _NativeReaderControls on _NativeReaderPageState {
     final appSettings = context.read<AppSettingsNotifier>();
     await appSettings.prepareCustomFontPreviews();
     if (!mounted) return null;
-    await showModalBottomSheet<void>(
+    await showGlassBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _readerTheme.surface,
+      theme: _readerThemeData,
       builder: (_) => FontSelectionSheet(
         settings: appSettings,
         domain: _isEpub ? FontDomain.epubReader : FontDomain.reader,
@@ -514,10 +515,12 @@ extension _NativeReaderControls on _NativeReaderPageState {
 
   Future<void> _showReadingSettings() async {
     _pauseAutoPageTurn();
-    final selectedMode = await showModalBottomSheet<NativePageMode>(
+    final selectedMode = await showGlassBottomSheet<NativePageMode>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _readerTheme.surface,
+      theme: _readerThemeData,
       isScrollControlled: true,
+      builderOwnsSurface: true,
       builder: (sheetContext) => ReaderSettingsSheet(
         chapterProgressStyle: _chapterProgressStyle,
         onChapterProgressStyleChanged: (style) =>
@@ -726,10 +729,10 @@ extension _NativeReaderControls on _NativeReaderPageState {
 
   Future<void> _showPageModeSettings() async {
     var previewScrollByChapter = _scrollByChapter;
-    final selectedMode = await showModalBottomSheet<NativePageMode>(
+    final selectedMode = await showGlassBottomSheet<NativePageMode>(
       context: context,
       backgroundColor: _readerTheme.surface,
-      showDragHandle: true,
+      theme: _readerThemeData,
       isScrollControlled: true,
       builder: (menuContext) => StatefulBuilder(
         builder: (context, setMenuState) => ReaderPageModeSheet(
@@ -759,10 +762,10 @@ extension _NativeReaderControls on _NativeReaderPageState {
   }
 
   Future<void> _showTopBarStyleSettings() async {
-    final selectedStyle = await showModalBottomSheet<ReaderTopBarStyle>(
+    final selectedStyle = await showGlassBottomSheet<ReaderTopBarStyle>(
       context: context,
       backgroundColor: _readerTheme.surface,
-      showDragHandle: true,
+      theme: _readerThemeData,
       isScrollControlled: true,
       builder: (menuContext) => ReaderTopBarStyleSheet(
         palette: _readerTheme,

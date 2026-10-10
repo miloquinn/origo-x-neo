@@ -13,6 +13,7 @@ import 'package:xxread/services/reader_aloud_session.dart';
 import 'package:xxread/services/tts_service.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_aloud_panel.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -948,7 +949,8 @@ void main() {
 
     final bottomSheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
     expect(bottomSheet.enableDrag, isTrue);
-    expect(bottomSheet.showDragHandle, isTrue);
+    expect(bottomSheet.showDragHandle, isFalse);
+    expect(find.byKey(GlassBottomSheetSurface.dragHandleKey), findsOneWidget);
     expect(
       tester.getSize(find.byType(BottomSheet)).height,
       lessThanOrEqualTo(576),

@@ -685,18 +685,20 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
     final navigationChapters = _navigationChapters;
     final navigationCatalog = _navigationCatalog;
     if (navigationCatalog == null) return;
-    await showModalBottomSheet<void>(
+    await showGlassBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _readerTheme.surface,
+      theme: _readerThemeData,
       barrierColor: _readerTheme.shadow.withValues(
         alpha: _readerTheme.brightness == Brightness.dark ? 0.72 : 0.38,
       ),
-      showDragHandle: false,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxWidth: 620),
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheetState) => SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.86,
+          height:
+              MediaQuery.sizeOf(context).height * 0.86 -
+              GlassBottomSheetSurface.dragHandleExtent,
           child: ReaderNavigationSheet(
             palette: _readerTheme,
             chapters: navigationChapters,

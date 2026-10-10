@@ -34,6 +34,7 @@ import 'package:xxread/utils/page_style_helper.dart';
 import 'package:xxread/widgets/release_notes_markdown.dart';
 import 'package:xxread/widgets/pill_input_surface.dart';
 import 'package:xxread/widgets/measured_size.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 class _AiChatEntry {
   _AiChatEntry({
@@ -195,11 +196,10 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
   Future<void> _openAgentSettings() async {
     await _agentMemory.ensureLoaded();
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showGlassBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
       builder: (_) => ReadingAgentSettingsSheet(store: _agentMemory),
     );
     if (mounted) _maybeProactive();
@@ -377,10 +377,9 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
   /// 输入框左侧加号菜单：书籍关联入口。
   Future<void> _showPlusMenu() async {
     final selectedTitle = _selectedBook?.title;
-    final action = await showModalBottomSheet<String>(
+    final action = await showGlassBottomSheet<String>(
       context: context,
       useSafeArea: true,
-      showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         top: false,
         child: Column(
@@ -440,10 +439,9 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
       books = await BookDao().getAllBooks();
     } catch (_) {}
     if (!mounted) return;
-    final selection = await showModalBottomSheet<Object>(
+    final selection = await showGlassBottomSheet<Object>(
       context: context,
       useSafeArea: true,
-      showDragHandle: true,
       isScrollControlled: true,
       constraints: BoxConstraints(
         maxWidth: 720,

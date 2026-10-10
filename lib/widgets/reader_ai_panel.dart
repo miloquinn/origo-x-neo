@@ -1,5 +1,5 @@
 // 文件说明：阅读器"问AI"底部面板，承载与 AI 阅读助手的对话与追问。
-// 技术要点：showModalBottomSheet、ReaderHttpAIService.chat、ai_error_translator、l10n。
+// 技术要点：共享玻璃底部弹层、ReaderHttpAIService.chat、ai_error_translator、l10n。
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -18,6 +18,7 @@ import '../utils/reader_themes.dart';
 import 'release_notes_markdown.dart';
 import 'pill_input_surface.dart';
 import 'measured_size.dart';
+import 'glass_bottom_sheet.dart';
 import 'side_toast.dart';
 
 /// Selection context that seeds the conversation when the panel is opened
@@ -55,18 +56,14 @@ Future<void> showReaderAiPanelSheet({
   ConfigurableAIService? aiService,
 }) {
   final historyStore = context.read<AiChatHistoryStore>();
-  return showModalBottomSheet<void>(
+  return showGlassBottomSheet<void>(
     context: context,
     useSafeArea: true,
     isScrollControlled: true,
     enableDrag: true,
-    showDragHandle: true,
     backgroundColor: palette.controlBar,
+    theme: themeData,
     constraints: const BoxConstraints(maxWidth: 720),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    clipBehavior: Clip.antiAlias,
     builder: (sheetContext) {
       final media = MediaQuery.of(sheetContext);
       final height = math.min(
@@ -80,7 +77,7 @@ Future<void> showReaderAiPanelSheet({
           curve: Curves.easeOut,
           padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
           child: SizedBox(
-            height: height,
+            height: height - GlassBottomSheetSurface.dragHandleExtent,
             child: ReaderAiPanel(
               palette: palette,
               meta: meta,

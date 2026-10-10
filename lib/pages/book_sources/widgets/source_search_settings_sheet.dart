@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:xxread/book_sources/services/book_source_search_settings.dart';
 import 'package:xxread/utils/localization_extension.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 /// 展示搜索参数设置面板；每次滑块松手都会通过 [onChanged] 实时回传最新值，
 /// 由调用方负责应用并持久化，因此拖动手势关闭面板时无需额外处理。
@@ -13,16 +14,11 @@ Future<void> showSourceSearchSettingsSheet({
   required int enabledSourceCount,
   required ValueChanged<BookSourceSearchSettings> onChanged,
 }) {
-  return showModalBottomSheet<void>(
+  return showGlassBottomSheet<void>(
     context: context,
     useSafeArea: true,
     isScrollControlled: true,
-    showDragHandle: true,
     constraints: BoxConstraints(maxWidth: 720),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    clipBehavior: Clip.antiAlias,
     builder: (sheetContext) => _SourceSearchSettingsSheet(
       initial: settings,
       enabledSourceCount: enabledSourceCount,

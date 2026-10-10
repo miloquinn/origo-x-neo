@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../book_sources/models/registered_book_source.dart';
 import '../../../book_sources/services/book_source_registry.dart';
 import '../../../widgets/pill_search_field.dart';
+import '../../../widgets/glass_bottom_sheet.dart';
 import '../../../widgets/side_toast.dart';
 import 'book_source_organization_copy.dart';
 
@@ -12,7 +13,7 @@ Future<bool> showBookSourceGroupEditor(
   required List<RegisteredBookSource> sources,
 }) async {
   if (sources.isEmpty) return false;
-  return await showModalBottomSheet<bool>(
+  return await showGlassBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
@@ -28,7 +29,7 @@ Future<void> showBookSourceGroupManager(
   BuildContext context, {
   required BookSourceRegistry registry,
 }) {
-  return showModalBottomSheet<void>(
+  return showGlassBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -44,7 +45,7 @@ Future<String?> showBookSourceOrganizationGroupPicker(
   required BookSourceRegistry registry,
   String? selected,
 }) {
-  return showModalBottomSheet<String>(
+  return showGlassBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -238,7 +239,7 @@ class _BookSourceGroupEditorState extends State<_BookSourceGroupEditor> {
         : copy.selectedSourceCount(widget.sources.length);
 
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      type: MaterialType.transparency,
       child: Column(
         children: [
           _SheetHeader(
@@ -455,7 +456,7 @@ class _BookSourceGroupManagerState extends State<_BookSourceGroupManager> {
     final copy = BookSourceOrganizationCopy.of(context);
     final groups = _groups;
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      type: MaterialType.transparency,
       child: Column(
         children: [
           _SheetHeader(title: copy.manageGroups),
@@ -568,7 +569,7 @@ class _BookSourceGroupPickerState extends State<_BookSourceGroupPicker> {
         ?.where((group) => query.isEmpty || group.toLowerCase().contains(query))
         .toList(growable: false);
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      type: MaterialType.transparency,
       child: Column(
         children: [
           _SheetHeader(title: copy.groups),

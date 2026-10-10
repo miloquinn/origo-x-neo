@@ -21,6 +21,7 @@ import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_transitions.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 /// The single comic reader for local archives and online image chapters.
 ///
@@ -254,10 +255,12 @@ class _ComicReaderPageState extends State<ComicReaderPage>
   Future<void> _showReaderSettings() async {
     final source = widget.source;
     final current = _resolvedDirection ?? source.defaultDirection;
-    await showModalBottomSheet<void>(
+    await showGlassBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _readerPalette.surface,
+      theme: _readerPalette.toThemeData(parentTheme: Theme.of(context)),
       isScrollControlled: true,
+      builderOwnsSurface: true,
       builder: (sheetContext) => _ComicReaderSettingsSheet(
         key: const ValueKey('continuous-reader-settings-sheet'),
         palette: _readerPalette,
@@ -310,17 +313,19 @@ class _ComicReaderPageState extends State<ComicReaderPage>
   }
 
   Future<void> _showCatalog(ImageReaderDocument document) async {
-    final selected = await showModalBottomSheet<int>(
+    final selected = await showGlassBottomSheet<int>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _readerPalette.surface,
+      theme: _readerPalette.toThemeData(parentTheme: Theme.of(context)),
       barrierColor: _readerPalette.shadow.withValues(
         alpha: _readerPalette.brightness == Brightness.dark ? 0.72 : 0.38,
       ),
-      showDragHandle: false,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxWidth: 620),
       builder: (sheetContext) {
-        final sheetHeight = MediaQuery.sizeOf(sheetContext).height * 0.86;
+        final sheetHeight =
+            MediaQuery.sizeOf(sheetContext).height * 0.86 -
+            GlassBottomSheetSurface.dragHandleExtent;
         return SizedBox(
           height: sheetHeight,
           child: _ComicCatalogSheet(
@@ -537,7 +542,6 @@ class _ComicCatalogSheet extends StatefulWidget {
     required this.onChapterSelected,
   });
 
-  static const dragHandleKey = ValueKey('comic-catalog-drag-handle');
   static const double chapterExtent = 56;
 
   final ReaderThemePalette palette;
@@ -584,23 +588,15 @@ class _ComicCatalogSheetState extends State<_ComicCatalogSheet> {
     final theme = widget.palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
-      child: Material(
+      child: GlassBottomSheetSurface(
         color: widget.palette.surface,
-        surfaceTintColor: Colors.transparent,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        clipBehavior: Clip.antiAlias,
+        outlineColor: widget.palette.border,
+        shadowColor: widget.palette.shadow,
+        brightness: widget.palette.brightness,
         child: SafeArea(
           top: false,
           child: Column(
             children: [
-              // Keep the handle outside the chapter list so a downward drag
-              // can dismiss the sheet instead of scrolling the catalog.
-              SizedBox(
-                key: _ComicCatalogSheet.dragHandleKey,
-                height: kMinInteractiveDimension,
-                width: double.infinity,
-                child: ReaderSettingsDragHandle(palette: widget.palette),
-              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 12, 10),
                 child: Row(

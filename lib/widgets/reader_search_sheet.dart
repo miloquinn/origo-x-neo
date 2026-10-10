@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:xxread/utils/reader_themes.dart';
 import 'pill_search_field.dart';
+import 'glass_bottom_sheet.dart';
 
 class ReaderSearchDocument {
   const ReaderSearchDocument({
@@ -39,11 +40,12 @@ Future<ReaderSearchResult?> showReaderSearchSheet(
   required ReaderSearchLoader loadDocuments,
   required int documentCount,
   String initialQuery = '',
-}) => showModalBottomSheet<ReaderSearchResult>(
+}) => showGlassBottomSheet<ReaderSearchResult>(
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
-  backgroundColor: palette.background,
+  backgroundColor: palette.surface,
+  theme: palette.toThemeData(parentTheme: Theme.of(context)),
   builder: (_) => _ReaderSearchSheet(
     palette: palette,
     loadDocuments: loadDocuments,
@@ -199,8 +201,10 @@ class _ReaderSearchSheetState extends State<_ReaderSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = widget.palette;
-    return FractionallySizedBox(
-      heightFactor: .9,
+    return SizedBox(
+      height:
+          MediaQuery.sizeOf(context).height * .9 -
+          GlassBottomSheetSurface.dragHandleExtent,
       child: Column(
         children: [
           Padding(

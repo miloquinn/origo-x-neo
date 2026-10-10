@@ -350,6 +350,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('reader-custom-theme-card')), findsOne);
 
+      await tester.ensureVisible(find.text('Paging tab'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Paging tab'));
       await tester.pumpAndSettle();
       final pullSwitch = tester.widget<SwitchListTile>(

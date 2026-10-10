@@ -10,6 +10,7 @@ import 'package:xxread/widgets/reader_theme_background.dart';
 import 'package:xxread/widgets/side_toast.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 class ReaderCustomThemePage extends StatefulWidget {
   const ReaderCustomThemePage({
@@ -44,9 +45,10 @@ class _ReaderCustomThemePageState extends State<ReaderCustomThemePage> {
     required Color current,
     required ValueChanged<Color> onChanged,
   }) async {
-    final selected = await showModalBottomSheet<Color>(
+    final selected = await showGlassBottomSheet<Color>(
       context: context,
       backgroundColor: _palette.surface,
+      theme: _palette.toThemeData(parentTheme: Theme.of(context)),
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => _ReaderColorPickerSheet(
@@ -688,17 +690,6 @@ class _ReaderColorPickerSheetState extends State<_ReaderColorPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: palette.secondaryText.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
             Text(
               widget.title,
               style: Theme.of(

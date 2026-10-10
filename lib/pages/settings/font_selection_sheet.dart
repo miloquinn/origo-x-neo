@@ -7,6 +7,7 @@ import 'package:xxread/services/core/online_font_models.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/side_toast.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 class FontSelectionSheet extends StatefulWidget {
   const FontSelectionSheet({
@@ -115,123 +116,86 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
         .toList(growable: false);
     final customOptions = _settings.availableCustomFonts;
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.86,
-      ),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 14),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurface.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 2, 24, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.text_fields_rounded,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        widget.title,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.45,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.tonalIcon(
-                      onPressed:
-                          _importing || !_settings.customFontImportSupported
-                          ? null
-                          : _importFont,
-                      icon: _importing
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.add_rounded),
-                      label: Text(
-                        _importing ? l10n.importingFont : l10n.importFont,
-                      ),
-                    ),
-                  ),
-                  if (!_settings.customFontImportSupported) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      l10n.customFontImportUnsupported,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                children: [
-                  _SectionLabel(l10n.builtInFonts),
-                  ...systemOptions.map(
-                    (option) => _FontOptionTile(
-                      settings: _settings,
-                      domain: widget.domain,
-                      option: option,
-                      selected: option.id == _selectedId,
-                      onSelect: _selectFont,
-                    ),
-                  ),
-                  ListenableBuilder(
-                    listenable: _settings.onlineFontProgressListenable,
-                    builder: (context, _) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return GlassBottomSheetSurface(
+      color: colorScheme.surface,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight:
+              MediaQuery.sizeOf(context).height * 0.86 -
+              GlassBottomSheetSurface.dragHandleExtent,
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        _SectionLabel(l10n.onlineFonts),
-                        ...onlineOptions.map(
-                          (option) => _FontOptionTile(
-                            settings: _settings,
-                            domain: widget.domain,
-                            option: option,
-                            selected: option.id == _selectedId,
-                            onSelect: _selectFont,
-                          ),
+                        Icon(
+                          Icons.text_fields_rounded,
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          widget.title,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
-                  ),
-                  if (customOptions.isNotEmpty) ...[
-                    _SectionLabel(l10n.customFonts),
-                    ...customOptions.map(
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        onPressed:
+                            _importing || !_settings.customFontImportSupported
+                            ? null
+                            : _importFont,
+                        icon: _importing
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.add_rounded),
+                        label: Text(
+                          _importing ? l10n.importingFont : l10n.importFont,
+                        ),
+                      ),
+                    ),
+                    if (!_settings.customFontImportSupported) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        l10n.customFontImportUnsupported,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  children: [
+                    _SectionLabel(l10n.builtInFonts),
+                    ...systemOptions.map(
                       (option) => _FontOptionTile(
                         settings: _settings,
                         domain: widget.domain,
@@ -240,11 +204,41 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
                         onSelect: _selectFont,
                       ),
                     ),
+                    ListenableBuilder(
+                      listenable: _settings.onlineFontProgressListenable,
+                      builder: (context, _) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _SectionLabel(l10n.onlineFonts),
+                          ...onlineOptions.map(
+                            (option) => _FontOptionTile(
+                              settings: _settings,
+                              domain: widget.domain,
+                              option: option,
+                              selected: option.id == _selectedId,
+                              onSelect: _selectFont,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (customOptions.isNotEmpty) ...[
+                      _SectionLabel(l10n.customFonts),
+                      ...customOptions.map(
+                        (option) => _FontOptionTile(
+                          settings: _settings,
+                          domain: widget.domain,
+                          option: option,
+                          selected: option.id == _selectedId,
+                          onSelect: _selectFont,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

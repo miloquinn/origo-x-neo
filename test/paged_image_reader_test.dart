@@ -364,6 +364,8 @@ void main() {
     );
     expect(rootBox.color, ImageReaderBackground.white.color);
 
+    await tester.ensureVisible(find.byType(SwitchListTile).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(SwitchListTile).first);
     await tester.pumpAndSettle();
     expect(prefs.getBool(ReaderKeepScreenOnController.preferenceKey), isTrue);

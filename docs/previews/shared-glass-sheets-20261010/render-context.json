@@ -1,0 +1,29 @@
+{
+  "platform": "ios",
+  "shaderFilterSupported": true,
+  "scenes": [
+    "liquid-light",
+    "liquid-night",
+    "liquid-black",
+    "liquid-navy",
+    "liquid-parchment",
+    "frosted-light",
+    "frosted-dark",
+    "solid-light",
+    "solid-dark",
+    "high-contrast",
+    "liquid-large-text",
+    "liquid-compact",
+    "liquid-actions",
+    "chrome-liquid-light",
+    "chrome-liquid-night",
+    "chrome-liquid-black",
+    "chrome-frosted-light",
+    "chrome-solid-light"
+  ],
+  "kind": "actual shared modal route and production reader controls",
+  "startedAt": 1791630608.207569,
+  "completedAt": 1791630642.098512,
+  "simulator": "B747AC4A-A940-4BBC-A2BB-DE72F5EDE816",
+  "imageCount": 24
+}

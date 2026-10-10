@@ -4,6 +4,7 @@ import 'package:xxread/core/reader/reader_leaf_status.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/ui_style.dart';
+import 'package:xxread/widgets/elastic_press.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
 import 'package:xxread/widgets/glass_surface.dart';
@@ -30,7 +31,8 @@ void main() {
 
     expect(find.byType(BackdropFilter), findsOneWidget);
     expect(_panelGradient(tester).colors.every((color) => color.a < 1), isTrue);
-    expect(_iconBackground(tester), ReaderThemes.day.controlFill);
+    expect(find.byType(GlassSurface), findsOneWidget);
+    expect(find.byType(GlassControlSurface), findsNothing);
 
     GlassEffectConfig.setDisableAllGlassEffects(true);
     await tester.pumpWidget(_testApp(glassEnabled: false));
@@ -44,43 +46,130 @@ void main() {
       _panelGradient(tester).colors,
       everyElement(ReaderThemes.day.controlBar),
     );
-    expect(_iconBackground(tester).a, 1);
-    expect(_iconBackground(tester), ReaderThemes.day.controlFill);
+    expect(find.byType(GlassSurface), findsOneWidget);
+    expect(find.byType(GlassControlSurface), findsNothing);
   });
 
-  testWidgets('reader actions use the shared 44px spring glass control', (
-    tester,
-  ) async {
-    var taps = 0;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: ReaderControlBar(
-            palette: ReaderThemes.day,
-            isTopBar: true,
-            child: ReaderControlIconButton(
+  testWidgets(
+    'embedded reader actions are plain 44px controls in one spring bar',
+    (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ReaderControlBar(
               palette: ReaderThemes.day,
-              onPressed: () => taps += 1,
-              tooltip: 'Back',
-              icon: Icons.arrow_back_rounded,
+              isTopBar: true,
+              child: ReaderControlIconButton(
+                palette: ReaderThemes.day,
+                onPressed: () => taps += 1,
+                tooltip: 'Back',
+                icon: Icons.arrow_back_rounded,
+              ),
             ),
           ),
         ),
+      );
+
+      expect(find.byType(GlassIconButton), findsNothing);
+      expect(find.byType(GlassControlSurface), findsNothing);
+      expect(find.byType(GlassSurface), findsOneWidget);
+      expect(find.byType(ElasticPress), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(ReaderControlIconButton)),
+        const Size.square(44),
+      );
+      expect(tester.getSize(find.byType(IconButton)), const Size.square(44));
+
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.pump();
+      expect(taps, 1);
+    },
+  );
+
+  testWidgets('press and resisted drag paint the whole bar then return', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(_interactionApp(onPressed: () => taps += 1));
+    final bar = find.byType(ReaderControlBar);
+    final painted = find.descendant(
+      of: bar,
+      matching: find.byWidgetPredicate(
+        (widget) => widget.runtimeType.toString() == '_PressPaint',
       ),
     );
-
-    expect(tester.getSize(find.byType(GlassIconButton)), const Size.square(44));
-    final surface = tester.widget<GlassControlSurface>(
-      find.descendant(
-        of: find.byType(ReaderControlIconButton),
-        matching: find.byType(GlassControlSurface),
-      ),
+    final dynamic paint = tester.renderObject(painted);
+    expect(
+      find.descendant(of: painted, matching: find.byType(GlassSurface)),
+      findsOneWidget,
     );
-    expect(surface.blurBackground, isFalse);
+    expect(
+      find.descendant(of: painted, matching: find.byType(IconButton)),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byIcon(Icons.arrow_back_rounded)),
+    );
     await tester.pump();
-    expect(taps, 1);
+    await tester.pump(const Duration(milliseconds: 180));
+    expect(paint.lift, greaterThan(0));
+
+    await gesture.moveBy(const Offset(400, 60));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    final pull = paint.pull as Offset;
+    expect(pull.dx, greaterThan(0));
+    expect(pull.dx, lessThan(13));
+    expect(pull.dy, greaterThan(0));
+    expect(pull.dy, lessThan(13));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(taps, 0);
+    expect(paint.lift, 0);
+    expect(paint.pull, Offset.zero);
+  });
+
+  testWidgets(
+    'short taps fire once and disabled actions retain tooltip target',
+    (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(_interactionApp(onPressed: () => taps += 1));
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.pumpAndSettle();
+      expect(taps, 1);
+
+      await tester.pumpWidget(_interactionApp(onPressed: null));
+      final button = tester.widget<IconButton>(find.byType(IconButton));
+      expect(button.onPressed, isNull);
+      expect(button.tooltip, 'Back');
+      expect(
+        tester.getSize(find.byType(ReaderControlIconButton)),
+        const Size.square(44),
+      );
+    },
+  );
+
+  testWidgets('reduced motion keeps the whole bar paint transform at rest', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _interactionApp(onPressed: () {}, reducedMotion: true),
+    );
+    final painted = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == '_PressPaint',
+    );
+    final dynamic paint = tester.renderObject(painted);
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byIcon(Icons.arrow_back_rounded)),
+    );
+    await gesture.moveBy(const Offset(300, 80));
+    await tester.pump(const Duration(milliseconds: 180));
+    expect(paint.lift, 0);
+    expect(paint.pull, Offset.zero);
+    await gesture.up();
   });
 
   testWidgets('frosted reader border ignores a divergent outer app palette', (
@@ -190,6 +279,63 @@ void main() {
     expectGlass();
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(bars.first).dy, hiddenTop);
+  });
+
+  testWidgets('hidden reader bars exclude input and semantics', (tester) async {
+    var backTaps = 0;
+    const topKey = ValueKey('hidden-reader-top-bar');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReaderChromeOverlay(
+            palette: ReaderThemes.day,
+            visible: false,
+            title: 'Chapter',
+            statusBottom: 8,
+            statusBuilder: (context, style, key) =>
+                Text('1 / 2', key: key, style: style),
+            onBack: () => backTaps += 1,
+            onBookmark: () {},
+            onTableOfContents: () {},
+            onSettings: () {},
+            backTooltip: 'Back',
+            bookmarkTooltip: 'Bookmark',
+            tableOfContentsTooltip: 'Contents',
+            settingsTooltip: 'Settings',
+            bookmarked: false,
+            topKey: topKey,
+          ),
+        ),
+      ),
+    );
+
+    final top = find.byKey(topKey);
+    expect(
+      tester
+          .widget<IgnorePointer>(
+            find
+                .descendant(of: top, matching: find.byType(IgnorePointer))
+                .first,
+          )
+          .ignoring,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<ExcludeSemantics>(
+            find
+                .descendant(of: top, matching: find.byType(ExcludeSemantics))
+                .first,
+          )
+          .excluding,
+      isTrue,
+    );
+    await tester.tap(
+      find.descendant(of: top, matching: find.byIcon(Icons.arrow_back_rounded)),
+      warnIfMissed: false,
+    );
+    await tester.pump();
+    expect(backTaps, 0);
   });
 
   testWidgets('reader-owned top information shows time title and battery', (
@@ -374,6 +520,38 @@ Widget _testApp({
   );
 }
 
+Widget _interactionApp({
+  required VoidCallback? onPressed,
+  bool reducedMotion = false,
+}) => MaterialApp(
+  home: MediaQuery(
+    data: MediaQueryData(disableAnimations: reducedMotion),
+    child: Scaffold(
+      body: Center(
+        child: ReaderControlBar(
+          palette: ReaderThemes.day,
+          isTopBar: true,
+          child: SizedBox(
+            width: 240,
+            height: 58,
+            child: Row(
+              children: [
+                ReaderControlIconButton(
+                  palette: ReaderThemes.day,
+                  onPressed: onPressed,
+                  tooltip: 'Back',
+                  icon: Icons.arrow_back_rounded,
+                ),
+                const Expanded(child: Text('Chapter')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+
 LinearGradient _panelGradient(WidgetTester tester) {
   final surface = find
       .descendant(
@@ -395,14 +573,4 @@ LinearGradient _panelGradient(WidgetTester tester) {
           as ShapeDecoration;
   return decoration.gradient as LinearGradient? ??
       LinearGradient(colors: [decoration.color!, decoration.color!]);
-}
-
-Color _iconBackground(WidgetTester tester) {
-  final surface = tester.widget<GlassControlSurface>(
-    find.descendant(
-      of: find.byType(ReaderControlIconButton).first,
-      matching: find.byType(GlassControlSurface),
-    ),
-  );
-  return surface.color!;
 }

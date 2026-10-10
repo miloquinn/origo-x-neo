@@ -13,10 +13,9 @@ extension _BookSourcesPageOrganization on _BookSourcesPageState {
       );
 
   Future<void> _showSourceActions(RegisteredBookSource source) =>
-      showModalBottomSheet<void>(
+      showGlassBottomSheet<void>(
         context: context,
         useSafeArea: true,
-        showDragHandle: true,
         builder: (context) => AnimatedBuilder(
           animation: _controller,
           builder: (context, _) {

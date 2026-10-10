@@ -11,6 +11,7 @@ import '../services/tts_service_translator.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'generated_book_cover.dart';
+import 'glass_bottom_sheet.dart';
 import 'app_menu.dart';
 import 'reader_aloud_transcript.dart';
 import 'side_toast.dart';
@@ -28,17 +29,16 @@ Future<void> showReaderAloud({
   await aloudService.initialize();
   if (!context.mounted) return;
   if (aloudService.presentation == ReaderAloudPresentation.controls) {
-    final openPlayer = await showModalBottomSheet<bool>(
+    final openPlayer = await showGlassBottomSheet<bool>(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
-      showDragHandle: true,
       backgroundColor: palette.controlBar,
+      theme: themeData,
       constraints: BoxConstraints(
         maxWidth: 560,
         maxHeight: MediaQuery.sizeOf(context).height * 0.72,
       ),
-      clipBehavior: Clip.antiAlias,
       builder: (context) => Theme(
         data: themeData,
         child: ReaderAloudPlayerPage(
@@ -95,21 +95,17 @@ Future<void> showReaderAloudSettingsSheet({
   required ReaderAloudService aloudService,
   required ReaderThemePalette palette,
   required ThemeData themeData,
-}) => showModalBottomSheet<void>(
+}) => showGlassBottomSheet<void>(
   context: context,
   useSafeArea: true,
   isScrollControlled: true,
   enableDrag: true,
-  showDragHandle: true,
   backgroundColor: palette.controlBar,
+  theme: themeData,
   constraints: BoxConstraints(
     maxWidth: 720,
     maxHeight: MediaQuery.sizeOf(context).height * 0.72,
   ),
-  shape: const RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-  ),
-  clipBehavior: Clip.antiAlias,
   builder: (sheetContext) => Theme(
     data: themeData,
     child: ReaderAloudPanel(
@@ -809,11 +805,11 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
   );
 
   Future<void> _showChapters() async {
-    final selected = await showModalBottomSheet<int>(
+    final selected = await showGlassBottomSheet<int>(
       context: context,
       useSafeArea: true,
-      showDragHandle: true,
       backgroundColor: widget.palette.controlBar,
+      theme: widget.palette.toThemeData(parentTheme: Theme.of(context)),
       constraints: BoxConstraints(
         maxWidth: 620,
         maxHeight: MediaQuery.sizeOf(context).height * 0.68,
@@ -1668,19 +1664,16 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
         ? 30
         : ((remaining.inSeconds + 59) ~/ 60).clamp(1, 1439).toInt();
     var selected = Duration(minutes: initialMinutes);
-    final result = await showModalBottomSheet<Duration>(
+    final result = await showGlassBottomSheet<Duration>(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
       enableDrag: true,
-      showDragHandle: true,
       backgroundColor: widget.palette.controlBar,
+      theme: widget.palette.toThemeData(parentTheme: Theme.of(context)),
       constraints: BoxConstraints(
         maxWidth: 620,
         maxHeight: MediaQuery.sizeOf(context).height * 0.62,
-      ),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (sheetContext) => Theme(
         data: widget.palette.toThemeData(parentTheme: Theme.of(context)),

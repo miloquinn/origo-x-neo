@@ -22,6 +22,7 @@ import 'package:xxread/utils/book_open_transition.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
 import 'package:xxread/widgets/reader_theme_background.dart';
 
@@ -337,9 +338,10 @@ class _PagedImageReaderState extends State<PagedImageReader> {
     var volumeKeys =
         prefs.getBool(ReaderVolumeKeyController.preferenceKey) ?? false;
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showGlassBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _palette.surface,
+      theme: _palette.toThemeData(parentTheme: Theme.of(context)),
       isScrollControlled: true,
       builder: (sheetContext) => StatefulBuilder(
         builder: (sheetContext, setSheetState) => ReaderSettingsSheetFrame(

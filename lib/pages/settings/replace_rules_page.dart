@@ -10,6 +10,7 @@ import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/services/reader/replace_rule_execution.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/pill_search_field.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
@@ -17,7 +18,7 @@ Future<ReplaceRule?> showReplaceRuleEditor(
   BuildContext context, {
   required ReplaceRuleService service,
   ReplaceRule? rule,
-}) => showModalBottomSheet<ReplaceRule>(
+}) => showGlassBottomSheet<ReplaceRule>(
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
@@ -930,7 +931,6 @@ class _ReplaceRuleEditorState extends State<_ReplaceRuleEditor> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final l10n = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
@@ -940,22 +940,9 @@ class _ReplaceRuleEditorState extends State<_ReplaceRuleEditor> {
         alignment: Alignment.bottomCenter,
         child: Material(
           key: const ValueKey('replace-rule-editor-sheet'),
-          color: scheme.surface,
-          surfaceTintColor: Colors.transparent,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          clipBehavior: Clip.antiAlias,
+          type: MaterialType.transparency,
           child: Column(
             children: [
-              Container(
-                key: const ValueKey('replace-rule-editor-drag-handle'),
-                width: 42,
-                height: 4,
-                margin: const EdgeInsets.only(top: 10, bottom: 8),
-                decoration: BoxDecoration(
-                  color: scheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 10, 12),
                 child: Row(

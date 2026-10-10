@@ -8,6 +8,7 @@ class BookSourceCategoryPicker extends StatefulWidget {
   final String title;
   final String searchLabel;
   final String noResultsLabel;
+  final bool transparentBackground;
 
   const BookSourceCategoryPicker({
     super.key,
@@ -16,6 +17,7 @@ class BookSourceCategoryPicker extends StatefulWidget {
     required this.title,
     required this.searchLabel,
     required this.noResultsLabel,
+    this.transparentBackground = false,
   });
 
   @override
@@ -57,7 +59,7 @@ class _BookSourceCategoryPickerState extends State<BookSourceCategoryPicker> {
     final entries = _entries();
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.surface,
+      color: widget.transparentBackground ? Colors.transparent : scheme.surface,
       child: Column(
         children: [
           Padding(

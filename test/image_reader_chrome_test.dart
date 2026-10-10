@@ -6,9 +6,11 @@ import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/elastic_press.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_control_surface.dart';
+import 'package:xxread/widgets/glass_surface.dart';
+import 'package:xxread/widgets/reader_control_chrome.dart';
 
 void main() {
-  testWidgets('image reader actions retain expanded spring glass roles', (
+  testWidgets('image reader actions share whole-bar glass and spring motion', (
     tester,
   ) async {
     const directionKey = ValueKey('image-direction');
@@ -55,7 +57,7 @@ void main() {
     expect(tester.takeException(), isNull);
     final directionButton = find.descendant(
       of: find.byKey(directionKey),
-      matching: find.byType(GlassTextButton),
+      matching: find.byType(TextButton),
     );
     expect(directionButton, findsOneWidget);
     final size = tester.getSize(directionButton);
@@ -63,22 +65,36 @@ void main() {
     expect(size.width, greaterThan(44));
     final settingsButton = find.descendant(
       of: find.byKey(settingsKey),
-      matching: find.byType(GlassTextButton),
+      matching: find.byType(TextButton),
     );
     expect(tester.getSize(settingsButton).width, size.width);
     expect(
       find.descendant(of: directionButton, matching: find.byType(ElasticPress)),
-      findsOneWidget,
+      findsNothing,
     );
-    final surface = tester.widget<GlassControlSurface>(
-      find.descendant(
-        of: directionButton,
-        matching: find.byType(GlassControlSurface),
-      ),
+    final bars = find.byType(ReaderControlBar);
+    expect(bars, findsNWidgets(2));
+    expect(find.byType(GlassTextButton), findsNothing);
+    expect(find.byType(GlassControlSurface), findsNothing);
+    expect(find.byType(ElasticPress), findsNWidgets(2));
+    for (final bar in bars.evaluate()) {
+      final surface = tester.widget<GlassSurface>(
+        find.descendant(
+          of: find.byWidget(bar.widget),
+          matching: find.byType(GlassSurface),
+        ),
+      );
+      expect(surface.brightness, ReaderThemes.green.brightness);
+      expect(surface.outlineColor, ReaderThemes.green.border);
+    }
+    expect(
+      tester
+          .widget<TextButton>(directionButton)
+          .style!
+          .backgroundColor!
+          .resolve({}),
+      Colors.transparent,
     );
-    expect(surface.blurBackground, isFalse);
-    expect(surface.brightness, ReaderThemes.green.brightness);
-    expect(surface.outlineColor, ReaderThemes.green.border);
 
     await tester.tap(directionButton);
     await tester.pump();

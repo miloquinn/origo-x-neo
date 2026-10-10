@@ -16,6 +16,7 @@ import '../../services/core/app_settings_service.dart';
 import '../../utils/layout_helper.dart';
 import '../../utils/localization_extension.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/glass_bottom_sheet.dart';
 import '../../widgets/side_toast.dart';
 import 'controllers/book_source_add_controller.dart';
 import 'controllers/book_source_management_controller.dart';
@@ -352,10 +353,9 @@ class _BookSourceManagementPageState extends State<BookSourceManagementPage> {
 
   Future<void> _showGroupPicker() async {
     final state = _controller.state;
-    final selected = await showModalBottomSheet<String>(
+    final selected = await showGlassBottomSheet<String>(
       context: context,
       useSafeArea: true,
-      showDragHandle: true,
       builder: (context) => BookSourceGroupPicker(
         groups: state.availableGroups,
         selected: state.selectedGroup,
@@ -590,10 +590,9 @@ class _BookSourceManagementPageState extends State<BookSourceManagementPage> {
   }
 
   Future<void> _showInformationMenu() async {
-    final action = await showModalBottomSheet<BookSourceInformationAction>(
+    final action = await showGlassBottomSheet<BookSourceInformationAction>(
       context: context,
       useSafeArea: true,
-      showDragHandle: true,
       builder: (context) => const BookSourceInformationSheet(),
     );
     if (!mounted || action == null) return;

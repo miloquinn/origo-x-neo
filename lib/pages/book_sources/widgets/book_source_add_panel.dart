@@ -70,7 +70,7 @@ class BookSourceAddPanel extends StatelessWidget {
         : onChooseFile;
 
     return Material(
-      color: scheme.surface,
+      color: sheet ? Colors.transparent : scheme.surface,
       borderRadius: BorderRadius.circular(28),
       clipBehavior: Clip.antiAlias,
       child: Column(

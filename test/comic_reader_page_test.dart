@@ -19,6 +19,7 @@ import 'package:xxread/book_sources/models/registered_book_source.dart';
 import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 /// 1x1 transparent PNG that Image.memory can decode.
 final Uint8List _tinyPng = Uint8List.fromList(const <int>[
@@ -1175,11 +1176,9 @@ void main() {
         .onPressed!();
     await tester.pumpAndSettle();
 
-    final sheet = tester.getRect(
-      find.byKey(const ValueKey('comic-catalog-sheet')),
-    );
+    final sheet = tester.getRect(find.byType(BottomSheet));
     final handle = tester.getRect(
-      find.byKey(const ValueKey('comic-catalog-drag-handle')),
+      find.byKey(GlassBottomSheetSurface.dragHandleKey),
     );
     final screen = tester.getSize(find.byType(ComicReaderPage));
     expect(sheet.top, greaterThan(0));
@@ -1189,7 +1188,7 @@ void main() {
     expect(find.text('Close'), findsOneWidget);
 
     await tester.fling(
-      find.byKey(const ValueKey('comic-catalog-drag-handle')),
+      find.byKey(GlassBottomSheetSurface.dragHandleKey),
       const Offset(0, 400),
       1000,
     );

@@ -55,6 +55,7 @@ import 'package:xxread/widgets/developer_support_card.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
 import 'package:xxread/widgets/settings_account_card.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/side_toast.dart';
 import 'package:xxread/widgets/update_check_gate.dart';
 
@@ -309,11 +310,11 @@ class _SettingsPageState extends State<SettingsPage> {
           ReaderSettings.defaultThemeId,
     );
     if (!mounted) return;
-    final selected = await showModalBottomSheet<ReaderTopBarStyle>(
+    final selected = await showGlassBottomSheet<ReaderTopBarStyle>(
       context: context,
       backgroundColor: palette.surface,
-      showDragHandle: true,
       isScrollControlled: true,
+      theme: palette.toThemeData(parentTheme: Theme.of(context)),
       builder: (sheetContext) => ReaderTopBarStyleSheet(
         palette: palette,
         title: context.l10n.readerTopBarStyleTitle,

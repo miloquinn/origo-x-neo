@@ -168,6 +168,19 @@ class GlassMaterial {
       GlassSurfaceRole.floating => 15.0,
       GlassSurfaceRole.panel => 25.0,
     };
+    // A pale reflected edge alone disappears on light canvases and becomes a
+    // white outline on dark ones. Keep the reflected light close to the actual
+    // surface, with a palette-derived backlit edge completing the contour.
+    final reflectedEdge = Color.lerp(
+      Color.lerp(base, Colors.white, light ? 0.52 : 0.08),
+      sourceOutline,
+      light ? 0.10 : 0.40,
+    )!;
+    final shadedEdge = Color.lerp(
+      sourceOutline,
+      light ? scheme.onSurface : base,
+      light ? 0.16 : 0.35,
+    )!;
     return GlassMaterial._(
       mode: mode,
       visibility: visibility,
@@ -211,10 +224,10 @@ class GlassMaterial {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withValues(alpha: (light ? 0.88 : 0.60) * visibility),
-          Colors.white.withValues(alpha: 0.08 * visibility),
-          Colors.white.withValues(alpha: (light ? 0.06 : 0.03) * visibility),
-          Colors.white.withValues(alpha: (light ? 0.58 : 0.36) * visibility),
+          reflectedEdge.withValues(alpha: (light ? 0.52 : 0.36) * visibility),
+          reflectedEdge.withValues(alpha: (light ? 0.08 : 0.10) * visibility),
+          shadedEdge.withValues(alpha: (light ? 0.16 : 0.08) * visibility),
+          shadedEdge.withValues(alpha: (light ? 0.30 : 0.24) * visibility),
         ],
         stops: const [0, 0.42, 0.65, 1],
       ),

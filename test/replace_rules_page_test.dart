@@ -6,6 +6,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/settings/replace_rules_page.dart';
 import 'package:xxread/services/reader/replace_rule_execution.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
+import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 late ReplaceRuleService _service;
 
@@ -40,9 +41,7 @@ void main() {
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
 
-      final handle = find.byKey(
-        const ValueKey('replace-rule-editor-drag-handle'),
-      );
+      final handle = find.byKey(GlassBottomSheetSurface.dragHandleKey);
       final save = find.byKey(const ValueKey('replace-rule-editor-save'));
       expect(tester.getRect(handle).top, greaterThanOrEqualTo(44));
       expect(tester.getRect(save).bottom, lessThanOrEqualTo(900));
@@ -155,6 +154,16 @@ void main() {
 
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('replace-rule-scope-content')),
+      160,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('replace-rule-editor-fields')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     expect(
       tester
           .widget<CheckboxListTile>(
@@ -194,6 +203,16 @@ void main() {
     await tester.enterText(
       find.byKey(const ValueKey('replace-rule-pattern')),
       'advertisement',
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('replace-rule-scope-content')),
+      160,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('replace-rule-editor-fields')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.tap(find.byKey(const ValueKey('replace-rule-scope-content')));
     await tester.tap(find.byKey(const ValueKey('replace-rule-editor-save')));

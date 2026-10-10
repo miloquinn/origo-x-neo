@@ -90,9 +90,8 @@ class _ExternalLoginMethods extends StatelessWidget {
             key: const ValueKey('account-more-providers'),
             onPressed: account.loading
                 ? null
-                : () => showModalBottomSheet<void>(
+                : () => showGlassBottomSheet<void>(
                     context: context,
-                    showDragHandle: true,
                     isScrollControlled: true,
                     builder: (sheetContext) => SafeArea(
                       child: ConstrainedBox(

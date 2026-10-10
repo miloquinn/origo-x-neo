@@ -487,7 +487,7 @@ extension _BookSourceChangePageContent on _BookSourceChangePageState {
   }
 
   Future<void> _chooseChapter(ValidatedBookSourceChange validated) async {
-    final index = await showModalBottomSheet<int>(
+    final index = await showGlassBottomSheet<int>(
       context: context,
       isScrollControlled: true,
       builder: (context) => _ChapterSelectionSheet(

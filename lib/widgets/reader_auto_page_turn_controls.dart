@@ -4,15 +4,17 @@ import '../core/reader/reader_auto_page_turn_controller.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'reader_settings_controls.dart';
+import 'glass_bottom_sheet.dart';
 
 Future<ReaderAutoPageTurnSelection?> showReaderAutoPageTurnSheet({
   required BuildContext context,
   required ReaderThemePalette palette,
   required ReaderAutoPageTurnController controller,
   bool vertical = false,
-}) => showModalBottomSheet<ReaderAutoPageTurnSelection>(
+}) => showGlassBottomSheet<ReaderAutoPageTurnSelection>(
   context: context,
-  backgroundColor: Colors.transparent,
+  backgroundColor: palette.surface,
+  theme: palette.toThemeData(parentTheme: Theme.of(context)),
   isScrollControlled: true,
   builder: (context) => _ReaderAutoPageTurnSheet(
     palette: palette,
