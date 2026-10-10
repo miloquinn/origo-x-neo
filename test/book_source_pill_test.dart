@@ -21,7 +21,7 @@ void main() {
       await tester.pump();
 
       var scale = tester.widget<AnimatedScale>(
-        find.byKey(const Key('bookSourcePillScale')),
+        find.byKey(const Key('appSelectionPillScale')),
       );
       expect(scale.scale, BookSourcePill.pressedScale);
       expect(scale.duration, BookSourcePill.pressDuration);
@@ -29,7 +29,7 @@ void main() {
       await gesture.up();
       await tester.pump();
       scale = tester.widget<AnimatedScale>(
-        find.byKey(const Key('bookSourcePillScale')),
+        find.byKey(const Key('appSelectionPillScale')),
       );
       expect(scale.scale, 1);
       expect(scale.duration, BookSourcePill.releaseDuration);
@@ -88,7 +88,7 @@ void main() {
     await tester.pump();
 
     final scale = tester.widget<AnimatedScale>(
-      find.byKey(const Key('bookSourcePillScale')),
+      find.byKey(const Key('appSelectionPillScale')),
     );
     final surface = tester.widget<GlassControlSurface>(
       find.byType(GlassControlSurface),

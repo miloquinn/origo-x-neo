@@ -90,6 +90,100 @@ void main() {
     expect(selectionTaps, 1);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('regular cards share one compact metadata and action row', (
+    tester,
+  ) async {
+    await _pumpCard(
+      tester,
+      source: _compactSource(groups: const ['常用']),
+      width: 390,
+      textScale: 1,
+    );
+
+    final cardRect = tester.getRect(
+      find.byKey(const ValueKey('bookSourceCard-compact')),
+    );
+    final metadataRect = tester.getRect(
+      find.byKey(const ValueKey('bookSourceMetadata-compact')),
+    );
+    final actionsRect = tester.getRect(
+      find.byKey(const ValueKey('bookSourceActions-compact')),
+    );
+    final favoriteSize = tester.getSize(
+      find.byKey(const ValueKey('bookSourceFavorite-compact')),
+    );
+
+    expect(cardRect.height, lessThan(130));
+    expect((metadataRect.center.dy - actionsRect.center.dy).abs(), lessThan(1));
+    expect(favoriteSize.width, greaterThanOrEqualTo(44));
+    expect(favoriteSize.height, greaterThanOrEqualTo(44));
+    expect(
+      tester.getSize(find.byType(Switch)).height,
+      greaterThanOrEqualTo(44),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('sources without metadata stay compact and readable', (
+    tester,
+  ) async {
+    await _pumpCard(tester, source: _compactSource(), width: 390, textScale: 1);
+
+    expect(find.text('简短书源'), findsOneWidget);
+    expect(find.text('compact.example'), findsOneWidget);
+    expect(
+      tester
+          .getRect(find.byKey(const ValueKey('bookSourceCard-compact')))
+          .height,
+      lessThan(130),
+    );
+    expect(find.byKey(const ValueKey('bookSourceActions-compact')), findsOne);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('login health and long groups keep ordinary cards compact', (
+    tester,
+  ) async {
+    for (final variant in [
+      (width: 320.0, scale: 1.0),
+      (width: 390.0, scale: 1.2),
+    ]) {
+      await _pumpCard(
+        tester,
+        source: _denseSource(),
+        width: variant.width,
+        textScale: variant.scale,
+      );
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('bookSourceCard-dense')))
+            .height,
+        lessThanOrEqualTo(200),
+      );
+      expect(find.text('部分失效'), findsOneWidget);
+      expect(find.text(_longGroup), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('locked additional protocols cannot be enabled', (tester) async {
+    var enabledChanges = 0;
+    await _pumpCard(
+      tester,
+      source: _denseSource().copyWith(enabled: false),
+      width: 390,
+      textScale: 1,
+      additionalProtocolsEnabled: false,
+      onEnabledChanged: (_) => enabledChanges++,
+    );
+
+    final toggle = tester.widget<Switch>(find.byType(Switch));
+    expect(toggle.onChanged, isNull);
+    await tester.tap(find.byType(Switch));
+    expect(enabledChanges, 0);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 const _longName = 'E小说网6 与一个非常非常长但仍然需要辨认的书源名称';
@@ -123,6 +217,23 @@ RegisteredBookSource _denseSource() {
   return source;
 }
 
+RegisteredBookSource _compactSource({List<String> groups = const []}) {
+  return RegisteredBookSource(
+    id: 'compact',
+    name: '简短书源',
+    description: '',
+    manifestUrl: Uri.parse('https://compact.example/source.json'),
+    apiBaseUrl: Uri.parse('https://compact.example'),
+    protocolVersion: '1',
+    languages: const ['zh'],
+    capabilities: const {'search'},
+    enabled: true,
+    groups: groups,
+    addedAt: DateTime.utc(2026, 10, 10),
+    sourceProtocol: BookSourceProtocolKind.orsp,
+  );
+}
+
 Future<void> _pumpCard(
   WidgetTester tester, {
   required RegisteredBookSource source,
@@ -130,6 +241,7 @@ Future<void> _pumpCard(
   required double textScale,
   bool selectionMode = false,
   bool selected = false,
+  bool additionalProtocolsEnabled = true,
   VoidCallback? onToggleSelection,
   ValueChanged<bool>? onEnabledChanged,
   ValueChanged<BookSourceManagementSourceAction>? onAction,
@@ -148,16 +260,18 @@ Future<void> _pumpCard(
           textScaler: TextScaler.linear(textScale),
         ),
         child: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(12),
-            child: BookSourceManagementSourceCard(
-              source: source,
-              selectionMode: selectionMode,
-              selected: selected,
-              additionalProtocolsEnabled: true,
-              onToggleSelection: onToggleSelection ?? () {},
-              onEnabledChanged: onEnabledChanged ?? (_) {},
-              onAction: onAction ?? (_) {},
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: BookSourceManagementSourceCard(
+                source: source,
+                selectionMode: selectionMode,
+                selected: selected,
+                additionalProtocolsEnabled: additionalProtocolsEnabled,
+                onToggleSelection: onToggleSelection ?? () {},
+                onEnabledChanged: onEnabledChanged ?? (_) {},
+                onAction: onAction ?? (_) {},
+              ),
             ),
           ),
         ),

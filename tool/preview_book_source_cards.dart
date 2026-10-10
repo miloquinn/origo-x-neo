@@ -15,7 +15,9 @@ import 'package:xxread/utils/app_themes.dart';
 
 const _previewFont = 'BookSourceCardPreviewChinese';
 const _captureKey = Key('bookSourceCardPreviewBoundary');
-const _outputDirectory = 'artifacts/source-cards';
+final _outputDirectory =
+    Platform.environment['BOOK_SOURCE_PREVIEW_OUTPUT'] ??
+    'build/source-management-20261010/card-previews';
 
 void main() {
   testWidgets('capture source cards dark 390', (tester) async {

@@ -4,6 +4,8 @@ import '../../../book_sources/models/registered_book_source.dart';
 import '../../../utils/localization_extension.dart';
 import '../../../widgets/floating_subpage_scaffold.dart';
 import '../../../widgets/pill_search_field.dart';
+import '../../../widgets/app_filter_bar.dart';
+import '../../../widgets/app_selection_pill.dart';
 import '../controllers/book_source_management_controller.dart';
 import 'book_source_management_source_card.dart';
 import 'book_source_organization_copy.dart';
@@ -288,34 +290,39 @@ class _HeaderAndFilters extends StatelessWidget {
           fillColor: scheme.surfaceContainerLow,
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          height: 42,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              for (final filter in BookSourceManagementFilter.values) ...[
-                ChoiceChip(
-                  key: Key('bookSourceFilter-${filter.name}'),
-                  selected: state.filter == filter,
-                  avatar: filter == BookSourceManagementFilter.requiresLogin
-                      ? const Icon(Icons.key_rounded, size: 18)
-                      : null,
-                  label: Text(_filterLabel(context, filter)),
-                  onSelected: (_) => onFilterChanged(filter),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (availableGroups.isNotEmpty)
-                ActionChip(
+        AppFilterBar<BookSourceManagementFilter>(
+          key: const Key('bookSourceManagementFilters'),
+          selected: state.filter,
+          onSelected: onFilterChanged,
+          options: [
+            for (final filter in BookSourceManagementFilter.values)
+              AppFilterOption(
+                key: Key('bookSourceFilter-${filter.name}'),
+                value: filter,
+                label: _filterLabel(context, filter),
+                icon: filter == BookSourceManagementFilter.requiresLogin
+                    ? Icons.key_rounded
+                    : null,
+              ),
+          ],
+          trailing: availableGroups.isEmpty
+              ? null
+              : AppSelectionPill(
                   key: const Key('bookSourceGroupFilter'),
-                  avatar: const Icon(Icons.folder_outlined, size: 18),
-                  label: Text(
-                    state.selectedGroup ?? context.l10n.bookSourcesAllGroups,
-                  ),
+                  label:
+                      state.selectedGroup ?? context.l10n.bookSourcesAllGroups,
+                  icon: Icons.folder_outlined,
+                  selected: state.selectedGroup != null,
+                  selectedForegroundColor: scheme.primary,
                   onPressed: onChooseGroup,
+                  enableSurface: false,
+                  maxLabelWidth: 220,
+                  foregroundColor: scheme.onSurfaceVariant,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                 ),
-            ],
-          ),
         ),
         if (state.selectionMode) ...[
           const SizedBox(height: 12),

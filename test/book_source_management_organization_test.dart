@@ -8,6 +8,7 @@ import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/book_sources/book_source_management_page.dart';
 import 'package:xxread/widgets/app_menu.dart';
+import 'package:xxread/widgets/app_selection_pill.dart';
 
 void main() {
   Future<void> mount(WidgetTester tester, BookSourceRegistry registry) async {
@@ -149,9 +150,13 @@ void main() {
       );
 
       final filter = find.byKey(const Key('bookSourceGroupFilter'));
+      expect(tester.widget<AppSelectionPill>(filter).selected, isFalse);
       await tester.dragUntilVisible(
         filter,
-        find.byType(ListView).first,
+        find.descendant(
+          of: find.byKey(const Key('bookSourceManagementFilters')),
+          matching: find.byType(SingleChildScrollView),
+        ),
         const Offset(-200, 0),
       );
       await tester.pumpAndSettle();
@@ -163,6 +168,22 @@ void main() {
       expect(find.byKey(const ValueKey('bookSourceCard-alpha')), findsNothing);
       expect(find.byKey(const ValueKey('bookSourceCard-beta')), findsNothing);
       expect(await registry.loadGroups(), ['Empty folder', 'Useful']);
+      expect(tester.widget<AppSelectionPill>(filter).selected, isTrue);
+      final semantics = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(filter),
+        matchesSemantics(
+          label: 'Empty folder',
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+          isFocusable: true,
+        ),
+      );
+      semantics.dispose();
       expect(tester.takeException(), isNull);
     },
   );

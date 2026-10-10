@@ -163,46 +163,117 @@ class BookSourceManagementSourceCard extends StatelessWidget {
                 ],
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: _SourceMetadata(source: source),
-            ),
-            if (!selectionMode) ...[
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    key: ValueKey('bookSourceFavorite-${source.id}'),
-                    tooltip: source.isFavorite
-                        ? BookSourceOrganizationCopy.of(context).unfavorite
-                        : BookSourceOrganizationCopy.of(context).favorite,
-                    onPressed: () =>
-                        onAction(BookSourceManagementSourceAction.favorite),
-                    icon: Icon(
-                      source.isFavorite
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      color: source.isFavorite
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
-                    ),
-                  ),
-                  Tooltip(
-                    message: source.enabled
-                        ? context.l10n.bookSourcesEnabled
-                        : context.l10n.bookSourcesDisabled,
-                    child: Switch.adaptive(
-                      value: source.enabled,
-                      onChanged: !canEnable ? null : onEnabledChanged,
-                    ),
-                  ),
-                ],
+            if (selectionMode)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: _SourceMetadata(source: source),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: _SourceFooter(
+                  source: source,
+                  canEnable: canEnable,
+                  onEnabledChanged: onEnabledChanged,
+                  onAction: onAction,
+                ),
               ),
-            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SourceFooter extends StatelessWidget {
+  const _SourceFooter({
+    required this.source,
+    required this.canEnable,
+    required this.onEnabledChanged,
+    required this.onAction,
+  });
+
+  final RegisteredBookSource source;
+  final bool canEnable;
+  final ValueChanged<bool> onEnabledChanged;
+  final ValueChanged<BookSourceManagementSourceAction> onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final actions = _SourceActions(
+          source: source,
+          canEnable: canEnable,
+          onEnabledChanged: onEnabledChanged,
+          onAction: onAction,
+        );
+        if (constraints.maxWidth >= 260 && textScale <= 1.2) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: _SourceMetadata(source: source)),
+              const SizedBox(width: 4),
+              actions,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SourceMetadata(source: source),
+            const SizedBox(height: 4),
+            Align(alignment: AlignmentDirectional.centerEnd, child: actions),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SourceActions extends StatelessWidget {
+  const _SourceActions({
+    required this.source,
+    required this.canEnable,
+    required this.onEnabledChanged,
+    required this.onAction,
+  });
+
+  final RegisteredBookSource source;
+  final bool canEnable;
+  final ValueChanged<bool> onEnabledChanged;
+  final ValueChanged<BookSourceManagementSourceAction> onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      key: ValueKey('bookSourceActions-${source.id}'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          key: ValueKey('bookSourceFavorite-${source.id}'),
+          tooltip: source.isFavorite
+              ? BookSourceOrganizationCopy.of(context).unfavorite
+              : BookSourceOrganizationCopy.of(context).favorite,
+          onPressed: () => onAction(BookSourceManagementSourceAction.favorite),
+          icon: Icon(
+            source.isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+            color: source.isFavorite
+                ? Theme.of(context).colorScheme.primary
+                : null,
+          ),
+        ),
+        Tooltip(
+          message: source.enabled
+              ? context.l10n.bookSourcesEnabled
+              : context.l10n.bookSourcesDisabled,
+          child: Switch.adaptive(
+            value: source.enabled,
+            onChanged: !canEnable ? null : onEnabledChanged,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -288,6 +359,7 @@ class _SourceMetadata extends StatelessWidget {
     ];
     if (badges.isEmpty) return const SizedBox.shrink();
     return LayoutBuilder(
+      key: ValueKey('bookSourceMetadata-${source.id}'),
       builder: (context, constraints) => Wrap(
         spacing: 8,
         runSpacing: 5,

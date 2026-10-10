@@ -9,6 +9,7 @@
 | 仓库工作约定、验证与交付 | [AGENTS.md](../AGENTS.md) |
 | 模块阅读顺序 | [代码库说明](../CODEBASE_DOCUMENTATION.md) |
 | 书源门面、运行时、所有权与兼容边界 | [书源架构](../lib/book_sources/README.md) |
+| 书源管理卡片密度、筛选栏与共享胶囊分类控件 | [书源管理布局](source-management-ui.md) |
 | 书库更新计数、封面角标、在线确认与本地续更 | [书库更新](library-source-updates.md) |
 | 本地/在线缓存、在线启动、分页、清除与排障 | [阅读缓存维护](reading-cache.md) |
 | 自定义背景图保存、升级兼容与删除 | [阅读背景图](reader-backgrounds.md) |
