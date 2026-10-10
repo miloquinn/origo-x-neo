@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:xxread/book_sources/caching/book_source_chapter_cache.dart';
 import 'package:xxread/book_sources/models/registered_book_source.dart';
+import 'package:xxread/book_sources/networking/book_source_network_policy.dart';
 import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
@@ -250,6 +254,76 @@ void main() {
       client.close();
     },
   );
+
+  testWidgets('cached catalog shows body while its source refresh is pending', (
+    tester,
+  ) async {
+    final directory = (await tester.runAsync(
+      () => Directory.systemTemp.createTemp('online-reader-stale-catalog-'),
+    ))!;
+    addTearDown(() => directory.delete(recursive: true));
+    final server = _OrspStartupServer();
+    final dio = Dio()..httpClientAdapter = server;
+    final client = BookSourceClient(
+      dio: dio,
+      chapterCache: BookSourceChapterCache(cacheDirectory: directory),
+      networkPolicy: BookSourceNetworkPolicy(
+        lookup: (_) async => [InternetAddress('93.184.216.34')],
+      ),
+    );
+    final rules = ReplaceRuleService();
+    final shelf = _ControlledShelfService(client);
+    final progress = _TrackingProgressStore();
+    await rules.load();
+    addTearDown(rules.close);
+    addTearDown(() {
+      final gate = server.catalogGate;
+      if (gate != null && !gate.isCompleted) gate.complete();
+      shelf.close();
+      client.close();
+    });
+
+    await tester.runAsync(() async {
+      await client.getChaptersForDownload(_source, _sourceBook.id);
+      await client.getChapterContent(
+        _source,
+        bookId: _sourceBook.id,
+        chapterId: 'chapter-1',
+      );
+      final catalogFile = await _waitForReaderCacheFiles(directory);
+      await catalogFile.setLastModified(
+        DateTime.now().subtract(const Duration(minutes: 31)),
+      );
+    });
+    BookSourceChapterCache.releaseMemory();
+    server.events.clear();
+    server.catalogGate = Completer<void>();
+
+    await tester.pumpWidget(
+      _reader(
+        client: client,
+        shelfService: shelf,
+        replaceRules: rules,
+        progressStore: progress,
+        initialShelfBook: _shelfBook(id: 42),
+      ),
+    );
+    await _pumpUntil(tester, () => server.events.contains('catalog'));
+    await _pumpUntil(
+      tester,
+      () =>
+          find.textContaining('缓存正文', findRichText: true).evaluate().isNotEmpty,
+    );
+
+    expect(server.catalogGate!.isCompleted, isFalse);
+    expect(server.events, ['catalog']);
+    expect(find.textContaining('缓存正文', findRichText: true), findsWidgets);
+
+    server.catalogGate!.complete();
+    await _pumpUntil(tester, () => server.catalogResponses == 2);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
 }
 
 Widget _reader({
@@ -434,4 +508,66 @@ class _MemoryPaginationCacheDao extends PaginationCacheDao {
     int? expectedEpoch,
     int? expectedRevisionEpoch,
   }) async {}
+}
+
+class _OrspStartupServer implements HttpClientAdapter {
+  Completer<void>? catalogGate;
+  int catalogResponses = 0;
+  final events = <String>[];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    if (options.uri.path.endsWith('/chapters')) {
+      events.add('catalog');
+      await catalogGate?.future;
+      catalogResponses++;
+      return _json(
+        '{"items":[{"id":"chapter-1","title":"第一章","order":1}],'
+        '"page":1,"pageSize":100,"hasMore":false}',
+      );
+    }
+    events.add('content');
+    return _json(
+      '{"bookId":"${_sourceBook.id}","chapterId":"chapter-1",'
+      '"title":"第一章","contentType":"text/plain",'
+      '"content":"缓存正文"}',
+    );
+  }
+
+  ResponseBody _json(String body) => ResponseBody.fromString(
+    body,
+    200,
+    headers: {
+      Headers.contentTypeHeader: ['application/json'],
+    },
+  );
+
+  @override
+  void close({bool force = false}) {}
+}
+
+Future<File> _waitForReaderCacheFiles(Directory directory) async {
+  for (var attempt = 0; attempt < 100; attempt++) {
+    final files = await directory
+        .list(recursive: true)
+        .where((entity) => entity is File && entity.path.endsWith('.json'))
+        .cast<File>()
+        .toList();
+    File? catalog;
+    var hasChapter = false;
+    for (final file in files) {
+      if (file.parent.path.endsWith('catalogs')) {
+        catalog = file;
+      } else if (file.parent.path == directory.path) {
+        hasChapter = true;
+      }
+    }
+    if (catalog != null && hasChapter) return catalog;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  throw StateError('Catalog and current chapter were not persisted');
 }

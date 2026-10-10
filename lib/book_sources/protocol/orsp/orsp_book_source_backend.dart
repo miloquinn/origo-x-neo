@@ -330,10 +330,11 @@ class OrspBookSourceBackend implements OrspBookSourceBackendPort {
       sourceId: source.id,
       sourceRevision: source.apiBaseUrl.toString(),
       bookId: bookId,
-      // A persisted catalog cannot prove that the source still accepts its IDs.
-      // Refresh before handing an online catalog to a new reading session.
-      refreshAfter: Duration.zero,
-      staleWhileRevalidate: false,
+      // Reopening a recently read book must not wait on the source before its
+      // persisted chapter and catalog can be shown. Missing chapter recovery
+      // still forces a fresh catalog when an ID has actually changed.
+      refreshAfter: BookSourceChapterCache.catalogRefreshAfter,
+      staleWhileRevalidate: true,
       staleErrorTest: _pipeline.canUseStaleResponse,
       requestScope: cancellation ?? #interactive,
       loader: () => _fetchAllChapters(

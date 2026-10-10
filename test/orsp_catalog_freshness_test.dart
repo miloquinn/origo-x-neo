@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -35,44 +36,49 @@ void main() {
     return client;
   }
 
-  test(
-    'refreshes old chapter IDs before sending any content request',
-    () async {
-      final server = _SourceServer();
-      final client = clientFor(server);
-      await client.getChaptersForDownload(_source, 'book');
-      server.chapterId = 'new';
-      server.events.clear();
-
-      final chapters = await client.getChapters(_source, 'book');
-      final content = await client.getChapterContent(
-        _source,
-        bookId: 'book',
-        chapterId: chapters.single.id,
-      );
-
-      expect(content.content, 'Body');
-      expect(server.events, ['catalog', 'content:new']);
-      expect(server.missingContentRequests, 0);
-    },
-  );
-
-  test('refreshes the server catalog state before using a stable ID', () async {
+  test('hot reopen reuses a fresh catalog without a network request', () async {
     final server = _SourceServer();
     final client = clientFor(server);
     await client.getChaptersForDownload(_source, 'book');
-    server.catalogReady = false;
     server.events.clear();
 
     final chapters = await client.getChapters(_source, 'book');
+
+    expect(chapters.single.id, 'old');
+    expect(server.events, isEmpty);
+  });
+
+  test('forced recovery refreshes changed chapter IDs', () async {
+    final server = _SourceServer();
+    final client = clientFor(server);
+    await client.getChaptersForDownload(_source, 'book');
+    server.chapterId = 'new';
+    server.events.clear();
+
+    final cached = await client.getChapters(_source, 'book');
+    await expectLater(
+      client.getChapterContent(
+        _source,
+        bookId: 'book',
+        chapterId: cached.single.id,
+      ),
+      throwsA(
+        isA<BookSourceProtocolException>().having(
+          (error) => error.isMissingChapter,
+          'missing chapter',
+          isTrue,
+        ),
+      ),
+    );
+    final chapters = await client.getChaptersForDownload(_source, 'book');
     await client.getChapterContent(
       _source,
       bookId: 'book',
       chapterId: chapters.single.id,
     );
 
-    expect(server.events, ['catalog', 'content:old']);
-    expect(server.missingContentRequests, 0);
+    expect(server.events, ['content:old', 'catalog', 'content:new']);
+    expect(server.missingContentRequests, 1);
   });
 
   test('retains a cached catalog when the source connection fails', () async {
@@ -92,61 +98,145 @@ void main() {
 
     expect(chapters.single.id, 'old');
     expect(content.content, 'Body');
-    expect(server.events, ['catalog']);
+    expect(server.events, isEmpty);
   });
 
-  test('refreshes persisted catalogs after memory is released', () async {
-    final directory = await Directory.systemTemp.createTemp('orsp-fresh-disk-');
-    addTearDown(() => directory.delete(recursive: true));
-    final server = _SourceServer();
-    final client = clientFor(
-      server,
-      cache: BookSourceChapterCache(cacheDirectory: directory),
+  test(
+    'cold reopen reuses a fresh persisted catalog without network',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'orsp-fresh-disk-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final server = _SourceServer();
+      final client = clientFor(
+        server,
+        cache: BookSourceChapterCache(cacheDirectory: directory),
+      );
+      await client.getChaptersForDownload(_source, 'book');
+      await _waitForCatalogFile(directory, 'old');
+      BookSourceChapterCache.clearMemory();
+      server.events.clear();
+      final chapters = await client.getChapters(_source, 'book');
+      expect(chapters.single.id, 'old');
+      expect(server.events, isEmpty);
+    },
+  );
+
+  test(
+    'stale disk catalog opens before its background refresh completes',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'orsp-stale-disk-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final server = _SourceServer();
+      final client = clientFor(
+        server,
+        cache: BookSourceChapterCache(cacheDirectory: directory),
+      );
+      await client.getChaptersForDownload(_source, 'book');
+      await _waitForCatalogFile(directory, 'old');
+      final catalogFile = await _catalogFile(directory);
+      await catalogFile.setLastModified(
+        DateTime.now().subtract(const Duration(minutes: 31)),
+      );
+      BookSourceChapterCache.releaseMemory();
+      server.chapterId = 'new';
+      server.catalogGate = Completer<void>();
+      server.events.clear();
+
+      final chapters = await client.getChapters(_source, 'book');
+      await _waitForEvent(server, 'catalog');
+
+      expect(chapters.single.id, 'old');
+      expect(server.events, ['catalog']);
+      expect(server.catalogGate!.isCompleted, isFalse);
+      server.catalogGate!.complete();
+      await _waitForCatalogFile(directory, 'new');
+    },
+  );
+
+  for (final failure in const [
+    (name: 'HTTP 401', status: 401, malformed: false),
+    (name: 'HTTP 404', status: 404, malformed: false),
+    (name: 'malformed response', status: 200, malformed: true),
+  ]) {
+    test(
+      'stale interactive catalog survives ${failure.name}; forced refresh reports it',
+      () async {
+        final directory = await Directory.systemTemp.createTemp(
+          'orsp-stale-error-',
+        );
+        addTearDown(() => directory.delete(recursive: true));
+        final server = _SourceServer();
+        final client = clientFor(
+          server,
+          cache: BookSourceChapterCache(cacheDirectory: directory),
+        );
+        await client.getChaptersForDownload(_source, 'book');
+        await _waitForCatalogFile(directory, 'old');
+        await (await _catalogFile(directory)).setLastModified(
+          DateTime.now().subtract(const Duration(minutes: 31)),
+        );
+        BookSourceChapterCache.releaseMemory();
+        server.catalogStatus = failure.status;
+        server.malformed = failure.malformed;
+        server.events.clear();
+
+        final cached = await client.getChapters(_source, 'book');
+        await _waitForEvent(server, 'catalog');
+
+        expect(cached.single.id, 'old');
+        await expectLater(
+          client.getChaptersForDownload(_source, 'book'),
+          throwsA(isA<BookSourceProtocolException>()),
+        );
+      },
     );
-    await client.getChaptersForDownload(_source, 'book');
-    await _waitForCatalogFile(directory, 'old');
-    BookSourceChapterCache.clearMemory();
-    server.chapterId = 'new';
-    server.events.clear();
-    final chapters = await client.getChapters(_source, 'book');
-    expect(chapters.single.id, 'new');
-    expect(server.events, ['catalog']);
-    await _waitForCatalogFile(directory, 'new');
-  });
+  }
 
-  test('temporary server failure can use cached catalog', () async {
+  test('offline unread chapter still surfaces the source failure', () async {
     final server = _SourceServer();
     final client = clientFor(server);
     await client.getChaptersForDownload(_source, 'book');
-    server.catalogStatus = 503;
+    server.offline = true;
     expect((await client.getChapters(_source, 'book')).single.id, 'old');
+    await expectLater(
+      client.getChapterContent(
+        _source,
+        bookId: 'book',
+        chapterId: 'not-cached',
+      ),
+      throwsA(isA<BookSourceProtocolException>()),
+    );
   });
 
   for (final failure in [
     DioExceptionType.cancel,
     DioExceptionType.badCertificate,
   ]) {
-    test('does not hide $failure behind stale data', () async {
+    test('forced refresh surfaces $failure', () async {
       final server = _SourceServer();
       final client = clientFor(server);
       await client.getChaptersForDownload(_source, 'book');
       server.failure = failure;
       await expectLater(
-        client.getChapters(_source, 'book'),
+        client.getChaptersForDownload(_source, 'book'),
         throwsA(isA<BookSourceProtocolException>()),
       );
     });
   }
 
   for (final status in [401, 404]) {
-    test('does not hide catalog HTTP $status behind stale data', () async {
+    test('forced refresh surfaces catalog HTTP $status', () async {
       final server = _SourceServer();
       final client = clientFor(server);
       await client.getChaptersForDownload(_source, 'book');
       server.catalogStatus = status;
 
       await expectLater(
-        client.getChapters(_source, 'book'),
+        client.getChaptersForDownload(_source, 'book'),
         throwsA(
           isA<BookSourceProtocolException>().having(
             (error) => error.statusCode,
@@ -158,20 +248,17 @@ void main() {
     });
   }
 
-  test(
-    'does not hide an invalid refreshed catalog behind stale data',
-    () async {
-      final server = _SourceServer();
-      final client = clientFor(server);
-      await client.getChaptersForDownload(_source, 'book');
-      server.malformed = true;
+  test('forced refresh surfaces an invalid catalog', () async {
+    final server = _SourceServer();
+    final client = clientFor(server);
+    await client.getChaptersForDownload(_source, 'book');
+    server.malformed = true;
 
-      await expectLater(
-        client.getChapters(_source, 'book'),
-        throwsA(isA<BookSourceProtocolException>()),
-      );
-    },
-  );
+    await expectLater(
+      client.getChaptersForDownload(_source, 'book'),
+      throwsA(isA<BookSourceProtocolException>()),
+    );
+  });
 
   test('forced download catalog never falls back to stale data', () async {
     final server = _SourceServer();
@@ -201,12 +288,12 @@ final _source = RegisteredBookSource(
 
 class _SourceServer implements HttpClientAdapter {
   String chapterId = 'old';
-  bool catalogReady = true;
   bool offline = false;
   bool malformed = false;
   DioExceptionType? failure;
   int catalogStatus = 200;
   int missingContentRequests = 0;
+  Completer<void>? catalogGate;
   final events = <String>[];
 
   @override
@@ -218,6 +305,7 @@ class _SourceServer implements HttpClientAdapter {
     final catalog = options.uri.path.endsWith('/chapters');
     if (catalog) {
       events.add('catalog');
+      await catalogGate?.future;
       if (failure case final type?) {
         throw DioException(requestOptions: options, type: type);
       }
@@ -239,7 +327,6 @@ class _SourceServer implements HttpClientAdapter {
         );
       }
       if (malformed) return _json('{"items":"invalid"}');
-      catalogReady = true;
       return _json(
         '{"items":[{"id":"$chapterId","title":"Chapter","order":1}],'
         '"page":1,"pageSize":100,"hasMore":false}',
@@ -247,7 +334,7 @@ class _SourceServer implements HttpClientAdapter {
     }
     final requestedId = options.uri.pathSegments.last;
     events.add('content:$requestedId');
-    if (!catalogReady || requestedId != chapterId) {
+    if (requestedId != chapterId) {
       missingContentRequests++;
       return _json(
         '{"error":{"code":"CHAPTER_NOT_FOUND","message":"chapter not found"}}',
@@ -286,4 +373,21 @@ Future<void> _waitForCatalogFile(Directory directory, String id) async {
     await Future<void>.delayed(const Duration(milliseconds: 10));
   }
   fail('Catalog was not persisted');
+}
+
+Future<File> _catalogFile(Directory directory) async {
+  final files = await directory
+      .list(recursive: true)
+      .where((entity) => entity is File && entity.path.endsWith('.json'))
+      .cast<File>()
+      .toList();
+  return files.singleWhere((file) => file.parent.path.endsWith('catalogs'));
+}
+
+Future<void> _waitForEvent(_SourceServer server, String event) async {
+  for (var attempt = 0; attempt < 100; attempt++) {
+    if (server.events.contains(event)) return;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  fail('Expected source event: $event');
 }

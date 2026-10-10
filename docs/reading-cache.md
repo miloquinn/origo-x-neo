@@ -35,6 +35,16 @@ identity so per-book settings remain correct. Bookmarks and annotations load
 asynchronously. A later book-settings refresh remains authoritative when the
 reader reloads its catalog.
 
+Interactive ORSP and ReadingSource catalogs use the same 30-minute freshness
+window. A fresh memory or disk catalog opens without a source request. An older
+persisted catalog opens immediately while one background refresh updates the
+shared cache. Explicit download/update work still forces a source refresh, and
+the reader uses that forced path once when a cached chapter ID is rejected as
+missing. This keeps ordinary reopen off the network-critical path without
+hiding a real catalog change from recovery or explicit refresh. A failed
+background refresh does not interrupt cached reading; an uncached chapter or
+forced refresh still surfaces its source error.
+
 ## Identity and invalidation
 
 Local identities combine the book identity, actual file modification time and size, encoding, and edit revision. Online content retains existing source configuration, variables, and authentication revision isolation. Online pagination additionally hashes source/book/chapter identity and the resulting readable text. Layout fingerprints include engine version, font profile, viewport, spacing, direction, replacement rules, and the shared chapter-title preference. Online headings also participate in layout identity because an inline heading changes the first body page height.
@@ -159,6 +169,7 @@ budgets are unchanged by this restore contract.
 Historical validation: [2026-10-09 iOS vertical reading position](reviews/2026-10-09-ios-vertical-reading-position.md).
 Follow-up cleanup and real-book validation: [2026-10-10 audit](reviews/2026-10-10-ios-vertical-reading-cleanup.md).
 Unchanged-viewport frame validation: [2026-10-10 resume flicker](reviews/2026-10-10-reader-resume-flicker.md).
+Online reopen cache validation: [2026-10-11 cache-first reopen](reviews/2026-10-11-online-reader-reopen-cache.md).
 
 ## Online chapter preparation
 
@@ -196,7 +207,8 @@ Horizontal chapter handoff explicitly requests the frame needed to commit after 
    catalog flights additionally include request scope in their key. ORSP passes
    separate interactive/download scopes, as does ReadingSource. A page/download
    cancellation token supplies its own scope for both chapter and catalog
-   flights. Freshness and acceptable error fallback remain caller decisions.
+   flights. Interactive reopen uses the shared freshness/SWR policy; download,
+   update and missing-chapter recovery retain a forced-refresh path.
 4. Keep cold flights and refresh flights distinct. After `releaseMemory()`, a
    caller allowing stale content can read disk while refresh is pending. Store
    only the flight future and refresh marker, not a retained decoded payload.
@@ -221,7 +233,7 @@ Horizontal chapter handoff explicitly requests the frame needed to commit after 
 
 | Observation | Inspect first |
 | --- | --- |
-| Every reopen fetches again | Source/login/variable revision, expiry, explicit clear and which cache root is used. Different identities are intentional misses. Never log credentials or full authenticated requests. |
+| Every reopen fetches again | Source/login/variable revision, expiry, explicit clear and which cache root is used. Also verify the caller did not accidentally choose the forced download/update path. Different identities are intentional misses. Never log credentials or full authenticated requests. |
 | First opening slows sharply as HTML chapter count grows | Per-row title/URL matching in `source_rule_html.dart`; separate full catalog extraction from network response time. |
 | Cached catalog opens quickly, but first uncached chapter waits | Required runtime catalog/script initialization, then source response, WebView challenge and parsing. Do not remove chapter-boundary restoration to hide the wait. |
 | Equivalent callers each read disk | Shared disk-read key and generation; cold flight joining before another disk wait. |
