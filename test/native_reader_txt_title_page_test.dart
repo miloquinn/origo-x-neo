@@ -1033,6 +1033,10 @@ void main() {
               }).join('\n\n'),
             );
 
+            // Observers do not replay lifecycle state when a reader mounts.
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.inactive,
+            );
             await tester.pumpWidget(
               MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -1065,6 +1069,10 @@ void main() {
               }
             });
             await _pumpUntilFound(tester, readingWindow);
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.resumed,
+            );
+            await tester.pumpAndSettle();
 
             await _jumpToTxtChapter(tester, '第6章 生命周期测试');
             await tester.pumpAndSettle();

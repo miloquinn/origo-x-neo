@@ -157,10 +157,10 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
     _verticalGeometrySignature = signature;
   }
 
-  void _restoreVerticalPosition(
+  Future<void> _restoreVerticalPosition(
     _BookSourceVerticalLayout layout, {
     required bool wholeBook,
-  }) {
+  }) async {
     if (!_restorePagedPosition || !_appLifecycleActive) return;
     final generation = _catalogGeneration;
     final loadSerial = _chapterLoadSerial;
@@ -217,65 +217,57 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
     final restoredProgress = textLength > 0
         ? (restoreOffset / textLength).clamp(0.0, 1.0)
         : _restorePageProgress;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Each stage needs a completed layout. endOfFrame also requests a frame
+    // while idle, so an already-aligned ensureVisible cannot strand the gate.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!isCurrent()) return;
+    _scrollProgress.value = restoredProgress;
+    if (!wholeBook && _verticalPageScrollController.isAttached) {
+      _verticalPageScrollController.jumpTo(index: pageIndex);
+    } else if (_verticalChapterScrollController.isAttached) {
+      _verticalChapterScrollController.jumpTo(index: chapterIndex);
+    }
+    await WidgetsBinding.instance.endOfFrame;
+    if (!isCurrent()) return;
+    final targetContext = partKey.currentContext;
+    if (targetContext != null) {
+      await Scrollable.ensureVisible(
+        targetContext,
+        alignment: 0,
+        duration: Duration.zero,
+      );
+      await WidgetsBinding.instance.endOfFrame;
       if (!isCurrent()) return;
-      _scrollProgress.value = restoredProgress;
-      if (!wholeBook && _verticalPageScrollController.isAttached) {
-        _verticalPageScrollController.jumpTo(index: pageIndex);
-      } else if (_verticalChapterScrollController.isAttached) {
-        _verticalChapterScrollController.jumpTo(index: chapterIndex);
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!isCurrent()) return;
-        final targetContext = partKey.currentContext;
-        if (targetContext == null) {
-          _updateReaderState(() {
-            _autoScrollRestoring = false;
-            _verticalRestoreShouldApply = null;
-          });
-          return;
-        }
-        unawaited(
-          Scrollable.ensureVisible(
-            targetContext,
-            alignment: 0,
-            duration: Duration.zero,
-          ),
-        );
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!isCurrent()) return;
-          final caretOffset = _verticalCaretOffset(
+    }
+    final caretOffset = targetContext == null
+        ? null
+        : _verticalCaretOffset(
             chapterIndex,
             pageIndex,
             layout.pages[pageIndex],
             restoreOffset,
           );
-          final currentTarget = partKey.currentContext;
-          final scrollable = currentTarget == null
-              ? null
-              : Scrollable.maybeOf(currentTarget);
-          _updateReaderState(() {
-            _autoScrollRestoring = false;
-            _verticalRestoreShouldApply = null;
-          });
-          if (!restoresChapterStart &&
-              caretOffset != null &&
-              scrollable != null) {
-            final paragraph = readerParagraphForKey(partKey);
-            final adjustment = restoreCentered && paragraph != null
-                ? paragraph.localToGlobal(Offset(0, caretOffset)).dy -
-                      MediaQuery.sizeOf(context).height / 2
-                : caretOffset;
-            scrollable.position.jumpTo(
-              (scrollable.position.pixels + adjustment).clamp(
-                scrollable.position.minScrollExtent,
-                scrollable.position.maxScrollExtent,
-              ),
-            );
-          }
-        });
-      });
+    final currentTarget = partKey.currentContext;
+    final scrollable = currentTarget == null
+        ? null
+        : Scrollable.maybeOf(currentTarget);
+    _updateReaderState(() {
+      _autoScrollRestoring = false;
+      _verticalRestoreShouldApply = null;
     });
+    if (!restoresChapterStart && caretOffset != null && scrollable != null) {
+      final paragraph = readerParagraphForKey(partKey);
+      final adjustment = restoreCentered && paragraph != null
+          ? paragraph.localToGlobal(Offset(0, caretOffset)).dy -
+                MediaQuery.sizeOf(context).height / 2
+          : caretOffset;
+      scrollable.position.jumpTo(
+        (scrollable.position.pixels + adjustment).clamp(
+          scrollable.position.minScrollExtent,
+          scrollable.position.maxScrollExtent,
+        ),
+      );
+    }
   }
 
   void _onVerticalPagePositionsChanged() {
@@ -631,7 +623,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
         if (mounted) _updateReaderState(() {});
       });
     }
-    _restoreVerticalPosition(layout, wholeBook: false);
+    unawaited(_restoreVerticalPosition(layout, wholeBook: false));
     return ReaderVerticalPagingSurface(
       surfaceKey: const ValueKey('book-source-reader-surface'),
       onHorizontalDragEnd: _handleHorizontalSwipe,
@@ -680,7 +672,7 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
         if (mounted) _updateReaderState(() {});
       });
     }
-    _restoreVerticalPosition(currentLayout, wholeBook: true);
+    unawaited(_restoreVerticalPosition(currentLayout, wholeBook: true));
     return ReaderVerticalPagingSurface(
       surfaceKey: const ValueKey('book-source-reader-surface'),
       child: ScrollablePositionedList.builder(

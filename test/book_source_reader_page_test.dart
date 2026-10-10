@@ -1809,6 +1809,181 @@ void main() {
     }
   }
 
+  testWidgets('vertical source schedules its final restore frame while idle', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    SharedPreferences.setMockInitialValues({
+      ReaderSettingsStore.pageModeKey: BookSourcePageMode.verticalScroll.name,
+      ReaderSettingsStore.scrollByChapterKey: false,
+      ReaderSettingsStore.chapterTitlePageKey: false,
+    });
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final client = _ConfigurableBookSourceClient({
+      'chapter-1': _tabletChapterText(150),
+      'chapter-2': _tabletChapterText(150),
+    });
+    addTearDown(client.close);
+    await tester.pumpWidget(_buildTabletSourceReader(client));
+    final surface = find.byKey(const ValueKey('book-source-reader-surface'));
+    await _pumpUntilFound(tester, surface);
+    await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump();
+    expect(
+      tester.binding.hasScheduledFrame,
+      isTrue,
+      reason:
+          'Even an already-aligned anchor must schedule the frame that releases the restore gate.',
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(surface, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    final anchor = _sourceCenterAnchor(tester);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    final saved = await _progressFixture.store.load(
+      sourceId: _testSource().id,
+      bookId: 'book-1',
+    );
+    expect(saved!.chapterId, anchor.$1);
+    expect(
+      (saved.chapterProgress * client.contents[anchor.$1]!.length).round(),
+      closeTo(anchor.$2, 40),
+    );
+    debugDefaultTargetPlatformOverride = null;
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final titlePage in [false, true]) {
+    testWidgets(
+      'vertical source finishes a hidden chapter load across repeated resumes '
+      '(titlePage=$titlePage)',
+      (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey:
+              BookSourcePageMode.verticalScroll.name,
+          ReaderSettingsStore.scrollByChapterKey: false,
+          ReaderSettingsStore.chapterTitlePageKey: titlePage,
+        });
+        await tester.binding.setSurfaceSize(const Size(400, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final client = _DelayedSecondChapterClient(
+          secondChapterText: _tabletChapterText(150),
+        );
+        addTearDown(() {
+          client.completeSecondChapter();
+          client.close();
+        });
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        await tester.pumpWidget(_buildTabletSourceReader(client));
+        final surface = find.byKey(
+          const ValueKey('book-source-reader-surface'),
+        );
+        await _pumpUntilFound(tester, surface);
+        await tester.pump(const Duration(milliseconds: 350));
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump(const Duration(milliseconds: 350));
+        tester
+            .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+            .onTableOfContents!();
+        await tester.pump(const Duration(milliseconds: 350));
+        tester
+            .widget<ReaderNavigationSheet>(find.byType(ReaderNavigationSheet))
+            .onChapterSelected(1);
+        await tester.pump();
+        expect(client.secondChapterRequested, isTrue);
+        expect(client.secondChapterCompleted, isFalse);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        client.completeSecondChapter();
+        await tester.pumpAndSettle();
+        // Interrupt the resume before all anchor restoration frames complete.
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        await tester.pump();
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pumpAndSettle();
+        final firstPage = find.byWidgetPredicate(
+          (widget) =>
+              widget is ReaderAnnotatedTextPage &&
+              widget.chapterId == 'chapter-2' &&
+              widget.pageIndex == 0,
+        );
+        expect(firstPage, findsOneWidget);
+        final window = find.byKey(
+          const ValueKey('book-source-vertical-reading-window'),
+        );
+        final viewport = tester.getRect(
+          find.descendant(of: window, matching: find.byType(ClipRect)).first,
+        );
+        final opening = titlePage
+            ? find
+                  .ancestor(of: firstPage, matching: find.byType(SizedBox))
+                  .first
+            : find.descendant(
+                of: firstPage,
+                matching: find.byType(ReaderInlineChapterTitle),
+              );
+        expect(tester.getTopLeft(opening).dy, closeTo(viewport.top, 1));
+        tester
+            .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+            .onTableOfContents!();
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<ReaderNavigationSheet>(find.byType(ReaderNavigationSheet))
+              .currentChapterIndex,
+          1,
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        final saved = await _progressFixture.store.load(
+          sourceId: _testSource().id,
+          bookId: 'book-1',
+        );
+        expect(saved!.chapterId, 'chapter-2');
+        expect(saved.chapterProgress, lessThan(0.05));
+        debugDefaultTargetPlatformOverride = null;
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets(
     'vertical source resumes its pending TOC target after backgrounding',
     (tester) async {

@@ -455,9 +455,104 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'normal catalog jump does not inherit a pending aloud restore offset',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: BookSourcePageMode.verticalScroll.name,
+        ReaderSettingsStore.scrollByChapterKey: true,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+        'reader_aloud_presentation': 'controls',
+        'reader_aloud_follow_page_turns': false,
+      });
+      final fixture = _ReaderFixture(
+        client: _DelayedClient(
+          openingText: _longChapter('Opening', 30),
+          delayedText: _longChapter('Pending aloud target', 30),
+          newestText: _longChapter('Catalog target', 30),
+        )..finishDelayed(),
+      );
+      fixture.installMediaChannel();
+      addTearDown(() => fixture.dispose(tester));
+
+      await tester.pumpWidget(fixture.reader());
+      final surface = find.byKey(const ValueKey('book-source-reader-surface'));
+      await _pumpUntil(tester, () => surface.evaluate().isNotEmpty);
+      await tester.pumpAndSettle();
+      await _startReadAloud(tester, directPress: true);
+      await _pumpUntil(tester, () => fixture.tts.isPlaying);
+      final controller = fixture.session.controller!;
+      Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+      await _pumpUntil(
+        tester,
+        () => find.byType(BottomSheet).evaluate().isEmpty,
+      );
+      await tester.pump(const Duration(milliseconds: 350));
+
+      tester
+          .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+          .onTableOfContents!();
+      await tester.pumpAndSettle();
+      final catalogSelection = tester
+          .widget<ReaderNavigationSheet>(find.byType(ReaderNavigationSheet))
+          .onChapterSelected;
+
+      final pendingReveal = controller.source.revealPosition(
+        const ReaderAloudPosition(chapterIndex: 1, offset: 1800),
+        isCurrent: () => controller.isActive,
+      );
+      var revealDone = false;
+      unawaited(pendingReveal.then((_) => revealDone = true));
+      await tester.runAsync(() async {
+        for (var attempt = 0; attempt < 50 && !revealDone; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+        }
+      });
+      expect(revealDone, isTrue);
+
+      catalogSelection(2);
+      await _pumpUntil(
+        tester,
+        () => find
+            .byWidgetPredicate(
+              (widget) =>
+                  widget is ReaderAnnotatedTextPage && widget.chapterId == '2',
+            )
+            .evaluate()
+            .isNotEmpty,
+      );
+      await tester.pumpAndSettle();
+      final visiblePage = _pageAtViewportCenter(tester);
+      expect(visiblePage.chapterId, '2');
+      expect(visiblePage.pageIndex, 0);
+      expect(visiblePage.page.startOffset, 0);
+      expect(_scrollPixelsForPage(tester, visiblePage), closeTo(0, 1));
+
+      tester
+          .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+          .onTableOfContents!();
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<ReaderNavigationSheet>(find.byType(ReaderNavigationSheet))
+            .currentChapterIndex,
+        2,
+      );
+      debugDefaultTargetPlatformOverride = null;
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
-Future<void> _startReadAloud(WidgetTester tester) async {
+Future<void> _startReadAloud(
+  WidgetTester tester, {
+  bool directPress = false,
+}) async {
   await tester.tapAt(tester.getCenter(find.byType(BookSourceReaderPage)));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 350));
@@ -466,9 +561,13 @@ Future<void> _startReadAloud(WidgetTester tester) async {
         widget is ReaderControlIconButton &&
         widget.icon == Icons.headphones_rounded,
   );
-  expect(button.hitTestable(), findsOneWidget);
   expect(tester.widget<ReaderControlIconButton>(button).onPressed, isNotNull);
-  await tester.tap(button);
+  if (directPress) {
+    tester.widget<ReaderControlIconButton>(button).onPressed!();
+  } else {
+    expect(button.hitTestable(), findsOneWidget);
+    await tester.tap(button);
+  }
   await tester.pump();
 }
 
@@ -552,6 +651,88 @@ String _chapterAtViewportCenter(WidgetTester tester) {
     if (rect.top <= center && rect.bottom >= center) return page.chapterId;
   }
   throw TestFailure('No source chapter is visible at the viewport center');
+}
+
+ReaderAnnotatedTextPage _pageAtViewportCenter(WidgetTester tester) {
+  final center =
+      tester.view.physicalSize.height / tester.view.devicePixelRatio / 2;
+  for (final element in find.byType(ReaderAnnotatedTextPage).evaluate()) {
+    final page = element.widget as ReaderAnnotatedTextPage;
+    final box = element.renderObject;
+    if (box is! RenderBox || !box.hasSize) continue;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+    if (rect.top <= center && rect.bottom >= center) return page;
+  }
+  throw TestFailure('No source page is visible at the viewport center');
+}
+
+double _scrollPixelsForPage(WidgetTester tester, ReaderAnnotatedTextPage page) {
+  final element = find.byWidget(page).evaluate().single;
+  return Scrollable.of(element).position.pixels;
+}
+
+class _ReaderFixture {
+  _ReaderFixture({required this.client})
+    : rules = ReplaceRuleService(),
+      tts = _HeldTts(),
+      session = ReaderAloudSession() {
+    service = ReaderAloudService(
+      systemEngine: tts,
+      settingsStore: _SettingsStore(),
+      bytesPlayer: _SilentPlayer(),
+    );
+  }
+
+  final _DelayedClient client;
+  final ReplaceRuleService rules;
+  final _HeldTts tts;
+  final ReaderAloudSession session;
+  late final ReaderAloudService service;
+  final MethodChannel mediaChannel = const MethodChannel(
+    'com.niki.xxread/reader_aloud',
+  );
+
+  void installMediaChannel() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(mediaChannel, (_) async => null);
+  }
+
+  Widget reader() => MultiProvider(
+    providers: [
+      ChangeNotifierProvider<ReaderAloudSession>.value(value: session),
+      ChangeNotifierProvider<ReaderAloudService>.value(value: service),
+      ChangeNotifierProvider<TtsService>.value(value: tts),
+    ],
+    child: MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: BookSourceReaderPage(
+        source: _source,
+        book: _book,
+        client: client,
+        shelfServiceFactory: NoShelfBookSourceService.new,
+        replaceRuleService: rules,
+        progressStore: _MemoryProgress(),
+        paginationCacheDao: _NoDiskPagination(),
+      ),
+    ),
+  );
+
+  Future<void> dispose(WidgetTester tester) async {
+    var stopped = false;
+    final stopping = session.stop().then((_) => stopped = true);
+    await _pumpUntil(tester, () => stopped);
+    await stopping;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(mediaChannel, null);
+    await tester.pumpWidget(const SizedBox.shrink());
+    session.dispose();
+    service.dispose();
+    tts.dispose();
+    client.close();
+    await rules.close();
+  }
 }
 
 BookSourceChapterContent _content(String id, String text) =>

@@ -4,6 +4,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
   Future<void> _loadChapter(
     int index, {
     double restoreProgress = 0,
+    int? restoreTextOffset,
     bool saveCurrent = true,
     bool Function()? shouldApply,
   }) async {
@@ -27,6 +28,8 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
       // This load owns the next restore; old frame callbacks are now stale.
       _autoScrollRestoring = false;
       _verticalRestoreShouldApply = null;
+      _restoreTextOffset = restoreTextOffset;
+      _restorePageProgress = restoreProgress.clamp(0.0, 1.0);
       _requestedChapterIndex = index;
       _error = null;
     });
@@ -64,6 +67,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
         targetIndex,
         content,
         restoreProgress: restoreProgress,
+        restoreTextOffset: restoreTextOffset,
         shouldApply: shouldApply,
       );
     } on BookDownloadCancelledException {
@@ -224,17 +228,17 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     int index,
     BookSourceChapterContent content, {
     required double restoreProgress,
+    required int? restoreTextOffset,
     bool Function()? shouldApply,
   }) {
     final normalizedProgress = restoreProgress.clamp(0.0, 1.0);
     final preparedLayout = _preparedPagedLayoutForChapter(index, content);
     final preparedPages = preparedLayout?.pages;
     final preparedPageCount = preparedPages?.length ?? 1;
-    final restoredTextOffset = _restoreTextOffset;
     final preparedTarget = preparedPages == null
         ? 0
-        : restoredTextOffset != null
-        ? bookSourcePageIndexForOffset(preparedPages, restoredTextOffset)
+        : restoreTextOffset != null
+        ? bookSourcePageIndexForOffset(preparedPages, restoreTextOffset)
         : ((preparedPageCount - 1) * normalizedProgress).round();
     final preparedPageIndex = preparedPages == null
         ? 0
@@ -264,7 +268,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
       _restorePagedPosition = preparedLayout == null;
       _verticalRestoreShouldApply =
           _pageMode == BookSourcePageMode.verticalScroll ? shouldApply : null;
-      if (preparedLayout != null) _restoreTextOffset = null;
+      _restoreTextOffset = preparedLayout == null ? restoreTextOffset : null;
       _ignoreSlidePageChanges = true;
       _horizontalPageTurnTracker.clear();
       _pendingSlideChapterIndex = null;
@@ -632,13 +636,13 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
   }) async {
     if (!(shouldApply?.call() ?? true)) return;
     if (index < 0 || index >= _chapters.length) return;
-    _restoreTextOffset = textOffset;
     // The loaded chapter keeps its canonical restore pending until the shared
     // vertical layout commits it. Two-list scroll animations can duplicate
     // keyed chapter cells and race a lifecycle or geometry restore.
     await _loadChapter(
       index,
       restoreProgress: progress,
+      restoreTextOffset: textOffset,
       shouldApply: shouldApply,
     );
   }

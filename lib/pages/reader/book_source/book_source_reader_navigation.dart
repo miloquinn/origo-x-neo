@@ -257,7 +257,14 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
         0,
         _chapters.length - 1,
       );
-      unawaited(_loadChapter(index, saveCurrent: false));
+      unawaited(
+        _loadChapter(
+          index,
+          saveCurrent: false,
+          restoreProgress: _restorePageProgress,
+          restoreTextOffset: _restoreTextOffset,
+        ),
+      );
     }
   }
 
@@ -630,12 +637,12 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
         _chapters.length - 1,
       );
     }
-    _restoreTextOffset = locator?.textAnchor?.startOffsetUtf16;
+    final textOffset = locator?.textAnchor?.startOffsetUtf16;
     if (_pageMode == BookSourcePageMode.verticalScroll &&
         !_effectiveScrollByChapter) {
       await _jumpToVerticalChapter(
         chapterIndex,
-        textOffset: _restoreTextOffset,
+        textOffset: textOffset,
         progress: locator?.progression ?? 0,
       );
       return;
@@ -643,6 +650,7 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
     await _loadChapter(
       chapterIndex,
       restoreProgress: locator?.progression ?? 0,
+      restoreTextOffset: textOffset,
     );
   }
 

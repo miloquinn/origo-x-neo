@@ -361,7 +361,7 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   bool _autoRestoreCentered = false;
   int _autoRetainThrough = 0;
   bool get _effectiveScrollByChapter => _scrollByChapter && !_autoWholeBook;
-  bool _appLifecycleActive = true;
+  late bool _appLifecycleActive;
 
   ReaderThemePalette get _readerTheme =>
       _loadingCatalog && widget.initialTheme != null
@@ -464,6 +464,9 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   @override
   void initState() {
     super.initState();
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _appLifecycleActive =
+        lifecycle == null || lifecycle == AppLifecycleState.resumed;
     _autoPageTurnController = ReaderAutoPageTurnController(
       onAdvance: _advanceAutoPageTurn,
     );
@@ -552,10 +555,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
       }
       return;
     }
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.detached) {
+    // Save and invalidate once for the whole inactive/hidden/paused sequence.
+    if (_appLifecycleActive) {
       _appLifecycleActive = false;
       _pauseAutoPageTurn();
       unawaited(_saveProgress());

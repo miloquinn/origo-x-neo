@@ -11,6 +11,8 @@ import 'package:xxread/book_sources/services/book_download_cancellation.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
 import 'package:xxread/core/reader/reader_settings.dart';
+import 'package:xxread/core/reader/canonical_locator.dart';
+import 'package:xxread/models/bookmark.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/reader/book_source/book_source_reader_page.dart';
 import 'package:xxread/services/books/pagination_cache_dao.dart';
@@ -67,6 +69,79 @@ void main() {
       ),
     );
   }
+
+  testWidgets('vertical bookmark retry preserves its canonical anchor', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      ReaderSettingsStore.pageModeKey: BookSourcePageMode.verticalScroll.name,
+      ReaderSettingsStore.scrollByChapterKey: false,
+      ReaderSettingsStore.chapterTitlePageKey: false,
+    });
+    var unavailable = true;
+    const target = BookSourceChapter(id: 'second', title: 'Second', order: 2);
+    final text = List.generate(
+      150,
+      (i) => 'Paragraph $i preserves the precise retry anchor.',
+    ).join('\n');
+    final client = _RecoveryClient(
+      catalog: const [_chapterOld, target],
+      refreshedCatalog: const [_chapterOld, target],
+      load: (id, _) async {
+        if (id == 'second' && unavailable) {
+          throw const BookSourceProtocolException(
+            'Temporarily unavailable',
+            statusCode: 503,
+          );
+        }
+        return _content(id, id == 'old' ? _openingBody : text);
+      },
+    );
+    await open(tester, client);
+    await _pumpFor(
+      tester,
+      find.byKey(const ValueKey('book-source-reader-surface')),
+    );
+    tester
+        .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
+        .onTableOfContents!();
+    await _pumpFor(tester, find.byType(ReaderNavigationSheet));
+    final locator = CanonicalLocator.fromComponents(
+      format: BookFormat.txt,
+      chapterId: 'second',
+      offset: 1800,
+      progression: 0,
+    );
+    tester
+        .widget<ReaderNavigationSheet>(find.byType(ReaderNavigationSheet))
+        .onBookmarkSelected(
+          Bookmark(
+            bookId: 0,
+            pageNumber: 1,
+            canonicalLocator: LocatorCodec.encodeCanonicalLocator(locator),
+          ),
+        );
+    await _pumpFor(tester, find.widgetWithText(FilledButton, 'Retry'));
+    unavailable = false;
+    await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+    await _pumpFor(
+      tester,
+      find.byKey(const ValueKey('book-source-reader-surface')),
+    );
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    final saved = await progress.store.load(
+      sourceId: _source.id,
+      bookId: _book.id,
+    );
+    expect(saved!.chapterId, 'second');
+    expect(
+      saved.chapterProgress,
+      closeTo(1800 / text.length, 60 / text.length),
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('chapter recovery remaps a changed ID without manual updates', (
     tester,

@@ -109,6 +109,8 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
                     : () => _loadChapter(
                         _requestedChapterIndex ?? _chapterIndex,
                         saveCurrent: false,
+                        restoreProgress: _restorePageProgress,
+                        restoreTextOffset: _restoreTextOffset,
                       ),
                 child: Text(context.l10n.retry),
               ),

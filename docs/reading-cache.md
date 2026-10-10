@@ -86,9 +86,12 @@ as their reading position. A positioned-list item index and its accumulated
 pixel distance are layout details; they must not become a new reading position
 when iOS changes viewport or safe-area metrics during an app switch.
 
-On leaving the foreground, the reader persists its last accepted position and
-keeps a restore pending. Hidden position callbacks cannot change the chapter or
-progress. On resume, the current viewport and chrome are laid out before the
+Both readers initialize foreground ownership from the binding's current
+lifecycle state. On the first transition out of the foreground, the reader
+persists its last accepted position and keeps a restore pending. Subsequent
+`inactive`, `hidden` and `paused` notifications do not repeat that snapshot or
+reset its restore generation. Hidden position callbacks cannot change the
+chapter or progress. On resume, the current viewport and chrome are laid out before the
 canonical anchor is restored. Chapter starts retain their opening title/inline
 heading alignment; body anchors return to screen center. Geometry changes use
 the same restore even without a lifecycle transition. Native reflow preserves
@@ -96,28 +99,43 @@ an existing navigation cancellation predicate and completion rather than
 creating a competing intent; suspended post-frame restores are rescheduled on
 resume. Online callbacks also validate a restore serial and the pending narration
 cancellation predicate so old geometry or highlight work cannot complete a
-newer restore. Explicit page-mode changes release the previous vertical owner.
+newer restore. Online restoration awaits sequential `endOfFrame` stages, which
+also request a frame while idle; it revalidates ownership after each layout
+stage before subsequent restore mutations.
+Native restoration retains its separately scheduled two-stage layout barrier.
+Explicit page-mode changes release the previous vertical owner.
 
 Online TOC, bookmark and narration jumps load the target and use the shared
 vertical restore. They do not animate two overlapping positioned lists, which
 can mount the same keyed chapter cells twice. The pending target offset remains
-authoritative if navigation is interrupted by backgrounding.
+authoritative if navigation is interrupted by backgrounding. `_loadChapter`
+receives an explicit nullable source offset and records that request's progress.
+Ordinary catalog/next-chapter navigation starts with `null/0`; it cannot inherit
+a previous narration/bookmark anchor. Error-page retry and retained-exit recovery
+pass the same pending target's offset and progress explicitly, preserving the
+exact offset ahead of a less precise fractional position.
 
 Implementation: `native_reader_page.dart`, `native_reader_scaffold.dart`,
 `native_reader_continuous_layout.dart`, `native_reader_vertical_paging.dart`,
 `book_source_reader_page.dart`, `book_source_reader_shell.dart`,
 `book_source_reader_vertical_paging.dart` and
-`book_source_reader_chapter_loading.dart` and `book_source_reader_settings.dart`
+`book_source_reader_chapter_loading.dart`, `book_source_reader_navigation.dart`
+and `book_source_reader_settings.dart`
 under `lib/pages/reader/`.
 Run the lifecycle cases in `test/native_reader_txt_title_page_test.dart` and
 `test/book_source_reader_page_test.dart` separately from other stateful suites,
 then the vertical TOC/saved-anchor cases, native EPUB initial-position cases,
-online chapter recovery and aloud navigation guard suites. Controlled widget
-metrics are regression evidence; the reported book/source and repeated app
-switches still require physical-device UI acceptance. Source fetching and cache
+online chapter recovery and aloud navigation guard suites. Opt-in real-source
+diagnostics live in `tool/reader_vertical_live_fetch_test.dart` and
+`tool/reader_vertical_live_books_test.dart`: fetch actual chapters, then render
+those snapshots through the production online reader with controlled iOS
+lifecycle/metrics. Controlled widget metrics and live-source snapshots are
+regression evidence; repeated app switches on a phone require physical-device
+UI acceptance. Source fetching and cache
 budgets are unchanged by this restore contract.
 
 Historical validation: [2026-10-09 iOS vertical reading position](reviews/2026-10-09-ios-vertical-reading-position.md).
+Follow-up cleanup and real-book validation: [2026-10-10 audit](reviews/2026-10-10-ios-vertical-reading-cleanup.md).
 
 ## Online chapter preparation
 

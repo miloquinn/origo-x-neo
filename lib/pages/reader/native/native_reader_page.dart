@@ -447,7 +447,7 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   bool _visibleUsesTwoPageLayout = false;
   Size _verticalViewportSize = Size.zero;
   String? _verticalGeometrySignature;
-  bool _appLifecycleActive = true;
+  late bool _appLifecycleActive;
   TextDirection _verticalTextDirection = TextDirection.ltr;
   TextScaler _verticalTextScaler = TextScaler.noScaling;
   Size _lastPaginationSize = Size.zero;
@@ -461,6 +461,9 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   @override
   void initState() {
     super.initState();
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _appLifecycleActive =
+        lifecycle == null || lifecycle == AppLifecycleState.resumed;
     _activeBook = widget.book;
     _replaceRules.addListener(_onReplaceRulesChanged);
     unawaited(_replaceRules.load());
@@ -518,10 +521,8 @@ class _NativeReaderPageState extends State<NativeReaderPage>
       if (_readerSettingsLoaded) unawaited(_syncVolumeKeyPaging());
       return;
     }
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.detached) {
+    // Save and invalidate once for the whole inactive/hidden/paused sequence.
+    if (_appLifecycleActive) {
       unawaited(_flushReadingSession());
       unawaited(_persistCurrentReaderPosition(reason: 'lifecycle'));
       _appLifecycleActive = false;
