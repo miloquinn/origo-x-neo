@@ -316,7 +316,9 @@ class _HomeMobileDashboardPageState extends State<HomeMobileDashboardPage>
   }
 
   void _openStats() {
-    Navigator.of(context).pushWithSlideScale(const DetailedStatsPage());
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const DetailedStatsPage()),
+    );
   }
 
   void _openLeaderboard() {

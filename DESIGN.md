@@ -1,5 +1,11 @@
 # Design
 
+## 阅读统计页面转场 — 2026-10-10
+
+- 首页阅读节奏卡片通过 `MaterialPageRoute<void>` 打开详细统计，与设置、书源管理等普通子页共用主题的平台转场。进入和返回均由路由负责，不单独叠加整页缩放；iOS 支持标准左边缘交互返回。
+- 入口：`lib/pages/home/home_mobile_dashboard_page.dart::_openStats`；统计页继续使用 `FloatingSubpageScaffold` 的 `Navigator.maybePop` 返回按钮。统计页内部四个标签仍由原有 PageView 切换。
+- 回归：`test/home_dashboard_page_test.dart` 覆盖真实首页入口、iOS / Android 标准路由、返回按钮和 iOS 侧滑返回；`test/detailed_stats_page_test.dart` 覆盖统计内容和标签。真机帧流畅度需在包含此改动的合并包上验收。
+
 ## 问题反馈与性能选择 — 2026-10-08
 
 - 设置帮助与关于支持共用一个反馈页面，沿用 FloatingSubpageScaffold、主题字体与实底卡片。分类、说明、可选诊断和提交顺序清楚；小屏/大字内容可滚动，失败保留输入。

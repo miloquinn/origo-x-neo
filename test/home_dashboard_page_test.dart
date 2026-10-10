@@ -13,6 +13,7 @@ import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/home/home_mobile_dashboard_page.dart';
+import 'package:xxread/pages/reading_stats/detailed_stats_page.dart';
 import 'package:xxread/pages/reader/book_source/book_source_reader_page.dart';
 import 'package:xxread/pages/reader/comic/comic_reader_page.dart';
 import 'package:xxread/pages/reader/book_source/online_reader_factory.dart';
@@ -200,6 +201,73 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
   });
+
+  for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+    testWidgets('阅读统计使用标准转场并返回首页 ($platform)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(412, 915));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: ThemeData(platform: platform),
+          home: const Scaffold(body: HomeMobileDashboardPage()),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      await tester.pumpAndSettle();
+
+      Future<void> openStats() async {
+        final card = find.byKey(const ValueKey('home-reading-rhythm-card'));
+        await tester.ensureVisible(card);
+        await tester.pumpAndSettle();
+        await tester.tap(card);
+        await tester.pump();
+        await tester.pump();
+        // Let chained SQLite queries resume between real I/O and fake frames.
+        for (
+          var attempt = 0;
+          attempt < 100 && find.byType(PageView).evaluate().isEmpty;
+          attempt++
+        ) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)),
+          );
+          await tester.pump();
+        }
+        expect(find.byType(PageView), findsOneWidget);
+        await tester.pumpAndSettle();
+        final route = ModalRoute.of(
+          tester.element(find.byType(DetailedStatsPage)),
+        );
+        expect(route, isA<MaterialPageRoute<void>>());
+        expect(tester.takeException(), isNull);
+      }
+
+      await openStats();
+      await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
+      await tester.pumpAndSettle();
+      expect(find.byType(DetailedStatsPage), findsNothing);
+      expect(find.byType(HomeMobileDashboardPage), findsOneWidget);
+
+      if (platform == TargetPlatform.iOS) {
+        await openStats();
+        final route =
+            ModalRoute.of(tester.element(find.byType(DetailedStatsPage)))!
+                as MaterialPageRoute<void>;
+        expect(route.popGestureEnabled, isTrue);
+        await tester.dragFrom(const Offset(1, 400), const Offset(350, 0));
+        await tester.pumpAndSettle();
+        expect(find.byType(DetailedStatsPage), findsNothing);
+        expect(find.byType(HomeMobileDashboardPage), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 
   test('首页批量读取最近书籍时保留统计顺序并忽略重复项', () async {
     final dao = BookDao();
