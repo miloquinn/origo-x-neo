@@ -35,6 +35,8 @@ Apple 独立试用商品仍 READY_TO_SUBMIT。当前正式构建明确使用 `OR
 
 ## 交付状态
 
-本地候选 `2.7.3+261011003`，direct 开发签名，目标 SloanePro / iPhone 16 Pro / `00008140-001979421E93001C`。保留已安装数据，原地更新；签名、安装身份与成功启动由 `build/device-ios/release-261011003/signed-build.json` 单独记录，完成前不能据本文宣称安装成功。
+本地候选 `2.7.3+261011003`，产品源提交 `6de1174a55172281004c5960eb0c0eef41d0d40e`，direct 开发签名。已原地安装至 SloanePro / iPhone 16 Pro / `00008140-001979421E93001C`，回读确认 bundle `com.niki.xxread`、版本与构建号一致；没有卸载或清理数据。签名和安装证据见 `build/device-ios/release-261011003/signed-build.json`。首次启动实际被 iOS 锁屏拒绝，等待解锁后重试；安装完成不等于成功启动或用户界面验收。
 
 用户明确要求先验收再发布。本轮不创建 003 发布标签、不上传新 TestFlight、不提交 Google Play、不创建公开 GitHub Release。此前 002 工作流已取消、Apple 构建已 EXPIRED，Play 仅未上传 AAB 的草稿。真实扣款、恢复/退款与用户界面验收仍是独立环节，等待用户验收。
+
+源提交已推送并核对当前 `sloane.local` 与远端 HEAD 一致。Windows `milo-pc` 无法解析主机名，同步未执行；未重置其他电脑的工作区。
