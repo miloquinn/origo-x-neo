@@ -46,7 +46,7 @@ void main() {
         ),
       );
       expect(icons, hasLength(2));
-      expect(icons.every((icon) => icon.size == 28), isTrue);
+      expect(icons.every((icon) => icon.size == 34), isTrue);
     } finally {
       semantics.dispose();
     }
@@ -123,7 +123,7 @@ void main() {
     );
     expect(find.text(label), findsNothing);
     expect(_indicatorSize(tester, label), const Size(92.25, 54));
-    expect(_selectedIconSize(tester), 28);
+    expect(_selectedIconSize(tester), 34);
 
     await tester.pumpWidget(
       _testApp(
@@ -138,7 +138,7 @@ void main() {
     expect(find.text(label), findsOneWidget);
     expect(_labelOpacity(tester, label), inExclusiveRange(0, 1));
     expect(_indicatorSize(tester, label).width, inExclusiveRange(92.25, 94.25));
-    expect(_selectedIconSize(tester), inExclusiveRange(27, 28));
+    expect(_selectedIconSize(tester), inExclusiveRange(27, 34));
 
     await tester.pumpAndSettle();
     expect(_labelOpacity(tester, label), 1);
@@ -163,8 +163,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(label), findsNothing);
     expect(_indicatorSize(tester, label), const Size(92.25, 54));
-    expect(_selectedIconSize(tester), 28);
+    expect(_selectedIconSize(tester), 34);
   });
+
+  testWidgets(
+    'tablet labels and icon size transition without a first-frame jump',
+    (tester) async {
+      for (final textScale in [1.0, 2.0]) {
+        Widget mode(bool showLabel) => _testApp(
+          item: item,
+          isSelected: true,
+          showLabel: showLabel,
+          horizontal: true,
+          textScale: textScale,
+          itemWidth: 140,
+          itemHeight: 64,
+        );
+        Rect iconRect() => tester.getRect(find.byIcon(Icons.library_books));
+
+        await tester.pumpWidget(mode(true));
+        await tester.pumpAndSettle();
+        final labeledCenter = iconRect().center;
+        await tester.pumpWidget(mode(false));
+        expect((iconRect().center - labeledCenter).distance, lessThan(0.1));
+        expect(find.text(label), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(_selectedIconSize(tester), inExclusiveRange(23, 34));
+        expect(_labelOpacity(tester, label), inExclusiveRange(0, 1));
+        await tester.pumpAndSettle();
+        expect(find.text(label), findsNothing);
+        expect(_selectedIconSize(tester), 34);
+        final hiddenCenter = iconRect().center;
+        expect(
+          hiddenCenter,
+          tester.getCenter(find.byType(HomeBounceNavigationItem)),
+        );
+
+        await tester.pumpWidget(mode(true));
+        expect((iconRect().center - hiddenCenter).distance, lessThan(0.1));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(_selectedIconSize(tester), inExclusiveRange(23, 34));
+        expect(_labelOpacity(tester, label), inExclusiveRange(0, 1));
+        await tester.pumpAndSettle();
+        expect(_selectedIconSize(tester), 23);
+        expect(iconRect().center, labeledCenter);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    },
+  );
 
   testWidgets('keeps the tap target layout stable while pressed', (
     tester,
@@ -461,6 +508,8 @@ Widget _testApp({
   double itemHeight = 48,
   VoidCallback? onTap,
   bool disableAnimations = false,
+  bool horizontal = false,
+  double textScale = 1,
   AppUiStyle uiStyle = AppUiStyle.glass,
 }) {
   return MaterialApp(
@@ -476,7 +525,10 @@ Widget _testApp({
     ),
     home: Scaffold(
       body: MediaQuery(
-        data: MediaQueryData(disableAnimations: disableAnimations),
+        data: MediaQueryData(
+          disableAnimations: disableAnimations,
+          textScaler: TextScaler.linear(textScale),
+        ),
         child: Center(
           child: SizedBox(
             width: itemWidth,
@@ -485,6 +537,7 @@ Widget _testApp({
               item: item,
               isSelected: isSelected,
               showLabel: showLabel,
+              horizontal: horizontal,
               onTap: onTap ?? () {},
             ),
           ),

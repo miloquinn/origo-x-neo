@@ -58,7 +58,8 @@ class _FloatingPillNavigationButtonState
   static const _selectionDuration = Duration(milliseconds: 260);
   static const _deselectionDuration = Duration(milliseconds: 180);
   static const _labelModeDuration = Duration(milliseconds: 220);
-  static const _iconSize = 28.0;
+  static const _labeledIconSize = 27.0;
+  static const _iconOnlySize = 34.0;
 
   late final AnimationController _selectionController;
   late final AnimationController _labelController;
@@ -170,10 +171,14 @@ class _FloatingPillNavigationButtonState
               final labelProgress = _labelController.value;
               final indicatorScale = 0.92 + (selection * 0.08);
               final iconScale = 0.96 + (selection * 0.04);
-              final renderedIconSize = _iconSize - labelProgress;
-              final iconOffsetY = widget.horizontal
-                  ? 0.0
-                  : (-1.25 * selection) - (8.5 * labelProgress);
+              final renderedIconSize =
+                  _iconOnlySize +
+                  (_labeledIconSize - _iconOnlySize) * labelProgress;
+              final horizontalIconSize =
+                  _iconOnlySize + (23 - _iconOnlySize) * labelProgress;
+              final labelInset =
+                  (MediaQuery.textScalerOf(context).scale(10.5) + 8) *
+                  labelProgress;
               final iconColor = Color.lerp(
                 unselectedForeground,
                 selectedForeground,
@@ -256,33 +261,60 @@ class _FloatingPillNavigationButtonState
                                   : Axis.horizontal,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                AppSkinIcon(
-                                  slot: widget.item.skinSlot,
-                                  selected: widget.isSelected,
-                                  fallback: Icon(
-                                    widget.isSelected
-                                        ? widget.item.selectedIcon
-                                        : widget.item.icon,
-                                    size: 23,
-                                    color: iconColor,
+                                Flexible(
+                                  flex: stackedLabels ? 1 : 0,
+                                  child: AppSkinIcon(
+                                    slot: widget.item.skinSlot,
+                                    selected: widget.isSelected,
+                                    fallback: Icon(
+                                      widget.isSelected
+                                          ? widget.item.selectedIcon
+                                          : widget.item.icon,
+                                      size: horizontalIconSize,
+                                      color: iconColor,
+                                    ),
                                   ),
                                 ),
-                                if (widget.showLabel) ...[
+                                if (widget.showLabel || labelProgress > 0) ...[
                                   SizedBox(
-                                    width: stackedLabels ? 0 : 8,
-                                    height: stackedLabels ? 4 : 0,
+                                    width: stackedLabels
+                                        ? 0
+                                        : 8 * labelProgress,
+                                    height: stackedLabels
+                                        ? 4 * labelProgress
+                                        : 0,
                                   ),
                                   Flexible(
-                                    child: ExcludeSemantics(
-                                      child: Text(
-                                        widget.item.label,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: iconColor,
-                                          fontSize: 14,
-                                          height: 1,
-                                          fontWeight: FontWeight.w600,
+                                    flex: stackedLabels ? 0 : 1,
+                                    child: ClipRect(
+                                      child: Align(
+                                        alignment: stackedLabels
+                                            ? Alignment.center
+                                            : AlignmentDirectional.centerStart,
+                                        widthFactor: stackedLabels
+                                            ? 1
+                                            : labelProgress,
+                                        heightFactor: stackedLabels
+                                            ? labelProgress
+                                            : 1,
+                                        child: Opacity(
+                                          key: ValueKey(
+                                            'home-nav-label-${widget.item.label}',
+                                          ),
+                                          opacity: labelProgress,
+                                          child: ExcludeSemantics(
+                                            child: Text(
+                                              widget.item.label,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: iconColor,
+                                                fontSize: 14,
+                                                height: 1,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -292,45 +324,52 @@ class _FloatingPillNavigationButtonState
                             ),
                           )
                         else
-                          Transform.translate(
-                            offset: Offset(0, iconOffsetY),
-                            child: Transform.scale(
-                              scale: iconScale,
-                              child: SizedBox.square(
-                                dimension: renderedIconSize,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Opacity(
-                                      key: ValueKey(
-                                        'home-nav-unselected-${widget.item.label}',
-                                      ),
-                                      opacity: 1 - selection,
-                                      child: AppSkinIcon(
-                                        slot: widget.item.skinSlot,
-                                        fallback: Icon(
-                                          widget.item.icon,
-                                          color: iconColor,
-                                          size: renderedIconSize,
+                          Positioned.fill(
+                            bottom: labelInset,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 1.25,
+                              ),
+                              child: Center(
+                                child: Transform.translate(
+                                  offset: Offset(0, -1.25 * selection),
+                                  child: Transform.scale(
+                                    scale: iconScale,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Opacity(
+                                          key: ValueKey(
+                                            'home-nav-unselected-${widget.item.label}',
+                                          ),
+                                          opacity: 1 - selection,
+                                          child: AppSkinIcon(
+                                            slot: widget.item.skinSlot,
+                                            fallback: Icon(
+                                              widget.item.icon,
+                                              color: iconColor,
+                                              size: renderedIconSize,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    Opacity(
-                                      key: ValueKey(
-                                        'home-nav-selected-${widget.item.label}',
-                                      ),
-                                      opacity: selection,
-                                      child: AppSkinIcon(
-                                        slot: widget.item.skinSlot,
-                                        selected: true,
-                                        fallback: Icon(
-                                          widget.item.selectedIcon,
-                                          color: iconColor,
-                                          size: renderedIconSize,
+                                        Opacity(
+                                          key: ValueKey(
+                                            'home-nav-selected-${widget.item.label}',
+                                          ),
+                                          opacity: selection,
+                                          child: AppSkinIcon(
+                                            slot: widget.item.skinSlot,
+                                            selected: true,
+                                            fallback: Icon(
+                                              widget.item.selectedIcon,
+                                              color: iconColor,
+                                              size: renderedIconSize,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),

@@ -98,15 +98,25 @@ class _AppPopupMenuButtonState<T> extends State<AppPopupMenuButton<T>> {
   Widget build(BuildContext context) {
     final tooltip =
         widget.tooltip ?? MaterialLocalizations.of(context).moreButtonTooltip;
+    final originalIcon = widget.icon ?? const Icon(Icons.more_vert_rounded);
+    final icon = AppSkinIcon.adapt(originalIcon);
+    final resolvedPadding = widget.padding.resolve(Directionality.of(context));
+    final glyphSize = originalIcon is Icon
+        ? originalIcon.size ?? widget.iconSize
+        : widget.iconSize;
+    final tapTarget =
+        IconButtonTheme.of(context).style?.tapTargetSize ??
+        Theme.of(context).materialTapTargetSize;
+    final minimumDimension = tapTarget == MaterialTapTargetSize.padded
+        ? kMinInteractiveDimension
+        : 44.0;
     final iconButton = IconButton(
       tooltip: tooltip,
       onPressed: widget.enabled ? _show : null,
       padding: widget.padding,
       constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       iconSize: widget.iconSize,
-      icon: AppSkinIcon.adapt(
-        widget.icon ?? const Icon(Icons.more_vert_rounded),
-      ),
+      icon: icon,
     );
     final trigger = widget.child != null
         ? Tooltip(
@@ -136,6 +146,18 @@ class _AppPopupMenuButtonState<T> extends State<AppPopupMenuButton<T>> {
                 context.findAncestorWidgetOfExactType<GlassTopBar>() == null,
             // The route owns the trigger's single spring and visibility below.
             animatePress: false,
+          )
+        : icon is AppSkinIcon
+        ? SizedBox(
+            width: math.max(
+              minimumDimension,
+              glyphSize + resolvedPadding.horizontal,
+            ),
+            height: math.max(
+              minimumDimension,
+              glyphSize + resolvedPadding.vertical,
+            ),
+            child: iconButton,
           )
         : iconButton;
     // Retain the trigger's layout and focus while the route owns its surface.

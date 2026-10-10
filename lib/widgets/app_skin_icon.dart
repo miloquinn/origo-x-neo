@@ -5,7 +5,7 @@ import '../utils/app_skin_theme.dart';
 import '../utils/app_skin_image_provider.dart';
 
 /// A semantic skin slot with the original glyph as its compatibility contract.
-/// Images keep their own colors; the caller still owns size, motion and actions.
+/// Images keep their own colors; the caller owns layout, motion and actions.
 class AppSkinIcon extends StatelessWidget {
   const AppSkinIcon({
     super.key,
@@ -17,6 +17,9 @@ class AppSkinIcon extends StatelessWidget {
   final AppSkinIconSlot? slot;
   final Icon fallback;
   final bool selected;
+
+  // Reserve room for larger artwork so neighboring labels can lay out around it.
+  static const _artworkScale = 1.5;
 
   /// Shared action adapters can infer only these established action glyphs.
   /// Navigation always supplies a destination slot, independent of its order.
@@ -77,8 +80,8 @@ class AppSkinIcon extends StatelessWidget {
         (fallback.color ?? iconTheme.color ?? Colors.black).a;
     return Image(
       image: appSkinImageProvider(asset, Theme.of(context).brightness),
-      width: size,
-      height: size,
+      width: size * _artworkScale,
+      height: size * _artworkScale,
       fit: BoxFit.contain,
       opacity: AlwaysStoppedAnimation(opacity.clamp(0.0, 1.0)),
       semanticLabel: fallback.semanticLabel,
