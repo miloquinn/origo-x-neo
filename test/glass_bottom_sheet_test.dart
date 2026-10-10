@@ -82,6 +82,21 @@ void main() {
       await _open(tester);
 
       expect(find.byType(GlassSurface), findsOneWidget, reason: '$mode');
+      final surface = tester.widget<GlassSurface>(find.byType(GlassSurface));
+      expect(surface.shape, isA<RoundedSuperellipseBorder>());
+      expect(
+        tester
+            .widget<Material>(
+              find
+                  .descendant(
+                    of: find.byType(GlassSurface),
+                    matching: find.byType(Material),
+                  )
+                  .first,
+            )
+            .shape,
+        surface.shape,
+      );
       expect(
         find.byKey(GlassBottomSheetSurface.dragHandleKey),
         findsOneWidget,
@@ -263,25 +278,169 @@ void main() {
     expect(scrollable.position.maxScrollExtent, greaterThan(0));
   });
 
-  testWidgets(
-    'safe route clears nested bottom padding and keeps panel afloat',
-    (tester) async {
-      tester.view.devicePixelRatio = 1;
-      tester.view.physicalSize = const Size(390, 900);
-      tester.view.padding = const FakeViewPadding(bottom: 34);
-      tester.view.viewPadding = const FakeViewPadding(bottom: 34);
-      addTearDown(tester.view.reset);
+  testWidgets('equal exterior gaps protect nested content inside the panel', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final (size, inset) in const [
+      (Size(390, 900), 34.0),
+      (Size(412, 915), 24.0),
+      (Size(390, 900), 0.0),
+    ]) {
+      tester.view.physicalSize = size;
+      tester.view.padding = FakeViewPadding(bottom: inset);
+      tester.view.viewPadding = FakeViewPadding(bottom: inset);
       await tester.pumpWidget(_host(nestedSafeArea: true));
       await _open(tester);
-
       final panel = tester.getRect(find.byType(GlassSurface));
       final content = tester.getRect(
         find.byKey(const Key('safe-area-content')),
       );
-      expect(panel.bottom, lessThanOrEqualTo(900 - 34 - 8));
-      expect(content.bottom, panel.bottom);
+      expect(panel.left, 8);
+      expect(size.width - panel.right, 8);
+      expect(size.height - panel.bottom, 8);
+      expect(panel.top - tester.getRect(find.byType(BottomSheet)).top, 8);
+      expect(content.bottom, size.height - (inset > 8 ? inset : 8));
+      expect(await tester.binding.handlePopRoute(), isTrue);
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets(
+    'landscape phone paints outside notch insets and protects content',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(900, 390);
+      tester.view.padding = const FakeViewPadding(
+        left: 47,
+        right: 47,
+        bottom: 21,
+      );
+      tester.view.viewPadding = const FakeViewPadding(
+        left: 47,
+        right: 47,
+        bottom: 21,
+      );
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_host(nestedSafeArea: true));
+      await _open(tester);
+      final panel = tester.getRect(find.byType(GlassSurface));
+      final content = tester.getRect(
+        find.byKey(const Key('safe-area-content')),
+      );
+      expect(panel.left, 8);
+      expect(panel.right, 892);
+      expect(panel.bottom, 382);
+      expect(content.left, 47);
+      expect(content.right, 853);
+      expect(content.bottom, 369);
+      expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('live insets and keyboard do not move the exterior gap', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    for (final (padding, keyboard) in const [
+      (34.0, 0.0),
+      (24.0, 0.0),
+      (0.0, 320.0),
+    ]) {
+      await tester.pumpWidget(
+        _host(
+          nestedSafeArea: true,
+          media: MediaQueryData(
+            size: const Size(390, 900),
+            padding: EdgeInsets.only(bottom: padding),
+            viewPadding: const EdgeInsets.only(bottom: 34),
+            viewInsets: EdgeInsets.only(bottom: keyboard),
+          ),
+        ),
+      );
+      if (find.byType(GlassSurface).evaluate().isEmpty) await _open(tester);
+      await tester.pumpAndSettle();
+      final panel = tester.getRect(find.byType(GlassSurface));
+      final body = tester.getRect(find.byKey(const Key('safe-area-content')));
+      expect(panel.bottom, 892);
+      expect(body.bottom, 900 - (padding > 8 ? padding : 8));
+      final media = MediaQuery.of(
+        tester.element(find.byKey(const Key('safe-area-content'))),
+      );
+      expect(media.padding.bottom, 0);
+      expect(media.viewInsets.bottom, keyboard);
+    }
+  });
+
+  testWidgets('tall sheets retain top status-bar protection', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    tester.view.padding = const FakeViewPadding(top: 59, bottom: 34);
+    tester.view.viewPadding = const FakeViewPadding(top: 59, bottom: 34);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_host(body: const SizedBox(height: 2000)));
+    await _open(tester);
+    final panel = tester.getRect(find.byType(GlassSurface));
+    expect(panel.top, 59 + 8);
+    expect(panel.bottom, 892);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('screen corner geometry is concentric and uses one clip', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.reset);
+    for (final (radii, radius) in const [
+      (null, 40.0),
+      (BorderRadius.all(Radius.circular(64)), 56.0),
+      (BorderRadius.all(Radius.circular(24)), 16.0),
+      (BorderRadius.zero, 40.0),
+    ]) {
+      await tester.pumpWidget(
+        _host(
+          media: MediaQueryData(
+            size: const Size(390, 900),
+            displayCornerRadii: radii,
+          ),
+        ),
+      );
+      await _open(tester);
+      final surface = tester.widget<GlassSurface>(find.byType(GlassSurface));
+      final shape = surface.shape as RoundedSuperellipseBorder;
+      expect(
+        shape.borderRadius.resolve(TextDirection.ltr),
+        BorderRadius.circular(radius),
+      );
+      expect(await tester.binding.handlePopRoute(), isTrue);
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('tablet panel keeps its width cap and independent corners', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1024, 1366);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_host());
+    await _open(tester);
+    final panel = tester.getRect(find.byType(GlassSurface));
+    expect(panel.width, 640);
+    expect(panel.center.dx, 512);
+    expect(panel.bottom, 1358);
+    final shape =
+        tester.widget<GlassSurface>(find.byType(GlassSurface)).shape
+            as RoundedSuperellipseBorder;
+    expect(
+      shape.borderRadius.resolve(TextDirection.ltr),
+      BorderRadius.circular(32),
+    );
+  });
 
   testWidgets('useSafeArea false leaves the bottom inset to the caller', (
     tester,
@@ -430,6 +589,7 @@ Widget _host({
   bool? requestFocus,
   ThemeData? sheetTheme,
   bool focusContent = false,
+  Widget? body,
   ValueChanged<int?>? onResult,
 }) => MaterialApp(
   theme: ThemeData(
@@ -455,7 +615,9 @@ Widget _host({
               theme: sheetTheme,
               builder: (context) {
                 Widget child;
-                if (nestedSafeArea) {
+                if (body != null) {
+                  child = body;
+                } else if (nestedSafeArea) {
                   child = const SafeArea(
                     top: false,
                     child: SizedBox(

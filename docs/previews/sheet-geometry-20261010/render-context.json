@@ -1,0 +1,90 @@
+{
+  "platform": "ios",
+  "shaderFilterSupported": true,
+  "scenes": [
+    "liquid-light",
+    "liquid-night",
+    "frosted-light",
+    "solid-light",
+    "geometry-android",
+    "geometry-landscape",
+    "geometry-compact",
+    "high-contrast"
+  ],
+  "kind": "actual shared modal route and production reader controls",
+  "geometry": {
+    "liquid-light": {
+      "left": 8.0,
+      "right": 8.0,
+      "bottom": 8.0,
+      "panelWidth": 374.0,
+      "shape": "RoundedSuperellipseBorder",
+      "radius": 40.0
+    },
+    "liquid-night": {
+      "left": 8.0,
+      "right": 8.0,
+      "bottom": 8.0,
+      "panelWidth": 374.0,
+      "shape": "RoundedSuperellipseBorder",
+      "radius": 40.0
+    },
+    "frosted-light": {
+      "left": 8.0,
+      "right": 8.0,
+      "bottom": 8.0,
+      "panelWidth": 374.0,
+      "shape": "RoundedSuperellipseBorder",
+      "radius": 40.0
+    },
+    "solid-light": {
+      "left": 8.0,
+      "right": 8.0,
+      "bottom": 8.0,
+      "panelWidth": 374.0,
+      "shape": "RoundedSuperellipseBorder",
+      "radius": 40.0
+    },
+    "geometry-android": {
+      "left": 8.0,
+      "right": 8.0,
+      "bottom": 8.0,
+      "panelWidth": 396.0,
+      "shape": "RoundedSuperellipseBorder",
+      "radius": 56.0
+    },
+    "geometry-landscape": {
+      "left": 8.0,
+      "right": 8.0,
+      "bottom": 8.0,
+      "panelWidth": 828.0,
+      "shape": "RoundedSuperellipseBorder",
+      "radius": 40.0
+    },
+    "geometry-compact": {
+      "left": 8.0,
+      "right": 8.0,
+      "bottom": 8.0,
+      "panelWidth": 304.0,
+      "shape": "RoundedSuperellipseBorder",
+      "radius": 40.0
+    },
+    "high-contrast": {
+      "left": 8.0,
+      "right": 8.0,
+      "bottom": 8.0,
+      "panelWidth": 374.0,
+      "shape": "RoundedSuperellipseBorder",
+      "radius": 40.0
+    }
+  },
+  "androidGeometryIsSimulatedOnIos": true,
+  "simulator": "B747AC4A-A940-4BBC-A2BB-DE72F5EDE816",
+  "imageCount": 8,
+  "startedAt": 1791636627.598181,
+  "completedAt": 1791636654.4423292,
+  "ownSourceUnchangedAcrossPreview": true,
+  "builtKernelSha256": "2e2ec487aecaa26ec808366fec459e01b4edf990a23998e2933e017a44864ec1",
+  "installedKernelSha256": "2e2ec487aecaa26ec808366fec459e01b4edf990a23998e2933e017a44864ec1",
+  "simulatorKernelMatchesBuiltApp": true
+}

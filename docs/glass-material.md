@@ -61,4 +61,4 @@
 - 既有控件、导航、书源、输入框、工具栏、阅读栏、书库及渐进模糊 widget 套件分别进程运行，不合并全局状态。
 - `tool/preview_shared_glass_background.dart`：真实 Flutter/Impeller 的深浅色、毛玻璃、液态、实色及高对比预览。图像在 `docs/previews/shared-glass-background-20261009/`；预览与安装启动都不等于用户真实阅读场景的视觉验收。
 
-- `tool/preview_shared_glass_sheets.dart`：当前底部菜单与平整阅读栏的 24 张原生截图及录屏动图，见 `docs/previews/shared-glass-sheets-20261010/`。
+- `tool/preview_shared_glass_sheets.dart`：第一批底部菜单与平整阅读栏的 24 张原生截图及录屏动图见 `docs/previews/shared-glass-sheets-20261010/`。菜单外间距和连续圆角的跟进验证见[菜单几何记录](reviews/2026-10-10-sheet-geometry.md)，使用同一工具的 `ORIGO_SHEET_GEOMETRY_PREVIEW` 场景。

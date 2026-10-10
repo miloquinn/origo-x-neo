@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/reader_themes.dart';
@@ -13,6 +14,9 @@ import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
+import 'package:xxread/widgets/glass_surface.dart';
+
+const _geometryOnly = bool.fromEnvironment('ORIGO_SHEET_GEOMETRY_PREVIEW');
 
 // Native renderer fixture: shared modal route and production reader controls.
 void main() => runApp(const _Preview());
@@ -35,26 +39,39 @@ class _PreviewState extends State<_Preview> {
   var _lineHeight = 1.8;
   var _letterSpacing = 0.0;
 
-  static const _scenes = [
-    'liquid-light',
-    'liquid-night',
-    'liquid-black',
-    'liquid-navy',
-    'liquid-parchment',
-    'frosted-light',
-    'frosted-dark',
-    'solid-light',
-    'solid-dark',
-    'high-contrast',
-    'liquid-large-text',
-    'liquid-compact',
-    'liquid-actions',
-    'chrome-liquid-light',
-    'chrome-liquid-night',
-    'chrome-liquid-black',
-    'chrome-frosted-light',
-    'chrome-solid-light',
-  ];
+  final _geometry = <String, Object>{};
+
+  static const _scenes = _geometryOnly
+      ? [
+          'liquid-light',
+          'liquid-night',
+          'frosted-light',
+          'solid-light',
+          'geometry-android',
+          'geometry-landscape',
+          'geometry-compact',
+          'high-contrast',
+        ]
+      : [
+          'liquid-light',
+          'liquid-night',
+          'liquid-black',
+          'liquid-navy',
+          'liquid-parchment',
+          'frosted-light',
+          'frosted-dark',
+          'solid-light',
+          'solid-dark',
+          'high-contrast',
+          'liquid-large-text',
+          'liquid-compact',
+          'liquid-actions',
+          'chrome-liquid-light',
+          'chrome-liquid-night',
+          'chrome-liquid-black',
+          'chrome-frosted-light',
+          'chrome-solid-light',
+        ];
 
   @override
   void initState() {
@@ -82,6 +99,9 @@ class _PreviewState extends State<_Preview> {
     final highContrast = scene == 'high-contrast';
     final large = scene == 'liquid-large-text';
     final compact = scene == 'liquid-compact';
+    final androidGeometry = scene == 'geometry-android';
+    final landscapeGeometry = scene == 'geometry-landscape';
+    final narrowGeometry = scene == 'geometry-compact';
     final style = frosted ? GlassStyle.frosted : GlassStyle.liquid;
     GlassEffectConfig.setGlassStyle(style);
     GlassEffectConfig.setDisableAllGlassEffects(off);
@@ -94,7 +114,18 @@ class _PreviewState extends State<_Preview> {
         ),
       ],
     );
-    final size = Size(large ? 320 : 390, compact ? 380 : 844);
+    final size = androidGeometry
+        ? const Size(412, 915)
+        : landscapeGeometry
+        ? const Size(844, 390)
+        : narrowGeometry
+        ? const Size(320, 650)
+        : Size(large ? 320 : 390, compact ? 380 : 844);
+    final padding = androidGeometry
+        ? const EdgeInsets.only(top: 24, bottom: 24)
+        : landscapeGeometry
+        ? const EdgeInsets.only(left: 47, right: 47, bottom: 21)
+        : const EdgeInsets.only(top: 44, bottom: 34);
     return Center(
       child: RepaintBoundary(
         key: _boundary,
@@ -108,15 +139,19 @@ class _PreviewState extends State<_Preview> {
             supportedLocales: AppLocalizations.supportedLocales,
             theme: theme,
             builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                size: size,
-                padding: const EdgeInsets.only(top: 44, bottom: 34),
-                viewPadding: const EdgeInsets.only(top: 44, bottom: 34),
-                viewInsets: EdgeInsets.zero,
-                highContrast: highContrast,
-                disableAnimations: large,
-                textScaler: TextScaler.linear(large ? 2.4 : 1),
-              ),
+              data: MediaQuery.of(context)
+                  .copyWith(
+                    size: size,
+                    padding: padding,
+                    viewPadding: padding,
+                    viewInsets: EdgeInsets.zero,
+                    highContrast: highContrast,
+                    disableAnimations: large,
+                    textScaler: TextScaler.linear(large ? 2.4 : 1),
+                  )
+                  .applyDisplayCornerRadii(
+                    androidGeometry ? BorderRadius.circular(64) : null,
+                  ),
               child: child!,
             ),
             home: Scaffold(
@@ -260,11 +295,19 @@ class _PreviewState extends State<_Preview> {
 
   Future<void> _capture() async {
     final directory = Directory(
-      '${Directory.systemTemp.path}/shared-glass-sheets-previews',
+      '${Directory.systemTemp.path}/${_geometryOnly ? 'sheet-geometry-previews' : 'shared-glass-sheets-previews'}',
     );
     await directory.create(recursive: true);
     for (var i = 0; i < _scenes.length; i++) {
       if (!mounted) return;
+      if (_geometryOnly) {
+        await SystemChrome.setPreferredOrientations([
+          _scenes[i] == 'geometry-landscape'
+              ? DeviceOrientation.landscapeLeft
+              : DeviceOrientation.portraitUp,
+        ]);
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+      }
       setState(() => _index = i);
       await WidgetsBinding.instance.endOfFrame;
       await Future<void>.delayed(const Duration(milliseconds: 180));
@@ -298,6 +341,8 @@ class _PreviewState extends State<_Preview> {
         'shaderFilterSupported': ui.ImageFilter.isShaderFilterSupported,
         'scenes': _scenes,
         'kind': 'actual shared modal route and production reader controls',
+        'geometry': _geometry,
+        'androidGeometryIsSimulatedOnIos': _geometryOnly,
       }),
     );
     debugPrint('SHARED_SHEETS_PREVIEWS_COMPLETE ${directory.path}');
@@ -307,6 +352,31 @@ class _PreviewState extends State<_Preview> {
     await WidgetsBinding.instance.endOfFrame;
     final boundary =
         _boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    if (_geometryOnly) {
+      void visit(Element element) {
+        final widget = element.widget;
+        if (widget is GlassSurface && widget.role == GlassSurfaceRole.panel) {
+          final box = element.findRenderObject()! as RenderBox;
+          final topLeft = boundary.globalToLocal(
+            box.localToGlobal(Offset.zero),
+          );
+          _geometry[name] = {
+            'left': topLeft.dx,
+            'right': boundary.size.width - topLeft.dx - box.size.width,
+            'bottom': boundary.size.height - topLeft.dy - box.size.height,
+            'panelWidth': box.size.width,
+            'shape': widget.shape.runtimeType.toString(),
+            'radius': (widget.shape as RoundedSuperellipseBorder).borderRadius
+                .resolve(TextDirection.ltr)
+                .topLeft
+                .x,
+          };
+        }
+        element.visitChildElements(visit);
+      }
+
+      (_navigator.currentContext! as Element).visitChildElements(visit);
+    }
     final screenshot = await boundary.toImage(pixelRatio: 2);
     final data = await screenshot.toByteData(format: ui.ImageByteFormat.png);
     screenshot.dispose();

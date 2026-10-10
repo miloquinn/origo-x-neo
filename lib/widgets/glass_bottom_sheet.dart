@@ -1,13 +1,14 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'glass_surface.dart';
 
-const _sheetRadius = 28.0;
+const _sheetPhoneRadius = 40.0;
+const _sheetCardRadius = 32.0;
+const _sheetCompactShortestSide = 600.0;
 const _sheetMaxWidth = 640.0;
-const _sheetMargin = EdgeInsets.fromLTRB(8, 0, 8, 8);
-const _sheetShape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.all(Radius.circular(_sheetRadius)),
-);
+const _sheetMargin = EdgeInsets.all(8);
 const _sheetAnimation = AnimationStyle(
   curve: Curves.easeOutCubic,
   duration: Duration(milliseconds: 300),
@@ -47,7 +48,10 @@ Future<T?> showGlassBottomSheet<T>({
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
-    useSafeArea: useSafeArea,
+    // Keep the panel's paint outside side/bottom system insets. The shared
+    // surface protects content inside it, and the route still caps its height
+    // below the top status area.
+    useSafeArea: false,
     useRootNavigator: useRootNavigator,
     isDismissible: isDismissible,
     enableDrag: enableDrag,
@@ -56,7 +60,7 @@ Future<T?> showGlassBottomSheet<T>({
     elevation: 0,
     clipBehavior: Clip.none,
     barrierColor: barrierColor,
-    constraints: _boundedConstraints(constraints),
+    constraints: constraints ?? const BoxConstraints(),
     routeSettings: routeSettings,
     anchorPoint: anchorPoint,
     requestFocus: requestFocus,
@@ -76,13 +80,23 @@ Future<T?> showGlassBottomSheet<T>({
             ? () => Navigator.of(routeContext).maybePop()
             : null,
         showDragHandle: showDragHandle,
+        useSafeArea: useSafeArea,
         child: content,
       );
       if (useSafeArea) {
-        surface = SafeArea(
-          top: false,
-          left: false,
-          right: false,
+        // The native route removes top padding when useSafeArea is false.
+        // Read above that removal, so tall panels retain status-bar protection
+        // without adding an invisible top spacer to ordinary half sheets.
+        final topInset = MediaQuery.paddingOf(
+          Navigator.of(routeContext).context,
+        ).top;
+        surface = ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: math.max(
+              0,
+              MediaQuery.sizeOf(routeContext).height - topInset,
+            ),
+          ),
           child: surface,
         );
       }
@@ -91,11 +105,6 @@ Future<T?> showGlassBottomSheet<T>({
     },
   );
 }
-
-BoxConstraints _boundedConstraints(BoxConstraints? constraints) =>
-    (constraints ?? const BoxConstraints()).enforce(
-      const BoxConstraints(maxWidth: _sheetMaxWidth),
-    );
 
 /// Shared rounded panel for bottom-sheet content and standalone previews.
 ///
@@ -134,14 +143,34 @@ class GlassBottomSheetSurface extends StatelessWidget {
     final dismiss = routeScope?.onDismiss;
     final effectiveShowDragHandle =
         routeScope?.showDragHandle ?? showDragHandle;
+    final media = MediaQuery.of(context);
+    final compact = media.size.shortestSide < _sheetCompactShortestSide;
+    final resolvedMargin = margin.resolve(Directionality.of(context));
+    final shape = _sheetShape(media, compact, resolvedMargin);
     Widget content = child;
+    if (routeScope?.useSafeArea ?? false) {
+      content = Padding(
+        padding: EdgeInsets.only(
+          left: math.max(0, media.padding.left - resolvedMargin.left),
+          right: math.max(0, media.padding.right - resolvedMargin.right),
+          bottom: math.max(0, media.padding.bottom - resolvedMargin.bottom),
+        ),
+        child: MediaQuery.removePadding(
+          context: context,
+          removeLeft: true,
+          removeRight: true,
+          removeBottom: true,
+          child: content,
+        ),
+      );
+    }
     if (effectiveShowDragHandle) {
       content = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _GlassBottomSheetDragHandle(onDismiss: dismiss),
-          Flexible(fit: FlexFit.loose, child: child),
+          Flexible(fit: FlexFit.loose, child: content),
         ],
       );
     }
@@ -152,19 +181,21 @@ class GlassBottomSheetSurface extends StatelessWidget {
         child: Center(
           heightFactor: 1,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _sheetMaxWidth),
+            constraints: BoxConstraints(
+              maxWidth: compact ? double.infinity : _sheetMaxWidth,
+            ),
             child: SizedBox(
               width: double.infinity,
               child: GlassSurface(
                 role: GlassSurfaceRole.panel,
-                shape: _sheetShape,
+                shape: shape,
                 color: color?.a == 0 ? null : color,
                 outlineColor: outlineColor,
                 shadowColor: shadowColor,
                 brightness: brightness,
                 child: Material(
                   type: MaterialType.transparency,
-                  shape: _sheetShape,
+                  shape: shape,
                   clipBehavior: Clip.antiAlias,
                   child: content,
                 ),
@@ -175,6 +206,31 @@ class GlassBottomSheetSurface extends StatelessWidget {
       ),
     );
   }
+}
+
+RoundedSuperellipseBorder _sheetShape(
+  MediaQueryData media,
+  bool compact,
+  EdgeInsets margin,
+) {
+  var radius = compact ? _sheetPhoneRadius : _sheetCardRadius;
+  final screenCorners = media.displayCornerRadii;
+  if (compact && screenCorners != null) {
+    final reported = [
+      screenCorners.topLeft.x,
+      screenCorners.topRight.x,
+      screenCorners.bottomLeft.x,
+      screenCorners.bottomRight.x,
+    ].where((value) => value.isFinite && value > 0);
+    if (reported.isNotEmpty) {
+      // The shared liquid shader accepts one radius. Use a conservative
+      // uniform concentric radius on displays that report their geometry.
+      radius = math.max(0, reported.reduce(math.min) - margin.bottom);
+    }
+  }
+  // iOS does not report displayCornerRadii. These are optical design tokens,
+  // never an inferred hardware radius or a device-model lookup table.
+  return RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(radius));
 }
 
 class _GlassBottomSheetDragHandle extends StatelessWidget {
@@ -239,11 +295,13 @@ class _GlassBottomSheetRouteScope extends InheritedWidget {
   const _GlassBottomSheetRouteScope({
     required this.onDismiss,
     required this.showDragHandle,
+    required this.useSafeArea,
     required super.child,
   });
 
   final VoidCallback? onDismiss;
   final bool showDragHandle;
+  final bool useSafeArea;
 
   static _GlassBottomSheetRouteScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_GlassBottomSheetRouteScope>();
@@ -251,5 +309,6 @@ class _GlassBottomSheetRouteScope extends InheritedWidget {
   @override
   bool updateShouldNotify(_GlassBottomSheetRouteScope oldWidget) =>
       onDismiss != oldWidget.onDismiss ||
-      showDragHandle != oldWidget.showDragHandle;
+      showDragHandle != oldWidget.showDragHandle ||
+      useSafeArea != oldWidget.useSafeArea;
 }
