@@ -113,6 +113,7 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
   DateTime? _proactiveAttemptedAt;
   String? _activeTool;
   int _sendGeneration = 0;
+  CancelToken? _sendCancelToken;
 
   bool _configured = false;
   bool _configChecked = false;
@@ -143,7 +144,6 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
     final active = HomeTabFocusScope.maybeActiveOf(context);
     final wasActive = _agentTabActive;
     _agentTabActive = active == null || active == HomeNavigationDestination.ai;
-    if (!_agentTabActive && _sending) _agent?.cancel();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_agentTabActive && !wasActive) {
@@ -158,8 +158,6 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_checkConfigured());
-    } else if (state != AppLifecycleState.inactive) {
-      _agent?.cancel();
     }
   }
 
@@ -238,7 +236,7 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
       widget.controller?._state = null;
     }
     WidgetsBinding.instance.removeObserver(this);
-    _agent?.cancel();
+    _cancelSendRequest();
     _agentShelf?.close();
     if (widget.agentDataSource == null) _agentData?.dispose();
     _agentMemory.removeListener(_agentChanged);
@@ -343,11 +341,29 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
     });
   }
 
-  /// 开启新对话：当前会话已持久化，直接清空重来。
-  void _startNewChat() {
-    if (_entries.isEmpty && _error == null) return;
-    _agent?.cancel();
+  void _cancelSendRequest() {
     _sendGeneration++;
+    _sendCancelToken?.cancel('AI conversation stopped');
+    _sendCancelToken = null;
+    _agent?.cancel();
+  }
+
+  void _stopSending() {
+    if (!_sending) return;
+    _cancelSendRequest();
+    setState(() {
+      _sending = false;
+      _activeTool = null;
+      _error = null;
+    });
+    unawaited(_persistHistory());
+  }
+
+  /// 开启新对话：保留已发送内容，并结束上一轮请求。
+  void _startNewChat() {
+    if (_entries.isEmpty && _error == null && !_sending) return;
+    if (_sending) unawaited(_persistHistory());
+    _cancelSendRequest();
     setState(() {
       _entries.clear();
       _error = null;
@@ -540,6 +556,9 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
     if (text.isEmpty || _sending || !_configured) return;
     if (!proactive) _inputController.clear();
     final generation = ++_sendGeneration;
+    final cancelToken = _sendCancelToken = CancelToken();
+    bool isCurrent() =>
+        mounted && generation == _sendGeneration && !cancelToken.isCancelled;
     setState(() {
       if (!proactive) _entries.add(_AiChatEntry(role: 'user', text: text));
       _sending = true;
@@ -558,6 +577,7 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
       ReadingAgentResult? agentResult;
       final String answer;
       await _agentMemory.ensureLoaded();
+      if (!isCurrent()) return;
       if (_agentMemory.permissions.enabled) {
         final agent = _ensureAgent();
         if (agent == null) {
@@ -567,7 +587,7 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
           history: history,
           bookContext: _bookContext,
           onTool: (name) {
-            if (mounted && generation == _sendGeneration) {
+            if (isCurrent()) {
               setState(() => _activeTool = name);
             }
           },
@@ -583,10 +603,11 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
               bookId: _selectedBook?.id?.toString() ?? '',
               chapterId: 'ai-page-chat',
             ),
+            cancelToken: cancelToken,
           ),
         );
       }
-      if (!mounted || generation != _sendGeneration) return;
+      if (!isCurrent()) return;
       setState(() {
         _entries.add(
           _AiChatEntry(
@@ -600,10 +621,10 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
         _sending = false;
         _activeTool = null;
       });
-      if (proactive) await _agentMemory.markProactiveDelivered(DateTime.now());
       unawaited(_persistHistory());
+      if (proactive) await _agentMemory.markProactiveDelivered(DateTime.now());
     } on AIServiceException catch (exception) {
-      if (!mounted || generation != _sendGeneration) return;
+      if (!isCurrent()) return;
       setState(() {
         _sending = false;
         _activeTool = null;
@@ -634,7 +655,7 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
               };
       });
     } on DioException catch (exception) {
-      if (!mounted || generation != _sendGeneration) return;
+      if (!isCurrent()) return;
       setState(() {
         _sending = false;
         _activeTool = null;
@@ -643,12 +664,14 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
             : context.l10n.readerAiUnknownError;
       });
     } catch (_) {
-      if (!mounted || generation != _sendGeneration) return;
+      if (!isCurrent()) return;
       setState(() {
         _sending = false;
         _activeTool = null;
         _error = context.l10n.readerAiUnknownError;
       });
+    } finally {
+      if (identical(_sendCancelToken, cancelToken)) _sendCancelToken = null;
     }
     _scrollToBottomSoon();
   }
@@ -1240,11 +1263,18 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
               key: const ValueKey('ai-page-send'),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 40, height: 40),
-              onPressed: _configured && !_sending
+              onPressed: _sending
+                  ? _stopSending
+                  : _configured
                   ? () => unawaited(_handleSend())
                   : null,
-              tooltip: l10n.readerAiSendButton,
-              icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+              tooltip: _sending
+                  ? readingAgentText(context, '停止生成', 'Stop generation')
+                  : l10n.readerAiSendButton,
+              icon: Icon(
+                _sending ? Icons.stop_rounded : Icons.arrow_upward_rounded,
+                size: 20,
+              ),
             ),
           ],
         ),

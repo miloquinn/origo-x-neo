@@ -5,6 +5,7 @@
 ## 用户入口与默认行为
 
 - AI 导航页的空状态和输入框加号菜单提供“阅读 Agent 与记忆”。Agent 默认关闭，用户开启后才提供本设备数据工具；普通聊天和主动关联书籍的既有功能继续可用。
+- 发送后，同一按钮变为“停止生成”。点击会取消当前模型请求及 Agent 的数据/书源查询，立即恢复发送状态，并保留已发送的用户消息。切换首页标签或打开其它页面时，请求继续执行，完成结果照常进入当前会话与历史；返回 AI 页可以看到执行状态或结果。
 - 用户可以提问“最近读得怎么样”“根据我的偏好推荐下一本”。Agent 按需查询获准的数据，搜索启用的书源，展示真实书籍和逐本推荐理由。
 - 卡片沿用 `SourcedBookActions` 的书籍详情、加入书架和阅读流程。反馈“感兴趣/不感兴趣”会保存在本设备，供后续推荐参考。
 - AI 建议的偏好仅为待保存建议，用户点击保存后才进入长期记忆。设置中可以新增、修改、删除、清空偏好及反馈，也可以复制 Markdown 视图。
@@ -52,12 +53,13 @@ flowchart LR
   Cards --> Details[SourcedBookActions 书籍详情]
 ```
 
-- `lib/reader_core/ai/ai_service.dart` 是既有公开门面。`AgentAIService` 是可选工具能力接口，不扩大 `ConfigurableAIService` 的测试替身契约。普通聊天和工具循环复用同一 HTTP 请求、响应解码和错误边界。
+- `lib/reader_core/ai/ai_service.dart` 是既有公开门面。普通 `AIService.chat` 接受可选 `CancelToken`，取消透传到共享 Dio 请求；设置加载前后均检查取消。`AgentAIService` 是可选工具能力接口。普通聊天和工具循环复用同一 HTTP 请求、响应解码和错误边界。
 - `ai_agent_service.dart` 管理 OpenAI、Anthropic 和 Gemini 的原生工具往返。必须保留供应商原始 assistant 消息、tool call ID、blocks/parts 及签名，不用普通聊天的字符串历史替代这些消息。
 - `ReadingAgentService` 负责每类数据权限、工具白名单、预算、取消和实际候选校验。整轮请求只登记一次 `AiRequestCoordinator.runInteractive`，后台书籍预处理在前台交互期间让行。
 - `LocalReadingAgentDataSource` 复用 DAO、源注册表及客户端，按注入关系决定是否关闭客户端。`AiPage` 创建的 Agent 数据源在页面释放时关闭；注入的数据源由调用者负责释放。历史卡片与实时卡片共享展示组件。
 - `ReadingAgentMemoryStore` 提供串行持久化变更；写入失败恢复旧内存状态并抛错，UI 不宣称保存成功。页面和测试可注入 store，没有新增全局记忆单例。
 - `AiChatHistoryStore` 继续从应用根节点显式注入，Agent 不另建一份聊天历史。
+- `AiPage` 复用首页已有的稳定目的地 key 与 `HomeKeepAlivePageWrapper`，每轮持有取消 token 和 generation。停止后可立即发起下一轮；启动模型前、工具提示和回答返回时都检查当前轮，旧请求的清理不能覆盖下一轮状态。真正释放页面和开启新对话会结束当前请求，不因失去标签焦点或临时应用生命周期变化主动取消。
 - `GlobalAIReadingService` 与 `BookPreprocessService` 继续负责书籍内容摘要。它们不推断用户偏好、不替 Agent 修改权限；摘要写盘失败抛错，请求返回后重检取消，避免误报完成。
 
 ## 工具、权限与数据边界
@@ -73,7 +75,7 @@ flowchart LR
 | `suggest_preference` | Agent 已开启 | 最多 3 条临时建议，等待用户保存 |
 | `suggest_proactive_recommendations` | Agent 已开启 | 提供设置入口，等待用户开启 |
 
-Agent 默认关闭。开启时说明数据会发给用户配置的 AI；用户可以分别关闭阅读统计、书架和书源访问。工具在调用前和数据返回后重新校验权限。权限变化、离开活动 AI 标签页、应用进入后台或页面释放会取消 Agent 请求并阻止晚到结果更新对话。
+Agent 默认关闭。开启时说明数据会发给用户配置的 AI；用户可以分别关闭阅读统计、书架和书源访问。工具在调用前和数据返回后重新校验权限。权限变化、用户停止、开启新会话、请求超时或页面释放会取消 Agent 请求并阻止晚到结果更新对话。切页后的持续执行依赖进程仍在运行，不是操作系统后台任务，系统挂起或退出进程后不能保证继续完成。
 
 禁止直接向模型序列化 `Book.toMap()`、完整书源配置或 `BookSourceBook.toJson()`。模型不需要本地文件路径、真实源 ID/URL、私有书籍定位、Cookie、请求头、脚本、登录变量或 API 密钥。源配置和认证留在现有运行时，工具只提供白名单字段和本轮别名。可导入文字字段有长度限制；书名、简介、笔记、偏好及源返回值都作为数据，不能提升为权限或系统指令。
 
@@ -102,10 +104,11 @@ Agent 默认关闭。开启时说明数据会发给用户配置的 AI；用户�
 
 - `test/ai_agent_service_test.dart`：三类协议原生工具往返、ID/签名保留、畸形工具、安全错误与取消。
 - `test/ai_service_models_test.dart`、`ai_protocol_adapter_test.dart`、`ai_configuration_test.dart`：模型配置、普通请求兼容及精确响应错误。
+- `test/ai_chat_cancellation_test.dart`：普通聊天在设置加载前、加载中及 Dio 在途取消，保留取消异常并拒绝晚到响应。
 - `test/reading_agent_data_source_test.dart`：真实 SQLite 会话排序、白名单、分页、源别名、覆盖范围、取消和历史卡片解析。
 - `test/reading_agent_memory_store_test.dart`：默认开关、偏好/反馈持久化、未确认推断拒绝、串行写入与失败恢复。
 - `test/reading_agent_service_test.dart`：权限工具、真实候选、无隐含偏好写入、最小模型偏好视图、预算、超时和晚到结果隔离。
-- `test/reading_agent_page_test.dart`：默认普通聊天、显式开启、反馈/保存、隐藏标签页、追问/历史恢复和窄屏大字体。
+- `test/reading_agent_page_test.dart`：默认普通聊天、显式开启、反馈/保存、追问/历史恢复和窄屏大字体；切换标签和覆盖路由持续执行、停止/立即重试/新会话、晚到结果隔离、记忆加载前停止、隐藏页不启动主动推荐。
 - `test/ai_chat_history_store_test.dart`、`ai_chat_history_dependency_wiring_test.dart`、`ai_history_page_test.dart`：原历史版本及显式所有权。
 - `test/tablet_ai_layout_test.dart`、`reader_ai_panel_test.dart`：平板/键盘和原阅读助手界面。
 - `test/ai_request_coordinator_test.dart`、`global_ai_reading_service_test.dart`：交互优先、摘要合并、重试、请求途中取消及真实文件读写失败。

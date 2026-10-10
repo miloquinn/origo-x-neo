@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
@@ -27,6 +28,7 @@ class _RecordingAIService implements AIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
+    CancelToken? cancelToken,
   }) async {
     chatCalls.add(meta.chapterId);
     final promptLength = history.fold<int>(
@@ -72,6 +74,7 @@ class _InFlightAIService extends _RecordingAIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
+    CancelToken? cancelToken,
   }) async {
     if (!started.isCompleted) {
       started.complete();

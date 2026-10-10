@@ -53,6 +53,7 @@ abstract class AIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
+    CancelToken? cancelToken,
   });
 }
 
@@ -333,8 +334,11 @@ class ReaderHttpAIService implements ConfigurableAIService, AgentAIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
+    CancelToken? cancelToken,
   }) async {
+    if (cancelToken?.isCancelled ?? false) throw cancelToken!.cancelError!;
     final settings = await _resolveActiveSettings();
+    if (cancelToken?.isCancelled ?? false) throw cancelToken!.cancelError!;
     final validationError = validateAIProviderSettings(settings);
     if (validationError != null) {
       throw AIServiceException(code: validationError);
@@ -369,6 +373,7 @@ class ReaderHttpAIService implements ConfigurableAIService, AgentAIService {
     final responseData = await _postDecodedChatPayload(
       settings: settings,
       payload: payload,
+      cancelToken: cancelToken,
     );
 
     try {
@@ -521,8 +526,11 @@ class MockAIService implements ConfigurableAIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
+    CancelToken? cancelToken,
   }) async {
+    if (cancelToken?.isCancelled ?? false) throw cancelToken!.cancelError!;
     await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (cancelToken?.isCancelled ?? false) throw cancelToken!.cancelError!;
     final last = history.isNotEmpty ? history.last.content : '';
     if (last.trim().isEmpty) {
       return _mockToken('mock_greeting', {});

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/l10n/app_localizations.dart';
@@ -25,6 +26,7 @@ class _RecordingAiService implements ConfigurableAIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
+    CancelToken? cancelToken,
   }) async {
     lastHistory = history;
     return '新的原始回答';

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -193,6 +195,239 @@ void main() {
     },
   );
 
+  testWidgets('agent continues across home tab switch and persists result', (
+    tester,
+  ) async {
+    final fixture = await _Fixture.create(
+      permissions: const ReadingAgentPermissions(enabled: true),
+    );
+    addTearDown(fixture.dispose);
+    final destination = ValueNotifier(HomeNavigationDestination.ai);
+    addTearDown(destination.dispose);
+    final pending = Completer<String>();
+    fixture.ai.agentScript = (_) => pending.future;
+
+    await tester.pumpWidget(
+      _app(
+        ValueListenableBuilder<HomeNavigationDestination>(
+          valueListenable: destination,
+          builder: (_, active, child) =>
+              HomeTabFocusScope(activeDestination: active, child: child!),
+          child: fixture.page(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('ai-page-input')), '继续完成');
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+
+    destination.value = HomeNavigationDestination.library;
+    await tester.pump();
+    pending.complete('切换页面后完成');
+    await tester.pumpAndSettle();
+
+    expect(find.text('切换页面后完成'), findsOneWidget);
+    expect(fixture.history.sessions.single.messages.last.text, '切换页面后完成');
+    expect(fixture.ai.lastAgentToken?.isCancelled, isFalse);
+  });
+
+  testWidgets('chat stop cancels token and stale completion cannot end retry', (
+    tester,
+  ) async {
+    final fixture = await _Fixture.create();
+    addTearDown(fixture.dispose);
+    final first = Completer<String>();
+    final second = Completer<String>();
+    fixture.ai.chatScript = (_, _, call) =>
+        call == 1 ? first.future : second.future;
+    await tester.pumpWidget(_app(fixture.page()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const ValueKey('ai-page-input')), '第一问');
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+    var send = tester.widget<IconButton>(
+      find.byKey(const ValueKey('ai-page-send')),
+    );
+    expect(send.onPressed, isNotNull);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('ai-page-send')),
+        matching: find.byIcon(Icons.stop_rounded),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+    expect(fixture.ai.chatTokens.single.isCancelled, isTrue);
+
+    await tester.enterText(find.byKey(const ValueKey('ai-page-input')), '第二问');
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+    first.complete('迟到的第一问结果');
+    await tester.pump();
+
+    expect(find.text('迟到的第一问结果'), findsNothing);
+    send = tester.widget<IconButton>(
+      find.byKey(const ValueKey('ai-page-send')),
+    );
+    expect(send.onPressed, isNotNull);
+    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+
+    second.complete('第二问完成');
+    await tester.pumpAndSettle();
+    expect(find.text('第二问完成'), findsOneWidget);
+    expect(find.text('迟到的第一问结果'), findsNothing);
+  });
+
+  testWidgets('agent stop cancels tool data and allows next request', (
+    tester,
+  ) async {
+    final fixture = await _Fixture.create(
+      permissions: const ReadingAgentPermissions(enabled: true),
+    );
+    addTearDown(fixture.dispose);
+    fixture.data.blockOverview();
+    fixture.ai.agentScript = (tools) async {
+      if (fixture.ai.agentCalls == 1) {
+        await tools('reading_overview', const {});
+        return '迟到 Agent';
+      }
+      return '下一轮 Agent 完成';
+    };
+    await tester.pumpWidget(_app(fixture.page()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const ValueKey('ai-page-input')), '查统计');
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await fixture.data.overviewStarted;
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+
+    expect(fixture.ai.lastAgentToken?.isCancelled, isTrue);
+    expect(fixture.data.cancelCount, greaterThan(0));
+    fixture.data.releaseOverview();
+    await tester.pump();
+    expect(find.text('迟到 Agent'), findsNothing);
+
+    await tester.enterText(find.byKey(const ValueKey('ai-page-input')), '重新查询');
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pumpAndSettle();
+    expect(find.text('下一轮 Agent 完成'), findsOneWidget);
+  });
+
+  testWidgets('immediate stop before memory load prevents agent startup', (
+    tester,
+  ) async {
+    final history = AiChatHistoryStore();
+    final memory = _DelayedMemoryStore();
+    final ai = _FakeAI();
+    final data = _PageDataSource();
+    addTearDown(() {
+      history.dispose();
+      memory.dispose();
+      data.dispose();
+    });
+    await tester.pumpWidget(
+      _app(
+        AiPage(
+          historyStore: history,
+          aiService: ai,
+          agentMemoryStore: memory,
+          agentDataSource: data,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(find.byKey(const ValueKey('ai-page-input')), '立刻停止');
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    memory.release();
+    await tester.pumpAndSettle();
+
+    expect(ai.agentCalls, 0);
+    expect(data.beginCount, 0);
+    expect(find.text('Agent 回答'), findsNothing);
+  });
+
+  testWidgets('chat continues while another route is pushed and popped', (
+    tester,
+  ) async {
+    final fixture = await _Fixture.create();
+    addTearDown(fixture.dispose);
+    final pending = Completer<String>();
+    fixture.ai.chatScript = (_, _, call) => pending.future;
+    await tester.pumpWidget(_app(fixture.page()));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('ai-page-input')), '后台继续');
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+
+    final pageContext = tester.element(find.byType(AiPage));
+    unawaited(
+      Navigator.of(pageContext).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('其它页面')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('其它页面'), findsOneWidget);
+    pending.complete('路由覆盖期间完成');
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.text('其它页面'))).pop();
+    await tester.pumpAndSettle();
+
+    expect(find.text('路由覆盖期间完成'), findsOneWidget);
+    expect(fixture.history.sessions.single.messages.last.text, '路由覆盖期间完成');
+    expect(fixture.ai.chatTokens.single.isCancelled, isFalse);
+  });
+
+  testWidgets('new chat cancels old request and rejects its late result', (
+    tester,
+  ) async {
+    final fixture = await _Fixture.create();
+    addTearDown(fixture.dispose);
+    final controller = AiPageController();
+    final first = Completer<String>();
+    final second = Completer<String>();
+    fixture.ai.chatScript = (_, _, call) =>
+        call == 1 ? first.future : second.future;
+    await tester.pumpWidget(_app(fixture.page(controller: controller)));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('ai-page-input')),
+      '旧会话问题',
+    );
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+
+    controller.startNewChat();
+    await tester.pump();
+    expect(fixture.ai.chatTokens.single.isCancelled, isTrue);
+    first.complete('旧会话迟到结果');
+    await tester.pump();
+    expect(find.text('旧会话问题'), findsNothing);
+    expect(find.text('旧会话迟到结果'), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('ai-page-input')),
+      '新会话问题',
+    );
+    await tester.tap(find.byKey(const ValueKey('ai-page-send')));
+    await tester.pump();
+    second.complete('新会话回答');
+    await tester.pumpAndSettle();
+    expect(find.text('新会话回答'), findsOneWidget);
+    expect(find.text('旧会话迟到结果'), findsNothing);
+  });
+
   testWidgets('hidden AI tab does not trigger opted-in proactive request', (
     tester,
   ) async {
@@ -266,11 +501,21 @@ typedef _ToolInvoker =
       Map<String, dynamic> arguments,
     );
 
+typedef _ChatScript =
+    Future<String> Function(
+      List<AIChatMessage> history,
+      CancelToken token,
+      int call,
+    );
+
 class _FakeAI implements ConfigurableAIService, AgentAIService {
   Future<String> Function(_ToolInvoker tools)? agentScript;
+  _ChatScript? chatScript;
   int chatCalls = 0;
   int agentCalls = 0;
   final List<List<AIChatMessage>> agentHistories = [];
+  final List<CancelToken> chatTokens = [];
+  CancelToken? lastAgentToken;
 
   @override
   Future<AIProviderSettings> loadSettings([AIProviderType? provider]) async =>
@@ -286,8 +531,13 @@ class _FakeAI implements ConfigurableAIService, AgentAIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
+    CancelToken? cancelToken,
   }) async {
     chatCalls++;
+    final token = cancelToken ?? CancelToken();
+    chatTokens.add(token);
+    final script = chatScript;
+    if (script != null) return script(history, token, chatCalls);
     return '旧聊天回答';
   }
 
@@ -301,6 +551,7 @@ class _FakeAI implements ConfigurableAIService, AgentAIService {
     int maxToolRounds = 6,
   }) async {
     agentCalls++;
+    lastAgentToken = cancelToken;
     agentHistories.add(List<AIChatMessage>.of(history));
     final script = agentScript;
     if (script == null) return 'Agent 回答';
@@ -358,6 +609,24 @@ class _Fixture {
 class _PageDataSource implements ReadingAgentDataSource {
   final Map<String, SourcedBook> _candidates = {};
   int beginCount = 0;
+  int cancelCount = 0;
+  Completer<Map<String, dynamic>>? _overview;
+  Completer<void>? _overviewStarted;
+
+  Future<void> get overviewStarted =>
+      _overviewStarted?.future ?? Future.value();
+
+  void blockOverview() {
+    _overview = Completer<Map<String, dynamic>>();
+    _overviewStarted = Completer<void>();
+  }
+
+  void releaseOverview() {
+    final overview = _overview;
+    if (overview != null && !overview.isCompleted) {
+      overview.complete(const {});
+    }
+  }
 
   @override
   void beginRequest() {
@@ -405,7 +674,11 @@ class _PageDataSource implements ReadingAgentDataSource {
   }) async => {'items': <Object>[]};
 
   @override
-  Future<Map<String, dynamic>> readingOverview() async => const {};
+  Future<Map<String, dynamic>> readingOverview() async {
+    final started = _overviewStarted;
+    if (started != null && !started.isCompleted) started.complete();
+    return _overview?.future ?? const {};
+  }
 
   @override
   Future<Map<String, dynamic>> readingSessions({
@@ -421,10 +694,25 @@ class _PageDataSource implements ReadingAgentDataSource {
   }) async => {'items': <Object>[]};
 
   @override
-  void cancel() {}
+  void cancel() => cancelCount++;
 
   @override
   void dispose() {}
+}
+
+class _DelayedMemoryStore extends ReadingAgentMemoryStore {
+  final Completer<void> _loaded = Completer<void>();
+
+  @override
+  ReadingAgentPermissions get permissions =>
+      const ReadingAgentPermissions(enabled: true);
+
+  @override
+  Future<void> ensureLoaded() => _loaded.future;
+
+  void release() {
+    if (!_loaded.isCompleted) _loaded.complete();
+  }
 }
 
 final _candidate = SourcedBook(
