@@ -14125,6 +14125,102 @@ abstract class AppLocalizations {
   /// **'Chapter'**
   String get readerProgressChapterShort;
 
+
+  /// No description provided for @libraryOrganize.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize library'**
+  String get libraryOrganize;
+
+  /// No description provided for @libraryDragOrganize.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder by dragging'**
+  String get libraryDragOrganize;
+
+  /// No description provided for @libraryDragHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch and hold a book or folder to reorder this shelf'**
+  String get libraryDragHint;
+
+  /// No description provided for @librarySortHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get librarySortHeading;
+
+  /// No description provided for @librarySortRecentAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently added'**
+  String get librarySortRecentAdded;
+
+  /// No description provided for @librarySortRecentRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently read'**
+  String get librarySortRecentRead;
+
+  /// No description provided for @librarySortProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading progress'**
+  String get librarySortProgress;
+
+  /// No description provided for @librarySortManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual order'**
+  String get librarySortManual;
+
+  /// No description provided for @librarySortNewestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get librarySortNewestFirst;
+
+  /// No description provided for @librarySortOldestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest first'**
+  String get librarySortOldestFirst;
+
+  /// No description provided for @librarySortProgressDescending.
+  ///
+  /// In en, this message translates to:
+  /// **'Most read first'**
+  String get librarySortProgressDescending;
+
+  /// No description provided for @librarySortProgressAscending.
+  ///
+  /// In en, this message translates to:
+  /// **'Least read first'**
+  String get librarySortProgressAscending;
+
+  /// No description provided for @libraryReadingStateHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading status'**
+  String get libraryReadingStateHeading;
+
+  /// No description provided for @libraryReorderSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save shelf order. Please try again.'**
+  String get libraryReorderSaveFailed;
+
+  /// No description provided for @libraryMoveEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Move earlier'**
+  String get libraryMoveEarlier;
+
+  /// No description provided for @libraryMoveLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Move later'**
+  String get libraryMoveLater;
 }
 
 class _AppLocalizationsDelegate

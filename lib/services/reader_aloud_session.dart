@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/reader/reader_aloud_controller.dart';
+import 'reading/reading_activity_recorder.dart';
 
 /// App-scoped ownership for the active read-aloud controller.
 ///
@@ -12,6 +13,7 @@ import '../core/reader/reader_aloud_controller.dart';
 class ReaderAloudSession extends ChangeNotifier {
   ReaderAloudController? _controller;
   String? _sourceId;
+  ReadingActivityRecorder? _readingActivity;
 
   ReaderAloudController? get controller => _controller;
   String? get sourceId => _sourceId;
@@ -20,9 +22,16 @@ class ReaderAloudSession extends ChangeNotifier {
   ReaderAloudController acquire({
     required String sourceId,
     required ReaderAloudController Function() create,
+    int? shelfBookId,
+    ReadingActivityRecorder? readingActivity,
   }) {
     final existing = _controller;
-    if (existing != null && _sourceId == sourceId) return existing;
+    if (existing != null && _sourceId == sourceId) {
+      if (shelfBookId != null) {
+        unawaited(_readingActivity?.bindBook(shelfBookId));
+      }
+      return existing;
+    }
 
     if (existing != null) {
       existing.removeListener(_relayChange);
@@ -35,6 +44,8 @@ class ReaderAloudSession extends ChangeNotifier {
     final controller = create();
     _controller = controller;
     _sourceId = sourceId;
+    _readingActivity = readingActivity ?? ReadingActivityRecorder();
+    unawaited(_readingActivity!.bindBook(shelfBookId));
     controller.addListener(_relayChange);
     notifyListeners();
     return controller;
@@ -44,7 +55,14 @@ class ReaderAloudSession extends ChangeNotifier {
     await _controller?.stop();
   }
 
-  void _relayChange() => notifyListeners();
+  void _relayChange() {
+    final controller = _controller;
+    if (controller?.state == ReaderAloudPlaybackState.playing &&
+        controller!.engine.isPlaying) {
+      unawaited(_readingActivity?.markContentReady());
+    }
+    notifyListeners();
+  }
 
   @override
   void dispose() {

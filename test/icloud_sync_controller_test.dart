@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/services/icloud/icloud_sync_controller.dart';
 import 'package:xxread/services/icloud/icloud_sync_models.dart';
+import 'package:xxread/services/icloud/icloud_sync_store.dart';
 import 'package:xxread/services/icloud/icloud_sync_transport.dart';
 
 void main() {
@@ -37,6 +38,140 @@ void main() {
         supported: true,
         networkAllowed: networkAllowed,
       );
+
+  Map<String, Object?> organization(String kind, String identity) {
+    final key = DefaultICloudSyncStore.organizationPreferenceKey(
+      kind,
+      identity,
+    );
+    return {
+      'kind': 'setting',
+      'label': '书架设置',
+      'key': key,
+      'value': jsonEncode({
+        'kind': kind,
+        'identity': identity,
+        'parent': null,
+        'sortIndex': 3,
+        if (kind == 'book') 'lastReadAt': 5000,
+      }),
+    };
+  }
+
+  for (final kind in ['book', 'folder']) {
+    test(
+      '$kind conflict blocks organization until its owner is chosen',
+      () async {
+        final ownerKey = '$kind:one';
+        Map<String, Object?> owner(String label) => {
+          'kind': kind,
+          'label': label,
+          kind == 'book' ? 'uid' : 'id': 'one',
+          'row': <String, Object?>{},
+        };
+        final metadata = organization(kind, 'one');
+        final metadataKey = 'setting:${metadata['key']}';
+        transport.putManifest('a', [
+          _remote(ownerKey, owner('A'), {'a': 1}, 'a', 1),
+        ]);
+        transport.putManifest('b', [
+          _remote(ownerKey, owner('B'), {'b': 1}, 'b', 2),
+          _remote(metadataKey, metadata, {'metadata': 1}, 'metadata', 1),
+        ]);
+        final sync = controller();
+        await sync.initialize();
+        await sync.setEnabled(true);
+        expect(store.values.containsKey(ownerKey), isFalse);
+        expect(store.values.containsKey(metadataKey), isFalse);
+        final conflict = sync.conflicts.singleWhere(
+          (item) => item.key == ownerKey,
+        );
+        await sync.resolveConflict(
+          ownerKey,
+          conflict.versions.singleWhere(
+            (record) => record.value?['label'] == 'B',
+          ),
+        );
+        expect(store.values[ownerKey]!['label'], 'B');
+        expect(store.values[metadataKey], metadata);
+        expect(sync.conflicts, isEmpty);
+        sync.dispose();
+      },
+    );
+
+    for (final keep in [true, false]) {
+      test(
+        '$kind deletion resolution ${keep ? 'retains' : 'removes'} owner metadata',
+        () async {
+          final ownerKey = '$kind:one';
+          final owner = <String, Object?>{
+            'kind': kind,
+            'label': 'One',
+            kind == 'book' ? 'uid' : 'id': 'one',
+            'row': <String, Object?>{},
+          };
+          final metadata = organization(kind, 'one');
+          final metadataKey = 'setting:${metadata['key']}';
+          transport.putManifest('delete', [
+            _remote(ownerKey, null, {'base': 1, 'd': 1}, 'd', 2),
+          ]);
+          transport.putManifest('keep', [
+            _remote(ownerKey, owner, {'base': 1, 'k': 1}, 'k', 3),
+            _remote(metadataKey, metadata, {'metadata': 1}, 'metadata', 1),
+          ]);
+          final sync = controller();
+          await sync.initialize();
+          await sync.setEnabled(true);
+          expect(store.values.containsKey(metadataKey), isFalse);
+          final conflict = sync.conflicts.singleWhere(
+            (item) => item.key == ownerKey,
+          );
+          expect(conflict.versions, hasLength(2));
+          await sync.resolveConflict(
+            ownerKey,
+            conflict.versions.singleWhere(
+              (record) => (record.value != null) == keep,
+            ),
+          );
+          expect(store.values.containsKey(ownerKey), keep);
+          expect(store.values.containsKey(metadataKey), keep);
+          if (!keep) expect(store.applied.last[metadataKey]!.value, isNull);
+          expect(sync.conflicts, isEmpty);
+          sync.dispose();
+        },
+      );
+    }
+
+    test(
+      'passive $kind metadata relay follows a settled deletion without a conflict',
+      () async {
+        final ownerKey = '$kind:one';
+        final owner = <String, Object?>{
+          'kind': kind,
+          'label': 'One',
+          kind == 'book' ? 'uid' : 'id': 'one',
+          'row': <String, Object?>{},
+        };
+        final metadata = organization(kind, 'one');
+        final metadataKey = 'setting:${metadata['key']}';
+        transport.putManifest('old', [
+          _remote(ownerKey, owner, {'base': 1}, 'old', 1),
+          _remote(metadataKey, metadata, {'metadata': 1}, 'old', 1),
+        ]);
+        transport.putManifest('delete', [
+          _remote(ownerKey, null, {'base': 1, 'd': 1}, 'd', 2),
+        ]);
+        final sync = controller();
+        await sync.initialize();
+        await sync.setEnabled(true);
+        expect(sync.conflicts, isEmpty);
+        expect(store.values.containsKey(ownerKey), isFalse);
+        expect(store.values.containsKey(metadataKey), isFalse);
+        expect(store.applied.last[metadataKey]!.value, isNull);
+        sync.dispose();
+      },
+    );
+  }
 
   test('starts disabled and never auto-enables', () async {
     store.values['setting:theme'] = {'name': 'dark'};
@@ -699,67 +834,108 @@ void main() {
     },
   );
 
-  test('folder delete preserves unmatched promoted child choices', () async {
-    final parent = <String, Object?>{
-      'kind': 'folder',
-      'label': 'Parent',
-      'id': 'parent',
-      'row': {
-        'id': 'parent',
-        'name': 'Parent',
-        'parent_id': 'grand',
-        'created_at': 1,
-      },
-    };
-    Map<String, Object?> child(String name) => {
-      'kind': 'folder',
-      'label': name,
-      'id': 'child',
-      'row': {
-        'id': 'child',
-        'name': name,
-        'parent_id': 'parent',
-        'created_at': 2,
-      },
-    };
-    transport.putManifest('delete', [
-      _remote('folder:parent', null, {'base': 1, 'a': 1}, 'a', 2),
-    ]);
-    transport.putManifest('device-c', [
-      _remote('folder:parent', parent, {'base': 1}, 'c', 1),
-      _remote('folder:child', child('C'), {'c': 1}, 'c', 3),
-    ]);
-    transport.putManifest('device-d', [
-      _remote('folder:parent', parent, {'base': 1}, 'd', 1),
-      _remote('folder:child', child('D'), {'d': 1}, 'd', 4),
-    ]);
-    final sync = controller();
-    await sync.initialize();
-    await sync.setEnabled(true);
+  for (final kind in ['folder', 'book']) {
+    for (final childFirst in [false, true]) {
+      test('folder delete preserves unmatched $kind choices and metadata '
+          '(${childFirst ? 'child' : 'parent'} first)', () async {
+        final parent = <String, Object?>{
+          'kind': 'folder',
+          'label': 'Parent',
+          'id': 'parent',
+          'row': {
+            'id': 'parent',
+            'name': 'Parent',
+            'parent_id': 'grand',
+            'created_at': 1,
+          },
+        };
+        final childKey = '$kind:child';
+        Map<String, Object?> child(String name) => {
+          'kind': kind,
+          'label': name,
+          kind == 'book' ? 'uid' : 'id': 'child',
+          'row': {
+            if (kind == 'folder') ...{
+              'id': 'child',
+              'name': name,
+              'created_at': 2,
+            },
+            kind == 'book' ? 'shelf_folder_id' : 'parent_id': 'parent',
+          },
+        };
+        final metadata = organization(kind, 'child');
+        // A book's reading time survives promotion even when its old rank
+        // does not. A folder rank is usable when it names the new parent.
+        final metadataValue = jsonDecode(metadata['value'] as String) as Map;
+        metadataValue['parent'] = kind == 'book' ? 'parent' : 'grand';
+        metadata['value'] = jsonEncode(metadataValue);
+        final metadataKey = 'setting:${metadata['key']}';
+        for (final writer in ['c', 'd']) {
+          final parentRecord = _remote(
+            'folder:parent',
+            parent,
+            {'base': 1},
+            writer,
+            1,
+          );
+          final childRecord = _remote(
+            childKey,
+            child(writer.toUpperCase()),
+            {writer: 1},
+            writer,
+            3,
+          );
+          transport.putManifest('device-$writer', [
+            if (childFirst) childRecord,
+            parentRecord,
+            if (!childFirst) childRecord,
+            if (writer == 'c')
+              _remote(metadataKey, metadata, {'metadata': 1}, 'metadata', 1),
+          ]);
+        }
+        transport.putManifest('delete', [
+          _remote('folder:parent', null, {'base': 1, 'a': 1}, 'a', 2),
+        ]);
+        final sync = controller();
+        await sync.initialize();
+        await sync.setEnabled(true);
 
-    final aggregate = sync.conflicts.singleWhere(
-      (item) => item.key == 'folder:parent',
-    );
-    await sync.resolveConflict(
-      aggregate.key,
-      aggregate.versions.singleWhere((item) => item.value == null),
-    );
+        expect(sync.conflicts, hasLength(1));
+        expect(store.values.containsKey(metadataKey), isFalse);
+        final aggregate = sync.conflicts.single;
+        expect(aggregate.key, 'folder:parent');
+        await sync.resolveConflict(
+          aggregate.key,
+          aggregate.versions.singleWhere((item) => item.value == null),
+        );
 
-    final childConflict = sync.conflicts.singleWhere(
-      (item) => item.key == 'folder:child',
-    );
-    expect(childConflict.versions.map((item) => item.writerId), ['c', 'd']);
-    for (final version in childConflict.versions) {
-      expect((version.value!['row'] as Map)['parent_id'], 'grand');
+        expect(store.applied.last.containsKey(metadataKey), isFalse);
+        expect(store.values.containsKey(childKey), isFalse);
+        final childConflict = sync.conflicts.single;
+        expect(childConflict.key, childKey);
+        expect(childConflict.versions.map((item) => item.writerId), ['c', 'd']);
+        final parentField = kind == 'book' ? 'shelf_folder_id' : 'parent_id';
+        for (final version in childConflict.versions) {
+          expect((version.value!['row'] as Map)[parentField], 'grand');
+        }
+        await sync.resolveConflict(
+          childConflict.key,
+          childConflict.versions.singleWhere((item) => item.writerId == 'c'),
+        );
+        expect((store.values[childKey]!['row'] as Map)[parentField], 'grand');
+        expect(store.applied.last[metadataKey]!.value, metadata);
+        expect(store.values[metadataKey], metadata);
+        final appliedMetadata =
+            jsonDecode(store.values[metadataKey]!['value'] as String) as Map;
+        expect(
+          appliedMetadata[kind == 'book' ? 'lastReadAt' : 'sortIndex'],
+          kind == 'book' ? 5000 : 3,
+        );
+        expect(sync.conflicts, isEmpty);
+        sync.dispose();
+      });
     }
-    await sync.resolveConflict(
-      childConflict.key,
-      childConflict.versions.singleWhere((item) => item.writerId == 'c'),
-    );
-    expect((store.values['folder:child']!['row'] as Map)['parent_id'], 'grand');
-    expect(sync.conflicts, isEmpty);
-    sync.dispose();
-  });
+  }
 
   test('folder parent conflict tolerates already deleted dependents', () async {
     final parent = <String, Object?>{

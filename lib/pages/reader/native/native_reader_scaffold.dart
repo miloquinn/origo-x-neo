@@ -174,6 +174,21 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                         textScaler,
                       );
                       _visiblePages = pages;
+                      if (!_readingContentReadyScheduled &&
+                          chapter.isReadyForLayout &&
+                          (chapter.plainText.trim().isNotEmpty ||
+                              chapter.blocks.any((block) => block.hasImage))) {
+                        _readingContentReadyScheduled = true;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            unawaited(
+                              _readingActivity.markContentReady(
+                                bookId: widget.book.id,
+                              ),
+                            );
+                          }
+                        });
+                      }
                       if (_pageMode == NativePageMode.verticalScroll) {
                         _visibleContinuousParts = _continuousPartsFor(
                           chapter,

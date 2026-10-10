@@ -2332,5 +2332,21 @@
   "readerProgressBook": "Вся книга",
   "readerProgressChapter": "Текущая глава",
   "readerProgressBookShort": "Книга",
-  "readerProgressChapterShort": "Глава"
+  "readerProgressChapterShort": "Глава",
+  "libraryOrganize": "Упорядочить библиотеку",
+  "libraryDragOrganize": "Перетащить для сортировки",
+  "libraryDragHint": "Удерживайте книгу или папку, чтобы изменить порядок",
+  "librarySortHeading": "Сортировать по",
+  "librarySortRecentAdded": "Недавно добавленные",
+  "librarySortRecentRead": "Недавно прочитанные",
+  "librarySortProgress": "Прогресс чтения",
+  "librarySortManual": "Ручной порядок",
+  "librarySortNewestFirst": "Сначала новые",
+  "librarySortOldestFirst": "Сначала старые",
+  "librarySortProgressDescending": "Сначала больший прогресс",
+  "librarySortProgressAscending": "Сначала меньший прогресс",
+  "libraryReadingStateHeading": "Статус чтения",
+  "libraryReorderSaveFailed": "Не удалось сохранить порядок. Попробуйте снова.",
+  "libraryMoveEarlier": "Переместить раньше",
+  "libraryMoveLater": "Переместить позже"
 }

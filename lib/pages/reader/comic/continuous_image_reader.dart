@@ -26,6 +26,7 @@ class ContinuousImageReader extends StatefulWidget {
     required this.onSettings,
     required this.onChangeReadingMode,
     this.palette,
+    this.onContentReady,
   });
 
   final ImageReaderDocument document;
@@ -36,6 +37,7 @@ class ContinuousImageReader extends StatefulWidget {
   final VoidCallback onSettings;
   final VoidCallback onChangeReadingMode;
   final ReaderThemePalette? palette;
+  final VoidCallback? onContentReady;
 
   @visibleForTesting
   static const chapterBoundaryKeyPrefix = 'continuous-chapter-boundary-';
@@ -73,6 +75,24 @@ class _ContinuousImageReaderState extends State<ContinuousImageReader> {
   int _windowGeneration = 0;
   bool _windowLoadInFlight = false;
   int? _pendingWindowChapter;
+  bool _contentReadyScheduled = false;
+
+  void _reportContentReady(int chapterIndex, int pageIndex) {
+    if (_contentReadyScheduled ||
+        chapterIndex != _currentChapter ||
+        pageIndex != _currentPage) {
+      return;
+    }
+    _contentReadyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (chapterIndex != _currentChapter || pageIndex != _currentPage) {
+        _contentReadyScheduled = false;
+        return;
+      }
+      widget.onContentReady?.call();
+    });
+  }
 
   ReaderThemePalette get _palette => widget.palette ?? widget.source.theme;
 
@@ -445,6 +465,10 @@ class _ContinuousImageReaderState extends State<ContinuousImageReader> {
                                     chapterIndex: entry.chapterIndex,
                                     pageIndex: entry.pageIndex,
                                     palette: _palette,
+                                    onContentReady: () => _reportContentReady(
+                                      entry.chapterIndex,
+                                      entry.pageIndex,
+                                    ),
                                     knownAspectRatio:
                                         _pageAspectRatios[(
                                           chapterIndex: entry.chapterIndex,
@@ -605,6 +629,7 @@ class _ContinuousChapterPage extends StatefulWidget {
     required this.palette,
     required this.knownAspectRatio,
     required this.onAspectRatio,
+    required this.onContentReady,
   });
 
   final ImageReaderSource source;
@@ -613,6 +638,7 @@ class _ContinuousChapterPage extends StatefulWidget {
   final ReaderThemePalette palette;
   final double? knownAspectRatio;
   final ValueChanged<double> onAspectRatio;
+  final VoidCallback onContentReady;
 
   @override
   State<_ContinuousChapterPage> createState() => _ContinuousChapterPageState();
@@ -707,6 +733,12 @@ class _ContinuousChapterPageState extends State<_ContinuousChapterPage> {
           width: double.infinity,
           fit: BoxFit.fitWidth,
           gaplessPlayback: true,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (frame != null || wasSynchronouslyLoaded) {
+              widget.onContentReady();
+            }
+            return child;
+          },
           errorBuilder: (context, error, stackTrace) => _PageErrorState(
             palette: widget.palette,
             pageNumber: widget.pageIndex + 1,

@@ -3703,5 +3703,21 @@
   "readerProgressBook": "全書進度",
   "readerProgressChapter": "目前章節",
   "readerProgressBookShort": "全書",
-  "readerProgressChapterShort": "本章"
+  "readerProgressChapterShort": "本章",
+  "libraryOrganize": "整理書庫",
+  "libraryDragOrganize": "拖曳整理",
+  "libraryDragHint": "長按書籍或資料夾拖曳，調整目前層級的順序",
+  "librarySortHeading": "排序",
+  "librarySortRecentAdded": "最近新增",
+  "librarySortRecentRead": "最近閱讀",
+  "librarySortProgress": "閱讀進度",
+  "librarySortManual": "手動順序",
+  "librarySortNewestFirst": "最新在前",
+  "librarySortOldestFirst": "最早在前",
+  "librarySortProgressDescending": "進度從高到低",
+  "librarySortProgressAscending": "進度從低到高",
+  "libraryReadingStateHeading": "閱讀狀態",
+  "libraryReorderSaveFailed": "無法儲存書庫順序，請重試",
+  "libraryMoveEarlier": "向前移動",
+  "libraryMoveLater": "向後移動"
 }

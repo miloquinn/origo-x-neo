@@ -76,7 +76,8 @@ class ShelfFolderDao {
     if (id == parentId) throw ArgumentError('文件夹不能移入自身');
     final db = await _databaseProvider();
     await db.transaction((txn) async {
-      await _requireFolder(txn, id);
+      final folder = await _requireFolder(txn, id);
+      if (folder['parent_id'] == parentId) return;
       if (parentId != null) {
         await _requireFolder(txn, parentId);
         final descendants = await txn.rawQuery(
@@ -98,7 +99,7 @@ class ShelfFolderDao {
       }
       await txn.update(
         'shelf_folders',
-        {'parent_id': parentId},
+        {'parent_id': parentId, 'sort_index': null},
         where: 'id = ?',
         whereArgs: [id],
       );
@@ -113,17 +114,70 @@ class ShelfFolderDao {
       final parentId = folder['parent_id'] as String?;
       await txn.update(
         'books',
-        {'shelf_folder_id': parentId},
+        {'shelf_folder_id': parentId, 'shelf_sort_index': null},
         where: 'shelf_folder_id = ?',
         whereArgs: [id],
       );
       await txn.update(
         'shelf_folders',
-        {'parent_id': parentId},
+        {'parent_id': parentId, 'sort_index': null},
         where: 'parent_id = ?',
         whereArgs: [id],
       );
       await txn.delete('shelf_folders', where: 'id = ?', whereArgs: [id]);
+    });
+    _notifyChanged();
+  }
+
+  /// Persist one complete sibling sequence. Membership is verified inside the
+  /// transaction so a stale drag cannot reorder items in a different folder.
+  Future<void> reorder(
+    String? parentId,
+    List<({int? bookId, String? folderId})> entries,
+  ) async {
+    final keys = <String>{};
+    for (final entry in entries) {
+      if ((entry.bookId == null) == (entry.folderId == null) ||
+          entry.bookId != null && entry.bookId! <= 0 ||
+          entry.folderId != null && entry.folderId!.isEmpty) {
+        throw ArgumentError('每个排序项必须引用一本书或一个文件夹');
+      }
+      final key = entry.bookId != null
+          ? 'book:${entry.bookId}'
+          : 'folder:${entry.folderId}';
+      if (!keys.add(key)) throw ArgumentError('排序项不能重复');
+    }
+    final db = await _databaseProvider();
+    await db.transaction((txn) async {
+      if (parentId != null) await _requireFolder(txn, parentId);
+      final siblings = <String>{
+        for (final row in await txn.query(
+          'books',
+          columns: const ['id'],
+          where: 'shelf_folder_id IS ?',
+          whereArgs: [parentId],
+        ))
+          'book:${row['id']}',
+        for (final row in await txn.query(
+          'shelf_folders',
+          columns: const ['id'],
+          where: 'parent_id IS ?',
+          whereArgs: [parentId],
+        ))
+          'folder:${row['id']}',
+      };
+      if (siblings.length != keys.length || !siblings.containsAll(keys)) {
+        throw StateError('书架内容已变化，请重新整理顺序');
+      }
+      for (var index = 0; index < entries.length; index++) {
+        final entry = entries[index];
+        await txn.update(
+          entry.bookId != null ? 'books' : 'shelf_folders',
+          {entry.bookId != null ? 'shelf_sort_index' : 'sort_index': index},
+          where: 'id = ?',
+          whereArgs: [entry.bookId ?? entry.folderId],
+        );
+      }
     });
     _notifyChanged();
   }
@@ -187,8 +241,9 @@ class ShelfFolderDao {
       final chunk = ids.sublist(start, end);
       final placeholders = List.filled(chunk.length, '?').join(',');
       await db.rawUpdate(
-        'UPDATE books SET shelf_folder_id = ? WHERE id IN ($placeholders)',
-        [folderId, ...chunk],
+        'UPDATE books SET shelf_folder_id = ?, shelf_sort_index = NULL '
+        'WHERE id IN ($placeholders) AND shelf_folder_id IS NOT ?',
+        [folderId, ...chunk, folderId],
       );
     }
   }

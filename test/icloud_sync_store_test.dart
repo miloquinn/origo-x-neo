@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -9,6 +10,8 @@ import 'package:xxread/services/icloud/icloud_sync_controller.dart';
 import 'package:xxread/services/icloud/icloud_sync_models.dart';
 import 'package:xxread/services/icloud/icloud_sync_store.dart';
 import 'package:xxread/services/icloud/icloud_sync_transport.dart';
+import 'package:xxread/data/migration/shelf_organization_schema_migration.dart';
+import 'support/icloud_v1_legacy_store.dart' as legacy;
 
 void main() {
   late Directory sandbox;
@@ -22,6 +25,342 @@ void main() {
   tearDown(() async {
     if (await sandbox.exists()) await sandbox.delete(recursive: true);
   });
+
+  test(
+    'actual v1 store relays organization and upgrade capture adopts it once',
+    () async {
+      final first = await _replica('new-source');
+      final old = await _replica('legacy-relay', organization: false);
+      final target = await _replica('new-target');
+      addTearDown(first.close);
+      addTearDown(old.close);
+      addTearDown(target.close);
+      final body = File('${first.documents.path}/book.txt')
+        ..writeAsStringSync('body');
+      await first.database.insert('shelf_folders', {
+        'id': 'folder',
+        'name': 'Folder',
+        'parent_id': null,
+        'created_at': 1,
+        'sort_index': 1,
+      });
+      await first.database.insert('books', {
+        ..._book(filePath: body.path),
+        'shelf_sort_index': 0,
+        'last_read_at': 5000,
+      });
+      final preferences = await SharedPreferences.getInstance();
+      final source = DefaultICloudSyncStore(
+        database: first.database,
+        documents: first.documents,
+        preferences: preferences,
+      );
+      final snapshot = await source.capture();
+      final oldStore = legacy.DefaultICloudSyncStore(
+        database: old.database,
+        documents: old.documents,
+        preferences: preferences,
+      );
+      expect(
+        await oldStore.apply(_records(snapshot.values), snapshot.assets),
+        isTrue,
+      );
+      final oldColumns = (await old.database.rawQuery(
+        'PRAGMA table_info(books)',
+      )).map((row) => row['name']);
+      expect(oldColumns, isNot(contains('shelf_sort_index')));
+      expect(oldColumns, isNot(contains('last_read_at')));
+      final relay = await oldStore.capture();
+      final organizationKeys = snapshot.values.keys
+          .where((key) => key.startsWith('setting:library_organization_v1_'))
+          .toList();
+      for (final key in organizationKeys) {
+        expect(relay.values[key], snapshot.values[key]);
+      }
+      final newTarget = DefaultICloudSyncStore(
+        database: target.database,
+        documents: target.documents,
+        preferences: preferences,
+      );
+      await newTarget.apply(_records(relay.values), relay.assets);
+      expect(
+        (await target.database.query('books')).single['shelf_sort_index'],
+        0,
+      );
+      expect(
+        (await target.database.query('books')).single['last_read_at'],
+        5000,
+      );
+      expect(
+        (await target.database.query('shelf_folders')).single['sort_index'],
+        1,
+      );
+
+      // Simulate the old installation upgrading its DB before the controller's
+      // very first capture. No null rank or null recency may replace the relay.
+      await ShelfOrganizationSchemaMigration.migrate(old.database);
+      final upgraded = DefaultICloudSyncStore(
+        database: old.database,
+        documents: old.documents,
+        preferences: preferences,
+      );
+      final firstCapture = await upgraded.capture();
+      for (final key in organizationKeys) {
+        expect(firstCapture.values[key], snapshot.values[key]);
+        expect(
+          preferences.containsKey(key.substring('setting:'.length)),
+          isFalse,
+        );
+      }
+      await old.database.update('books', {
+        'shelf_sort_index': 9,
+        'last_read_at': 9000,
+      });
+      final bookKey = organizationKeys.singleWhere(
+        (key) =>
+            (jsonDecode(snapshot.values[key]!['value']! as String)
+                as Map)['kind'] ==
+            'book',
+      );
+      // A retained/retried legacy preference must never replay over a new edit.
+      await preferences.setString(
+        bookKey.substring('setting:'.length),
+        snapshot.values[bookKey]!['value']! as String,
+      );
+      final nextCapture = await upgraded.capture();
+      final metadata =
+          jsonDecode(nextCapture.values[bookKey]!['value']! as String) as Map;
+      expect(metadata['sortIndex'], 9);
+      expect(metadata['lastReadAt'], 9000);
+      await old.database.delete('books');
+      await old.database.delete('shelf_folders');
+      for (final key in organizationKeys) {
+        await preferences.setString(
+          key.substring('setting:'.length),
+          snapshot.values[key]!['value']! as String,
+        );
+      }
+      final withoutOwners = await upgraded.capture();
+      expect(
+        withoutOwners.values.keys.where(
+          (key) => key.startsWith('setting:library_organization_v1_'),
+        ),
+        isEmpty,
+      );
+      expect(
+        preferences.getKeys().where(
+          (key) => key.startsWith('library_organization_v1_'),
+        ),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'organization fields survive stable-id transfer and recency is monotonic',
+    () async {
+      final first = await _replica('organization-source');
+      final second = await _replica('organization-target');
+      addTearDown(first.close);
+      addTearDown(second.close);
+      final body = File('${first.documents.path}/book.txt')
+        ..writeAsStringSync('body');
+      await first.database.insert('shelf_folders', {
+        'id': 'folder',
+        'name': 'Folder',
+        'parent_id': null,
+        'created_at': 1,
+        'sort_index': 1,
+      });
+      await first.database.insert('books', {
+        ..._book(filePath: body.path),
+        'shelf_sort_index': 0,
+        'last_read_at': 5000,
+      });
+      final preferences = await SharedPreferences.getInstance();
+      final source = DefaultICloudSyncStore(
+        database: first.database,
+        documents: first.documents,
+        preferences: preferences,
+      );
+      final target = DefaultICloudSyncStore(
+        database: second.database,
+        documents: second.documents,
+        preferences: preferences,
+      );
+      final snapshot = await source.capture();
+      await target.apply(_records(snapshot.values), snapshot.assets);
+      final restored = (await second.database.query('books')).single;
+      expect(restored['shelf_sort_index'], 0);
+      expect(restored['last_read_at'], 5000);
+      expect(
+        (await second.database.query('shelf_folders')).single['sort_index'],
+        1,
+      );
+      await second.database.update('books', {
+        'last_read_at': 9000,
+        'last_rendered_locator': 'keep-local-rendered',
+        'layout_signature': 'keep-local-layout',
+      });
+      final progressKey = snapshot.values.keys.singleWhere(
+        (key) => key.startsWith('progress:'),
+      );
+      final progress = snapshot.values[progressKey]!;
+      await target.apply({
+        progressKey: _record(progressKey, progress),
+      }, const {});
+      final current = (await second.database.query('books')).single;
+      expect(current['last_read_at'], 9000);
+      expect(current['last_rendered_locator'], 'keep-local-rendered');
+      expect(current['layout_signature'], 'keep-local-layout');
+      final organizationKey = snapshot.values.keys.singleWhere(
+        (key) =>
+            key.startsWith('setting:library_organization_v1_') &&
+            (jsonDecode(snapshot.values[key]!['value']! as String)
+                    as Map)['kind'] ==
+                'book',
+      );
+      await target.apply({
+        organizationKey: _record(
+          organizationKey,
+          snapshot.values[organizationKey]!,
+        ),
+      }, const {});
+      expect(
+        (await second.database.query('books')).single['last_read_at'],
+        9000,
+      );
+
+      await target.apply({
+        progressKey: _record(progressKey, {
+          ...progress,
+          'row': {...Map<String, Object?>.from(progress['row']! as Map)}
+            ..remove('last_read_at'),
+        }),
+      }, const {});
+      expect(
+        (await second.database.query('books')).single['last_read_at'],
+        9000,
+      );
+      await second.database.update('books', {'shelf_sort_index': 6});
+      final relay = snapshot.values[organizationKey]!;
+      final metadata =
+          Map<String, Object?>.from(
+              jsonDecode(relay['value']! as String) as Map,
+            )
+            ..['parent'] = 'a-different-parent'
+            ..['lastReadAt'] = 12000;
+      await target.apply({
+        organizationKey: _record(organizationKey, {
+          ...relay,
+          'value': jsonEncode(metadata),
+        }),
+      }, const {});
+      final afterRelay = (await second.database.query('books')).single;
+      expect(afterRelay['shelf_sort_index'], 6);
+      expect(afterRelay['last_read_at'], 12000);
+      await target.apply({
+        organizationKey: _record(organizationKey, {
+          ...relay,
+          'value': jsonEncode({...metadata, 'parent': null, 'sortIndex': null}),
+        }),
+      }, const {});
+      expect(
+        (await second.database.query('books')).single['shelf_sort_index'],
+        isNull,
+      );
+    },
+  );
+
+  test(
+    'organization validators reject invalid ranks and reading timestamps',
+    () async {
+      final replica = await _replica('invalid-organization');
+      addTearDown(replica.close);
+      final store = DefaultICloudSyncStore(
+        database: replica.database,
+        documents: replica.documents,
+        preferences: await SharedPreferences.getInstance(),
+      );
+
+      final metadata = <String, Object?>{
+        'kind': 'book',
+        'identity': 'x',
+        'parent': null,
+        'sortIndex': 0,
+        'lastReadAt': 5000,
+      };
+      final key =
+          'library_organization_v1_${sha256.convert(utf8.encode('book\u0000x'))}';
+      Future<bool> applyMetadata(Map<String, Object?> value) => store.apply({
+        'setting:$key': _record('setting:$key', {
+          'kind': 'setting',
+          'label': 'Book',
+          'key': key,
+          'value': jsonEncode(value),
+        }),
+      }, const {});
+      for (final rank in [-1, 1.5, '0']) {
+        await expectLater(
+          applyMetadata({...metadata, 'sortIndex': rank}),
+          throwsFormatException,
+        );
+
+        await expectLater(
+          store.apply({
+            'folder:x': _record('folder:x', {
+              'kind': 'folder',
+              'label': 'Folder',
+              'id': 'x',
+              'row': {
+                'id': 'x',
+                'name': 'Folder',
+                'parent_id': null,
+                'created_at': 1,
+                'sort_index': rank,
+              },
+            }),
+          }, const {}),
+          throwsFormatException,
+        );
+        await expectLater(
+          store.apply({
+            'book:x': _record('book:x', {
+              'kind': 'book',
+              'label': 'Book',
+              'uid': 'x',
+              'row': {..._portableBook(), 'shelf_sort_index': rank},
+            }),
+          }, const {}),
+          throwsFormatException,
+        );
+      }
+      for (final timestamp in [-1, 0, 1.5, '5000']) {
+        await expectLater(
+          applyMetadata({...metadata, 'lastReadAt': timestamp}),
+          throwsFormatException,
+        );
+
+        await expectLater(
+          store.apply({
+            'progress:x': _record('progress:x', {
+              'kind': 'progress',
+              'label': 'Book',
+              'uid': 'x',
+              'row': {
+                'reading_progress': .5,
+                'last_canonical_locator': null,
+                'last_read_at': timestamp,
+              },
+            }),
+          }, const {}),
+          throwsFormatException,
+        );
+      }
+      expect(await replica.database.query('books'), isEmpty);
+      expect(await replica.database.query('shelf_folders'), isEmpty);
+    },
+  );
 
   test(
     'two replicas map stable ids and transfer body, cover, and sidecar',
@@ -831,7 +1170,7 @@ Map<String, Object?> _portableBook() => {
   'storage_type': 'local',
 };
 
-Future<_Replica> _replica(String name) async {
+Future<_Replica> _replica(String name, {bool organization = true}) async {
   final root = Directory(
     '${Directory.systemTemp.path}/icloud-store-$name-${DateTime.now().microsecondsSinceEpoch}',
   )..createSync(recursive: true);
@@ -857,6 +1196,7 @@ Future<_Replica> _replica(String name) async {
     source_modified_time INTEGER, shelf_folder_id TEXT,
     FOREIGN KEY(shelf_folder_id) REFERENCES shelf_folders(id) ON DELETE SET NULL)''',
   );
+  if (organization) await ShelfOrganizationSchemaMigration.migrate(database);
   await database.execute('''CREATE TABLE bookmarks(
     id INTEGER PRIMARY KEY AUTOINCREMENT, bookId INTEGER NOT NULL, pageNumber INTEGER NOT NULL,
     note TEXT, createDate INTEGER NOT NULL, cfi TEXT, canonical_locator TEXT,

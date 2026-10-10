@@ -3982,5 +3982,21 @@
   "readerProgressBook": "全书进度",
   "readerProgressChapter": "当前章节",
   "readerProgressBookShort": "全书",
-  "readerProgressChapterShort": "本章"
+  "readerProgressChapterShort": "本章",
+  "libraryOrganize": "整理书库",
+  "libraryDragOrganize": "拖动整理",
+  "libraryDragHint": "长按书籍或文件夹拖动，调整当前层级的顺序",
+  "librarySortHeading": "排序",
+  "librarySortRecentAdded": "最近添加",
+  "librarySortRecentRead": "最近阅读",
+  "librarySortProgress": "阅读进度",
+  "librarySortManual": "手动顺序",
+  "librarySortNewestFirst": "最新在前",
+  "librarySortOldestFirst": "最早在前",
+  "librarySortProgressDescending": "进度从高到低",
+  "librarySortProgressAscending": "进度从低到高",
+  "libraryReadingStateHeading": "阅读状态",
+  "libraryReorderSaveFailed": "无法保存书库顺序，请重试",
+  "libraryMoveEarlier": "向前移动",
+  "libraryMoveLater": "向后移动"
 }

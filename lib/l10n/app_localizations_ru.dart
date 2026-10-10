@@ -8213,4 +8213,54 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get readerProgressChapterShort => 'Глава';
 
+  @override
+  String get libraryOrganize => 'Упорядочить библиотеку';
+
+  @override
+  String get libraryDragOrganize => 'Перетащить для сортировки';
+
+  @override
+  String get libraryDragHint =>
+      'Удерживайте книгу или папку, чтобы изменить порядок';
+
+  @override
+  String get librarySortHeading => 'Сортировать по';
+
+  @override
+  String get librarySortRecentAdded => 'Недавно добавленные';
+
+  @override
+  String get librarySortRecentRead => 'Недавно прочитанные';
+
+  @override
+  String get librarySortProgress => 'Прогресс чтения';
+
+  @override
+  String get librarySortManual => 'Ручной порядок';
+
+  @override
+  String get librarySortNewestFirst => 'Сначала новые';
+
+  @override
+  String get librarySortOldestFirst => 'Сначала старые';
+
+  @override
+  String get librarySortProgressDescending => 'Сначала больший прогресс';
+
+  @override
+  String get librarySortProgressAscending => 'Сначала меньший прогресс';
+
+  @override
+  String get libraryReadingStateHeading => 'Статус чтения';
+
+  @override
+  String get libraryReorderSaveFailed =>
+      'Не удалось сохранить порядок. Попробуйте снова.';
+
+  @override
+  String get libraryMoveEarlier => 'Переместить раньше';
+
+  @override
+  String get libraryMoveLater => 'Переместить позже';
+
 }

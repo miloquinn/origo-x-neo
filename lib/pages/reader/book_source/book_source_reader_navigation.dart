@@ -16,6 +16,7 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
       );
       _shelfBook = shelfBook;
       _shelfBookId = shelfBook?.id;
+      unawaited(_readingActivity.bindBook(_shelfBookId));
     } catch (_) {
       /* Keep the last known association if storage is unavailable. */
     }
@@ -28,6 +29,7 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
           onBookChanged: (book) {
             _shelfBook = book;
             _shelfBookId = book.id;
+            unawaited(_readingActivity.bindBook(_shelfBookId));
             catalogChecked = true;
           },
           title: widget.book.title,
@@ -184,6 +186,7 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
     );
     if (!mounted) return;
     if (shelfBook != null) {
+      await _readingActivity.bindBook(shelfBook.id);
       if (_beginReaderExit()) _finishReaderExit();
       return;
     }
@@ -206,6 +209,7 @@ extension _BookSourceReaderNavigation on _BookSourceReaderPageState {
           book: widget.book,
         );
         _shelfBookId = added.id;
+        await _readingActivity.bindBook(_shelfBookId);
         await _saveProgress();
         if (!mounted) return;
       } catch (_) {

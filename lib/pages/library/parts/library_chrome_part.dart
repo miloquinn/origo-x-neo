@@ -10,6 +10,12 @@ extension _LibraryPageChrome on _LibraryPageState {
   }) {
     final books = _visibleBooks;
     final folders = _visibleFolders;
+    context.select<AppSettingsNotifier, (LibrarySortMode, bool)>(
+      (settings) => (settings.librarySortMode, settings.librarySortDescending),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncFilterActive();
+    });
     final libraryLayoutMode = context
         .select<AppSettingsNotifier, LibraryLayoutMode>(
           (settings) => settings.libraryLayoutMode,
@@ -28,7 +34,7 @@ extension _LibraryPageChrome on _LibraryPageState {
     final mobileTopInset = mobileChrome.pageTopPadding;
     final listTopPadding = useRailNavigation
         ? 8.0
-        : (_searchBarVisible ? 10.0 : mobileTopInset);
+        : (_searchBarVisible || _isReordering ? 10.0 : mobileTopInset);
     final content = Column(
       children: [
         if (useRailNavigation) ...[_buildTopBar(), const SizedBox(height: 10)],
@@ -36,46 +42,52 @@ extension _LibraryPageChrome on _LibraryPageState {
           if (!useRailNavigation) SizedBox(height: mobileTopInset),
           _buildSearchBar(),
         ],
+        if (_isReordering) ...[
+          if (!useRailNavigation) SizedBox(height: mobileTopInset),
+          _buildReorderNotice(),
+        ],
         Expanded(
           child: _isInitialLoading
               ? const Center(child: CircularProgressIndicator())
               : _loadError != null && _books.isEmpty
               ? _buildLoadError()
-              : RefreshIndicator(
-                  onRefresh: _loadBooks,
-                  strokeWidth: 2.5,
-                  displacement: 40,
-                  // 与首页/发现页对齐：出场裁剪线贴住毛玻璃顶栏下边缘，
-                  // 圆圈看起来从顶栏底下滑出；用 pageTopPadding 会让裁剪线
-                  // 悬在顶栏下方 8dp，圆圈在半空被“隐形层”切头。
-                  edgeOffset: useRailNavigation || _searchBarVisible
-                      ? 0
-                      : mobileChrome.topBarHeight,
-                  color: Theme.of(context).colorScheme.primary,
-                  backgroundColor: palette.cardStrong,
-                  child: _books.isEmpty && _folders.isEmpty
-                      ? _buildRefreshableState(_buildEmptyLibrary())
-                      : books.isEmpty && folders.isEmpty
-                      ? _buildRefreshableState(
-                          _currentFolderId != null &&
-                                  _searchQuery.trim().isEmpty &&
-                                  _selectedFilter == _LibraryFilter.all
-                              ? _buildEmptyFolder()
-                              : _buildNoSearchResult(),
-                        )
-                      : libraryLayoutMode == LibraryLayoutMode.grid
-                      ? _buildCoverOnlyGrid(
-                          books,
-                          folders: folders,
-                          topPadding: listTopPadding,
-                          mobileColumns: libraryGridColumns,
-                          showDetails: libraryGridShowDetails,
-                        )
-                      : _buildBooksGrid(
-                          books,
-                          folders: folders,
-                          topPadding: listTopPadding,
-                        ),
+              : _reorderViewport(
+                  RefreshIndicator(
+                    onRefresh: _loadBooks,
+                    strokeWidth: 2.5,
+                    displacement: 40,
+                    // 与首页/发现页对齐：出场裁剪线贴住毛玻璃顶栏下边缘，
+                    // 圆圈看起来从顶栏底下滑出；用 pageTopPadding 会让裁剪线
+                    // 悬在顶栏下方 8dp，圆圈在半空被“隐形层”切头。
+                    edgeOffset: useRailNavigation || _searchBarVisible
+                        ? 0
+                        : mobileChrome.topBarHeight,
+                    color: Theme.of(context).colorScheme.primary,
+                    backgroundColor: palette.cardStrong,
+                    child: _books.isEmpty && _folders.isEmpty
+                        ? _buildRefreshableState(_buildEmptyLibrary())
+                        : books.isEmpty && folders.isEmpty
+                        ? _buildRefreshableState(
+                            _currentFolderId != null &&
+                                    _searchQuery.trim().isEmpty &&
+                                    _selectedFilter == _LibraryFilter.all
+                                ? _buildEmptyFolder()
+                                : _buildNoSearchResult(),
+                          )
+                        : libraryLayoutMode == LibraryLayoutMode.grid
+                        ? _buildCoverOnlyGrid(
+                            books,
+                            folders: folders,
+                            topPadding: listTopPadding,
+                            mobileColumns: libraryGridColumns,
+                            showDetails: libraryGridShowDetails,
+                          )
+                        : _buildBooksGrid(
+                            books,
+                            folders: folders,
+                            topPadding: listTopPadding,
+                          ),
+                  ),
                 ),
         ),
       ],
@@ -244,17 +256,15 @@ extension _LibraryPageChrome on _LibraryPageState {
               onTap: _toggleSearchBar,
             ),
             const SizedBox(width: 8),
-            _LibraryFilterButton(
-              active: _selectedFilter != _LibraryFilter.all,
-              color: _selectedFilter != _LibraryFilter.all
-                  ? scheme.primaryContainer
-                  : (_isMaterial3Style
-                        ? scheme.surfaceContainer
-                        : palette.card),
-              iconColor: _selectedFilter != _LibraryFilter.all
-                  ? scheme.onPrimaryContainer
-                  : palette.iconMuted,
-              onTapWithRect: _showFilterMenu,
+            LibraryOrganizationButton(
+              active:
+                  _selectedFilter != _LibraryFilter.all ||
+                  context.read<AppSettingsNotifier>().librarySortMode !=
+                      LibrarySortMode.recentAdded ||
+                  !context.read<AppSettingsNotifier>().librarySortDescending,
+              reordering: _isReordering,
+              onOrganize: _showOrganizationMenu,
+              onDone: _finishReordering,
             ),
             const SizedBox(width: 8),
             GlassToolbarButton(

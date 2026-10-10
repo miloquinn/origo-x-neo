@@ -49,7 +49,6 @@ import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/system_ui_helper.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
-import 'package:xxread/widgets/app_menu.dart';
 import 'package:xxread/widgets/book_cover_image.dart';
 import 'package:xxread/widgets/generated_book_cover.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
@@ -68,6 +67,12 @@ import 'library_selection_actions.dart';
 import 'library_folder_name_dialog.dart';
 import 'library_shelf_projection.dart';
 import 'library_shelf_transition.dart';
+import 'library_organization.dart';
+import 'library_organization_button.dart';
+import 'library_organization_sheet.dart';
+import 'library_reorderable_item.dart';
+
+export 'library_organization_button.dart';
 
 part 'parts/library_book_commands_part.dart';
 part 'parts/library_book_deletion_part.dart';
@@ -76,6 +81,7 @@ part 'parts/library_book_widgets_part.dart';
 part 'parts/library_chrome_part.dart';
 part 'parts/library_collection_part.dart';
 part 'parts/library_folders_part.dart';
+part 'parts/library_organization_part.dart';
 
 enum _LibraryFilter { all, reading, finished }
 
@@ -97,8 +103,9 @@ class LibraryPageController {
     return state._visibleFolders.isNotEmpty;
   }
 
-  /// 当前是否有生效的筛选（非“全部”）。顶栏据此点亮筛选按钮。
+  /// 当前筛选或排序是否偏离默认值，顶栏据此点亮整理按钮。
   final ValueNotifier<bool> filterActive = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> reordering = ValueNotifier<bool>(false);
   final ValueNotifier<String?> folderName = ValueNotifier<String?>(null);
   final ValueNotifier<LibrarySelectionSnapshot> selection =
       ValueNotifier<LibrarySelectionSnapshot>(
@@ -107,8 +114,11 @@ class LibraryPageController {
 
   void toggleSearch() => _state?._toggleSearchBar();
 
-  Future<void> showFilterMenu(Rect anchor) async =>
-      _state?._showFilterMenu(anchor);
+  Future<void> showFilterMenu(Rect anchor) async => showOrganizationMenu();
+
+  Future<void> showOrganizationMenu() async => _state?._showOrganizationMenu();
+
+  void finishReordering() => _state?._finishReordering();
 
   void exitSelection() => _state?._exitSelectionMode();
 
@@ -127,6 +137,7 @@ class LibraryPageController {
 
   void dispose() {
     filterActive.dispose();
+    reordering.dispose();
     folderName.dispose();
     selection.dispose();
   }
@@ -160,6 +171,11 @@ class LibraryPage extends StatefulWidget {
   final Future<List<Book>> Function()? booksLoader;
   final Future<List<ShelfFolder>> Function()? foldersLoader;
   final ShelfFolderDao? folderDao;
+  final Future<void> Function(
+    String? parentId,
+    List<({int? bookId, String? folderId})> entries,
+  )?
+  reorderSaver;
   final BookSourceShelfService? sourceShelfService;
   final BookSourceShelfService Function()? sourceShelfServiceFactory;
   final SourceBookUpdateService? sourceUpdateService;
@@ -170,6 +186,7 @@ class LibraryPage extends StatefulWidget {
     this.booksLoader,
     this.foldersLoader,
     this.folderDao,
+    this.reorderSaver,
     this.sourceShelfService,
     this.sourceShelfServiceFactory,
     this.sourceUpdateService,
@@ -202,6 +219,23 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   String _visibleBooksCacheQuery = '';
   String? _visibleBooksCacheFolderId;
   List<Book> _visibleBooksCache = const [];
+  List<LibraryShelfEntry> _orderedEntriesCache = const [];
+  ({
+    int revision,
+    String? folder,
+    String query,
+    _LibraryFilter filter,
+    LibrarySortMode sort,
+    bool descending,
+  })?
+  _orderedEntriesIdentity;
+  bool _isReordering = false;
+  bool _reorderSaving = false;
+  Timer? _reorderScrollTimer;
+  Offset? _reorderDragPosition;
+  final _shelfViewportKey = GlobalKey();
+  final _reorderItemKeys = <String, GlobalKey>{};
+  String? _reorderDropKey;
   bool _isInitialLoading = true;
   Object? _loadError;
   final _bookDao = BookDao();
@@ -390,6 +424,7 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     _libraryRefreshDebounce?.cancel();
     _sourceUpdateTimer?.cancel();
     _searchDebounce?.cancel();
+    _reorderScrollTimer?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
     _shelfScrollController.dispose();
@@ -409,6 +444,7 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
   }
 
   void _toggleSearchBar() {
+    if (_isReordering) return;
     if (_selection.isActive) _exitSelectionMode();
     _searchDebounce?.cancel();
     setState(() {
@@ -424,64 +460,12 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     });
   }
 
-  Future<void> _showFilterMenu(Rect anchor) async {
-    final selected = await showAppMenu<_LibraryFilter>(
-      context: context,
-      anchor: anchor,
-      initialValue: _selectedFilter,
-      items: [
-        _buildFilterMenuItem(
-          _LibraryFilter.all,
-          context.l10n.libraryFilterAll(_books.length),
-        ),
-        _buildFilterMenuItem(
-          _LibraryFilter.reading,
-          context.l10n.libraryFilterReading(
-            _books.where(_isReadingBook).length,
-          ),
-        ),
-        _buildFilterMenuItem(
-          _LibraryFilter.finished,
-          context.l10n.libraryFilterFinished(
-            _books.where(_isFinishedBook).length,
-          ),
-        ),
-      ],
-    );
-    if (selected == null || !mounted) return;
-    setState(() {
-      _selectedFilter = selected;
-      _selection.exit();
-    });
-    _syncSelection();
-    _syncFilterActive();
-  }
-
-  PopupMenuItem<_LibraryFilter> _buildFilterMenuItem(
-    _LibraryFilter filter,
-    String label,
-  ) {
-    final selected = _selectedFilter == filter;
-    final scheme = Theme.of(context).colorScheme;
-    return PopupMenuItem<_LibraryFilter>(
-      value: filter,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: AppSkinIcon.adapt(
-          Icon(
-            selected ? Icons.radio_button_checked : Icons.radio_button_off,
-            size: 18,
-            color: selected ? scheme.primary : scheme.onSurfaceVariant,
-          ),
-        ),
-        title: Text(label),
-      ),
-    );
-  }
-
   void _syncFilterActive() {
+    final settings = context.read<AppSettingsNotifier>();
     widget.controller?.filterActive.value =
-        _selectedFilter != _LibraryFilter.all;
+        _selectedFilter != _LibraryFilter.all ||
+        settings.librarySortMode != LibrarySortMode.recentAdded ||
+        !settings.librarySortDescending;
   }
 
   void _syncSelection() {
@@ -528,6 +512,7 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     Book book, {
     required Future<void> Function() openBook,
   }) async {
+    if (_isReordering) return;
     if (_selection.isActive) {
       _toggleBookSelection(book);
       return;
@@ -642,6 +627,14 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
     setState(() {
       _patchSourceMetadata(_books, change);
       _patchSourceMetadata(_visibleBooksCache, change);
+      for (var i = 0; i < _orderedEntriesCache.length; i++) {
+        final book = _orderedEntriesCache[i].book;
+        if (book != null && _hasMatchingSourceMetadata(book, change)) {
+          _orderedEntriesCache[i] = LibraryShelfEntry.book(
+            book.copyWith(sourceBookJson: change.sourceBookJson),
+          );
+        }
+      }
       _shelf = LibraryShelfProjection(_folders, _books);
     });
   }

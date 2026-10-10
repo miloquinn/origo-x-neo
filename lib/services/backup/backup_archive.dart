@@ -37,7 +37,8 @@ class BackupArchive {
   ];
   static const tables = ['shelf_folders', ..._legacyTables];
   static const _folderSchema = 28;
-  static const _legacySchemas = {25, 26, 27};
+  static const _legacySchemas = {25, 26, 27, 28};
+  static const _organizationSchema = 29;
   static const sourceKey = 'origo_x_book_sources_v1';
 
   static List<String> _tablesForSchema(int schema) =>
@@ -332,7 +333,8 @@ class BackupArchive {
           ![1, 2].contains(data['version']) ||
           schema is! int ||
           !(schema == currentSchema ||
-              currentSchema == _folderSchema &&
+              currentSchema >= _folderSchema &&
+                  currentSchema <= _organizationSchema &&
                   _legacySchemas.contains(schema))) {
         throw const FormatException('Unsupported backup version');
       }

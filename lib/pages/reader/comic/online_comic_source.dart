@@ -10,6 +10,7 @@ import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/reader/comic/comic_debug_log.dart';
 import 'package:xxread/pages/reader/comic/image_reader_source.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/services/books/book_dao.dart';
 
 /// Remote image-source book as one image-book session.
 class OnlineComicSource extends ImageReaderSource {
@@ -51,6 +52,12 @@ class OnlineComicSource extends ImageReaderSource {
 
   @override
   String get settingsId => 'comic:${source.id}:${book.id}';
+
+  @override
+  Future<int?> readingBookId() async => (await BookDao().getBookBySource(
+    sourceId: source.id,
+    sourceBookId: book.id,
+  ))?.id;
 
   @override
   void dispose() {

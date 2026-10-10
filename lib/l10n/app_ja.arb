@@ -3592,5 +3592,21 @@
   "readerProgressBook": "本全体",
   "readerProgressChapter": "現在の章",
   "readerProgressBookShort": "全体",
-  "readerProgressChapterShort": "章内"
+  "readerProgressChapterShort": "章内",
+  "libraryOrganize": "ライブラリを整理",
+  "libraryDragOrganize": "ドラッグで並べ替え",
+  "libraryDragHint": "本やフォルダを長押しして、この階層の順序を変更",
+  "librarySortHeading": "並べ替え",
+  "librarySortRecentAdded": "追加した順",
+  "librarySortRecentRead": "最近読んだ順",
+  "librarySortProgress": "読書の進み具合",
+  "librarySortManual": "手動の順序",
+  "librarySortNewestFirst": "新しい順",
+  "librarySortOldestFirst": "古い順",
+  "librarySortProgressDescending": "進んでいる順",
+  "librarySortProgressAscending": "進んでいない順",
+  "libraryReadingStateHeading": "読書状態",
+  "libraryReorderSaveFailed": "順序を保存できませんでした。再試行してください。",
+  "libraryMoveEarlier": "前に移動",
+  "libraryMoveLater": "後ろに移動"
 }

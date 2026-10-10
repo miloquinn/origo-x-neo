@@ -65,6 +65,7 @@ List<Book> _books() => List.generate(
   12,
   (index) => Book(
     id: index + 1,
+    importDate: DateTime.utc(2026, 10, 10).subtract(Duration(days: index)),
     title: 'Density Book $index',
     filePath: '/tmp/density-$index.txt',
     format: 'TXT',

@@ -5,6 +5,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:xxread/data/migration/book_storage_path_migration.dart';
 import 'package:xxread/data/migration/book_source_reading_progress_schema_migration.dart';
 import 'package:xxread/data/migration/shelf_folder_schema_migration.dart';
+import 'package:xxread/data/migration/shelf_organization_schema_migration.dart';
 import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/book_dao.dart';
@@ -37,6 +38,7 @@ void main() {
     ''');
     await BookSourceReadingProgressSchemaMigration.migrate(database);
     await ShelfFolderSchemaMigration.migrate(database);
+    await ShelfOrganizationSchemaMigration.migrate(database);
 
     dao = BookDao(
       database: () async => database,
@@ -63,6 +65,44 @@ void main() {
 
   Future<Map<String, Object?>> stored(int id) async =>
       (await database.query('books', where: 'id = ?', whereArgs: [id])).single;
+
+  test(
+    'reader timestamps are monotonic and stale metadata cannot overwrite organization',
+    () async {
+      final id = await dao.insertBook(book());
+      final stale = (await dao.getBookById(id))!;
+      await database.update(
+        'books',
+        {'shelf_sort_index': 3},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      await dao.markRead(id, at: DateTime.fromMillisecondsSinceEpoch(5000));
+      await dao.markRead(id, at: DateTime.fromMillisecondsSinceEpoch(3000));
+      await dao.updateBook(stale.copyWith(title: 'Updated title'));
+      await dao.updateBookProgress(id, 8, readingProgress: .8);
+      final updated = (await dao.getAllBooks()).single;
+      expect(updated.title, 'Updated title');
+      expect(updated.progress, .8);
+      expect(updated.shelfSortIndex, 3);
+      expect(updated.lastReadAt!.millisecondsSinceEpoch, 5000);
+      final roundTrip = Book.fromMap(updated.toMap());
+      expect(roundTrip.shelfSortIndex, 3);
+      expect(roundTrip.lastReadAt, updated.lastReadAt);
+      expect(updated.copyWith(title: 'Renamed').shelfSortIndex, 3);
+      expect(
+        updated.copyWith(clearShelfSortIndex: true).shelfSortIndex,
+        isNull,
+      );
+      final legacy = Book.fromMap(
+        {...updated.toMap()}
+          ..remove('shelf_sort_index')
+          ..remove('last_read_at'),
+      );
+      expect(legacy.shelfSortIndex, isNull);
+      expect(legacy.lastReadAt, isNull);
+    },
+  );
 
   test(
     'binding preserves progress and cover changes made during source lookup',

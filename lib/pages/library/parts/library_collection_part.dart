@@ -11,6 +11,7 @@ extension _LibraryPageCollection on _LibraryPageState {
     required int mobileColumns,
     required bool showDetails,
   }) {
+    final entries = _displayEntries;
     final useRail = NavigationContext.of(context)?.useRailNavigation ?? false;
     final usesTabletLayout = LayoutHelper.usesTabletLayout(context);
     final spacing = LayoutHelper.coverOnlyGridSpacing(
@@ -96,79 +97,86 @@ extension _LibraryPageCollection on _LibraryPageState {
             mainAxisSpacing: spacing + 2,
             childAspectRatio: itemWidth / itemHeight,
           ),
-          itemCount: books.length + folders.length,
+          itemCount: entries.length,
           itemBuilder: (context, index) {
-            if (index < folders.length) return _buildFolderTile(folders[index]);
-            final book = books[index - folders.length];
+            final entry = entries[index];
+            if (entry.folder != null) {
+              return _reorderItem(entry, _buildFolderTile(entry.folder!));
+            }
+            final book = entry.book!;
             final coverKey = _coverKeyFor(book);
-            return RepaintBoundary(
-              child: Semantics(
-                button: true,
-                label: showDetails
-                    ? '${book.title}，${context.l10n.libraryProgressContinue(_bookProgressPercent(book))}'
-                    : book.title,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () async {
-                      await _handleBookTap(
-                        book,
-                        openBook: () => _openBookWithSelectedAnimation(
+            return _reorderItem(
+              entry,
+              RepaintBoundary(
+                child: Semantics(
+                  button: true,
+                  label: showDetails
+                      ? '${book.title}，${context.l10n.libraryProgressContinue(_bookProgressPercent(book))}'
+                      : book.title,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () async {
+                        await _handleBookTap(
                           book,
-                          coverKey: coverKey,
-                          radius: BorderRadius.circular(10),
-                          coverBuilder: (context) =>
-                              _gridCoverArt(context, book),
-                        ),
-                      );
-                    },
-                    onLongPress: _selection.isActive
-                        ? () => _toggleBookSelection(book)
-                        : () => _showBookOptions(book),
-                    child: Stack(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: double.infinity,
-                              height: itemWidth * 3 / 2,
-                              child: SizedBox.expand(
-                                key: coverKey,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .shadow
-                                            .withValues(alpha: 0.14),
-                                        blurRadius: 7,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: _gridCoverArt(context, book),
+                          openBook: () => _openBookWithSelectedAnimation(
+                            book,
+                            coverKey: coverKey,
+                            radius: BorderRadius.circular(10),
+                            coverBuilder: (context) =>
+                                _gridCoverArt(context, book),
+                          ),
+                        );
+                      },
+                      onLongPress: _selection.isActive
+                          ? () => _toggleBookSelection(book)
+                          : () => _showBookOptions(book),
+                      child: Stack(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: double.infinity,
+                                height: itemWidth * 3 / 2,
+                                child: SizedBox.expand(
+                                  key: coverKey,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .shadow
+                                              .withValues(alpha: 0.14),
+                                          blurRadius: 7,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: _gridCoverArt(context, book),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            if (showDetails) LibraryGridBookDetails(book: book),
-                          ],
-                        ),
-                        if (_selection.isActive)
-                          Positioned(
-                            top: 6,
-                            left: 6,
-                            child: _BookSelectionIndicator(
-                              selected: _isBookSelected(book),
-                            ),
+                              if (showDetails)
+                                LibraryGridBookDetails(book: book),
+                            ],
                           ),
-                      ],
+                          if (_selection.isActive)
+                            Positioned(
+                              top: 6,
+                              left: 6,
+                              child: _BookSelectionIndicator(
+                                selected: _isBookSelected(book),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -189,6 +197,7 @@ extension _LibraryPageCollection on _LibraryPageState {
     required double topPadding,
     List<ShelfFolder> folders = const [],
   }) {
+    final entries = _displayEntries;
     final useRail = NavigationContext.of(context)?.useRailNavigation ?? false;
     final usesTabletLayout = LayoutHelper.usesTabletLayout(context);
     final mobileChrome = HomeMobileChromeScope.of(context);
@@ -266,33 +275,38 @@ extension _LibraryPageCollection on _LibraryPageState {
               mainAxisSpacing: spacing + 8,
               childAspectRatio: childAspectRatio,
             ),
-            itemCount: books.length + folders.length,
+            itemCount: entries.length,
             itemBuilder: (context, index) {
-              if (index < folders.length) {
-                return _buildFolderTile(folders[index]);
+              final entry = entries[index];
+              if (entry.folder != null) {
+                return _reorderItem(entry, _buildFolderTile(entry.folder!));
               }
-              final book = books[index - folders.length];
+              final book = entry.book!;
               final coverKey = _coverKeyFor(book);
-              return RepaintBoundary(
-                child: _BookCoverItem(
-                  book: book,
-                  coverKey: coverKey,
-                  selectionActive: _selection.isActive,
-                  selected: _isBookSelected(book),
-                  onTap: () async {
-                    await _handleBookTap(
-                      book,
-                      openBook: () => _openBookWithSelectedAnimation(
+              return _reorderItem(
+                entry,
+                RepaintBoundary(
+                  child: _BookCoverItem(
+                    book: book,
+                    coverKey: coverKey,
+                    selectionActive: _selection.isActive,
+                    selected: _isBookSelected(book),
+                    onTap: () async {
+                      await _handleBookTap(
                         book,
-                        coverKey: coverKey,
-                        radius: BorderRadius.circular(12),
-                        coverBuilder: (context) => _gridCoverArt(context, book),
-                      ),
-                    );
-                  },
-                  onLongPress: _selection.isActive
-                      ? () => _toggleBookSelection(book)
-                      : () => _showBookOptions(book),
+                        openBook: () => _openBookWithSelectedAnimation(
+                          book,
+                          coverKey: coverKey,
+                          radius: BorderRadius.circular(12),
+                          coverBuilder: (context) =>
+                              _gridCoverArt(context, book),
+                        ),
+                      );
+                    },
+                    onLongPress: _selection.isActive
+                        ? () => _toggleBookSelection(book)
+                        : () => _showBookOptions(book),
+                  ),
                 ),
               );
             },
@@ -307,6 +321,7 @@ extension _LibraryPageCollection on _LibraryPageState {
     required double topPadding,
     List<ShelfFolder> folders = const [],
   }) {
+    final entries = _displayEntries;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return ListView.builder(
@@ -322,129 +337,136 @@ extension _LibraryPageCollection on _LibraryPageState {
         HomeMobileChromeScope.of(context).pageBottomPadding +
             (_currentFolderId == null ? 0 : 64),
       ),
-      itemCount: books.length + folders.length,
+      itemCount: entries.length,
       itemBuilder: (context, index) {
-        if (index < folders.length) {
-          return _buildFolderTile(folders[index], list: true);
+        final entry = entries[index];
+        if (entry.folder != null) {
+          return _reorderItem(
+            entry,
+            _buildFolderTile(entry.folder!, list: true),
+          );
         }
-        final book = books[index - folders.length];
+        final book = entry.book!;
         final coverKey = _coverKeyFor(book);
         final progress = book.progress;
         final progressText = context.l10n.libraryProgressContinue(
           (progress * 100).round(),
         );
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: Material(
-            color: _isMaterial3Style
-                ? scheme.surfaceContainerLow
-                : scheme.surface.withValues(alpha: 0.86),
-            surfaceTintColor: Colors.transparent,
-            elevation: _isMaterial3Style ? 1 : 0,
-            shadowColor: scheme.shadow.withValues(
-              alpha: _isMaterial3Style ? 0.07 : 0.0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(
-                color: scheme.outline.withValues(
-                  alpha: _isMaterial3Style ? 0.2 : 0.12,
-                ),
-                width: 0.8,
+        return _reorderItem(
+          entry,
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: _isMaterial3Style
+                  ? scheme.surfaceContainerLow
+                  : scheme.surface.withValues(alpha: 0.86),
+              surfaceTintColor: Colors.transparent,
+              elevation: _isMaterial3Style ? 1 : 0,
+              shadowColor: scheme.shadow.withValues(
+                alpha: _isMaterial3Style ? 0.07 : 0.0,
               ),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () async {
-                await _handleBookTap(
-                  book,
-                  openBook: () => _openBookWithSelectedAnimation(
-                    book,
-                    coverKey: coverKey,
-                    radius: BorderRadius.circular(11),
-                    coverBuilder: (context) => _buildListCover(context, book),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: scheme.outline.withValues(
+                    alpha: _isMaterial3Style ? 0.2 : 0.12,
                   ),
-                );
-              },
-              onLongPress: _selection.isActive
-                  ? () => _toggleBookSelection(book)
-                  : () => _showBookOptions(book),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      key: coverKey,
-                      width: 64,
-                      height: 92,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(11),
-                        child: _buildListCover(context, book),
-                      ),
+                  width: 0.8,
+                ),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () async {
+                  await _handleBookTap(
+                    book,
+                    openBook: () => _openBookWithSelectedAnimation(
+                      book,
+                      coverKey: coverKey,
+                      radius: BorderRadius.circular(11),
+                      coverBuilder: (context) => _buildListCover(context, book),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  book.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
+                  );
+                },
+                onLongPress: _selection.isActive
+                    ? () => _toggleBookSelection(book)
+                    : () => _showBookOptions(book),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        key: coverKey,
+                        width: 64,
+                        height: 92,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(11),
+                          child: _buildListCover(context, book),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    book.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              if (book.isOnline) ...[
-                                const SizedBox(width: 8),
-                                _onlineBadge(context),
+                                if (book.isOnline) ...[
+                                  const SizedBox(width: 8),
+                                  _onlineBadge(context),
+                                ],
                               ],
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            progressText,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.58),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 5,
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.12),
-                              valueColor: AlwaysStoppedAnimation(
-                                Theme.of(context).colorScheme.primary,
+                            const SizedBox(height: 2),
+                            Text(
+                              progressText,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.58),
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 5,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.12),
+                                valueColor: AlwaysStoppedAnimation(
+                                  Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (_selection.isActive)
-                      _BookSelectionIndicator(selected: _isBookSelected(book))
-                    else
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.35),
-                      ),
-                  ],
+                      const SizedBox(width: 8),
+                      if (_selection.isActive)
+                        _BookSelectionIndicator(selected: _isBookSelected(book))
+                      else
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.35),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

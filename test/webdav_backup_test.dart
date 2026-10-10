@@ -12,6 +12,7 @@ import 'package:xxread/services/backup/webdav_backup_controller.dart';
 import 'package:xxread/services/sync/secure_sync_config.dart';
 import 'package:xxread/services/sync/sync_models.dart';
 import 'support/local_webdav_server.dart';
+import 'package:xxread/data/migration/shelf_organization_schema_migration.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -126,6 +127,45 @@ void main() {
         'parent_id': parent,
         'created_at': 123,
       });
+
+  test(
+    'schema 29 preserves organization fields in a backup round trip',
+    () async {
+      await enableFolders();
+      await ShelfOrganizationSchemaMigration.migrate(db);
+      await db.setVersion(29);
+      await addFolder(folderA);
+      await db.update('shelf_folders', {'sort_index': 1});
+      await db.update('books', {'shelf_sort_index': 0, 'last_read_at': 5000});
+      final zip = await snapshot();
+      await db.update('shelf_folders', {'sort_index': 8});
+      await db.update('books', {'shelf_sort_index': 7, 'last_read_at': 9000});
+      final checked = await archive.validate(zip);
+      await archive.restore(checked);
+      expect((await db.query('shelf_folders')).single['sort_index'], 1);
+      final book = (await db.query('books')).single;
+      expect(book['shelf_sort_index'], 0);
+      expect(book['last_read_at'], 5000);
+      await checked.directory.delete(recursive: true);
+    },
+  );
+
+  for (final schema in [25, 26, 27, 28]) {
+    test('schema 29 accepts existing schema $schema backups', () async {
+      if (schema == 28) await enableFolders();
+      await db.setVersion(schema);
+      final zip = await snapshot();
+      if (schema != 28) await enableFolders();
+      await ShelfOrganizationSchemaMigration.migrate(db);
+      await db.setVersion(29);
+      final checked = await archive.validate(zip);
+      await archive.restore(checked);
+      final book = (await db.query('books')).single;
+      expect(book['shelf_sort_index'], isNull);
+      expect(book['last_read_at'], isNull);
+      await checked.directory.delete(recursive: true);
+    });
+  }
 
   Future<File> editManifest(
     File zip,

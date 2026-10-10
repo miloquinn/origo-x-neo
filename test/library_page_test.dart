@@ -190,6 +190,7 @@ void main() {
     final sourceBook = Book(
       id: 1,
       title: 'Serial Book',
+      importDate: DateTime.utc(2026, 10, 10),
       filePath: '/tmp/serial.txt',
       format: 'TXT',
       sourceId: 'source',
@@ -204,6 +205,7 @@ void main() {
         (index) => Book(
           id: index + 2,
           title: 'Book $index',
+          importDate: DateTime.utc(2026, 10, 9).subtract(Duration(days: index)),
           filePath: '/tmp/book-$index.txt',
           format: 'TXT',
         ),
@@ -378,6 +380,11 @@ void main() {
         (index) => Book(
           id: index + 1,
           title: 'Tablet Book $index',
+          importDate: DateTime.utc(
+            2026,
+            10,
+            10,
+          ).subtract(Duration(days: index)),
           author: 'Author',
           filePath: '/tmp/tablet-$index.txt',
           format: 'TXT',

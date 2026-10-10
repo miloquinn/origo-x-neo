@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:xxread/data/migration/shelf_folder_schema_migration.dart';
+import 'package:xxread/data/migration/shelf_organization_schema_migration.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/models/home_navigation_destination.dart';
@@ -213,7 +214,16 @@ void main() {
     final ids = <int>{};
     await tester.runAsync(() async {
       for (var index = 0; index < 12; index++) {
-        ids.add(await fixture.addBook('Book $index'));
+        ids.add(
+          await fixture.addBook(
+            'Book $index',
+            importDate: DateTime.utc(
+              2026,
+              10,
+              8,
+            ).subtract(Duration(minutes: index)),
+          ),
+        );
       }
     });
     await fixture.mount(tester);
@@ -708,6 +718,7 @@ class _ShelfFixture {
         )
       ''');
       await ShelfFolderSchemaMigration.migrate(database);
+      await ShelfOrganizationSchemaMigration.migrate(database);
       final settings = AppSettingsNotifier();
       if (!settings.isInitialized) {
         final initialized = Completer<void>();
@@ -740,13 +751,14 @@ class _ShelfFixture {
     return fixture;
   }
 
-  Future<int> addBook(String title, {String? folderId}) =>
+  Future<int> addBook(String title, {String? folderId, DateTime? importDate}) =>
       database.insert('books', {
         'title': title,
         'author': 'Fixture Author',
         'filePath': '/fixtures/$title.epub',
         'format': 'epub',
-        'importDate': DateTime.utc(2026, 10, 8).millisecondsSinceEpoch,
+        'importDate':
+            (importDate ?? DateTime.utc(2026, 10, 8)).millisecondsSinceEpoch,
         'reading_progress': 0.25,
         'storage_type': 'local',
         'shelf_folder_id': folderId,

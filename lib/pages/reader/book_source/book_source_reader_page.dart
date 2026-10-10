@@ -72,6 +72,7 @@ import 'package:xxread/services/books/book_note_dao.dart';
 import 'package:xxread/services/books/bookmark_dao.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
 import 'package:xxread/services/reading/reading_resume_service.dart';
+import 'package:xxread/services/reading/reading_activity_recorder.dart';
 import 'package:xxread/services/reading/reading_stats_dao.dart';
 import 'package:xxread/services/reading/reading_cloud_recorder.dart';
 import 'package:xxread/services/tts_service.dart';
@@ -155,6 +156,7 @@ class BookSourceReaderPage extends StatefulWidget {
   final SourceCoverCache? remoteImageCache;
   final PaginationCacheDao? paginationCacheDao;
   final ValueChanged<int>? onPaginationCacheMiss;
+  final ReadingActivityRecorder? readingActivityRecorder;
 
   const BookSourceReaderPage({
     super.key,
@@ -171,6 +173,7 @@ class BookSourceReaderPage extends StatefulWidget {
     this.remoteImageCache,
     this.paginationCacheDao,
     this.onPaginationCacheMiss,
+    @visibleForTesting this.readingActivityRecorder,
   }) : assert(client == null || clientFactory == null),
        assert(shelfService == null || shelfServiceFactory == null);
 
@@ -350,6 +353,9 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   Timer? _controlsTimer;
   final ReadingStatsDao _readingStatsDao = ReadingStatsDao();
   final ReadingCloudRecorder _cloudRecorder = ReadingCloudRecorder();
+  late final ReadingActivityRecorder _readingActivity =
+      widget.readingActivityRecorder ?? ReadingActivityRecorder();
+  bool _readingContentReadyScheduled = false;
   final BookmarkDao _bookmarkDao = BookmarkDao();
   final BookNoteDao _bookNoteDao = BookNoteDao();
   final ReaderSettingsStore _readerSettingsStore = const ReaderSettingsStore();

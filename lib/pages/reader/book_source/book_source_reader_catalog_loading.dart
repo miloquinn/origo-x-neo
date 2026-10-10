@@ -41,6 +41,7 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         _shelfBook = shelfBook;
         _shelfBookId = shelfBook?.id;
       });
+      unawaited(_readingActivity.bindBook(_shelfBookId));
       final rawChapters = [...results[2]! as List<BookSourceChapter>]
         ..sort((a, b) => a.order.compareTo(b.order));
       final rawChapterTitlesById = <String, String>{

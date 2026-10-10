@@ -55,6 +55,12 @@ class Book {
   final int? sourceModifiedTime;
   final String? shelfFolderId;
 
+  /// 同一书架内与文件夹共享的手动顺序；null 使用默认排序。
+  final int? shelfSortIndex;
+
+  /// 最近一次真实阅读时间；未阅读的书籍保持 null。
+  final DateTime? lastReadAt;
+
   bool get isOnline => storageType == 'online';
 
   /// Source association survives downloading the book into a local file.
@@ -101,6 +107,8 @@ class Book {
     this.sourceLocator,
     this.sourceModifiedTime,
     this.shelfFolderId,
+    this.shelfSortIndex,
+    this.lastReadAt,
   }) : importDate = importDate ?? DateTime.now();
 
   // content 字段已被移除
@@ -135,6 +143,8 @@ class Book {
       'source_locator': sourceLocator,
       'source_modified_time': sourceModifiedTime,
       'shelf_folder_id': shelfFolderId,
+      'shelf_sort_index': shelfSortIndex,
+      'last_read_at': lastReadAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -168,6 +178,12 @@ class Book {
       sourceLocator: map['source_locator'] as String?,
       sourceModifiedTime: map['source_modified_time'] as int?,
       shelfFolderId: map['shelf_folder_id'] as String?,
+      shelfSortIndex: (map['shelf_sort_index'] as num?)?.toInt(),
+      lastReadAt: map['last_read_at'] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(
+              (map['last_read_at'] as num).toInt(),
+            ),
     );
   }
 
@@ -200,6 +216,9 @@ class Book {
     String? sourceLocator,
     int? sourceModifiedTime,
     String? shelfFolderId,
+    int? shelfSortIndex,
+    DateTime? lastReadAt,
+    bool clearShelfSortIndex = false,
     bool clearSourceMetadata = false,
     bool clearShelfFolder = false,
   }) {
@@ -242,6 +261,10 @@ class Book {
       shelfFolderId: clearShelfFolder
           ? null
           : shelfFolderId ?? this.shelfFolderId,
+      shelfSortIndex: clearShelfSortIndex
+          ? null
+          : shelfSortIndex ?? this.shelfSortIndex,
+      lastReadAt: lastReadAt ?? this.lastReadAt,
     );
   }
 

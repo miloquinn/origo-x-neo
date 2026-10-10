@@ -10,6 +10,7 @@ import 'package:xxread/book_sources/services/book_source_reading_progress.dart';
 import 'package:xxread/core/reader/paged_image_reader_settings.dart';
 import 'package:xxread/core/reader/reader_settings.dart';
 import 'package:xxread/models/book.dart';
+import 'package:xxread/services/reading/reading_activity_recorder.dart';
 import 'package:xxread/pages/reader/comic/comic_debug_log.dart';
 import 'package:xxread/pages/reader/comic/continuous_image_reader.dart';
 import 'package:xxread/pages/reader/comic/image_reader_source.dart';
@@ -104,6 +105,8 @@ class _ComicReaderPageState extends State<ComicReaderPage>
   int _retrySerial = 0;
   bool _appliedInitialLocation = false;
   bool _contentReadyMarked = false;
+  ReadingActivityRecorder _readingActivity = ReadingActivityRecorder();
+  bool _readingContentReady = false;
   int? _pageCountChapterIndex;
   int? _pageCountRetrySerial;
   Future<int>? _pageCountFuture;
@@ -146,6 +149,8 @@ class _ComicReaderPageState extends State<ComicReaderPage>
       _retrySerial = 0;
       _appliedInitialLocation = false;
       _contentReadyMarked = false;
+      _readingActivity = ReadingActivityRecorder();
+      _readingContentReady = false;
       _pageCountChapterIndex = null;
       _pageCountRetrySerial = null;
       _pageCountFuture = null;
@@ -185,6 +190,22 @@ class _ComicReaderPageState extends State<ComicReaderPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) BookOpenTransition.markReaderContentReady(context);
     });
+  }
+
+  void _recordReadingActivity() {
+    if (_readingContentReady) return;
+    _readingContentReady = true;
+    final activity = _readingActivity;
+    unawaited(activity.markContentReady());
+    unawaited(
+      widget.source
+          .readingBookId()
+          .then(activity.bindBook)
+          .catchError(
+            (Object error) =>
+                debugPrint('Resolve comic library identity failed: $error'),
+          ),
+    );
   }
 
   Future<void> _openChapter(int index, {required int page}) async {
@@ -421,6 +442,7 @@ class _ComicReaderPageState extends State<ComicReaderPage>
               key: ValueKey('continuous-image-reader-$_retrySerial'),
               document: document,
               source: source,
+              onContentReady: _recordReadingActivity,
               initialChapterIndex: chapterIndex,
               initialPageIndex: _pageIndex,
               onTableOfContents: document.chapters.length > 1
@@ -496,6 +518,7 @@ class _ComicReaderPageState extends State<ComicReaderPage>
                 initialPage: initialPage,
                 settingsId: source.settingsId,
                 bookId: source.localBookId,
+                onContentReady: _recordReadingActivity,
                 palette: _readerPalette,
                 backgroundOverride: _background,
                 defaultDirection: direction,

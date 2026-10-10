@@ -413,6 +413,33 @@ class ICloudSyncController extends ChangeNotifier {
     _aggregateResolutions
       ..clear()
       ..addAll(_dependentDeletionConflicts(byKey, conflicts));
+    // A legacy client can delete the owner while relaying its opaque metadata.
+    // That passive relay follows a settled deletion and cannot resurrect it or
+    // create a separate conflict merely because the setting remained live.
+    for (final parent in winners.values.toList()) {
+      if (parent.value != null ||
+          _aggregateResolutions.containsKey(parent.key)) {
+        continue;
+      }
+      final metadataKey = _ownerOrganizationKey(parent.key);
+      final metadata = metadataKey == null ? null : byKey[metadataKey];
+      if (metadata == null ||
+          !syncFrontier(metadata).any((record) => record.value != null)) {
+        continue;
+      }
+      replica.counter++;
+      final clock = joinSyncClocks([parent, ...metadata]);
+      clock[_deviceId!] = replica.counter;
+      winners[metadataKey!] = ICloudRecord(
+        key: metadataKey,
+        value: null,
+        clock: clock,
+        device: _deviceName ?? 'This device',
+        modifiedAt: _now().toUtc().millisecondsSinceEpoch,
+        writer: _deviceId,
+      );
+      conflicts.remove(metadataKey);
+    }
     replica.conflicts = conflicts;
     _refreshConflicts();
     final blockedKeys = <String>{
@@ -842,7 +869,10 @@ class ICloudSyncController extends ChangeNotifier {
       final tombstones = parentFrontier
           .where((record) => record.value == null)
           .toList();
-      if (tombstones.isEmpty) continue;
+      final metadataKey = _ownerOrganizationKey(parent.key)!;
+      if (tombstones.isEmpty) {
+        continue;
+      }
       final uid = parent.key.substring('book:'.length);
       final dependent = <String, List<ICloudRecord>>{};
       var hasUnsafeLive = parentFrontier.any((record) => record.value != null);
@@ -851,7 +881,10 @@ class ICloudSyncController extends ChangeNotifier {
           dependent[entry.key] = entry.value;
           hasUnsafeLive =
               hasUnsafeLive ||
-              syncFrontier(entry.value).any((record) => record.value != null);
+              entry.key != metadataKey &&
+                  syncFrontier(
+                    entry.value,
+                  ).any((record) => record.value != null);
         }
       }
       if (dependent.isEmpty || !hasUnsafeLive) continue;
@@ -861,7 +894,10 @@ class ICloudSyncController extends ChangeNotifier {
       if (liveParent == null || liveParent.isEmpty) continue;
       final liveChildren = dependent.values
           .expand((records) => syncFrontier(records))
-          .where((record) => record.value != null)
+          .where(
+            (record) =>
+                record.value != null && !record.key.startsWith('setting:'),
+          )
           .toList();
       result[parent.key] = _AggregateResolution(
         parentKey: parent.key,
@@ -885,18 +921,25 @@ class ICloudSyncController extends ChangeNotifier {
       final tombstones = parentFrontier
           .where((record) => record.value == null)
           .toList();
-      if (tombstones.isEmpty) continue;
+      final metadataKey = _ownerOrganizationKey(parent.key)!;
+      if (tombstones.isEmpty) {
+        continue;
+      }
       final id = parent.key.substring('folder:'.length);
       final dependent = <String, List<ICloudRecord>>{};
       var hasUnsafeLive = parentFrontier.any((record) => record.value != null);
       for (final entry in byKey.entries) {
         final frontier = syncFrontier(entry.value);
-        final belongs = entry.value.any((record) {
-          final row = record.value?['row'];
-          if (row is! Map) return false;
-          return (entry.key.startsWith('folder:') && row['parent_id'] == id) ||
-              (entry.key.startsWith('book:') && row['shelf_folder_id'] == id);
-        });
+        final belongs =
+            entry.key == metadataKey ||
+            entry.value.any((record) {
+              final row = record.value?['row'];
+              if (row is! Map) return false;
+              return (entry.key.startsWith('folder:') &&
+                      row['parent_id'] == id) ||
+                  (entry.key.startsWith('book:') &&
+                      row['shelf_folder_id'] == id);
+            });
         if (belongs) {
           dependent[entry.key] = entry.value;
           hasUnsafeLive =
@@ -908,6 +951,15 @@ class ICloudSyncController extends ChangeNotifier {
               });
         }
       }
+      // Child owners cannot consume their metadata while their folder choice
+      // is pending either. The same resolution applies or promotes both.
+      for (final childKey in dependent.keys.toList()) {
+        final childMetadataKey = _ownerOrganizationKey(childKey);
+        final childMetadata = byKey[childMetadataKey];
+        if (childMetadataKey != null && childMetadata != null) {
+          dependent[childMetadataKey] = childMetadata;
+        }
+      }
       if (dependent.isEmpty || !hasUnsafeLive) continue;
       final liveParent = byKey[parent.key]
           ?.where((record) => record.value != null)
@@ -915,7 +967,10 @@ class ICloudSyncController extends ChangeNotifier {
       if (liveParent == null || liveParent.isEmpty) continue;
       final liveDependents = dependent.values
           .expand((records) => syncFrontier(records))
-          .where((record) => record.value != null)
+          .where(
+            (record) =>
+                record.value != null && !record.key.startsWith('setting:'),
+          )
           .toList();
       result[parent.key] = _AggregateResolution(
         parentKey: parent.key,
@@ -931,6 +986,21 @@ class ICloudSyncController extends ChangeNotifier {
       );
       conflicts.remove(parent.key);
       conflicts.removeWhere((key, _) => dependent.containsKey(key));
+    }
+    // Deletion groups own their children first. Building the smaller metadata
+    // groups afterwards keeps child/parent manifest order from creating two
+    // independent resolutions for the same child.
+    for (final owner in byKey.entries) {
+      final metadataKey = _ownerOrganizationKey(owner.key);
+      if (metadataKey == null || result.containsKey(owner.key)) continue;
+      _groupOwnerOrganization(
+        owner,
+        syncFrontier(owner.value),
+        metadataKey,
+        byKey,
+        conflicts,
+        result,
+      );
     }
     return result;
   }
@@ -985,8 +1055,42 @@ class ICloudSyncController extends ChangeNotifier {
     List<ICloudRecord> candidates,
     String uid,
   ) {
-    if (key == 'progress:$uid' || key.startsWith('bookmark:$uid:')) return true;
+    if (key == 'progress:$uid' ||
+        key.startsWith('bookmark:$uid:') ||
+        key == _ownerOrganizationKey('book:$uid')) {
+      return true;
+    }
     return candidates.any((record) => record.value?['uid'] == uid);
+  }
+
+  static String? _ownerOrganizationKey(String ownerKey) {
+    final split = ownerKey.indexOf(':');
+    if (split < 0) return null;
+    final kind = ownerKey.substring(0, split);
+    if (kind != 'book' && kind != 'folder') return null;
+    return 'setting:${DefaultICloudSyncStore.organizationPreferenceKey(kind, ownerKey.substring(split + 1))}';
+  }
+
+  static void _groupOwnerOrganization(
+    MapEntry<String, List<ICloudRecord>> parent,
+    List<ICloudRecord> frontier,
+    String metadataKey,
+    Map<String, List<ICloudRecord>> byKey,
+    Map<String, List<ICloudRecord>> conflicts,
+    Map<String, _AggregateResolution> result,
+  ) {
+    final metadata = byKey[metadataKey];
+    if (!conflicts.containsKey(parent.key) || metadata == null) return;
+    result[parent.key] = _AggregateResolution(
+      parentKey: parent.key,
+      parentCandidates: parent.value,
+      dependents: {metadataKey: metadata},
+      options: frontier,
+      deleteParentValue: null,
+      deleteDependents: true,
+    );
+    conflicts.remove(parent.key);
+    conflicts.remove(metadataKey);
   }
 
   Future<void> _resolveAggregate(
@@ -1028,7 +1132,8 @@ class ICloudSyncController extends ChangeNotifier {
           }
         }
       } else if (!aggregate.deleteDependents &&
-          entry.key != aggregate.parentKey) {
+          entry.key != aggregate.parentKey &&
+          entry.key != _ownerOrganizationKey(aggregate.parentKey)) {
         final promoted = syncFrontier(candidates)
             .map(
               (record) => ICloudRecord(
@@ -1086,6 +1191,24 @@ class ICloudSyncController extends ChangeNotifier {
         writer: _deviceId,
       );
     }
+    // A child's independent metadata winner cannot be consumed until its
+    // promoted owner is chosen. Carry both through the remaining resolution.
+    final remainingAggregates = <String, _AggregateResolution>{};
+    for (final owner in remainingConflicts.entries.toList()) {
+      final metadataKey = _ownerOrganizationKey(owner.key);
+      final metadata = groups[metadataKey];
+      if (metadataKey == null || metadata == null) continue;
+      records.remove(metadataKey);
+      localPromotions.remove(metadataKey);
+      _groupOwnerOrganization(
+        owner,
+        owner.value,
+        metadataKey,
+        {metadataKey: remainingConflicts[metadataKey] ?? metadata},
+        remainingConflicts,
+        remainingAggregates,
+      );
+    }
     final recordsToApply = {...records, ...localPromotions};
     final assets = await _downloadAssets(
       recordsToApply.values,
@@ -1104,7 +1227,9 @@ class ICloudSyncController extends ChangeNotifier {
       _replica!.baseline[entry.key] = entry.value.value;
     }
     _replica!.conflicts.addAll(remainingConflicts);
-    _aggregateResolutions.remove(aggregate.parentKey);
+    _aggregateResolutions
+      ..remove(aggregate.parentKey)
+      ..addAll(remainingAggregates);
     _refreshConflicts();
     await _persistReplica();
     _dataRevision++;

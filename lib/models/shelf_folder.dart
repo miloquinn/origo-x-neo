@@ -7,6 +7,7 @@ class ShelfFolder {
     required this.name,
     required this.parentId,
     required this.createdAt,
+    this.sortIndex,
   });
 
   final String id;
@@ -14,11 +15,15 @@ class ShelfFolder {
   final String? parentId;
   final DateTime createdAt;
 
+  /// 同一书架内与书籍共享的手动顺序；null 使用默认排序。
+  final int? sortIndex;
+
   Map<String, Object?> toMap() => {
     'id': id,
     'name': name,
     'parent_id': parentId,
     'created_at': createdAt.millisecondsSinceEpoch,
+    'sort_index': sortIndex,
   };
 
   factory ShelfFolder.fromMap(Map<String, Object?> map) => ShelfFolder(
@@ -26,5 +31,6 @@ class ShelfFolder {
     name: map['name']! as String,
     parentId: map['parent_id'] as String?,
     createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at']! as int),
+    sortIndex: (map['sort_index'] as num?)?.toInt(),
   );
 }

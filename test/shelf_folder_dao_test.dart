@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:xxread/data/migration/shelf_folder_schema_migration.dart';
+import 'package:xxread/data/migration/shelf_organization_schema_migration.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/book_dao.dart';
 import 'package:xxread/services/library/shelf_folder_dao.dart';
@@ -44,6 +45,7 @@ void main() {
       )
     ''');
     await ShelfFolderSchemaMigration.migrate(database);
+    await ShelfOrganizationSchemaMigration.migrate(database);
     dao = ShelfFolderDao(database: () async => database);
   });
 
@@ -81,6 +83,190 @@ void main() {
             whereArgs: [bookId],
           )).single['shelf_folder_id']
           as String?;
+
+  test(
+    'v29 migration backfills only valid sessions and never regresses recency',
+    () async {
+      final read = await addBook('Read');
+      final unread = await addBook('Unread');
+      await database.execute('''CREATE TABLE reading_sessions(
+      bookId INTEGER, startTimeMs INTEGER, endTimeMs INTEGER,
+      durationInSeconds INTEGER)''');
+      for (final session in [
+        {
+          'bookId': read,
+          'startTimeMs': 1000,
+          'endTimeMs': 2000,
+          'durationInSeconds': 1,
+        },
+        {
+          'bookId': read,
+          'startTimeMs': 2000,
+          'endTimeMs': 6000,
+          'durationInSeconds': 4,
+        },
+        {
+          'bookId': read,
+          'startTimeMs': 9000,
+          'endTimeMs': 8000,
+          'durationInSeconds': 1,
+        },
+        {
+          'bookId': unread,
+          'startTimeMs': 1000,
+          'endTimeMs': 9000,
+          'durationInSeconds': 0,
+        },
+      ]) {
+        await database.insert('reading_sessions', session);
+      }
+      await ShelfOrganizationSchemaMigration.migrate(database);
+      final bookDao = BookDao(database: () async => database);
+      expect(
+        (await bookDao.getBookById(read))!.lastReadAt!.millisecondsSinceEpoch,
+        6000,
+      );
+      expect((await bookDao.getBookById(unread))!.lastReadAt, isNull);
+      await bookDao.markRead(
+        read,
+        at: DateTime.fromMillisecondsSinceEpoch(10000),
+      );
+      await ShelfOrganizationSchemaMigration.migrate(database);
+      expect(
+        (await bookDao.getBookById(read))!.lastReadAt!.millisecondsSinceEpoch,
+        10000,
+      );
+    },
+  );
+
+  test(
+    'reorder persists a mixed root and independent folder sequence',
+    () async {
+      final first = await addBook('First');
+      final second = await addBook('Second');
+      final parent = await dao.create('Parent');
+      final child = await dao.create('Child', parentId: parent.id);
+      await dao.moveBooks({second}, parent.id);
+      await dao.reorder(null, [
+        (bookId: first, folderId: null),
+        (bookId: null, folderId: parent.id),
+      ]);
+      await dao.reorder(parent.id, [
+        (bookId: null, folderId: child.id),
+        (bookId: second, folderId: null),
+      ]);
+      final books = await BookDao(database: () async => database).getAllBooks();
+      expect(books.singleWhere((book) => book.id == first).shelfSortIndex, 0);
+      expect(books.singleWhere((book) => book.id == second).shelfSortIndex, 1);
+      final folders = await dao.getAll();
+      expect(
+        folders.singleWhere((folder) => folder.id == parent.id).sortIndex,
+        1,
+      );
+      expect(
+        folders.singleWhere((folder) => folder.id == child.id).sortIndex,
+        0,
+      );
+    },
+  );
+
+  test(
+    'reorder rejects duplicate, missing and foreign siblings atomically',
+    () async {
+      final first = await addBook('First');
+      final second = await addBook('Second');
+      final parent = await dao.create('Parent', bookIds: {second});
+      final beforeBooks = await database.query('books');
+      final beforeFolders = await database.query('shelf_folders');
+      await expectLater(
+        dao.reorder(null, [(bookId: first, folderId: null)]),
+        throwsStateError,
+      );
+      await expectLater(
+        dao.reorder(null, [
+          (bookId: first, folderId: null),
+          (bookId: first, folderId: null),
+        ]),
+        throwsArgumentError,
+      );
+      await expectLater(
+        dao.reorder(parent.id, [(bookId: first, folderId: null)]),
+        throwsStateError,
+      );
+      await expectLater(
+        dao.reorder(null, [(bookId: first, folderId: parent.id)]),
+        throwsArgumentError,
+      );
+      expect(await database.query('books'), beforeBooks);
+      expect(await database.query('shelf_folders'), beforeFolders);
+    },
+  );
+
+  test(
+    'moves keep unchanged sibling ranks and reset ranks in a new parent',
+    () async {
+      final first = await addBook('First');
+      final parent = await dao.create('Parent');
+      final child = await dao.create(
+        'Child',
+        parentId: parent.id,
+        bookIds: {first},
+      );
+      await dao.reorder(parent.id, [(bookId: null, folderId: child.id)]);
+      await dao.reorder(child.id, [(bookId: first, folderId: null)]);
+      await dao.moveFolder(child.id, parent.id);
+      await dao.moveBooks({first}, child.id);
+      expect(
+        (await dao.getAll())
+            .singleWhere((folder) => folder.id == child.id)
+            .sortIndex,
+        0,
+      );
+      expect((await database.query('books')).single['shelf_sort_index'], 0);
+      await dao.moveFolder(child.id, null);
+      await dao.moveBooks({first}, parent.id);
+      expect(
+        (await dao.getAll())
+            .singleWhere((folder) => folder.id == child.id)
+            .sortIndex,
+        isNull,
+      );
+      expect(
+        (await database.query('books')).single['shelf_sort_index'],
+        isNull,
+      );
+    },
+  );
+
+  test(
+    'dissolving resets promoted child ranks and keeps unrelated ranks',
+    () async {
+      final first = await addBook('First');
+      final second = await addBook('Second');
+      final parent = await dao.create('Parent', bookIds: {first});
+      final child = await dao.create('Child', parentId: parent.id);
+      await dao.reorder(null, [
+        (bookId: second, folderId: null),
+        (bookId: null, folderId: parent.id),
+      ]);
+      await dao.reorder(parent.id, [
+        (bookId: null, folderId: child.id),
+        (bookId: first, folderId: null),
+      ]);
+      await dao.dissolve(parent.id);
+      final books = await database.query('books');
+      expect(
+        books.singleWhere((book) => book['id'] == first)['shelf_sort_index'],
+        isNull,
+      );
+      expect(
+        books.singleWhere((book) => book['id'] == second)['shelf_sort_index'],
+        0,
+      );
+      expect((await dao.getAll()).single.sortIndex, isNull);
+      expect((await dao.getAll()).single.parentId, isNull);
+    },
+  );
 
   test(
     'v28 migration is idempotent and installs foreign keys and indexes',

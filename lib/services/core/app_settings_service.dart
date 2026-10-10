@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../book_sources/networking/book_source_network_policy.dart';
 import '../../models/home_navigation_destination.dart';
+import '../../models/library_sort.dart';
 import '../../utils/font_catalog_helper.dart';
 import '../../utils/page_transitions.dart';
 import '../account/member_account_controller.dart';
@@ -21,6 +22,7 @@ export 'advanced_feature_access.dart'
     show
         additionalSourceProtocolsPreferenceKey,
         privateBookSourceNetworkPreferenceKey;
+export '../../models/library_sort.dart';
 
 enum LibraryLayoutMode { card, grid }
 
@@ -48,6 +50,8 @@ class AppSettingsNotifier extends ChangeNotifier {
   static const String _keyFloatingNavigationHorizontalMargin =
       'home_navigation_horizontal_margin_v1';
   static const String _keyLibraryLayoutMode = 'library_layout_mode_v1';
+  static const String _keyLibrarySortMode = 'library_sort_mode_v1';
+  static const String _keyLibrarySortDescending = 'library_sort_descending_v1';
   static const String _keyLibraryGridColumns = 'library_grid_columns_v1';
   static const String _keyLibraryGridShowDetails =
       'library_grid_show_details_v1';
@@ -73,6 +77,8 @@ class AppSettingsNotifier extends ChangeNotifier {
   double _floatingNavigationHeight = 60;
   double _floatingNavigationHorizontalMargin = 24;
   LibraryLayoutMode _libraryLayoutMode = LibraryLayoutMode.grid;
+  LibrarySortMode _librarySortMode = LibrarySortMode.recentAdded;
+  bool _librarySortDescending = true;
   int _libraryGridColumns = 2;
   bool _libraryGridShowDetails = true;
   LibraryBookOpenAnimation _libraryBookOpenAnimation =
@@ -139,6 +145,8 @@ class AppSettingsNotifier extends ChangeNotifier {
     HomeNavigationDestination destination,
   ) => !_hiddenHomeNavigationDestinations.contains(destination);
   LibraryLayoutMode get libraryLayoutMode => _libraryLayoutMode;
+  LibrarySortMode get librarySortMode => _librarySortMode;
+  bool get librarySortDescending => _librarySortDescending;
   int get libraryGridColumns => _libraryGridColumns;
   bool get libraryGridShowDetails => _libraryGridShowDetails;
   LibraryBookOpenAnimation get libraryBookOpenAnimation =>
@@ -411,6 +419,11 @@ class AppSettingsNotifier extends ChangeNotifier {
       'card' => LibraryLayoutMode.card,
       _ => LibraryLayoutMode.grid,
     };
+    _librarySortMode = LibrarySortMode.values.firstWhere(
+      (mode) => mode.name == prefs.getString(_keyLibrarySortMode),
+      orElse: () => LibrarySortMode.recentAdded,
+    );
+    _librarySortDescending = prefs.getBool(_keyLibrarySortDescending) ?? true;
     final storedLibraryGridColumns = prefs.getInt(_keyLibraryGridColumns);
     _libraryGridColumns =
         storedLibraryGridColumns != null &&
@@ -689,6 +702,21 @@ class AppSettingsNotifier extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyLibraryLayoutMode, mode.name);
+  }
+
+  Future<void> setLibrarySort(
+    LibrarySortMode mode, {
+    bool descending = true,
+  }) async {
+    if (_librarySortMode == mode && _librarySortDescending == descending) {
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyLibrarySortMode, mode.name);
+    await prefs.setBool(_keyLibrarySortDescending, descending);
+    _librarySortMode = mode;
+    _librarySortDescending = descending;
+    notifyListeners();
   }
 
   Future<void> setLibraryGridColumns(int columns) async {

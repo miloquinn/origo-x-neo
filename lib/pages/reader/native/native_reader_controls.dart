@@ -224,6 +224,8 @@ extension _NativeReaderControls on _NativeReaderPageState {
     );
     final controller = session.acquire(
       sourceId: 'local:${widget.book.id}',
+      shelfBookId: widget.book.id,
+      readingActivity: _readingActivity,
       create: () => ReaderAloudController(
         engine: aloudService,
         notificationSink: PlatformReaderAloudMediaSession.instance,

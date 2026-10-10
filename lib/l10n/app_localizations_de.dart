@@ -8267,4 +8267,54 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get readerProgressChapterShort => 'Kapitel';
 
+  @override
+  String get libraryOrganize => 'Bibliothek organisieren';
+
+  @override
+  String get libraryDragOrganize => 'Durch Ziehen anordnen';
+
+  @override
+  String get libraryDragHint =>
+      'Buch oder Ordner gedrückt halten, um die Reihenfolge anzupassen';
+
+  @override
+  String get librarySortHeading => 'Sortieren nach';
+
+  @override
+  String get librarySortRecentAdded => 'Zuletzt hinzugefügt';
+
+  @override
+  String get librarySortRecentRead => 'Zuletzt gelesen';
+
+  @override
+  String get librarySortProgress => 'Lesefortschritt';
+
+  @override
+  String get librarySortManual => 'Manuelle Reihenfolge';
+
+  @override
+  String get librarySortNewestFirst => 'Neueste zuerst';
+
+  @override
+  String get librarySortOldestFirst => 'Älteste zuerst';
+
+  @override
+  String get librarySortProgressDescending => 'Größter Fortschritt zuerst';
+
+  @override
+  String get librarySortProgressAscending => 'Kleinster Fortschritt zuerst';
+
+  @override
+  String get libraryReadingStateHeading => 'Lesestatus';
+
+  @override
+  String get libraryReorderSaveFailed =>
+      'Reihenfolge konnte nicht gespeichert werden. Bitte erneut versuchen.';
+
+  @override
+  String get libraryMoveEarlier => 'Nach vorne verschieben';
+
+  @override
+  String get libraryMoveLater => 'Nach hinten verschieben';
+
 }

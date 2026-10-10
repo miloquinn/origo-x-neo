@@ -38,6 +38,9 @@ abstract class ImageReaderSource {
   /// Local shelf books persist direction by numeric id.
   int? get localBookId => null;
 
+  /// Library identity for reading activity, including saved online comics.
+  Future<int?> readingBookId() async => localBookId;
+
   /// Online books persist direction by a stable string key.
   String? get settingsId => null;
 

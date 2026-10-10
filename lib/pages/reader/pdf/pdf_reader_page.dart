@@ -16,6 +16,7 @@ import 'package:xxread/models/book.dart';
 import 'package:xxread/services/books/book_dao.dart';
 import 'package:xxread/services/books/web_book_file_store.dart';
 import 'package:xxread/services/reading/reading_resume_service.dart';
+import 'package:xxread/services/reading/reading_activity_recorder.dart';
 import 'package:xxread/pages/reader/image/paged_image_reader.dart';
 import 'package:xxread/utils/book_open_transition.dart';
 import 'package:xxread/utils/localization_extension.dart';
@@ -84,6 +85,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
   double _renderWidth = 1080;
 
   bool _disposed = false;
+  final ReadingActivityRecorder _readingActivity = ReadingActivityRecorder();
 
   @override
   void initState() {
@@ -232,6 +234,9 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
             loadPage: (index, {preload = false}) => _loadPage(document, index),
             onPageChanged: (index) => _saveProgress(index, document.pagesCount),
             bookId: widget.book.id,
+            onContentReady: () => unawaited(
+              _readingActivity.markContentReady(bookId: widget.book.id),
+            ),
           );
         },
       ),

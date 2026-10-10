@@ -7685,6 +7685,54 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get readerProgressChapterShort => '本章';
 
+  @override
+  String get libraryOrganize => '整理书库';
+
+  @override
+  String get libraryDragOrganize => '拖动整理';
+
+  @override
+  String get libraryDragHint => '长按书籍或文件夹拖动，调整当前层级的顺序';
+
+  @override
+  String get librarySortHeading => '排序';
+
+  @override
+  String get librarySortRecentAdded => '最近添加';
+
+  @override
+  String get librarySortRecentRead => '最近阅读';
+
+  @override
+  String get librarySortProgress => '阅读进度';
+
+  @override
+  String get librarySortManual => '手动顺序';
+
+  @override
+  String get librarySortNewestFirst => '最新在前';
+
+  @override
+  String get librarySortOldestFirst => '最早在前';
+
+  @override
+  String get librarySortProgressDescending => '进度从高到低';
+
+  @override
+  String get librarySortProgressAscending => '进度从低到高';
+
+  @override
+  String get libraryReadingStateHeading => '阅读状态';
+
+  @override
+  String get libraryReorderSaveFailed => '无法保存书库顺序，请重试';
+
+  @override
+  String get libraryMoveEarlier => '向前移动';
+
+  @override
+  String get libraryMoveLater => '向后移动';
+
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -15368,5 +15416,53 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get readerProgressChapterShort => '本章';
+
+  @override
+  String get libraryOrganize => '整理書庫';
+
+  @override
+  String get libraryDragOrganize => '拖曳整理';
+
+  @override
+  String get libraryDragHint => '長按書籍或資料夾拖曳，調整目前層級的順序';
+
+  @override
+  String get librarySortHeading => '排序';
+
+  @override
+  String get librarySortRecentAdded => '最近新增';
+
+  @override
+  String get librarySortRecentRead => '最近閱讀';
+
+  @override
+  String get librarySortProgress => '閱讀進度';
+
+  @override
+  String get librarySortManual => '手動順序';
+
+  @override
+  String get librarySortNewestFirst => '最新在前';
+
+  @override
+  String get librarySortOldestFirst => '最早在前';
+
+  @override
+  String get librarySortProgressDescending => '進度從高到低';
+
+  @override
+  String get librarySortProgressAscending => '進度從低到高';
+
+  @override
+  String get libraryReadingStateHeading => '閱讀狀態';
+
+  @override
+  String get libraryReorderSaveFailed => '無法儲存書庫順序，請重試';
+
+  @override
+  String get libraryMoveEarlier => '向前移動';
+
+  @override
+  String get libraryMoveLater => '向後移動';
 
 }

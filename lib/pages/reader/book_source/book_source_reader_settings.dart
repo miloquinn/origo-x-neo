@@ -325,6 +325,8 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
     );
     final controller = session.acquire(
       sourceId: 'source:${widget.source.id}:${widget.book.id}',
+      shelfBookId: _shelfBookId,
+      readingActivity: _readingActivity,
       create: () => ReaderAloudController(
         engine: aloudService,
         notificationSink: PlatformReaderAloudMediaSession.instance,

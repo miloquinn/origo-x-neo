@@ -137,6 +137,7 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
           _verticalViewportSize = viewport;
           final paginationViewport = _stablePaginationViewport(viewport);
           _prepareVerticalGeometry(paginationViewport);
+          _scheduleTextReadingActivity(content);
           if (!_effectiveScrollByChapter) {
             return ReaderAutoScrollSurface(
               controller: _autoPageTurnController,
@@ -172,6 +173,7 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
           _pagedLayoutWarms.clear();
         }
         _ensurePagination(paginationViewport, content: content);
+        _scheduleTextReadingActivity(content);
         _schedulePagedLayoutWarm(_chapterIndex + 1);
         _schedulePagedLayoutWarm(_chapterIndex - 1);
         final paged = switch (_pageMode) {
@@ -196,6 +198,20 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
     );
   }
 
+  void _scheduleTextReadingActivity(BookSourceChapterContent content) {
+    if (_readingContentReadyScheduled) return;
+    final readableText =
+        _readableChapterText[_chapterIndex] ??
+        readableBookSourceChapterText(content, fallbackTitle: '');
+    if (readableText.trim().isEmpty) return;
+    _readingContentReadyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(_readingActivity.markContentReady(bookId: _shelfBookId));
+      }
+    });
+  }
+
   Widget _buildImageOnlyChapterReader(BookSourceChapterContent content) {
     final images = content.images;
     if (images.isEmpty) return const SizedBox.shrink();
@@ -214,6 +230,8 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
             ? SourceImageLoadPriority.preload
             : SourceImageLoadPriority.visible,
       ),
+      onContentReady: () =>
+          unawaited(_readingActivity.markContentReady(bookId: _shelfBookId)),
       onPageChanged: (index) {
         if (!mounted) return;
         _pageIndex = index;

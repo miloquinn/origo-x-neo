@@ -34,6 +34,10 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
   static const _sidecarStatePrefix = 'icloud_asset:sidecar:';
   static const _bookmarkStatePrefix = 'icloud_bookmark:';
   static const _hashStatePrefix = 'icloud_hash:';
+  // v1 readers reject unknown row/envelope fields, but preserve portable
+  // library settings they do not consume. Keep organization metadata in that
+  // established extension channel so older Apple clients can relay it safely.
+  static const _organizationPrefix = 'library_organization_v1_';
 
   static const _bookColumns = <String>{
     'title',
@@ -117,6 +121,7 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
         }
       }
     }
+    await _adoptRelayedOrganizationPreferences();
     final snapshot = await _captureDatabaseRows();
     final bookRows = snapshot['books']!;
     final uidById = <int, String>{
@@ -210,6 +215,19 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
         'row': progress,
         'sourceProgress': ?sourceProgress,
       };
+      final organizationKey = organizationPreferenceKey('book', uid);
+      values['setting:$organizationKey'] = {
+        'kind': 'setting',
+        'label': _settingLabel(organizationKey),
+        'key': organizationKey,
+        'value': syncCanonicalJson({
+          'kind': 'book',
+          'identity': uid,
+          'parent': row['shelf_folder_id'],
+          'sortIndex': row['shelf_sort_index'],
+          'lastReadAt': row['last_read_at'],
+        }),
+      };
     }
 
     if (snapshot['folders']!.isNotEmpty) {
@@ -220,7 +238,22 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
           'kind': 'folder',
           'label': _requiredString(row, 'name'),
           'id': id,
-          'row': row,
+          'row': {
+            for (final key in const ['id', 'name', 'parent_id', 'created_at'])
+              key: row[key],
+          },
+        };
+        final organizationKey = organizationPreferenceKey('folder', id);
+        values['setting:$organizationKey'] = {
+          'kind': 'setting',
+          'label': _settingLabel(organizationKey),
+          'key': organizationKey,
+          'value': syncCanonicalJson({
+            'kind': 'folder',
+            'identity': id,
+            'parent': row['parent_id'],
+            'sortIndex': row['sort_index'],
+          }),
         };
       }
     }
@@ -270,6 +303,9 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
       throw StateError('Library changed during iCloud capture; retry');
     }
     for (final key in preferences.getKeys()) {
+      // An older client may have relayed these as preferences. The database
+      // owns them on this client, so an old relay must not override its capture.
+      if (key.startsWith(_organizationPrefix)) continue;
       final value = preferences.get(key);
       if (!_portablePreference(key, value)) continue;
       if (!_isPreferenceValue(value)) continue;
@@ -369,11 +405,18 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
                   0 ||
               changed;
         }
+        for (final item in parsed.where(
+          (e) =>
+              e.kind == 'setting' && e.identity.startsWith(_organizationPrefix),
+        )) {
+          changed = await _applyOrganization(tx, item, uidToId) || changed;
+        }
         if ((await tx.rawQuery('PRAGMA foreign_key_check')).isNotEmpty) {
           throw const FormatException('Invalid iCloud references');
         }
       });
       for (final item in parsed.where((e) => e.kind == 'setting')) {
+        if (item.identity.startsWith(_organizationPrefix)) continue;
         changed = await _applySetting(item) || changed;
       }
       return changed;
@@ -638,6 +681,9 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
             !_isPreferenceValue(value['value'])) {
           throw const FormatException('Invalid setting');
         }
+        if (key.startsWith(_organizationPrefix)) {
+          _organizationValue(key, value['value']);
+        }
         return _Incoming(prefix, key, Map<String, Object?>.from(value));
     }
     throw const FormatException('Unsupported iCloud record');
@@ -831,12 +877,17 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
       limit: 1,
     );
     if (existing.isNotEmpty &&
-        syncCanonicalJson(existing.single) == syncCanonicalJson(row)) {
+        row.entries.every(
+          (entry) => existing.single[entry.key] == entry.value,
+        )) {
       return false;
     }
     if (existing.isEmpty) {
       await tx.insert('shelf_folders', row);
     } else {
+      if (existing.single['parent_id'] != row['parent_id']) {
+        row['sort_index'] = null;
+      }
       await tx.update(
         'shelf_folders',
         Map.of(row)..remove('id'),
@@ -844,6 +895,116 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
         whereArgs: [item.identity],
       );
     }
+    return true;
+  }
+
+  /// Shared owner key contract for metadata capture and conflict grouping.
+  static String organizationPreferenceKey(String kind, String identity) =>
+      '$_organizationPrefix${sha256.convert(utf8.encode('$kind\u0000$identity'))}';
+
+  Future<void> _adoptRelayedOrganizationPreferences() async {
+    final relayed = <String, Object?>{
+      for (final key in preferences.getKeys())
+        if (key.startsWith(_organizationPrefix)) key: preferences.get(key),
+    };
+    if (relayed.isEmpty) return;
+    // Older installations stored organization records as opaque preferences.
+    // Adopt those before the first upgraded capture compares its local state
+    // with the old baseline. A durable marker protects a failed pref removal
+    // from replaying a stale rank over a later user reorder.
+    await database.transaction((tx) async {
+      final uidToId = await _bookIdsByUid(tx);
+      for (final entry in relayed.entries) {
+        _organizationValue(entry.key, entry.value);
+        final marker = 'icloud_organization_adopted:${entry.key}';
+        if (await _stateValue(tx, marker) == entry.value) continue;
+        await _applyOrganization(
+          tx,
+          _Incoming('setting', entry.key, {'value': entry.value}),
+          uidToId,
+        );
+        await _putState(tx, marker, entry.value! as String);
+      }
+    });
+    for (final key in relayed.keys) {
+      if (!await preferences.remove(key)) {
+        throw StateError('Could not remove adopted organization preference');
+      }
+    }
+  }
+
+  static Map<String, Object?> _organizationValue(String key, Object? value) {
+    if (value is! String) {
+      throw const FormatException('Invalid organization metadata');
+    }
+    final decoded = jsonDecode(value);
+    if (decoded is! Map) {
+      throw const FormatException('Invalid organization metadata');
+    }
+    final row = Map<String, Object?>.from(decoded);
+    _exactKeys(row, const {
+      'kind',
+      'identity',
+      'parent',
+      'sortIndex',
+      'lastReadAt',
+    });
+    final kind = row['kind'];
+    final identity = _requiredString(row, 'identity');
+    final parent = row['parent'];
+    final index = row['sortIndex'];
+    final readAt = row['lastReadAt'];
+    if ((kind != 'book' && kind != 'folder') ||
+        key != organizationPreferenceKey(kind as String, identity) ||
+        !row.containsKey('parent') ||
+        !row.containsKey('sortIndex') ||
+        (parent != null && (parent is! String || parent.isEmpty)) ||
+        (index != null && (index is! int || index < 0)) ||
+        (readAt != null && (readAt is! int || readAt <= 0)) ||
+        (kind == 'folder' && row.containsKey('lastReadAt'))) {
+      throw const FormatException('Invalid organization metadata');
+    }
+    return row;
+  }
+
+  Future<bool> _applyOrganization(
+    DatabaseExecutor tx,
+    _Incoming item,
+    Map<String, int> uidToId,
+  ) async {
+    if (item.deleted) return false;
+    final metadata = _organizationValue(item.identity, item.value!['value']);
+    final book = metadata['kind'] == 'book';
+    final identity = metadata['identity']! as String;
+    final id = book ? uidToId[identity] : identity;
+    if (id == null) return false;
+    final table = book ? 'books' : 'shelf_folders';
+    final existing = await tx.query(
+      table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (existing.isEmpty) return false;
+    final current = existing.single;
+    final rankColumn = book ? 'shelf_sort_index' : 'sort_index';
+    final parentColumn = book ? 'shelf_folder_id' : 'parent_id';
+    final updates = <String, Object?>{};
+    // Older clients relay the metadata untouched when they move an item. A
+    // rank belongs to its original parent and cannot be applied in a new one.
+    if (current[parentColumn] == metadata['parent'] &&
+        current[rankColumn] != metadata['sortIndex']) {
+      updates[rankColumn] = metadata['sortIndex'];
+    }
+    if (book) {
+      final readAt = metadata['lastReadAt'] as int?;
+      final currentReadAt = current['last_read_at'] as int?;
+      if (readAt != null && (currentReadAt == null || readAt > currentReadAt)) {
+        updates['last_read_at'] = readAt;
+      }
+    }
+    if (updates.isEmpty) return false;
+    await tx.update(table, updates, where: 'id = ?', whereArgs: [id]);
     return true;
   }
 
@@ -911,6 +1072,9 @@ class DefaultICloudSyncStore implements ICloudSyncStore {
       );
     }
     if (existing.isNotEmpty) {
+      if (existing.single['shelf_folder_id'] != row['shelf_folder_id']) {
+        row['shelf_sort_index'] = null;
+      }
       for (final key in const [
         'currentPage',
         'totalPages',

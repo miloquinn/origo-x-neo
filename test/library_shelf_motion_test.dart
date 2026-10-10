@@ -664,6 +664,11 @@ class _MotionFixture {
       for (var index = 0; index < 32; index++)
         Book(
           id: index + 1,
+          importDate: DateTime.utc(
+            2026,
+            10,
+            10,
+          ).subtract(Duration(days: index)),
           title: rootBookMatchesParentName && index == 0
               ? 'Parent Shelf Root'
               : 'Root Book $index',
@@ -674,6 +679,11 @@ class _MotionFixture {
       for (var index = 0; index < 32; index++)
         Book(
           id: index + 101,
+          importDate: DateTime.utc(
+            2026,
+            10,
+            10,
+          ).subtract(Duration(days: index)),
           title: 'Parent Book $index',
           filePath: '/motion-parent-$index.epub',
           format: 'epub',
@@ -683,6 +693,11 @@ class _MotionFixture {
       for (var index = 0; index < 4; index++)
         Book(
           id: index + 201,
+          importDate: DateTime.utc(
+            2026,
+            10,
+            10,
+          ).subtract(Duration(days: index)),
           title: 'Child Book $index',
           filePath: '/motion-child-$index.epub',
           format: 'epub',

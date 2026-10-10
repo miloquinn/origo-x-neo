@@ -109,6 +109,8 @@ class BookDao implements BookImportStore {
     'source_locator',
     'source_modified_time',
     'shelf_folder_id',
+    'shelf_sort_index',
+    'last_read_at',
   ];
 
   Future<int> insertBook(Book book) async {
@@ -137,6 +139,19 @@ class BookDao implements BookImportStore {
     } catch (e) {
       throw Exception('获取书籍列表失败: $e');
     }
+  }
+
+  /// Only actual reader readiness/session events should call this API.
+  /// A late or restored timestamp must never move recent reading backwards.
+  Future<void> markRead(int bookId, {DateTime? at}) async {
+    final timestamp = (at ?? DateTime.now()).millisecondsSinceEpoch;
+    if (timestamp <= 0) throw ArgumentError.value(at, 'at');
+    final db = await _databaseProvider();
+    await db.rawUpdate(
+      'UPDATE books SET last_read_at = ? WHERE id = ? '
+      'AND (last_read_at IS NULL OR last_read_at < ?)',
+      [timestamp, bookId, timestamp],
+    );
   }
 
   /// 批量读取书籍摘要，并保持调用方给出的 ID 顺序。
@@ -435,6 +450,8 @@ class BookDao implements BookImportStore {
       // can be based on a stale download/source snapshot and must not move a
       // book back or restore a folder that has since been dissolved.
       stored.remove('shelf_folder_id');
+      stored.remove('shelf_sort_index');
+      stored.remove('last_read_at');
       await db.transaction((txn) async {
         final rows = await txn.query(
           'books',

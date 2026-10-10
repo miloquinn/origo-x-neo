@@ -50,6 +50,7 @@ class PagedImageReader extends StatefulWidget {
     this.onDirectionChanged,
     this.backgroundOverride,
     this.onSettings,
+    this.onContentReady,
   });
 
   final String title;
@@ -72,6 +73,9 @@ class PagedImageReader extends StatefulWidget {
   final ImageReaderBackground? backgroundOverride;
   final VoidCallback? onSettings;
 
+  /// First decoded frame of the current page; preloaded pages do not count.
+  final VoidCallback? onContentReady;
+
   @override
   State<PagedImageReader> createState() => _PagedImageReaderState();
 }
@@ -84,6 +88,20 @@ class _PagedImageReaderState extends State<PagedImageReader> {
   late int _currentPage;
   bool _chromeVisible = false;
   bool _boundaryHandled = false;
+  bool _contentReadyScheduled = false;
+
+  void _reportContentReady(int pageIndex) {
+    if (_contentReadyScheduled || pageIndex != _currentPage) return;
+    _contentReadyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (pageIndex != _currentPage) {
+        _contentReadyScheduled = false;
+        return;
+      }
+      widget.onContentReady?.call();
+    });
+  }
 
   /// 任一页处于放大状态时禁用 PageView 滑动，把手势留给平移。
   bool _zoomed = false;
@@ -489,6 +507,7 @@ class _PagedImageReaderState extends State<PagedImageReader> {
                             loadPage: widget.loadPage,
                             onRetry: widget.onRetryPage,
                             lightBackground: _background.isLight,
+                            onContentReady: () => _reportContentReady(index),
                           ),
                         )
                       : PageView.builder(
@@ -505,6 +524,7 @@ class _PagedImageReaderState extends State<PagedImageReader> {
                             onRetry: widget.onRetryPage,
                             onZoomChanged: _setZoomed,
                             lightBackground: _background.isLight,
+                            onContentReady: () => _reportContentReady(index),
                           ),
                         ),
                 ),
@@ -634,12 +654,14 @@ class _ContinuousImagePage extends StatefulWidget {
     required this.loadPage,
     required this.onRetry,
     required this.lightBackground,
+    required this.onContentReady,
   });
 
   final int pageIndex;
   final Future<Uint8List> Function(int index, {bool preload}) loadPage;
   final Future<void> Function(int index)? onRetry;
   final bool lightBackground;
+  final VoidCallback onContentReady;
 
   @override
   State<_ContinuousImagePage> createState() => _ContinuousImagePageState();
@@ -697,6 +719,12 @@ class _ContinuousImagePageState extends State<_ContinuousImagePage> {
           width: double.infinity,
           fit: BoxFit.fitWidth,
           gaplessPlayback: true,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (frame != null || wasSynchronouslyLoaded) {
+              widget.onContentReady();
+            }
+            return child;
+          },
           errorBuilder: (context, error, stackTrace) {
             comicDebugLog(
               'image-decode',
@@ -724,6 +752,7 @@ class _ZoomablePageView extends StatefulWidget {
     required this.onRetry,
     required this.onZoomChanged,
     required this.lightBackground,
+    required this.onContentReady,
   });
 
   final int pageIndex;
@@ -731,6 +760,7 @@ class _ZoomablePageView extends StatefulWidget {
   final Future<void> Function(int index)? onRetry;
   final ValueChanged<bool> onZoomChanged;
   final bool lightBackground;
+  final VoidCallback onContentReady;
 
   @override
   State<_ZoomablePageView> createState() => _ZoomablePageViewState();
@@ -831,6 +861,12 @@ class _ZoomablePageViewState extends State<_ZoomablePageView> {
                 bytes,
                 fit: BoxFit.contain,
                 gaplessPlayback: true,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (frame != null || wasSynchronouslyLoaded) {
+                    widget.onContentReady();
+                  }
+                  return child;
+                },
                 errorBuilder: (context, error, stackTrace) {
                   comicDebugLog(
                     'image-decode',

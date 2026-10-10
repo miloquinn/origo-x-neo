@@ -501,9 +501,14 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
             const SizedBox(width: 8),
             ValueListenableBuilder<bool>(
               valueListenable: _libraryController.filterActive,
-              builder: (context, active, _) => _LibraryTopBarFilterButton(
-                active: active,
-                onTapWithRect: _libraryController.showFilterMenu,
+              builder: (context, active, _) => ValueListenableBuilder<bool>(
+                valueListenable: _libraryController.reordering,
+                builder: (context, reordering, _) => LibraryOrganizationButton(
+                  active: active,
+                  reordering: reordering,
+                  onOrganize: _libraryController.showOrganizationMenu,
+                  onDone: _libraryController.finishReordering,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -778,34 +783,6 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
           ],
           const SizedBox(height: 16),
         ],
-      ),
-    );
-  }
-}
-
-/// 书库筛选按钮：把按钮的屏幕位置传给筛选菜单，菜单贴着按钮弹出。
-class _LibraryTopBarFilterButton extends StatelessWidget {
-  final bool active;
-  final Future<void> Function(Rect anchor) onTapWithRect;
-
-  const _LibraryTopBarFilterButton({
-    required this.active,
-    required this.onTapWithRect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Builder(
-      builder: (buttonContext) => GlassToolbarButton(
-        icon: active ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
-        tooltip: buttonContext.l10n.libraryFilterTooltip,
-        highlighted: active,
-        blurBackground: false,
-        onPressed: () {
-          final box = buttonContext.findRenderObject()! as RenderBox;
-          final rect = box.localToGlobal(Offset.zero) & box.size;
-          unawaited(onTapWithRect(rect));
-        },
       ),
     );
   }

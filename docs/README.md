@@ -11,6 +11,7 @@
 | 书源门面、运行时、所有权与兼容边界 | [书源架构](../lib/book_sources/README.md) |
 | 书源管理卡片密度、筛选栏与共享胶囊分类控件 | [书源管理布局](source-management-ui.md) |
 | 书库更新计数、封面角标、在线确认与本地续更 | [书库更新](library-source-updates.md) |
+| 书籍与文件夹拖动、自动排序、真实最近阅读时间 | [书库整理](library-organization.md) |
 | 本地/在线缓存、在线启动、分页、清除与排障 | [阅读缓存维护](reading-cache.md) |
 | 自定义背景图保存、升级兼容与删除 | [阅读背景图](reader-backgrounds.md) |
 | 阅读期间屏幕常亮、平台桥接与释放 | [阅读屏幕常亮](reader-keep-screen-on.md) |

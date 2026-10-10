@@ -7823,4 +7823,52 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get readerProgressChapterShort => '章内';
 
+  @override
+  String get libraryOrganize => 'ライブラリを整理';
+
+  @override
+  String get libraryDragOrganize => 'ドラッグで並べ替え';
+
+  @override
+  String get libraryDragHint => '本やフォルダを長押しして、この階層の順序を変更';
+
+  @override
+  String get librarySortHeading => '並べ替え';
+
+  @override
+  String get librarySortRecentAdded => '追加した順';
+
+  @override
+  String get librarySortRecentRead => '最近読んだ順';
+
+  @override
+  String get librarySortProgress => '読書の進み具合';
+
+  @override
+  String get librarySortManual => '手動の順序';
+
+  @override
+  String get librarySortNewestFirst => '新しい順';
+
+  @override
+  String get librarySortOldestFirst => '古い順';
+
+  @override
+  String get librarySortProgressDescending => '進んでいる順';
+
+  @override
+  String get librarySortProgressAscending => '進んでいない順';
+
+  @override
+  String get libraryReadingStateHeading => '読書状態';
+
+  @override
+  String get libraryReorderSaveFailed => '順序を保存できませんでした。再試行してください。';
+
+  @override
+  String get libraryMoveEarlier => '前に移動';
+
+  @override
+  String get libraryMoveLater => '後ろに移動';
+
 }

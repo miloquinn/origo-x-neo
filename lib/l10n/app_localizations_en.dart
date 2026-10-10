@@ -8148,4 +8148,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get readerProgressChapterShort => 'Chapter';
 
+  @override
+  String get libraryOrganize => 'Organize library';
+
+  @override
+  String get libraryDragOrganize => 'Reorder by dragging';
+
+  @override
+  String get libraryDragHint =>
+      'Touch and hold a book or folder to reorder this shelf';
+
+  @override
+  String get librarySortHeading => 'Sort by';
+
+  @override
+  String get librarySortRecentAdded => 'Recently added';
+
+  @override
+  String get librarySortRecentRead => 'Recently read';
+
+  @override
+  String get librarySortProgress => 'Reading progress';
+
+  @override
+  String get librarySortManual => 'Manual order';
+
+  @override
+  String get librarySortNewestFirst => 'Newest first';
+
+  @override
+  String get librarySortOldestFirst => 'Oldest first';
+
+  @override
+  String get librarySortProgressDescending => 'Most read first';
+
+  @override
+  String get librarySortProgressAscending => 'Least read first';
+
+  @override
+  String get libraryReadingStateHeading => 'Reading status';
+
+  @override
+  String get libraryReorderSaveFailed =>
+      'Could not save shelf order. Please try again.';
+
+  @override
+  String get libraryMoveEarlier => 'Move earlier';
+
+  @override
+  String get libraryMoveLater => 'Move later';
+
 }

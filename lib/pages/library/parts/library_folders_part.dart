@@ -27,7 +27,8 @@ extension _LibraryPageFolders on _LibraryPageState {
   }
 
   void _enterFolder(String? id, {bool returning = false}) {
-    if (_folderMutationInProgress ||
+    if (_isReordering ||
+        _folderMutationInProgress ||
         _folderNavigationPending ||
         (_shelfTransitionKey.currentState?.isAnimating ?? false) ||
         id == _currentFolderId) {
@@ -83,10 +84,14 @@ extension _LibraryPageFolders on _LibraryPageState {
     final active =
         destination == null || destination == HomeNavigationDestination.library;
     return PopScope(
-      canPop: !active || (!_selection.isActive && _currentFolderId == null),
+      canPop:
+          !active ||
+          (!_isReordering && !_selection.isActive && _currentFolderId == null),
       onPopInvokedWithResult: (didPop, _) {
         if (didPop || !active) return;
-        if (_selection.isActive) {
+        if (_isReordering) {
+          _finishReordering();
+        } else if (_selection.isActive) {
           _exitSelectionMode();
         } else {
           _goUp();
@@ -147,7 +152,9 @@ extension _LibraryPageFolders on _LibraryPageState {
               )
             : GlassTextButton(
                 key: const ValueKey('library-back-to-parent'),
-                onPressed: _folderMutationInProgress ? null : _goUp,
+                onPressed: _isReordering || _folderMutationInProgress
+                    ? null
+                    : _goUp,
                 minimumHeight: 48,
                 foregroundColor: Theme.of(context).colorScheme.onSurface,
                 padding: const EdgeInsets.symmetric(horizontal: 16),

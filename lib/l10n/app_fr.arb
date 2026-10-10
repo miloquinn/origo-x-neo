@@ -2332,5 +2332,21 @@
   "readerProgressBook": "Livre entier",
   "readerProgressChapter": "Chapitre actuel",
   "readerProgressBookShort": "Livre",
-  "readerProgressChapterShort": "Chapitre"
+  "readerProgressChapterShort": "Chapitre",
+  "libraryOrganize": "Organiser la bibliothèque",
+  "libraryDragOrganize": "Réorganiser par glissement",
+  "libraryDragHint": "Maintenez un livre ou un dossier pour modifier son ordre",
+  "librarySortHeading": "Trier par",
+  "librarySortRecentAdded": "Ajouts récents",
+  "librarySortRecentRead": "Lectures récentes",
+  "librarySortProgress": "Progression de lecture",
+  "librarySortManual": "Ordre manuel",
+  "librarySortNewestFirst": "Plus récents en premier",
+  "librarySortOldestFirst": "Plus anciens en premier",
+  "librarySortProgressDescending": "Plus avancés en premier",
+  "librarySortProgressAscending": "Moins avancés en premier",
+  "libraryReadingStateHeading": "État de lecture",
+  "libraryReorderSaveFailed": "Impossible de sauvegarder l’ordre. Réessayez.",
+  "libraryMoveEarlier": "Déplacer avant",
+  "libraryMoveLater": "Déplacer après"
 }

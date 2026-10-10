@@ -7285,5 +7285,21 @@
   "readerProgressBook": "Full book",
   "readerProgressChapter": "Current chapter",
   "readerProgressBookShort": "Book",
-  "readerProgressChapterShort": "Chapter"
+  "readerProgressChapterShort": "Chapter",
+  "libraryOrganize": "Organize library",
+  "libraryDragOrganize": "Reorder by dragging",
+  "libraryDragHint": "Touch and hold a book or folder to reorder this shelf",
+  "librarySortHeading": "Sort by",
+  "librarySortRecentAdded": "Recently added",
+  "librarySortRecentRead": "Recently read",
+  "librarySortProgress": "Reading progress",
+  "librarySortManual": "Manual order",
+  "librarySortNewestFirst": "Newest first",
+  "librarySortOldestFirst": "Oldest first",
+  "librarySortProgressDescending": "Most read first",
+  "librarySortProgressAscending": "Least read first",
+  "libraryReadingStateHeading": "Reading status",
+  "libraryReorderSaveFailed": "Could not save shelf order. Please try again.",
+  "libraryMoveEarlier": "Move earlier",
+  "libraryMoveLater": "Move later"
 }

@@ -319,7 +319,7 @@ extension _LibraryPageBookDetails on _LibraryPageState {
           ),
         );
 
-        return content;
+        return SingleChildScrollView(child: content);
       },
     );
   }
