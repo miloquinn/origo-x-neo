@@ -48,3 +48,11 @@
 - `reader_paragraph_review_sheet_test.dart`：三种材质、明暗模式、返回/遮罩/取消和 config；`source_browser_content_view_test.dart`：嵌入视图控制与快照。
 
 具有进程全局状态的 Flutter widget 文件分别运行；同一 checkout 的 Flutter 任务还可能竞争 macOS native assets 的生成和签名，先单独复现再判断产品是否存在问题。
+
+### 2026-10-10 验证记录
+
+段落投影、净化映射、章节刷新、运行时上下文/取消/并发会话保存，以及阅读器三种阅读模式的定向回归均已通过。阅读器批注、气泡、弹层和嵌入视图的 widget 文件分别运行通过；全库静态分析没有 error 或 warning，仍有 6 条与本次功能无关的 info 提示。日志保存在 `build/paragraph-comments/final-regressions/`、`runtime-verification.log` 和 `analyze-final.log`。
+
+iOS 模拟器中通过真实 `SourceRuntime.executeChapterAction` 打开共享弹层与原生 WKWebView；网页 `run()` 读取当前书名和章节，关闭时捕获 URL、HTML 和 localStorage，外层脚本随后正常结束。实底与液态玻璃暗色两次运行均记录 `SOURCE_BROWSER_SHEET_SMOKE=PASS`，日志为 `build/paragraph-comments/source-browser-sheet-{solid,liquid}.log`。三种材质的明暗组件截图也已检查。Android Kotlin 编译、macOS Runner 构建及 iOS Swift SDK 类型检查通过。
+
+上述原生网页是受控 fixture，不访问真实评论服务。SloanePro 更新由共享 checkout 的统一安装任务负责，安装与真实书源/账号的段评验收需要各自的回执；本记录不表示已完成这两项。
