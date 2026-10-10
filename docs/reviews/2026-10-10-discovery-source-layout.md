@@ -28,6 +28,6 @@ ORSP 来源显示其支持的“推荐 / 分类 / 最新”入口，Legado 兼�
 
 SloanePro 合并安装继续由现有唯一安装负责人执行。本项登记在 `build/device-ios/coordination.json` 的 `discoverySourceLayout`，来源提交和文件哈希进入组合源码门禁；在预览及所有并行来源定稿后，使用最新共享工作区、`direct` 本地开发签名 Release 原地更新并启动，不卸载、不清除账户或书籍。构建、安装、启动及用户真实书源/视觉/手感验收分别记录，尚未将预览当作真机验收。
 
-2026-10-11：合并 Release 构建通过，组合提交为 `fc1297cd`，本项来源提交为 `71c48cbc`。`com.niki.xxread` 的 `2.7.3+261010006` 已原地安装到 SloanePro（iPhone 16 Pro），安装后身份已核对，27 个本项产品文件哈希全部匹配签名包的源码清单。`direct` 本地开发签名渠道，未卸载或清理数据。启动被 iOS 的实际锁屏状态拒绝（`FBSOpenApplicationErrorDomain: Locked`），待解锁后只补启动，不重复安装；真实书源和交互验收仍待完成。收据：`build/reader-resume-flicker-20261010/device-261010006/signed-build.json`、`build/discovery-source-regressions/device-acceptance.json`。
+2026-10-11：合并 Release 构建通过，组合提交为 `fc1297cd`，本项来源提交为 `71c48cbc`。`com.niki.xxread` 的 `2.7.3+261010006` 已原地安装到 SloanePro（iPhone 16 Pro），安装后身份已核对，27 个本项产品文件哈希全部匹配签名包的源码清单。`direct` 本地开发签名渠道，未卸载或清理数据。首次启动被实际锁屏状态拒绝（`FBSOpenApplicationErrorDomain: Locked`）；用户解锁后已补充启动成功，未重复安装。独立设备读回再次确认版本、构建号与安装路径，运行进程 `31917` 的可执行文件位于同一应用容器。真实书源和交互验收仍待完成。收据：`build/reader-resume-flicker-20261010/device-261010006/signed-build.json`、`build/discovery-source-regressions/device-acceptance.json`、`build/discovery-source-regressions/device-apps-unlocked-readback.json`、`build/discovery-source-regressions/device-processes-unlocked-readback.json`。
 
 源码已推送到远端，Sloane 当前本机工作区已核对。Windows 的 `milo-pc.local` 未能解析，备用连接也未连通；没有写入或覆盖 Windows 工作区，同步仍待该设备上线。
