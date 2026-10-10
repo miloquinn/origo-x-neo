@@ -35,6 +35,9 @@ or dependencies changed.
   reopening and horizontal modes. Shared vertical helpers pass 10 tests,
   keep-screen-on passes 12, and aloud navigation ownership passes 6.
 - Scoped Flutter analysis, Dart formatting and `git diff --check` pass.
+- Eight EPUB background/exit cases and the split-TXT case pass in independent
+  processes, bringing the unique passing test count to 119. The native
+  lifecycle test contains four title/scoping configurations.
 
 The full native TXT and initial-progress files exhibited state contamination
 when cases were combined in one process: later readers timed out mounting, and
@@ -47,6 +50,11 @@ Logs and delivery receipts are under the ignored
 `build/reader-resume-flicker-20261010/` directory, with source baseline/full-suite
 logs at `build/reader-resume-source-before.log` and
 `build/reader-resume-source-full.log`.
+
+Source fix commit: `82c3657e`, pushed to `origin/main`. Local Sloane and Windows
+`F:\code\origo-x` were independently verified against the live remote at that
+commit. The Windows update used a checksum-verified Git bundle and a fast-forward
+merge; its existing `closed-testing-emails.csv` was retained with unchanged hash.
 
 ## Delivery boundary
 
