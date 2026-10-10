@@ -13657,6 +13657,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No books yet'**
   String get libraryFolderEmptyPreview;
+
+  /// No description provided for @settingsThemeGalleryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme & appearance'**
+  String get settingsThemeGalleryTitle;
+
+  /// No description provided for @settingsThemeGalleryHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Give your reading a new mood'**
+  String get settingsThemeGalleryHeadline;
+
+  /// No description provided for @settingsThemeGallerySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mix colors and artwork your way'**
+  String get settingsThemeGallerySubtitle;
+
+  /// No description provided for @settingsThemeColorCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Color themes'**
+  String get settingsThemeColorCategory;
+
+  /// No description provided for @settingsThemeSkinCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Artwork themes'**
+  String get settingsThemeSkinCategory;
+
+  /// No description provided for @settingsThemeColorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A coordinated set for buttons, text, and backgrounds'**
+  String get settingsThemeColorHint;
+
+  /// No description provided for @settingsThemeSkinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch the background and navigation artwork'**
+  String get settingsThemeSkinHint;
+
+  /// No description provided for @settingsThemeCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current look'**
+  String get settingsThemeCurrent;
+
+  /// No description provided for @settingsThemeOriginalColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous color'**
+  String get settingsThemeOriginalColor;
+
+  /// No description provided for @settingsThemeLegacyColorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the color you chose before'**
+  String get settingsThemeLegacyColorHint;
+
+  /// No description provided for @settingsThemeSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme changed, but couldn\'t be saved'**
+  String get settingsThemeSaveFailed;
+
+  /// No description provided for @settingsThemeRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get settingsThemeRetry;
+
+  /// No description provided for @settingsThemeHighContrastHint.
+  ///
+  /// In en, this message translates to:
+  /// **'High contrast is on. Artwork backgrounds are temporarily hidden.'**
+  String get settingsThemeHighContrastHint;
+
+  /// No description provided for @settingsThemeCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Artwork and open-source credits'**
+  String get settingsThemeCredits;
+
+  /// No description provided for @settingsThemeDisplayEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Display effects'**
+  String get settingsThemeDisplayEffects;
+
+  /// No description provided for @settingsThemeFontLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Fonts & layout'**
+  String get settingsThemeFontLayout;
+
+  /// No description provided for @settingsThemeReadPaperHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading paper and fonts follow your reader settings'**
+  String get settingsThemeReadPaperHint;
+
+  /// No description provided for @settingsThemeColorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Origo Blue'**
+  String get settingsThemeColorBlue;
+
+  /// No description provided for @settingsThemeColorForest.
+  ///
+  /// In en, this message translates to:
+  /// **'Pine Forest'**
+  String get settingsThemeColorForest;
+
+  /// No description provided for @settingsThemeColorAmber.
+  ///
+  /// In en, this message translates to:
+  /// **'Warm Apricot Gold'**
+  String get settingsThemeColorAmber;
+
+  /// No description provided for @settingsThemeColorRose.
+  ///
+  /// In en, this message translates to:
+  /// **'Berry Rose'**
+  String get settingsThemeColorRose;
+
+  /// No description provided for @settingsThemeColorViolet.
+  ///
+  /// In en, this message translates to:
+  /// **'Twilight Violet'**
+  String get settingsThemeColorViolet;
+
+  /// No description provided for @settingsThemeColorGraphite.
+  ///
+  /// In en, this message translates to:
+  /// **'Graphite'**
+  String get settingsThemeColorGraphite;
+
+  /// No description provided for @settingsThemeSkinOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original look'**
+  String get settingsThemeSkinOriginal;
+
+  /// No description provided for @settingsThemeSkinTidal.
+  ///
+  /// In en, this message translates to:
+  /// **'Letters from the Coast'**
+  String get settingsThemeSkinTidal;
+
+  /// No description provided for @settingsThemeSkinBotanical.
+  ///
+  /// In en, this message translates to:
+  /// **'Garden Reading'**
+  String get settingsThemeSkinBotanical;
+
+  /// No description provided for @settingsThemeSkinCelestial.
+  ///
+  /// In en, this message translates to:
+  /// **'Starbound Journey'**
+  String get settingsThemeSkinCelestial;
+
+  /// No description provided for @settingsThemeSkinOriginalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Original gradient background and icons'**
+  String get settingsThemeSkinOriginalHint;
+
+  /// No description provided for @settingsThemeSkinTidalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Wave background and nautical artwork'**
+  String get settingsThemeSkinTidalHint;
+
+  /// No description provided for @settingsThemeSkinBotanicalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Iris background and botanical artwork'**
+  String get settingsThemeSkinBotanicalHint;
+
+  /// No description provided for @settingsThemeSkinCelestialHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Earth background and planetary artwork'**
+  String get settingsThemeSkinCelestialHint;
+
+  /// No description provided for @settingsThemePreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read a little longer'**
+  String get settingsThemePreviewTitle;
+
+  /// No description provided for @settingsThemePreviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep every story, and every mood.'**
+  String get settingsThemePreviewBody;
 }
 
 class _AppLocalizationsDelegate

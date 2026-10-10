@@ -126,7 +126,62 @@ class AppSkinCatalog {
     _skinsById = Map.unmodifiable({for (final skin in skins) skin.id: skin});
   }
 
-  static final AppSkinCatalog builtIn = AppSkinCatalog(const []);
+  static final AppSkinCatalog builtIn = AppSkinCatalog([
+    AppSkin(
+      id: 'tidal',
+      icons: {
+        AppSkinIconSlot.home: _twemojiIcon('1f3e0'),
+        AppSkinIconSlot.library: _twemojiIcon('1f4da'),
+        AppSkinIconSlot.discover: _twemojiIcon('1f9ed'),
+        AppSkinIconSlot.ai: _twemojiIcon('1f52e'),
+        AppSkinIconSlot.profile: _twemojiIcon('1f3c4'),
+      },
+      artwork: {
+        AppSkinArtworkSlot.pageBackground: AppSkinImage(
+          asset: 'assets/purchase/wave.jpg',
+        ),
+        AppSkinArtworkSlot.navigation: AppSkinImage(
+          asset: 'assets/purchase/wave.jpg',
+        ),
+      },
+    ),
+    AppSkin(
+      id: 'botanical',
+      icons: {
+        AppSkinIconSlot.home: _twemojiIcon('1f3e1'),
+        AppSkinIconSlot.library: _twemojiIcon('1f4d6'),
+        AppSkinIconSlot.discover: _twemojiIcon('1f331'),
+        AppSkinIconSlot.ai: _twemojiIcon('1fa84'),
+        AppSkinIconSlot.profile: _twemojiIcon('1f9d1'),
+      },
+      artwork: {
+        AppSkinArtworkSlot.pageBackground: AppSkinImage(
+          asset: 'assets/purchase/irises.jpg',
+        ),
+        AppSkinArtworkSlot.navigation: AppSkinImage(
+          asset: 'assets/purchase/irises.jpg',
+        ),
+      },
+    ),
+    AppSkin(
+      id: 'celestial',
+      icons: {
+        AppSkinIconSlot.home: _twemojiIcon('1f3e0'),
+        AppSkinIconSlot.library: _twemojiIcon('1f4da'),
+        AppSkinIconSlot.discover: _twemojiIcon('1f52d'),
+        AppSkinIconSlot.ai: _twemojiIcon('1f916'),
+        AppSkinIconSlot.profile: _twemojiIcon('1f9d1-200d-1f680'),
+      },
+      artwork: {
+        AppSkinArtworkSlot.pageBackground: AppSkinImage(
+          asset: 'assets/skins/backgrounds/nasa-blue-marble.jpg',
+        ),
+        AppSkinArtworkSlot.navigation: AppSkinImage(
+          asset: 'assets/skins/backgrounds/nasa-blue-marble.jpg',
+        ),
+      },
+    ),
+  ]);
 
   late final List<AppSkin> _skins;
   late final Map<String, AppSkin> _skinsById;
@@ -138,3 +193,7 @@ class AppSkinCatalog {
   AppSkin resolve(String? savedId) =>
       savedId == null ? AppSkin.original : find(savedId) ?? AppSkin.original;
 }
+
+AppSkinIconAssets _twemojiIcon(String codepoint) => AppSkinIconAssets(
+  normal: AppSkinImage(asset: 'assets/skins/icons/twemoji/$codepoint.png'),
+);

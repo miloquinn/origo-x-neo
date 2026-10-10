@@ -48,6 +48,7 @@ class PageStyleHelper {
       image: DecorationImage(
         image: AssetImage(asset.pathFor(Theme.of(context).brightness)),
         fit: BoxFit.cover,
+        opacity: Theme.of(context).brightness == Brightness.dark ? 0.24 : 0.35,
         onError: (error, stackTrace) => FlutterError.reportError(
           FlutterErrorDetails(
             exception: error,

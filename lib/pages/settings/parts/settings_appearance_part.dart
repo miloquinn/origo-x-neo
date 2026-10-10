@@ -343,90 +343,6 @@ extension _SettingsAppearancePart on _SettingsPageState {
     );
   }
 
-  Widget _buildAccentColorSelector(ThemeNotifier themeNotifier) {
-    final l10n = context.l10n;
-    final accentColor = themeNotifier.accentColor;
-    final colorName = accentColorDisplayName(
-      context,
-      AppThemes.getAccentColorName(accentColor),
-    );
-    final subtitle = '$colorName · ${_hexColor(accentColor)}';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 1),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _showAccentColorModal(themeNotifier),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.secondary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    Icons.color_lens_rounded,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.settingsAccentColorTitle,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 24,
-                  height: 24,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outline.withValues(alpha: 0.3),
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.4),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   String _themeModeLabel(ThemeMode mode) {
     final l10n = context.l10n;
     switch (mode) {
@@ -886,20 +802,5 @@ extension _SettingsAppearancePart on _SettingsPageState {
         ),
       ),
     );
-  }
-
-  Future<void> _showAccentColorModal(ThemeNotifier themeNotifier) async {
-    final selectedColor = await showModalBottomSheet<Color>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      enableDrag: true,
-      showDragHandle: false,
-      backgroundColor: Colors.transparent,
-      builder: (context) =>
-          AccentColorPickerSheet(initialColor: themeNotifier.accentColor),
-    );
-    if (selectedColor == null || !mounted) return;
-    await themeNotifier.setAccentColor(selectedColor);
   }
 }

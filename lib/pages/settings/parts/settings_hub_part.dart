@@ -1,6 +1,12 @@
 part of '../settings_page.dart';
 
 extension _SettingsHubPart on _SettingsPageState {
+  void _openThemeGallery() {
+    Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute(builder: (_) => const AppThemePage()));
+  }
+
   String _categoryTitle(AppLocalizations l10n, SettingsCategory category) =>
       switch (category) {
         SettingsCategory.preferences => l10n.settingsPreferencesTitle,
@@ -97,6 +103,8 @@ extension _SettingsHubPart on _SettingsPageState {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        AppThemeSummaryCard(onTap: _openThemeGallery),
+        const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(
@@ -209,6 +217,8 @@ extension _SettingsHubPart on _SettingsPageState {
         (ThemeNotifier theme) => (
           theme.themeMode,
           theme.accentColor,
+          theme.currentColorPreset?.id,
+          theme.currentSkin.id,
           theme.uiStyle,
           theme.glassStyle,
           theme.liquidGlassOpacity,
@@ -238,8 +248,10 @@ extension _SettingsHubPart on _SettingsPageState {
     }
     final sections = switch (widget.category!) {
       SettingsCategory.preferences => <WidgetBuilder>[
+        (_) => AppThemeSummaryCard(onTap: _openThemeGallery),
         (_) =>
             _buildAppearanceSettingsSection(l10n, themeNotifier, appSettings),
+        (_) => _buildFontLayoutSettingsSection(l10n, appSettings),
         (_) => _buildReadingSettingsSection(l10n),
         (_) => _buildGeneralSettingsSection(l10n, appSettings),
       ],

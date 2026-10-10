@@ -7938,4 +7938,113 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get libraryFolderEmptyPreview => 'No books yet';
+
+  @override
+  String get settingsThemeGalleryTitle => 'Темы и оформление';
+
+  @override
+  String get settingsThemeGalleryHeadline => 'Новое настроение для чтения';
+
+  @override
+  String get settingsThemeGallerySubtitle =>
+      'Свободно сочетайте цвета и иллюстрации';
+
+  @override
+  String get settingsThemeColorCategory => 'Цветовые темы';
+
+  @override
+  String get settingsThemeSkinCategory => 'Темы с иллюстрациями';
+
+  @override
+  String get settingsThemeColorHint =>
+      'Сочетание цветов для кнопок, текста и фона';
+
+  @override
+  String get settingsThemeSkinHint => 'Смените фон и иллюстрации навигации';
+
+  @override
+  String get settingsThemeCurrent => 'Текущее сочетание';
+
+  @override
+  String get settingsThemeOriginalColor => 'Прежний цвет';
+
+  @override
+  String get settingsThemeLegacyColorHint => 'Сохранить выбранный ранее цвет';
+
+  @override
+  String get settingsThemeSaveFailed =>
+      'Тема изменена, но сохранить её не удалось';
+
+  @override
+  String get settingsThemeRetry => 'Повторить';
+
+  @override
+  String get settingsThemeHighContrastHint =>
+      'Включена высокая контрастность. Иллюстрированные фоны временно скрыты.';
+
+  @override
+  String get settingsThemeCredits => 'Авторы материалов и открытого ПО';
+
+  @override
+  String get settingsThemeDisplayEffects => 'Эффекты отображения';
+
+  @override
+  String get settingsThemeFontLayout => 'Шрифты и макет';
+
+  @override
+  String get settingsThemeReadPaperHint =>
+      'Бумага и шрифты соответствуют настройкам чтения';
+
+  @override
+  String get settingsThemeColorBlue => 'Синий Origo';
+
+  @override
+  String get settingsThemeColorForest => 'Сосновый лес';
+
+  @override
+  String get settingsThemeColorAmber => 'Абрикосовое золото';
+
+  @override
+  String get settingsThemeColorRose => 'Ягодно-розовый';
+
+  @override
+  String get settingsThemeColorViolet => 'Сумеречный фиолетовый';
+
+  @override
+  String get settingsThemeColorGraphite => 'Графитовый';
+
+  @override
+  String get settingsThemeSkinOriginal => 'Исходный вид';
+
+  @override
+  String get settingsThemeSkinTidal => 'Письма с побережья';
+
+  @override
+  String get settingsThemeSkinBotanical => 'Чтение в саду';
+
+  @override
+  String get settingsThemeSkinCelestial => 'Звёздное путешествие';
+
+  @override
+  String get settingsThemeSkinOriginalHint =>
+      'Исходный градиентный фон и значки';
+
+  @override
+  String get settingsThemeSkinTidalHint =>
+      'Фон с волнами и морские иллюстрации';
+
+  @override
+  String get settingsThemeSkinBotanicalHint =>
+      'Фон с ирисами и растительные иллюстрации';
+
+  @override
+  String get settingsThemeSkinCelestialHint =>
+      'Фон с Землёй и иллюстрации планет';
+
+  @override
+  String get settingsThemePreviewTitle => 'Почитайте ещё немного';
+
+  @override
+  String get settingsThemePreviewBody =>
+      'Сохраняйте истории и каждое настроение.';
 }

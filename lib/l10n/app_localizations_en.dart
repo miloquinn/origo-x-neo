@@ -7873,4 +7873,111 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryFolderEmptyPreview => 'No books yet';
+
+  @override
+  String get settingsThemeGalleryTitle => 'Theme & appearance';
+
+  @override
+  String get settingsThemeGalleryHeadline => 'Give your reading a new mood';
+
+  @override
+  String get settingsThemeGallerySubtitle => 'Mix colors and artwork your way';
+
+  @override
+  String get settingsThemeColorCategory => 'Color themes';
+
+  @override
+  String get settingsThemeSkinCategory => 'Artwork themes';
+
+  @override
+  String get settingsThemeColorHint =>
+      'A coordinated set for buttons, text, and backgrounds';
+
+  @override
+  String get settingsThemeSkinHint =>
+      'Switch the background and navigation artwork';
+
+  @override
+  String get settingsThemeCurrent => 'Current look';
+
+  @override
+  String get settingsThemeOriginalColor => 'Previous color';
+
+  @override
+  String get settingsThemeLegacyColorHint => 'Keep the color you chose before';
+
+  @override
+  String get settingsThemeSaveFailed => 'Theme changed, but couldn\'t be saved';
+
+  @override
+  String get settingsThemeRetry => 'Retry';
+
+  @override
+  String get settingsThemeHighContrastHint =>
+      'High contrast is on. Artwork backgrounds are temporarily hidden.';
+
+  @override
+  String get settingsThemeCredits => 'Artwork and open-source credits';
+
+  @override
+  String get settingsThemeDisplayEffects => 'Display effects';
+
+  @override
+  String get settingsThemeFontLayout => 'Fonts & layout';
+
+  @override
+  String get settingsThemeReadPaperHint =>
+      'Reading paper and fonts follow your reader settings';
+
+  @override
+  String get settingsThemeColorBlue => 'Origo Blue';
+
+  @override
+  String get settingsThemeColorForest => 'Pine Forest';
+
+  @override
+  String get settingsThemeColorAmber => 'Warm Apricot Gold';
+
+  @override
+  String get settingsThemeColorRose => 'Berry Rose';
+
+  @override
+  String get settingsThemeColorViolet => 'Twilight Violet';
+
+  @override
+  String get settingsThemeColorGraphite => 'Graphite';
+
+  @override
+  String get settingsThemeSkinOriginal => 'Original look';
+
+  @override
+  String get settingsThemeSkinTidal => 'Letters from the Coast';
+
+  @override
+  String get settingsThemeSkinBotanical => 'Garden Reading';
+
+  @override
+  String get settingsThemeSkinCelestial => 'Starbound Journey';
+
+  @override
+  String get settingsThemeSkinOriginalHint =>
+      'Original gradient background and icons';
+
+  @override
+  String get settingsThemeSkinTidalHint =>
+      'Wave background and nautical artwork';
+
+  @override
+  String get settingsThemeSkinBotanicalHint =>
+      'Iris background and botanical artwork';
+
+  @override
+  String get settingsThemeSkinCelestialHint =>
+      'Earth background and planetary artwork';
+
+  @override
+  String get settingsThemePreviewTitle => 'Read a little longer';
+
+  @override
+  String get settingsThemePreviewBody => 'Keep every story, and every mood.';
 }

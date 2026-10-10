@@ -476,8 +476,12 @@ void main() {
       );
       BoxDecoration? rendered;
 
-      Widget page(bool highContrast) => _host(
+      Widget page(
+        bool highContrast, {
+        Brightness brightness = Brightness.light,
+      }) => _host(
         skin: skin,
+        brightness: brightness,
         highContrast: highContrast,
         child: Builder(
           builder: (context) {
@@ -496,6 +500,12 @@ void main() {
       await tester.pumpWidget(page(false));
       expect(rendered!.gradient, same(fallback.gradient));
       expect((rendered!.image!.image as AssetImage).assetName, _background);
+      expect(rendered!.image!.opacity, 0.35);
+
+      await tester.pumpWidget(page(false, brightness: Brightness.dark));
+      await tester.pumpAndSettle();
+      expect(rendered!.gradient, same(fallback.gradient));
+      expect(rendered!.image!.opacity, 0.24);
 
       await tester.pumpWidget(page(true));
       expect(rendered!.gradient, same(fallback.gradient));

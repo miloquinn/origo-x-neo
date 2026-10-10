@@ -1,0 +1,25 @@
+Origo X image skin credits
+
+Tidal background
+
+Katsushika Hokusai, Under the Wave off Kanagawa, ca. 1830-32.
+Source: The Metropolitan Museum of Art Open Access collection.
+https://www.metmuseum.org/art/collection/search/45434
+License: CC0 1.0 / public domain.
+
+Botanical background
+
+Vincent van Gogh, Irises, 1890.
+Source: The Metropolitan Museum of Art Open Access collection.
+https://www.metmuseum.org/art/collection/search/436528
+License: CC0 1.0 / public domain.
+
+Celestial background
+
+Apollo 17: Blue Marble, photograph AS17-148-22727, 1972.
+Source: NASA; photographed by the Apollo 17 crew.
+https://www.nasa.gov/image-article/apollo-17-blue-marble/
+NASA media usage guidance:
+https://www.nasa.gov/nasa-brand-center/images-and-media/
+Changes: the official 1041 x 1041 JPEG is bundled without visual edits.
+NASA does not endorse Origo X.

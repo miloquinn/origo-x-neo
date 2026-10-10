@@ -16,6 +16,7 @@ class ThemeNotifier extends ChangeNotifier {
   static const String _glassStylePrefKey = 'glass_style_mode';
   static const String _liquidGlassOpacityPrefKey = 'liquid_glass_opacity';
   static const String _accentColorPrefKey = 'appAccentColorV2';
+  static const String _colorPresetPrefKey = 'appColorPresetIdV1';
   static const String _skinPrefKey = 'appSkinIdV1';
 
   // 仅用于从旧版“双层主题 + 强调色”设置迁移。
@@ -30,17 +31,20 @@ class ThemeNotifier extends ChangeNotifier {
   AppTheme _currentAppTheme = AppThemes.fromAccentColor(
     AppThemes.defaultAccentColor,
   );
+  AppColorPreset? _currentColorPreset;
   AppUiStyle _uiStyle = AppUiStyle.glass;
   GlassStyle _glassStyle = defaultGlassStyle;
   double _liquidGlassOpacity = defaultLiquidGlassOpacity;
   final AppSkinCatalog _skinCatalog;
   AppSkin _currentSkin = AppSkin.original;
+  Future<void> _colorPersistenceTail = Future.value();
   Future<void> _skinPersistenceTail = Future.value();
 
   ThemeMode get themeMode => _themeMode;
   bool get isInitialized => _isInitialized;
   Color get accentColor => _accentColor;
   AppTheme get currentAppTheme => _currentAppTheme;
+  AppColorPreset? get currentColorPreset => _currentColorPreset;
   AppUiStyle get uiStyle => _uiStyle;
   GlassStyle get glassStyle => _glassStyle;
   double get liquidGlassOpacity => _liquidGlassOpacity;
@@ -68,6 +72,11 @@ class ThemeNotifier extends ChangeNotifier {
     );
     await prefs.remove('disable_glass_effects');
     final storedAccentColor = prefs.getInt(_accentColorPrefKey);
+    final storedColorPresetId = prefs.getString(_colorPresetPrefKey);
+    _currentColorPreset = AppThemes.findColorPreset(storedColorPresetId);
+    if (storedColorPresetId != null && _currentColorPreset == null) {
+      await prefs.remove(_colorPresetPrefKey);
+    }
     final storedSkinId = prefs.getString(_skinPrefKey);
     _currentSkin = _skinCatalog.resolve(storedSkinId);
     if (storedSkinId != null &&
@@ -87,14 +96,23 @@ class ThemeNotifier extends ChangeNotifier {
       _themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
     }
 
-    if (storedAccentColor != null) {
+    if (_currentColorPreset != null) {
+      _accentColor = _currentColorPreset!.theme.seedColor;
+      _currentAppTheme = _currentColorPreset!.theme;
+    } else if (storedAccentColor != null) {
       _accentColor = Color(storedAccentColor);
     } else {
       _accentColor = _migrateLegacyAccentColor(prefs);
       await prefs.setInt(_accentColorPrefKey, _accentColor.toARGB32());
     }
+    if (_currentColorPreset == null &&
+        _accentColor.toARGB32() == AppThemes.defaultAccentColor.toARGB32()) {
+      _currentColorPreset = AppThemes.findColorPreset('blue');
+      await prefs.setString(_colorPresetPrefKey, _currentColorPreset!.id);
+    }
     await _removeLegacyThemePreferences(prefs);
-    _currentAppTheme = AppThemes.fromAccentColor(_accentColor);
+    _currentAppTheme =
+        _currentColorPreset?.theme ?? AppThemes.fromAccentColor(_accentColor);
 
     _isInitialized = true;
     notifyListeners();
@@ -111,16 +129,76 @@ class ThemeNotifier extends ChangeNotifier {
     await prefs.setBool(_themeModePrefKey, isDarkMode);
   }
 
-  /// 强调色是应用配色的唯一来源，Material 3 会由它生成完整浅色/深色色板。
+  /// 保留任意强调色兼容；调用后会退出已选中的协调色套餐。
   Future<void> setAccentColor(Color color) async {
-    if (_accentColor.toARGB32() == color.toARGB32()) return;
+    if (_accentColor.toARGB32() != color.toARGB32() ||
+        _currentColorPreset != null) {
+      _currentColorPreset = null;
+      _accentColor = color;
+      _currentAppTheme = AppThemes.fromAccentColor(color);
+      notifyListeners();
+    }
 
-    _accentColor = color;
-    _currentAppTheme = AppThemes.fromAccentColor(color);
-    notifyListeners();
+    await _queueColorPersistence(() => _persistCustomAccent(color));
+  }
 
+  /// 应用一整套协调的浅色/深色 Material 3 配色。
+  Future<void> setColorPreset(String id) async {
+    final preset = AppThemes.findColorPreset(id);
+    if (preset == null) {
+      throw ArgumentError.value(id, 'id', 'is not a known color preset');
+    }
+    if (_currentColorPreset?.id != preset.id) {
+      _currentColorPreset = preset;
+      _accentColor = preset.theme.seedColor;
+      _currentAppTheme = preset.theme;
+      notifyListeners();
+    }
+
+    await _queueColorPersistence(() => _persistColorPreset(preset));
+  }
+
+  Future<void> _queueColorPersistence(Future<void> Function() persist) async {
+    final operation = _colorPersistenceTail.then((_) => persist());
+    _colorPersistenceTail = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    await operation;
+  }
+
+  Future<void> _persistColorPreset(AppColorPreset preset) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_accentColorPrefKey, color.toARGB32());
+    final accentPersisted = await prefs.setInt(
+      _accentColorPrefKey,
+      preset.theme.seedColor.toARGB32(),
+    );
+    if (!accentPersisted) {
+      throw StateError('Failed to persist color preset accent ${preset.id}.');
+    }
+    final presetPersisted = await prefs.setString(
+      _colorPresetPrefKey,
+      preset.id,
+    );
+    if (!presetPersisted) {
+      throw StateError('Failed to persist color preset ${preset.id}.');
+    }
+    await _removeLegacyThemePreferences(prefs);
+  }
+
+  Future<void> _persistCustomAccent(Color color) async {
+    final prefs = await SharedPreferences.getInstance();
+    final accentPersisted = await prefs.setInt(
+      _accentColorPrefKey,
+      color.toARGB32(),
+    );
+    if (!accentPersisted) {
+      throw StateError('Failed to persist custom accent color.');
+    }
+    final presetRemoved = await prefs.remove(_colorPresetPrefKey);
+    if (!presetRemoved) {
+      throw StateError('Failed to clear the selected color preset.');
+    }
     await _removeLegacyThemePreferences(prefs);
   }
 

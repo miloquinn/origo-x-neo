@@ -24,6 +24,7 @@ import 'package:xxread/pages/library/library_page.dart';
 import 'package:xxread/pages/settings/about/changelog_page.dart';
 import 'package:xxread/pages/settings/about/open_source_licenses_page.dart';
 import 'package:xxread/pages/settings/ai_settings_page.dart';
+import 'package:xxread/pages/settings/app_theme_page.dart';
 import 'package:xxread/pages/settings/cloud_tts_settings_page.dart';
 import 'package:xxread/pages/support/feedback_copy.dart';
 import 'package:xxread/pages/support/feedback_page.dart';
@@ -41,8 +42,6 @@ import 'package:xxread/services/core/core_services.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/pages/settings/backup/backup_copy.dart';
 import 'package:xxread/services/backup/webdav_backup_controller.dart';
-import 'package:xxread/utils/app_themes.dart';
-import 'package:xxread/utils/app_themes_translator.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/layout_helper.dart';
@@ -51,7 +50,7 @@ import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/system_ui_helper.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
-import 'package:xxread/widgets/accent_color_picker_sheet.dart';
+import 'package:xxread/widgets/app_theme_summary_card.dart';
 import 'package:xxread/widgets/developer_support_card.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
 import 'package:xxread/widgets/settings_account_card.dart';
@@ -537,6 +536,3 @@ class _LanguageOption {
 
   const _LanguageOption({required this.code, required this.label});
 }
-
-String _hexColor(Color color) =>
-    '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';

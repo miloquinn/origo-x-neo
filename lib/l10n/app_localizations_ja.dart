@@ -7560,4 +7560,104 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get libraryFolderEmptyPreview => 'No books yet';
+
+  @override
+  String get settingsThemeGalleryTitle => 'テーマと外観';
+
+  @override
+  String get settingsThemeGalleryHeadline => '読書を気分に合わせて着替えよう';
+
+  @override
+  String get settingsThemeGallerySubtitle => '配色とイラストを自由に組み合わせ';
+
+  @override
+  String get settingsThemeColorCategory => '配色テーマ';
+
+  @override
+  String get settingsThemeSkinCategory => 'イラストテーマ';
+
+  @override
+  String get settingsThemeColorHint => 'ボタン、文字、背景をまとめてコーディネート';
+
+  @override
+  String get settingsThemeSkinHint => '背景とナビゲーションのイラストを変更';
+
+  @override
+  String get settingsThemeCurrent => '現在の組み合わせ';
+
+  @override
+  String get settingsThemeOriginalColor => '以前の配色';
+
+  @override
+  String get settingsThemeLegacyColorHint => 'これまで選んでいた色をそのまま使用';
+
+  @override
+  String get settingsThemeSaveFailed => 'テーマを切り替えましたが、保存できませんでした';
+
+  @override
+  String get settingsThemeRetry => '再試行';
+
+  @override
+  String get settingsThemeHighContrastHint =>
+      'ハイコントラストが有効なため、イラスト背景は一時的に非表示になります';
+
+  @override
+  String get settingsThemeCredits => '素材とオープンソースへの謝辞';
+
+  @override
+  String get settingsThemeDisplayEffects => '表示効果';
+
+  @override
+  String get settingsThemeFontLayout => 'フォントとレイアウト';
+
+  @override
+  String get settingsThemeReadPaperHint => '読書画面の用紙とフォントは、読書設定を引き継ぎます';
+
+  @override
+  String get settingsThemeColorBlue => 'Origo ブルー';
+
+  @override
+  String get settingsThemeColorForest => '松林グリーン';
+
+  @override
+  String get settingsThemeColorAmber => 'アプリコットゴールド';
+
+  @override
+  String get settingsThemeColorRose => 'ベリーピンク';
+
+  @override
+  String get settingsThemeColorViolet => 'トワイライトパープル';
+
+  @override
+  String get settingsThemeColorGraphite => 'グラファイトグレー';
+
+  @override
+  String get settingsThemeSkinOriginal => '元の外観';
+
+  @override
+  String get settingsThemeSkinTidal => '海辺からの便り';
+
+  @override
+  String get settingsThemeSkinBotanical => '花園読書';
+
+  @override
+  String get settingsThemeSkinCelestial => '星めぐり';
+
+  @override
+  String get settingsThemeSkinOriginalHint => '元のグラデーション背景とアイコン';
+
+  @override
+  String get settingsThemeSkinTidalHint => '波模様の背景と航海イラスト';
+
+  @override
+  String get settingsThemeSkinBotanicalHint => 'アイリスの背景と草花イラスト';
+
+  @override
+  String get settingsThemeSkinCelestialHint => '地球の背景と惑星イラスト';
+
+  @override
+  String get settingsThemePreviewTitle => 'もう少しだけ読んでいこう';
+
+  @override
+  String get settingsThemePreviewBody => '物語も、そのときの気持ちも、そっとコレクション。';
 }

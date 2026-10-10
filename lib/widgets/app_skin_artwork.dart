@@ -32,6 +32,9 @@ class AppSkinArtwork extends StatelessWidget {
               child: Image.asset(
                 asset.pathFor(Theme.of(context).brightness),
                 fit: BoxFit.cover,
+                opacity: AlwaysStoppedAnimation(
+                  Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.22,
+                ),
                 excludeFromSemantics: true,
                 errorBuilder: (context, error, stackTrace) {
                   FlutterError.reportError(

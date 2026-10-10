@@ -8000,4 +8000,115 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get libraryFolderEmptyPreview => 'No books yet';
+
+  @override
+  String get settingsThemeGalleryTitle => 'Temi e aspetto';
+
+  @override
+  String get settingsThemeGalleryHeadline =>
+      'Dai una nuova atmosfera alla lettura';
+
+  @override
+  String get settingsThemeGallerySubtitle =>
+      'Abbina liberamente colori e illustrazioni';
+
+  @override
+  String get settingsThemeColorCategory => 'Temi cromatici';
+
+  @override
+  String get settingsThemeSkinCategory => 'Temi illustrati';
+
+  @override
+  String get settingsThemeColorHint =>
+      'Una combinazione coordinata per pulsanti, testo e sfondi';
+
+  @override
+  String get settingsThemeSkinHint =>
+      'Cambia lo sfondo e le illustrazioni di navigazione';
+
+  @override
+  String get settingsThemeCurrent => 'Combinazione attuale';
+
+  @override
+  String get settingsThemeOriginalColor => 'Colore precedente';
+
+  @override
+  String get settingsThemeLegacyColorHint =>
+      'Mantieni il colore scelto in precedenza';
+
+  @override
+  String get settingsThemeSaveFailed =>
+      'Il tema è cambiato, ma non è stato salvato';
+
+  @override
+  String get settingsThemeRetry => 'Riprova';
+
+  @override
+  String get settingsThemeHighContrastHint =>
+      'Il contrasto elevato è attivo. Gli sfondi illustrati saranno temporaneamente nascosti.';
+
+  @override
+  String get settingsThemeCredits => 'Crediti per risorse e open source';
+
+  @override
+  String get settingsThemeDisplayEffects => 'Effetti visivi';
+
+  @override
+  String get settingsThemeFontLayout => 'Caratteri e layout';
+
+  @override
+  String get settingsThemeReadPaperHint =>
+      'Carta e caratteri di lettura seguono le tue impostazioni di lettura';
+
+  @override
+  String get settingsThemeColorBlue => 'Blu Origo';
+
+  @override
+  String get settingsThemeColorForest => 'Bosco di pini';
+
+  @override
+  String get settingsThemeColorAmber => 'Oro albicocca';
+
+  @override
+  String get settingsThemeColorRose => 'Rosa frutti di bosco';
+
+  @override
+  String get settingsThemeColorViolet => 'Viola crepuscolo';
+
+  @override
+  String get settingsThemeColorGraphite => 'Grigio grafite';
+
+  @override
+  String get settingsThemeSkinOriginal => 'Aspetto originale';
+
+  @override
+  String get settingsThemeSkinTidal => 'Lettere dal mare';
+
+  @override
+  String get settingsThemeSkinBotanical => 'Letture in giardino';
+
+  @override
+  String get settingsThemeSkinCelestial => 'Viaggio tra le stelle';
+
+  @override
+  String get settingsThemeSkinOriginalHint =>
+      'Sfondo sfumato e icone originali';
+
+  @override
+  String get settingsThemeSkinTidalHint =>
+      'Sfondo con onde e illustrazioni nautiche';
+
+  @override
+  String get settingsThemeSkinBotanicalHint =>
+      'Sfondo con iris e illustrazioni botaniche';
+
+  @override
+  String get settingsThemeSkinCelestialHint =>
+      'Sfondo con la Terra e illustrazioni planetarie';
+
+  @override
+  String get settingsThemePreviewTitle => 'Continua a leggere ancora un po’';
+
+  @override
+  String get settingsThemePreviewBody => 'Conserva le storie e ogni emozione.';
 }

@@ -7424,6 +7424,105 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get libraryFolderEmptyPreview => '还没有书籍';
+
+  @override
+  String get settingsThemeGalleryTitle => '主题与外观';
+
+  @override
+  String get settingsThemeGalleryHeadline => '给阅读换个心情';
+
+  @override
+  String get settingsThemeGallerySubtitle => '配色与贴图，自由搭配';
+
+  @override
+  String get settingsThemeColorCategory => '配色主题';
+
+  @override
+  String get settingsThemeSkinCategory => '贴图主题';
+
+  @override
+  String get settingsThemeColorHint => '按钮、文字与背景的整套搭配';
+
+  @override
+  String get settingsThemeSkinHint => '换一套背景与导航贴图';
+
+  @override
+  String get settingsThemeCurrent => '当前搭配';
+
+  @override
+  String get settingsThemeOriginalColor => '原有配色';
+
+  @override
+  String get settingsThemeLegacyColorHint => '保留你之前选择的颜色';
+
+  @override
+  String get settingsThemeSaveFailed => '主题已切换，但保存失败';
+
+  @override
+  String get settingsThemeRetry => '重试';
+
+  @override
+  String get settingsThemeHighContrastHint => '高对比度已开启，贴图背景会暂时隐藏';
+
+  @override
+  String get settingsThemeCredits => '素材与开源致谢';
+
+  @override
+  String get settingsThemeDisplayEffects => '显示效果';
+
+  @override
+  String get settingsThemeFontLayout => '字体与布局';
+
+  @override
+  String get settingsThemeReadPaperHint => '阅读纸张和字体沿用你的阅读设置';
+
+  @override
+  String get settingsThemeColorBlue => '开元蓝';
+
+  @override
+  String get settingsThemeColorForest => '松林绿';
+
+  @override
+  String get settingsThemeColorAmber => '暖杏金';
+
+  @override
+  String get settingsThemeColorRose => '莓果粉';
+
+  @override
+  String get settingsThemeColorViolet => '暮光紫';
+
+  @override
+  String get settingsThemeColorGraphite => '石墨灰';
+
+  @override
+  String get settingsThemeSkinOriginal => '原始外观';
+
+  @override
+  String get settingsThemeSkinTidal => '海边来信';
+
+  @override
+  String get settingsThemeSkinBotanical => '花园漫读';
+
+  @override
+  String get settingsThemeSkinCelestial => '星际漫游';
+
+  @override
+  String get settingsThemeSkinOriginalHint => '原来的渐变背景与图标';
+
+  @override
+  String get settingsThemeSkinTidalHint => '浪花底图与航海贴图';
+
+  @override
+  String get settingsThemeSkinBotanicalHint => '鸢尾花底图与草木贴图';
+
+  @override
+  String get settingsThemeSkinCelestialHint => '地球底图与星球贴图';
+
+  @override
+  String get settingsThemePreviewTitle => '继续读一会儿';
+
+  @override
+  String get settingsThemePreviewBody => '收藏故事，也收藏每一种心情。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -14847,4 +14946,103 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get libraryFolderEmptyPreview => '還沒有書籍';
+
+  @override
+  String get settingsThemeGalleryTitle => '主題與外觀';
+
+  @override
+  String get settingsThemeGalleryHeadline => '為閱讀換個心情';
+
+  @override
+  String get settingsThemeGallerySubtitle => '配色與貼圖，自由搭配';
+
+  @override
+  String get settingsThemeColorCategory => '配色主題';
+
+  @override
+  String get settingsThemeSkinCategory => '貼圖主題';
+
+  @override
+  String get settingsThemeColorHint => '按鈕、文字與背景的整套搭配';
+
+  @override
+  String get settingsThemeSkinHint => '換一套背景與導覽貼圖';
+
+  @override
+  String get settingsThemeCurrent => '目前搭配';
+
+  @override
+  String get settingsThemeOriginalColor => '原有配色';
+
+  @override
+  String get settingsThemeLegacyColorHint => '保留你之前選擇的顏色';
+
+  @override
+  String get settingsThemeSaveFailed => '主題已切換，但儲存失敗';
+
+  @override
+  String get settingsThemeRetry => '重試';
+
+  @override
+  String get settingsThemeHighContrastHint => '高對比度已開啟，貼圖背景會暫時隱藏';
+
+  @override
+  String get settingsThemeCredits => '素材與開源致謝';
+
+  @override
+  String get settingsThemeDisplayEffects => '顯示效果';
+
+  @override
+  String get settingsThemeFontLayout => '字體與版面配置';
+
+  @override
+  String get settingsThemeReadPaperHint => '閱讀紙張和字體沿用你的閱讀設定';
+
+  @override
+  String get settingsThemeColorBlue => '開元藍';
+
+  @override
+  String get settingsThemeColorForest => '松林綠';
+
+  @override
+  String get settingsThemeColorAmber => '暖杏金';
+
+  @override
+  String get settingsThemeColorRose => '莓果粉';
+
+  @override
+  String get settingsThemeColorViolet => '暮光紫';
+
+  @override
+  String get settingsThemeColorGraphite => '石墨灰';
+
+  @override
+  String get settingsThemeSkinOriginal => '原始外觀';
+
+  @override
+  String get settingsThemeSkinTidal => '海邊來信';
+
+  @override
+  String get settingsThemeSkinBotanical => '花園漫讀';
+
+  @override
+  String get settingsThemeSkinCelestial => '星際漫遊';
+
+  @override
+  String get settingsThemeSkinOriginalHint => '原來的漸層背景與圖示';
+
+  @override
+  String get settingsThemeSkinTidalHint => '浪花底圖與航海貼圖';
+
+  @override
+  String get settingsThemeSkinBotanicalHint => '鳶尾花底圖與草木貼圖';
+
+  @override
+  String get settingsThemeSkinCelestialHint => '地球底圖與星球貼圖';
+
+  @override
+  String get settingsThemePreviewTitle => '繼續讀一會兒';
+
+  @override
+  String get settingsThemePreviewBody => '收藏故事，也收藏每一種心情。';
 }

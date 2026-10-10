@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:xxread/models/app_skin.dart';
 import 'package:xxread/utils/app_skin_theme.dart';
+import 'package:xxread/utils/app_skin_licenses.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -74,6 +75,7 @@ import 'widgets/store_reader_access_gate.dart';
 void main(List<String> arguments) async {
   // 确保可以在 runApp 前安全调用 SystemChrome
   WidgetsFlutterBinding.ensureInitialized();
+  registerAppSkinLicenses();
   await AppDistribution.initialize();
   await LegacyReaderAccess.initialize();
   // Large imported source libraries used to live in one SharedPreferences

@@ -130,6 +130,9 @@ flutter:
     - assets/purchase/wave.jpg
     - assets/purchase/irises.jpg
     - assets/purchase/ARTWORK-NOTICE.txt
+    - assets/skins/
+    - assets/skins/backgrounds/
+    - assets/skins/icons/twemoji/
     - assets/fonts/licenses/
     - assets/icons/
     - LICENSE

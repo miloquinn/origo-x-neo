@@ -82,14 +82,25 @@ extension _SettingsLayoutPart on _SettingsPageState {
     AppSettingsNotifier appSettings,
   ) {
     return _buildSectionCard(
-      title: l10n.settingsSectionAppearanceFonts,
+      title: l10n.settingsThemeDisplayEffects,
       icon: Icons.palette_outlined,
       children: [
         _buildUiStyleSelector(themeNotifier),
         _buildGlassStyleVisibility(themeNotifier),
         _buildLiquidGlassOpacityVisibility(themeNotifier),
         _buildThemeToggle(themeNotifier),
-        _buildAccentColorSelector(themeNotifier),
+      ],
+    );
+  }
+
+  Widget _buildFontLayoutSettingsSection(
+    AppLocalizations l10n,
+    AppSettingsNotifier appSettings,
+  ) {
+    return _buildSectionCard(
+      title: l10n.settingsThemeFontLayout,
+      icon: Icons.text_fields_rounded,
+      children: [
         _buildAppFontSelector(appSettings),
         _buildAppTextSizeSelector(appSettings),
         _buildReaderFontSelector(appSettings),

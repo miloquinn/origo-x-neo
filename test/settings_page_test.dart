@@ -305,6 +305,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await _openSettingsCategory(tester, SettingsCategory.preferences);
+    await tester.scrollUntilVisible(
+      find.text(l10n.settingsVolumeKeyTurnTitle),
+      250,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text(l10n.settingsVolumeKeyTurnTitle), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
     await tester.pumpAndSettle();

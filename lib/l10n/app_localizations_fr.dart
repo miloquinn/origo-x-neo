@@ -8020,4 +8020,117 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get libraryFolderEmptyPreview => 'No books yet';
+
+  @override
+  String get settingsThemeGalleryTitle => 'Thèmes et apparence';
+
+  @override
+  String get settingsThemeGalleryHeadline =>
+      'Changez l’ambiance de vos lectures';
+
+  @override
+  String get settingsThemeGallerySubtitle =>
+      'Associez librement couleurs et illustrations';
+
+  @override
+  String get settingsThemeColorCategory => 'Thèmes de couleurs';
+
+  @override
+  String get settingsThemeSkinCategory => 'Thèmes illustrés';
+
+  @override
+  String get settingsThemeColorHint =>
+      'Un ensemble coordonné pour les boutons, le texte et les arrière-plans';
+
+  @override
+  String get settingsThemeSkinHint =>
+      'Changez l’arrière-plan et les illustrations de navigation';
+
+  @override
+  String get settingsThemeCurrent => 'Combinaison actuelle';
+
+  @override
+  String get settingsThemeOriginalColor => 'Couleur précédente';
+
+  @override
+  String get settingsThemeLegacyColorHint =>
+      'Conservez la couleur choisie auparavant';
+
+  @override
+  String get settingsThemeSaveFailed =>
+      'Le thème a changé, mais n’a pas pu être enregistré';
+
+  @override
+  String get settingsThemeRetry => 'Réessayer';
+
+  @override
+  String get settingsThemeHighContrastHint =>
+      'Le contraste élevé est activé. Les arrière-plans illustrés sont temporairement masqués.';
+
+  @override
+  String get settingsThemeCredits =>
+      'Crédits des ressources et de l’open source';
+
+  @override
+  String get settingsThemeDisplayEffects => 'Effets d’affichage';
+
+  @override
+  String get settingsThemeFontLayout => 'Polices et mise en page';
+
+  @override
+  String get settingsThemeReadPaperHint =>
+      'Le papier et les polices suivent vos réglages de lecture';
+
+  @override
+  String get settingsThemeColorBlue => 'Bleu Origo';
+
+  @override
+  String get settingsThemeColorForest => 'Forêt de pins';
+
+  @override
+  String get settingsThemeColorAmber => 'Or abricot';
+
+  @override
+  String get settingsThemeColorRose => 'Rose baie';
+
+  @override
+  String get settingsThemeColorViolet => 'Violet crépuscule';
+
+  @override
+  String get settingsThemeColorGraphite => 'Gris graphite';
+
+  @override
+  String get settingsThemeSkinOriginal => 'Apparence d’origine';
+
+  @override
+  String get settingsThemeSkinTidal => 'Lettre du bord de mer';
+
+  @override
+  String get settingsThemeSkinBotanical => 'Lecture au jardin';
+
+  @override
+  String get settingsThemeSkinCelestial => 'Voyage interstellaire';
+
+  @override
+  String get settingsThemeSkinOriginalHint =>
+      'Arrière-plan dégradé et icônes d’origine';
+
+  @override
+  String get settingsThemeSkinTidalHint =>
+      'Arrière-plan de vagues et illustrations marines';
+
+  @override
+  String get settingsThemeSkinBotanicalHint =>
+      'Arrière-plan d’iris et illustrations végétales';
+
+  @override
+  String get settingsThemeSkinCelestialHint =>
+      'Arrière-plan terrestre et illustrations de planètes';
+
+  @override
+  String get settingsThemePreviewTitle => 'Lisez encore un peu';
+
+  @override
+  String get settingsThemePreviewBody =>
+      'Collectionnez les histoires et toutes vos humeurs.';
 }
