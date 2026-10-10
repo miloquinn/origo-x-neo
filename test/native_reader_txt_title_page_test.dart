@@ -1804,6 +1804,13 @@ Future<void> _jumpToTxtChapter(WidgetTester tester, String title) async {
       .onPressed!();
   await tester.pumpAndSettle();
   final navigationSheet = find.byType(ReaderNavigationSheet);
+  await tester.tap(
+    find.descendant(
+      of: navigationSheet,
+      matching: find.byKey(const ValueKey('reader-navigation-search-toggle')),
+    ),
+  );
+  await tester.pumpAndSettle();
   await tester.enterText(
     find.descendant(of: navigationSheet, matching: find.byType(TextField)),
     title,
