@@ -50,6 +50,7 @@ import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/system_ui_helper.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
+import 'package:xxread/widgets/app_skin_icon.dart';
 import 'package:xxread/widgets/app_theme_summary_card.dart';
 import 'package:xxread/widgets/developer_support_card.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
@@ -477,10 +478,12 @@ class _SettingsPageState extends State<SettingsPage> {
                     ).colorScheme.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.secondary,
+                  child: AppSkinIcon.adapt(
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

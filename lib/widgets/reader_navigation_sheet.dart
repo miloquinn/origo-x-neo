@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../models/app_skin.dart';
 import 'package:flutter/services.dart';
 
 import '../core/reader/reader_annotation.dart';
@@ -9,6 +10,7 @@ import '../models/bookmark.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
 import 'app_menu.dart';
+import 'app_skin_icon.dart';
 import 'glass_bottom_sheet.dart';
 import 'origo_x_icons.dart';
 import 'pill_search_field.dart';
@@ -550,7 +552,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
               foregroundColor: widget.palette.secondaryText,
               minimumSize: const Size(44, 44),
             ),
-            icon: const Icon(Icons.close_rounded, size: 20),
+            icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded, size: 20)),
           ),
         ],
       ),
@@ -821,10 +823,12 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
             turns: expanded ? 0.25 : 0,
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
-            child: Icon(
-              Icons.chevron_right_rounded,
-              size: 22,
-              color: enabled ? color : color.withValues(alpha: 0.48),
+            child: AppSkinIcon.adapt(
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: enabled ? color : color.withValues(alpha: 0.48),
+              ),
             ),
           ),
         ),
@@ -884,7 +888,9 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
               child: FilledButton.tonalIcon(
                 key: const ValueKey('reader-annotations-export-button'),
                 onPressed: widget.onExportAnnotations,
-                icon: const Icon(Icons.file_download_outlined, size: 19),
+                icon: AppSkinIcon.adapt(
+                  const Icon(Icons.file_download_outlined, size: 19),
+                ),
                 label: Text(context.l10n.readingDataExportAction),
               ),
             ),
@@ -966,14 +972,22 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          annotation.type == readerAnnotationTypeNote
-                              ? Icons.mode_comment_outlined
-                              : annotation.type == readerAnnotationTypeUnderline
-                              ? Icons.format_underlined_rounded
-                              : Icons.border_color_outlined,
-                          size: 17,
-                          color: color,
+                        AppSkinIcon(
+                          slot: annotation.type == readerAnnotationTypeNote
+                              ? AppSkinIconSlot.note
+                              : annotation.type == readerAnnotationTypeHighlight
+                              ? AppSkinIconSlot.highlight
+                              : null,
+                          fallback: Icon(
+                            annotation.type == readerAnnotationTypeNote
+                                ? Icons.mode_comment_outlined
+                                : annotation.type ==
+                                      readerAnnotationTypeUnderline
+                                ? Icons.format_underlined_rounded
+                                : Icons.border_color_outlined,
+                            size: 17,
+                            color: color,
+                          ),
                         ),
                         const SizedBox(width: 7),
                         Expanded(
@@ -1209,10 +1223,8 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                   color: widget.palette.controlBar,
                   borderRadius: BorderRadius.circular(17),
                 ),
-                child: Icon(
-                  icon,
-                  size: 26,
-                  color: widget.palette.secondaryText,
+                child: AppSkinIcon.adapt(
+                  Icon(icon, size: 26, color: widget.palette.secondaryText),
                 ),
               ),
               const SizedBox(height: 18),

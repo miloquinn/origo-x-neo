@@ -618,7 +618,12 @@ class _AppMenuTile<T> extends StatelessWidget {
                               color: scheme.primary.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(11),
                             ),
-                            child: Center(child: tile!.leading),
+                            child: Center(
+                              child: AppSkinIcon.adapt(
+                                tile!.leading!,
+                                selected: selected,
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 12),
                         ],
@@ -636,13 +641,19 @@ class _AppMenuTile<T> extends StatelessWidget {
                         ),
                         if (selected) ...[
                           const SizedBox(width: 8),
-                          Icon(
-                            Icons.check_rounded,
-                            color: scheme.primary,
-                            size: 19,
+                          AppSkinIcon.adapt(
+                            Icon(
+                              Icons.check_rounded,
+                              color: scheme.primary,
+                              size: 19,
+                            ),
+                            selected: true,
                           ),
                         ] else if (tile?.trailing != null)
-                          tile!.trailing!,
+                          AppSkinIcon.adapt(
+                            tile!.trailing!,
+                            selected: selected,
+                          ),
                       ],
                     ),
                   ),

@@ -1,4 +1,4 @@
-// 文件说明：定义可审核、可安装的第三方主题包 v1 纯数据契约。
+// 文件说明：定义可审核、可安装的第三方主题包 v1/v2 纯数据契约。
 // 安全边界：严格字段白名单；不允许网络地址、脚本、字体、动画或阅读器配置。
 
 import 'package:flutter/foundation.dart';
@@ -50,10 +50,18 @@ class ThemePackage {
     required this.preview,
     required this.skin,
     this.palette,
+    this.schemaVersion = 1,
   });
 
-  static const int currentSchemaVersion = 1;
+  static const int currentSchemaVersion = 2;
+  static const int legacyIconSlotCount = 16;
 
+  static Iterable<AppSkinIconSlot> iconSlotsForSchema(int version) =>
+      version == 1
+      ? AppSkinIconSlot.values.take(legacyIconSlotCount)
+      : AppSkinIconSlot.values;
+
+  final int schemaVersion;
   final String id;
   final int version;
   final String name;
@@ -87,9 +95,9 @@ class ThemePackage {
     }, 'manifest');
 
     final schemaVersion = _integer(manifest, 'schemaVersion');
-    if (schemaVersion != currentSchemaVersion) {
+    if (schemaVersion < 1 || schemaVersion > currentSchemaVersion) {
       throw ThemePackageFormatException(
-        'schemaVersion must be $currentSchemaVersion',
+        'schemaVersion must be 1 or $currentSchemaVersion',
       );
     }
     final id = _text(manifest, 'id', max: 48);
@@ -126,7 +134,11 @@ class ThemePackage {
     final palette = paletteValue == null
         ? null
         : _parsePalette(_map(paletteValue, 'palette'));
-    final icons = _parseIcons(manifest['icons'], rootDirectory: canonicalRoot);
+    final icons = _parseIcons(
+      manifest['icons'],
+      rootDirectory: canonicalRoot,
+      schemaVersion: schemaVersion,
+    );
     final artwork = _parseArtwork(
       manifest['artwork'],
       rootDirectory: canonicalRoot,
@@ -134,6 +146,7 @@ class ThemePackage {
     final skin = AppSkin(id: 'community_$id', icons: icons, artwork: artwork);
 
     return ThemePackage(
+      schemaVersion: schemaVersion,
       id: id,
       version: version,
       name: name,
@@ -159,10 +172,13 @@ class ThemePackage {
   static Map<AppSkinIconSlot, AppSkinIconAssets> _parseIcons(
     Object? value, {
     required String rootDirectory,
+    required int schemaVersion,
   }) {
     if (value == null) return const {};
     final map = _map(value, 'icons');
-    final allowed = AppSkinIconSlot.values.map((slot) => slot.name).toSet();
+    final allowed = iconSlotsForSchema(
+      schemaVersion,
+    ).map((slot) => slot.name).toSet();
     _expectKeys(map, allowed, 'icons');
     return {
       for (final entry in map.entries)

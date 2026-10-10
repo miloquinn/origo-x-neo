@@ -235,6 +235,94 @@ void main() {
     );
   });
 
+  testWidgets('directional artwork retains explicit RTL and semantics', (
+    tester,
+  ) async {
+    final skin = _skin(
+      icons: {
+        AppSkinIconSlot.back: AppSkinIconAssets(
+          normal: AppSkinImage(asset: _home),
+        ),
+      },
+    );
+    await tester.pumpWidget(
+      _host(
+        skin: skin,
+        child: Center(
+          child: AppSkinIcon.adapt(
+            const Icon(
+              Icons.arrow_back,
+              textDirection: TextDirection.rtl,
+              semanticLabel: 'Go back',
+              color: Color(0x80FFFFFF),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final finder = find.byType(Image);
+    final image = tester.widget<Image>(finder);
+    expect(image.matchTextDirection, isTrue);
+    expect(Directionality.of(tester.element(finder)), TextDirection.rtl);
+    expect(image.semanticLabel, 'Go back');
+    expect(image.opacity!.value, closeTo(128 / 255, 0.001));
+  });
+
+  testWidgets(
+    'menu items skin their leaves while preserving selection and actions',
+    (tester) async {
+      String? chosen;
+      final skin = _skin(
+        icons: {
+          for (final slot in [
+            AppSkinIconSlot.more,
+            AppSkinIconSlot.bookmark,
+            AppSkinIconSlot.check,
+          ])
+            slot: AppSkinIconAssets(
+              normal: AppSkinImage(asset: _home),
+              selected: AppSkinImage(asset: _homeSelected),
+            ),
+        },
+      );
+      await tester.pumpWidget(
+        _host(
+          skin: skin,
+          child: Center(
+            child: AppPopupMenuButton<String>(
+              initialValue: 'bookmark',
+              onSelected: (value) => chosen = value,
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'bookmark',
+                  child: ListTile(
+                    leading: Icon(Icons.bookmark_border),
+                    title: Text('Bookmark'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byType(AppPopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      final images = tester
+          .widgetList<Image>(find.byType(Image))
+          .map(_assetPath)
+          .toList();
+      expect(
+        images.where((asset) => asset == _homeSelected).length,
+        greaterThanOrEqualTo(2),
+      );
+      await tester.tap(find.text('Bookmark'));
+      await tester.pumpAndSettle();
+      expect(chosen, 'bookmark');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('missing icon slot preserves the exact original glyph', (
     tester,
   ) async {

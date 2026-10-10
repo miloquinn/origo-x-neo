@@ -738,7 +738,7 @@ class MemberAccountApiClient {
   Future<List<ThemeMarketItem>> approvedThemes() async {
     final json = await _jsonRequest(
       'GET',
-      '/api/v1/themes',
+      '/api/v1/themes?maxSchemaVersion=2',
       authenticated: false,
     );
     final rows = json['themes'];

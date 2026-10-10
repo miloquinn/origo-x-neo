@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/l10n/app_localizations.dart';
+import 'package:xxread/models/app_skin.dart';
+import 'package:xxread/utils/app_skin_theme.dart';
 import 'package:xxread/services/reader_aloud_service.dart';
 import 'package:xxread/services/reader_aloud_session.dart';
 import 'package:xxread/services/tts_service.dart';
@@ -18,6 +20,41 @@ import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('themed playback stays usable at narrow width and large text', (
+    tester,
+  ) async {
+    final fixture = await _openPlayer(
+      tester,
+      size: const Size(320, 700),
+      textScale: 2,
+      holdSystemSpeech: true,
+      skin: AppSkinCatalog.builtIn.resolve('tidal'),
+    );
+    addTearDown(fixture.dispose);
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    });
+    await tester.pump(const Duration(milliseconds: 350));
+    final target = find.byKey(const ValueKey('reader-aloud-play-pause'));
+    expect(fixture.controller.state, ReaderAloudPlaybackState.playing);
+    Image icon() => tester.widget<Image>(
+      find.descendant(of: target, matching: find.byType(Image)),
+    );
+    expect(
+      (icon().image as AssetImage).assetName,
+      endsWith('/pause-selected.png'),
+    );
+    expect(tester.getSize(target).shortestSide, greaterThanOrEqualTo(44));
+    await tester.tap(target);
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    });
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(fixture.controller.state, ReaderAloudPlaybackState.paused);
+    expect((icon().image as AssetImage).assetName, endsWith('/play.png'));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('page following defaults off and persists both switch values', (
     tester,
@@ -1572,6 +1609,7 @@ class _PlayerFixture {
 Future<_PlayerFixture> _openPlayer(
   WidgetTester tester, {
   required Size size,
+  AppSkin? skin,
   EdgeInsets padding = EdgeInsets.zero,
   double textScale = 1,
   bool holdSystemSpeech = false,
@@ -1609,9 +1647,18 @@ Future<_PlayerFixture> _openPlayer(
     ),
   );
 
+  final readerTheme = ReaderThemes.day.toThemeData();
+  final theme = skin == null
+      ? readerTheme
+      : readerTheme.copyWith(
+          extensions: [
+            ...readerTheme.extensions.values,
+            AppSkinTheme(skin: skin),
+          ],
+        );
   await tester.pumpWidget(
     MaterialApp(
-      theme: ReaderThemes.day.toThemeData(),
+      theme: theme,
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

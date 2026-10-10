@@ -1,9 +1,12 @@
 import 'dart:convert';
 
+import '../../models/theme_package.dart';
+
 /// Public metadata identifies one approved, immutable downloadable version.
 class ThemeMarketItem {
   ThemeMarketItem.fromJson(Map<String, dynamic> json)
-    : id = json['id'] as String,
+    : schemaVersion = (json['schemaVersion'] ?? 1) as int,
+      id = json['id'] as String,
       version = json['version'] as int,
       name = json['name'] as String,
       description = json['description'] as String,
@@ -11,7 +14,9 @@ class ThemeMarketItem {
       license = json['license'] as String,
       sha256 = json['sha256'] as String,
       size = json['size'] as int {
-    if (!RegExp(r'^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$').hasMatch(id) ||
+    if (schemaVersion < 1 ||
+        schemaVersion > ThemePackage.currentSchemaVersion ||
+        !RegExp(r'^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$').hasMatch(id) ||
         id.length > 48 ||
         version < 1 ||
         name.isEmpty ||
@@ -29,6 +34,7 @@ class ThemeMarketItem {
   }
 
   static const maxPackageBytes = 10 * 1024 * 1024;
+  final int schemaVersion;
   final String id;
   final int version;
   final String name;
@@ -40,9 +46,9 @@ class ThemeMarketItem {
 
   // URLs are derived from validated identity, never taken from package input.
   String get downloadPath =>
-      '/api/v1/themes/${Uri.encodeComponent(id)}/download?version=$version';
+      '/api/v1/themes/${Uri.encodeComponent(id)}/download?version=$version&maxSchemaVersion=${ThemePackage.currentSchemaVersion}';
   String get previewPath =>
-      '/api/v1/themes/${Uri.encodeComponent(id)}/preview?version=$version';
+      '/api/v1/themes/${Uri.encodeComponent(id)}/preview?version=$version&maxSchemaVersion=${ThemePackage.currentSchemaVersion}';
 
   @override
   String toString() => jsonEncode({'id': id, 'version': version});

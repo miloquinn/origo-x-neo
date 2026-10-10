@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'app_skin_icon.dart';
+
 import '../core/reader/reader_aloud_controller.dart';
 import '../services/reader_aloud_service.dart';
 import '../pages/settings/cloud_tts_settings_page.dart';
@@ -212,14 +214,16 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
                       key: const ValueKey('reader-aloud-open-full-player'),
                       tooltip: _copy('打开完整播放器', 'Open full player', 'プレーヤーを開く'),
                       onPressed: () => Navigator.of(context).pop(true),
-                      icon: const Icon(Icons.open_in_full_rounded),
+                      icon: AppSkinIcon.adapt(
+                        const Icon(Icons.open_in_full_rounded),
+                      ),
                     ),
                     IconButton(
                       tooltip: MaterialLocalizations.of(
                         context,
                       ).closeButtonTooltip,
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
+                      icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded)),
                     ),
                   ],
                 ),
@@ -836,6 +840,7 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
                       Expanded(
                         child: _shortcut(
                           key: const ValueKey('reader-aloud-timer'),
+                          selected: controller.sleepDuration != null,
                           icon: controller.sleepDuration == null
                               ? Icons.timer_outlined
                               : Icons.timer_rounded,
@@ -890,6 +895,7 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
 
   Widget _shortcut({
     required Key key,
+    bool selected = false,
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
@@ -907,7 +913,7 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 20),
+          AppSkinIcon.adapt(Icon(icon, size: 20), selected: selected),
           const SizedBox(height: 3),
           Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         ],
@@ -947,7 +953,10 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
                 color: widget.palette.onAccent,
               ),
             )
-          : Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded),
+          : AppSkinIcon.adapt(
+              Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded),
+              selected: playing,
+            ),
     );
   }
 
@@ -1159,10 +1168,14 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
       children: [
         Tooltip(
           message: context.l10n.ttsVolume,
-          child: Icon(
-            volume == 0 ? Icons.volume_off_rounded : Icons.volume_down_rounded,
-            color: palette.secondaryText,
-            size: 22,
+          child: AppSkinIcon.adapt(
+            Icon(
+              volume == 0
+                  ? Icons.volume_off_rounded
+                  : Icons.volume_down_rounded,
+              color: palette.secondaryText,
+              size: 22,
+            ),
           ),
         ),
         Expanded(
@@ -1212,7 +1225,7 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
     child: OutlinedButton.icon(
       key: key,
       onPressed: onPressed,
-      icon: Icon(icon, size: 20),
+      icon: AppSkinIcon.adapt(Icon(icon, size: 20)),
       label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       style: OutlinedButton.styleFrom(
         foregroundColor: widget.palette.secondaryText,
@@ -1248,8 +1261,11 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
     onPressed: onPressed,
     tooltip: tooltip,
     icon: rotation == null
-        ? Icon(icon)
-        : Transform.rotate(angle: rotation, child: Icon(icon)),
+        ? AppSkinIcon.adapt(Icon(icon))
+        : Transform.rotate(
+            angle: rotation,
+            child: AppSkinIcon.adapt(Icon(icon)),
+          ),
     style: IconButton.styleFrom(
       minimumSize: const Size(44, 44),
       visualDensity: VisualDensity.standard,
@@ -1266,7 +1282,7 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
   }) => OutlinedButton.icon(
     key: key,
     onPressed: onPressed,
-    icon: Icon(icon, size: 22),
+    icon: AppSkinIcon.adapt(Icon(icon, size: 22)),
     label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     style: OutlinedButton.styleFrom(
       foregroundColor: widget.palette.text,
@@ -1284,7 +1300,7 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
   }) => IconButton(
     onPressed: onPressed,
     tooltip: tooltip,
-    icon: Icon(icon),
+    icon: AppSkinIcon.adapt(Icon(icon)),
     iconSize: 30,
     color: widget.palette.text,
     disabledColor: widget.palette.secondaryText.withValues(alpha: 0.28),
@@ -1320,7 +1336,12 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
             return ListTile(
               selected: selected,
               leading: selected
-                  ? Icon(Icons.graphic_eq_rounded, color: widget.palette.accent)
+                  ? AppSkinIcon.adapt(
+                      Icon(
+                        Icons.graphic_eq_rounded,
+                        color: widget.palette.accent,
+                      ),
+                    )
                   : SizedBox(
                       width: 24,
                       child: Text(
@@ -1440,7 +1461,7 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
                         context,
                       ).closeButtonTooltip,
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
+                      icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded)),
                       color: widget.palette.secondaryText,
                     ),
                   ],
@@ -1469,9 +1490,14 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
                               segments: [
                                 ButtonSegment(
                                   value: ReaderAloudPresentation.player,
-                                  icon: const Icon(
-                                    Icons.headphones_rounded,
-                                    size: 18,
+                                  icon: AppSkinIcon.adapt(
+                                    const Icon(
+                                      Icons.headphones_rounded,
+                                      size: 18,
+                                    ),
+                                    selected:
+                                        aloud.presentation ==
+                                        ReaderAloudPresentation.player,
                                   ),
                                   label: Text(
                                     _copy(
@@ -1484,9 +1510,11 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
                                 ),
                                 ButtonSegment(
                                   value: ReaderAloudPresentation.controls,
-                                  icon: const Icon(
-                                    Icons.chrome_reader_mode_outlined,
-                                    size: 18,
+                                  icon: AppSkinIcon.adapt(
+                                    const Icon(
+                                      Icons.chrome_reader_mode_outlined,
+                                      size: 18,
+                                    ),
                                   ),
                                   label: Text(
                                     _copy(
@@ -1829,12 +1857,18 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
     segments: [
       ButtonSegment(
         value: ReaderAloudEngineType.system,
-        icon: const Icon(Icons.phone_android_rounded),
+        icon: AppSkinIcon.adapt(
+          const Icon(Icons.phone_android_rounded),
+          selected: aloud.engineType == ReaderAloudEngineType.system,
+        ),
         label: Text(_copy(context, '系统语音', 'System', 'システム音声')),
       ),
       ButtonSegment(
         value: ReaderAloudEngineType.cloud,
-        icon: const Icon(Icons.cloud_outlined),
+        icon: AppSkinIcon.adapt(
+          const Icon(Icons.cloud_outlined),
+          selected: aloud.engineType == ReaderAloudEngineType.cloud,
+        ),
         label: Text(_copy(context, '云端 TTS', 'Cloud TTS', 'クラウド TTS')),
       ),
     ],
@@ -1902,7 +1936,9 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Icon(Icons.unfold_more_rounded, size: 20),
+                AppSkinIcon.adapt(
+                  const Icon(Icons.unfold_more_rounded, size: 20),
+                ),
               ],
             ),
           ),
@@ -1935,13 +1971,15 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
-          leading: Icon(
-            aloud.hasCloudApiKey
-                ? Icons.cloud_done_outlined
-                : Icons.key_outlined,
-            color: aloud.hasCloudApiKey
-                ? widget.palette.accent
-                : widget.palette.secondaryText,
+          leading: AppSkinIcon.adapt(
+            Icon(
+              aloud.hasCloudApiKey
+                  ? Icons.cloud_done_outlined
+                  : Icons.key_outlined,
+              color: aloud.hasCloudApiKey
+                  ? widget.palette.accent
+                  : widget.palette.secondaryText,
+            ),
           ),
           title: Text(
             '${aloud.cloudSettings.model} · ${aloud.cloudSettings.voice}',
@@ -1958,7 +1996,7 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
                   )
                 : _copy(context, '配置云端朗读', 'Set up cloud voice', 'クラウド音声を設定'),
           ),
-          trailing: const Icon(Icons.chevron_right_rounded),
+          trailing: AppSkinIcon.adapt(const Icon(Icons.chevron_right_rounded)),
           onTap: () => unawaited(_showCloudSettings(context, aloud)),
         ),
       ),
@@ -2106,7 +2144,7 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.unfold_more_rounded, size: 20),
+            AppSkinIcon.adapt(const Icon(Icons.unfold_more_rounded, size: 20)),
           ],
         ),
       ),
@@ -2121,11 +2159,14 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
     return ListTile(
       key: const ValueKey('reader-aloud-sleep-timer-card'),
       contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        Icons.bedtime_outlined,
-        color: remaining == null
-            ? widget.palette.secondaryText
-            : widget.palette.accent,
+      leading: AppSkinIcon.adapt(
+        Icon(
+          Icons.bedtime_outlined,
+          color: remaining == null
+              ? widget.palette.secondaryText
+              : widget.palette.accent,
+        ),
+        selected: remaining != null,
       ),
       title: Text(context.l10n.ttsTimerStop),
       subtitle: Text(
@@ -2139,12 +2180,12 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
               ),
       ),
       trailing: remaining == null
-          ? const Icon(Icons.chevron_right_rounded)
+          ? AppSkinIcon.adapt(const Icon(Icons.chevron_right_rounded))
           : IconButton(
               key: const ValueKey('reader-aloud-sleep-timer-clear'),
               tooltip: context.l10n.ttsTimerOff,
               onPressed: () => controller.setSleepTimer(null),
-              icon: const Icon(Icons.close_rounded),
+              icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded)),
             ),
       onTap: () => unawaited(_showSleepTimerPicker(context, controller)),
     );
@@ -2240,7 +2281,9 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
                         onPressed: selected > Duration.zero
                             ? () => Navigator.of(sheetContext).pop(selected)
                             : null,
-                        icon: const Icon(Icons.bedtime_rounded),
+                        icon: AppSkinIcon.adapt(
+                          const Icon(Icons.bedtime_rounded),
+                        ),
                         label: Text(
                           _copy(context, '开始计时', 'Start timer', 'タイマー開始'),
                         ),

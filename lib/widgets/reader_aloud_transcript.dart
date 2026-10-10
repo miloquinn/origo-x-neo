@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+import 'app_skin_icon.dart';
 import 'package:flutter/rendering.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -320,10 +322,12 @@ class _ReaderAloudTranscriptState extends State<ReaderAloudTranscript> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.my_location_rounded,
-                      size: 18,
-                      color: widget.palette.accent,
+                    AppSkinIcon.adapt(
+                      Icon(
+                        Icons.my_location_rounded,
+                        size: 18,
+                        color: widget.palette.accent,
+                      ),
                     ),
                     const SizedBox(width: 7),
                     Flexible(

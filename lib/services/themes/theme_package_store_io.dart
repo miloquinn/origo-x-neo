@@ -22,7 +22,8 @@ class ThemePackageStore {
 
   static const int maxCompressedBytes = 10 * 1024 * 1024;
   static const int maxUncompressedBytes = 20 * 1024 * 1024;
-  static const int maxEntries = 96;
+  static const int maxEntries = 512;
+  static const int maxLegacyEntries = 96;
   static const int maxImageDimension = 2048;
   static const int maxPreviewDimension = 1600;
   static const int maxIconDimension = 512;
@@ -135,7 +136,8 @@ class ThemePackageStore {
       );
     }
 
-    final headers = _preflight(bytes);
+    final preflight = _preflight(bytes);
+    final headers = preflight.sizes;
     final archive = _decode(bytes);
     final files = <String, Uint8List>{};
     var actualBytes = 0;
@@ -174,6 +176,14 @@ class ThemePackageStore {
     var completed = false;
     try {
       parsed = _parseManifest(manifestBytes, staging.path);
+      final entryLimit = parsed.schemaVersion == 1
+          ? maxLegacyEntries
+          : maxEntries;
+      if (preflight.entryCount > entryLimit) {
+        throw ThemePackageStoreException(
+          'Schema ${parsed.schemaVersion} ZIP exceeds $entryLimit entries.',
+        );
+      }
       if (parsed.id != expectedId || parsed.version != expectedVersion) {
         throw const ThemePackageStoreException(
           'Marketplace identity does not match the package manifest.',
@@ -352,13 +362,13 @@ class ThemePackageStore {
     }
   }
 
-  Map<String, int> _preflight(Uint8List bytes) {
+  ({Map<String, int> sizes, int entryCount}) _preflight(Uint8List bytes) {
     try {
       final directory = ZipDirectory.read(InputStream(bytes));
       if (directory.fileHeaders.isEmpty ||
           directory.fileHeaders.length > maxEntries) {
         throw const ThemePackageStoreException(
-          'Theme ZIP must contain between 1 and 96 entries.',
+          'Theme ZIP must contain between 1 and 512 entries.',
         );
       }
       final folded = <String>{};
@@ -405,7 +415,7 @@ class ThemePackageStore {
         }
         if (!directoryEntry) sizes[name.toLowerCase()] = size;
       }
-      return sizes;
+      return (sizes: sizes, entryCount: directory.fileHeaders.length);
     } on ThemePackageStoreException {
       rethrow;
     } catch (error) {

@@ -31,8 +31,22 @@ collections/botanical/icons/
 collections/celestial/icons/
 ```
 
-Each directory contains 16 semantic slots in normal, selected, light, and
-dark states, for 192 PNG files across the three collections.
+Each directory contains 62 semantic slots in normal, selected, light, and
+dark states, for 744 PNG files across the three collections.
+
+The 16 IconPark-derived slots are `home`, `library`, `discover`, `ai`,
+`profile`, `back`, `search`, `more`, `close`, `forward`, `settings`,
+`refresh`, `add`, `share`, `delete`, and `check`.
+
+The additional 46 slots are original Origo X vector geometry authored in
+`source/generate_builtin_skins.py`: `bookmark`, `catalog`, `readAloud`,
+`locate`, `play`, `pause`, `stop`, `previous`, `next`, `rewind`,
+`fastForward`, `speed`, `timer`, `volume`, `volumeOff`, `expand`, `collapse`,
+`remove`, `filter`, `sort`, `layoutGrid`, `layoutList`, `download`, `upload`,
+`folder`, `createFolder`, `moveFolder`, `edit`, `copy`, `note`, `highlight`,
+`history`, `help`, `info`, `cloud`, `sync`, `save`, `restore`, `link`,
+`palette`, `font`, `image`, `device`, `key`, `extension`, and `network`.
+These symbols do not derive from IconPark or another third-party icon set.
 
 ## Original Origo X backgrounds
 
@@ -58,8 +72,10 @@ Light and dark files are authored variants rather than runtime color filters.
 - `source/generate_builtin_skins.py` is the reproducible source. It uses
   macOS `sips` to preserve SVG strokes and transparency and ImageMagick for
   final compression.
-- Visual QA was performed at native 128 px and at the app's 24 px display
-  size for all 16 semantic slots in all three collections.
+- Visual QA was performed at native 128 px and at the app's 24 px and 32 px
+  display sizes for all 62 semantic slots in all three collections. Playback
+  controls were checked as a set so play, pause, stop, previous, next, rewind,
+  and fast-forward remain distinguishable at control-bar size.
 
 This record documents the production basis for the assets and is not legal
 advice.

@@ -11,6 +11,7 @@ import '../core/reader/reader_custom_theme.dart';
 import '../core/reader/reader_system_ui.dart';
 import '../utils/reader_themes.dart';
 import '../utils/localization_extension.dart';
+import 'app_skin_icon.dart';
 import 'glass_adjustment_slider.dart';
 import 'glass_bottom_sheet.dart';
 import 'reader_theme_background.dart';
@@ -555,7 +556,7 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       SwitchListTile(
         key: const ValueKey('reader-chapter-title-page-switch'),
         contentPadding: EdgeInsets.zero,
-        secondary: const Icon(Icons.title_rounded),
+        secondary: AppSkinIcon.adapt(const Icon(Icons.title_rounded)),
         value: _chapterTitlePageEnabled,
         title: Text(widget.chapterTitlePageTitle),
         subtitle: Text(widget.chapterTitlePageHint),
@@ -606,10 +607,10 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     ListTile(
       key: const ValueKey('reader-top-bar-style-tile'),
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.vertical_align_top_rounded),
+      leading: AppSkinIcon.adapt(const Icon(Icons.vertical_align_top_rounded)),
       title: Text(widget.topBarStyleTitle),
       subtitle: Text(widget.topBarStyleSummary),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: AppSkinIcon.adapt(const Icon(Icons.chevron_right)),
       onTap: widget.onTopBarStyleTap,
     ),
     if (widget.onChapterProgressStyleChanged != null)
@@ -625,10 +626,10 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   List<Widget> _pagingTabChildren() => [
     ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.swap_calls),
+      leading: AppSkinIcon.adapt(const Icon(Icons.swap_calls)),
       title: Text(widget.pageModeTitle),
       subtitle: Text(widget.pageModeSummary),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: AppSkinIcon.adapt(const Icon(Icons.chevron_right)),
       onTap: widget.onPageModeTap,
     ),
     if (widget.onAutoPageTurnSettings != null)
@@ -646,7 +647,7 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           builder: (context, _) => SwitchListTile(
             key: const ValueKey('reader-auto-page-turn-shortcut-switch'),
             contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.touch_app_rounded),
+            secondary: AppSkinIcon.adapt(const Icon(Icons.touch_app_rounded)),
             value: controller.shortcutVisible,
             title: Text(context.l10n.readerAutoPageTurnShortcutTitle),
             subtitle: Text(context.l10n.readerAutoPageTurnShortcutHint),
@@ -658,7 +659,10 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       SwitchListTile(
         key: const ValueKey('reader-tablet-two-page-switch'),
         contentPadding: EdgeInsets.zero,
-        secondary: const Icon(Icons.menu_book_rounded),
+        secondary: AppSkinIcon.adapt(
+          const Icon(Icons.menu_book_rounded),
+          selected: _tabletTwoPageEnabled,
+        ),
         value: _tabletTwoPageEnabled,
         title: Text(widget.tabletTwoPageTitle),
         subtitle: Text(widget.tabletTwoPageHint),
@@ -670,7 +674,7 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     SwitchListTile(
       key: const ValueKey('reader-tap-page-animation-switch'),
       contentPadding: EdgeInsets.zero,
-      secondary: const Icon(Icons.animation_rounded),
+      secondary: AppSkinIcon.adapt(const Icon(Icons.animation_rounded)),
       value: _tapPageAnimationEnabled,
       title: Text(widget.tapPageAnimationTitle),
       subtitle: Text(widget.tapPageAnimationHint),
@@ -682,16 +686,19 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
     ListTile(
       key: const ValueKey('reader-tap-zones-tile'),
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.grid_view_rounded),
+      leading: AppSkinIcon.adapt(const Icon(Icons.grid_view_rounded)),
       title: Text(widget.tapZonesTitle),
       subtitle: Text(widget.tapZonesHint),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: AppSkinIcon.adapt(const Icon(Icons.chevron_right)),
       onTap: widget.onTapZonesTap,
     ),
     SwitchListTile(
       key: const ValueKey('reader-pull-bookmark-switch'),
       contentPadding: EdgeInsets.zero,
-      secondary: const Icon(Icons.bookmark_add_outlined),
+      secondary: AppSkinIcon.adapt(
+        const Icon(Icons.bookmark_add_outlined),
+        selected: _pullBookmarkEnabled,
+      ),
       value: _pullBookmarkEnabled,
       title: Text(widget.pullBookmarkTitle),
       subtitle: Text(widget.pullBookmarkHint),
@@ -708,14 +715,14 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   ) => ListTile(
     key: const ValueKey('reader-auto-page-turn-tile'),
     contentPadding: EdgeInsets.zero,
-    leading: const Icon(Icons.av_timer_rounded),
+    leading: AppSkinIcon.adapt(const Icon(Icons.av_timer_rounded)),
     title: Text(context.l10n.readerAutoPageTurnTitle),
     subtitle: Text(
       controller == null
           ? context.l10n.readerAutoPageTurnOff
           : _autoPageTurnSummary(context, controller),
     ),
-    trailing: const Icon(Icons.chevron_right),
+    trailing: AppSkinIcon.adapt(const Icon(Icons.chevron_right)),
     onTap: widget.onAutoPageTurnSettings,
   );
 
@@ -1192,10 +1199,12 @@ class _ReaderThemeStripState extends State<ReaderThemeStrip> {
                                       color: colors.outlineVariant,
                                     ),
                                   ),
-                                  child: Icon(
-                                    Icons.add_rounded,
-                                    size: 20,
-                                    color: colors.onSurface,
+                                  child: AppSkinIcon.adapt(
+                                    Icon(
+                                      Icons.add_rounded,
+                                      size: 20,
+                                      color: colors.onSurface,
+                                    ),
                                   ),
                                 ),
                                 const Spacer(),
@@ -1364,10 +1373,12 @@ class _ReaderThemeCard extends StatelessWidget {
                             border: Border.all(color: palette.border),
                           ),
                           child: selected
-                              ? Icon(
-                                  Icons.check_rounded,
-                                  size: 14,
-                                  color: palette.onAccent,
+                              ? AppSkinIcon.adapt(
+                                  Icon(
+                                    Icons.check_rounded,
+                                    size: 14,
+                                    color: palette.onAccent,
+                                  ),
                                 )
                               : null,
                         ),
@@ -1511,9 +1522,11 @@ class ReaderFontFamilyControl extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colors.onSurfaceVariant,
+                AppSkinIcon.adapt(
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -1623,10 +1636,12 @@ class ReaderFontWeightControl extends StatelessWidget {
         footer: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.info_outline_rounded,
-              size: 15,
-              color: colors.onSurfaceVariant,
+            AppSkinIcon.adapt(
+              Icon(
+                Icons.info_outline_rounded,
+                size: 15,
+                color: colors.onSurfaceVariant,
+              ),
             ),
             const SizedBox(width: 6),
             Expanded(

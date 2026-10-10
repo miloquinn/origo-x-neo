@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:xxread/widgets/app_skin_icon.dart';
 
 import '../../utils/localization_extension.dart';
 
@@ -28,7 +29,9 @@ class LibrarySelectionActions extends StatelessWidget {
             key: const ValueKey('library-create-folder-selected'),
             onPressed: enabled ? onCreateFolder : null,
             style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-            icon: const Icon(Icons.create_new_folder_outlined),
+            icon: AppSkinIcon.adapt(
+              const Icon(Icons.create_new_folder_outlined),
+            ),
             label: Text(l10n.libraryNewFolder, maxLines: 1),
           ),
         ),
@@ -38,7 +41,7 @@ class LibrarySelectionActions extends StatelessWidget {
           onPressed: enabled ? onMove : null,
           tooltip: l10n.libraryMoveToFolder,
           style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
-          icon: const Icon(Icons.drive_file_move_outlined),
+          icon: AppSkinIcon.adapt(const Icon(Icons.drive_file_move_outlined)),
         ),
         const SizedBox(width: 8),
         IconButton.filledTonal(
@@ -49,7 +52,7 @@ class LibrarySelectionActions extends StatelessWidget {
             minimumSize: const Size(48, 48),
             foregroundColor: Theme.of(context).colorScheme.error,
           ),
-          icon: const Icon(Icons.delete_outline_rounded),
+          icon: AppSkinIcon.adapt(const Icon(Icons.delete_outline_rounded)),
         ),
       ],
     );

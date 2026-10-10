@@ -175,7 +175,9 @@ extension _SettingsHubPart on _SettingsPageState {
                 color: scheme.primary.withValues(alpha: 0.09),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 19, color: scheme.primary),
+              child: AppSkinIcon.adapt(
+                Icon(icon, size: 19, color: scheme.primary),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -199,7 +201,9 @@ extension _SettingsHubPart on _SettingsPageState {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+            AppSkinIcon.adapt(
+              Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+            ),
           ],
         ),
       ),

@@ -3,6 +3,7 @@
 
 import 'dart:ui' as ui;
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,7 @@ void main() {
     final imagePaths = <String>{};
 
     expect(skins, hasLength(3));
+    expect(AppSkinIconSlot.values, hasLength(62));
     for (final skin in skins) {
       expect(
         skin.icons.keys.toSet(),
@@ -40,15 +42,56 @@ void main() {
         _addImagePaths(imagePaths, artwork);
       }
     }
+    expect(imagePaths, hasLength(750));
+
+    final manifestEntries =
+        (await rootBundle.loadString('assets/skins/MANIFEST.sha256'))
+            .split('\n')
+            .where((line) => line.isNotEmpty)
+            .map((line) => line.split('  '))
+            .toList(growable: false);
+    final manifestDigests = {
+      for (final entry in manifestEntries) entry.last: entry.first,
+    };
+    final manifestPaths = manifestDigests.keys.toSet();
+    final expectedManifestPaths = <String>{
+      for (final path in imagePaths) path.replaceFirst('assets/skins/', ''),
+      for (final theme in ['tidal', 'botanical', 'celestial']) ...[
+        'backgrounds/$theme.jpg',
+        'backgrounds/$theme-dark.jpg',
+      ],
+      'source/generate_builtin_skins.py',
+      'LICENSE-ICONPARK-APACHE-2.0.txt',
+    };
+    expect(manifestPaths, expectedManifestPaths);
+    expect(manifestPaths, hasLength(752));
 
     for (final path in imagePaths) {
       final data = await rootBundle.load(path);
-      final codec = await ui.instantiateImageCodec(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      final bytes = data.buffer.asUint8List(
+        data.offsetInBytes,
+        data.lengthInBytes,
       );
+      final relativePath = path.replaceFirst('assets/skins/', '');
+      expect(
+        sha256.convert(bytes).toString(),
+        manifestDigests[relativePath],
+        reason: '$path must match MANIFEST.sha256',
+      );
+      final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
-      expect(frame.image.width, greaterThan(0), reason: path);
-      expect(frame.image.height, greaterThan(0), reason: path);
+      if (relativePath.startsWith('collections/')) {
+        expect(frame.image.width, 128, reason: path);
+        expect(frame.image.height, 128, reason: path);
+        final pixels = await frame.image.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        );
+        expect(pixels, isNotNull, reason: path);
+        expect(pixels!.getUint8(3), 0, reason: '$path must keep transparency');
+      } else {
+        expect(frame.image.width, 1200, reason: path);
+        expect(frame.image.height, 1800, reason: path);
+      }
       frame.image.dispose();
       codec.dispose();
     }

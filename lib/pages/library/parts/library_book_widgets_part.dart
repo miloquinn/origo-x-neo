@@ -272,7 +272,9 @@ class _BookSelectionIndicator extends StatelessWidget {
         ],
       ),
       child: selected
-          ? Icon(Icons.check_rounded, size: 18, color: scheme.onPrimary)
+          ? AppSkinIcon.adapt(
+              Icon(Icons.check_rounded, size: 18, color: scheme.onPrimary),
+            )
           : null,
     );
   }

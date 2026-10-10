@@ -215,6 +215,7 @@ class ReaderChromeOverlay extends StatelessWidget {
                             palette: palette,
                             onPressed: bookmarkBusy ? null : onBookmark,
                             tooltip: bookmarkTooltip,
+                            selected: bookmarked,
                             icon: bookmarked
                                 ? Icons.bookmark_rounded
                                 : Icons.bookmark_border_rounded,
@@ -282,6 +283,7 @@ class ReaderChromeOverlay extends StatelessWidget {
                               palette: palette,
                               onPressed: onReadAloud,
                               tooltip: readAloudTooltip ?? '',
+                              selected: readAloudActive,
                               icon: readAloudActive
                                   ? Icons.graphic_eq_rounded
                                   : Icons.headphones_rounded,
@@ -547,7 +549,9 @@ class _ReaderAutoPageTurnControlState extends State<_ReaderAutoPageTurnControl>
               padding: const EdgeInsets.only(left: 16, right: 4),
               child: Row(
                 children: [
-                  Icon(_modeIcon(mode), size: 20, color: widget.palette.text),
+                  AppSkinIcon.adapt(
+                    Icon(_modeIcon(mode), size: 20, color: widget.palette.text),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -638,10 +642,15 @@ class _ReaderAutoPageTurnShortcut extends StatelessWidget {
           duration: duration,
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
-          child: Icon(
-            running ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          child: KeyedSubtree(
             key: ValueKey(running),
-            size: 22,
+            child: AppSkinIcon.adapt(
+              Icon(
+                running ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                size: 22,
+              ),
+              selected: running,
+            ),
           ),
         ),
       );
@@ -694,12 +703,14 @@ class ReaderControlIconButton extends StatelessWidget {
     required this.onPressed,
     required this.tooltip,
     required this.icon,
+    this.selected = false,
   });
 
   final ReaderThemePalette palette;
   final VoidCallback? onPressed;
   final String tooltip;
   final IconData icon;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -709,7 +720,7 @@ class ReaderControlIconButton extends StatelessWidget {
         child: IconButton(
           tooltip: tooltip,
           onPressed: onPressed,
-          icon: AppSkinIcon.adapt(Icon(icon, size: 22)),
+          icon: AppSkinIcon.adapt(Icon(icon, size: 22), selected: selected),
           style: IconButton.styleFrom(
             foregroundColor: palette.text,
             disabledForegroundColor: palette.text.withValues(alpha: 0.58),
@@ -726,7 +737,7 @@ class ReaderControlIconButton extends StatelessWidget {
     return GlassIconButton(
       onPressed: onPressed,
       tooltip: tooltip,
-      icon: Icon(icon, size: 22),
+      icon: AppSkinIcon.adapt(Icon(icon, size: 22), selected: selected),
       foregroundColor: palette.text,
       brightness: palette.brightness,
       outlineColor: palette.border,

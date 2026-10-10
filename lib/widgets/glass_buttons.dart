@@ -53,7 +53,7 @@ class GlassIconButton extends StatelessWidget {
       child: IconButton(
         tooltip: tooltip,
         onPressed: onPressed,
-        icon: AppSkinIcon.adapt(icon),
+        icon: AppSkinIcon.adapt(icon, selected: highlighted ? true : null),
         style: IconButton.styleFrom(
           foregroundColor: foregroundColor,
           disabledForegroundColor: foregroundColor?.withValues(alpha: 0.58),

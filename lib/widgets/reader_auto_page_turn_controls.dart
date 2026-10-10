@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/reader/reader_auto_page_turn_controller.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
+import 'app_skin_icon.dart';
 import 'reader_settings_controls.dart';
 import 'glass_bottom_sheet.dart';
 
@@ -129,7 +130,7 @@ class _ReaderAutoPageTurnSheetState extends State<_ReaderAutoPageTurnSheet> {
             onPressed: () => Navigator.of(
               context,
             ).pop(ReaderAutoPageTurnSelection(mode: _mode, seconds: seconds)),
-            icon: const Icon(Icons.play_arrow_rounded),
+            icon: AppSkinIcon.adapt(const Icon(Icons.play_arrow_rounded)),
             label: Text(context.l10n.readerAutoPageTurnStart),
           ),
         ],
@@ -279,11 +280,13 @@ class _AutoPageTurnPreviewState extends State<_AutoPageTurnPreview>
               Positioned(
                 right: 14,
                 bottom: 10,
-                child: Icon(
-                  Icons.skip_next_rounded,
-                  size: 20,
-                  color: widget.palette.accent.withValues(
-                    alpha: progress > 0.78 ? 1 : 0.35,
+                child: AppSkinIcon.adapt(
+                  Icon(
+                    Icons.skip_next_rounded,
+                    size: 20,
+                    color: widget.palette.accent.withValues(
+                      alpha: progress > 0.78 ? 1 : 0.35,
+                    ),
                   ),
                 ),
               ),

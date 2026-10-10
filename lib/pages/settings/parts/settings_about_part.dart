@@ -51,7 +51,9 @@ extension _SettingsAboutPart on _SettingsPageState {
                 key: const ValueKey('settings-open-source-info'),
                 tooltip: l10n.settingsOpenSourceTitle,
                 onPressed: _showOpenSourceDetails,
-                icon: const Icon(Icons.info_outline_rounded, size: 20),
+                icon: AppSkinIcon.adapt(
+                  const Icon(Icons.info_outline_rounded, size: 20),
+                ),
                 color: scheme.onSurfaceVariant,
               ),
             ],
@@ -237,7 +239,9 @@ extension _SettingsAboutPart on _SettingsPageState {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Row(
               children: [
-                Icon(icon, size: 18, color: scheme.onSurfaceVariant),
+                AppSkinIcon.adapt(
+                  Icon(icon, size: 18, color: scheme.onSurfaceVariant),
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -247,10 +251,12 @@ extension _SettingsAboutPart on _SettingsPageState {
                 ),
                 const SizedBox(width: 8),
                 trailing ??
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                      color: scheme.onSurfaceVariant,
+                    AppSkinIcon.adapt(
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
               ],
             ),
@@ -318,7 +324,7 @@ extension _SettingsAboutPart on _SettingsPageState {
           const SizedBox(width: 8),
           Expanded(child: Text(title)),
           const SizedBox(width: 4),
-          const Icon(Icons.arrow_outward_rounded, size: 16),
+          AppSkinIcon.adapt(const Icon(Icons.arrow_outward_rounded, size: 16)),
         ],
       ),
     );
@@ -495,10 +501,12 @@ extension _SettingsAboutPart on _SettingsPageState {
                     ).colorScheme.tertiary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.tertiary,
+                  child: AppSkinIcon.adapt(
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -556,12 +564,14 @@ extension _SettingsAboutPart on _SettingsPageState {
                   const SizedBox(width: 8),
                   trailing,
                 ] else
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.4),
+                  AppSkinIcon.adapt(
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
                   ),
               ],
             ),

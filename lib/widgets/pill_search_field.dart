@@ -212,7 +212,9 @@ class _PillSearchFieldState extends State<PillSearchField> {
                             padding: const EdgeInsets.all(10),
                             foregroundColor: muted,
                           ),
-                          icon: const Icon(Icons.close_rounded, size: 20),
+                          icon: AppSkinIcon.adapt(
+                            const Icon(Icons.close_rounded, size: 20),
+                          ),
                         ),
                     ],
                   ),

@@ -475,7 +475,9 @@ extension _LibraryPageBookDetails on _LibraryPageState {
                   color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: iconColor, size: 17),
+                child: AppSkinIcon.adapt(
+                  Icon(icon, color: iconColor, size: 17),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -517,9 +519,11 @@ extension _LibraryPageBookDetails on _LibraryPageState {
       builder: (context) => GlassDialog(
         title: Row(
           children: [
-            Icon(
-              Icons.info_outline,
-              color: Theme.of(context).colorScheme.primary,
+            AppSkinIcon.adapt(
+              Icon(
+                Icons.info_outline,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(width: 8),
             Text(context.l10n.libraryBookInfo),

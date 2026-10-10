@@ -122,17 +122,19 @@ extension _LibraryPageChrome on _LibraryPageState {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.error_outline_rounded,
-          size: 42,
-          color: Theme.of(context).colorScheme.error,
+        AppSkinIcon.adapt(
+          Icon(
+            Icons.error_outline_rounded,
+            size: 42,
+            color: Theme.of(context).colorScheme.error,
+          ),
         ),
         const SizedBox(height: 12),
         Text(context.l10n.error),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: _retryLoadBooks,
-          icon: const Icon(Icons.refresh_rounded),
+          icon: AppSkinIcon.adapt(const Icon(Icons.refresh_rounded)),
           label: Text(context.l10n.retry),
         ),
       ],
@@ -360,7 +362,7 @@ extension _LibraryPageChrome on _LibraryPageState {
           foregroundColor: scheme.onPrimaryContainer,
           elevation: 2,
           heroTag: "add_book_fab",
-          child: const Icon(Icons.add, size: 28),
+          child: AppSkinIcon.adapt(const Icon(Icons.add, size: 28)),
         ),
       );
     }
@@ -395,7 +397,7 @@ extension _LibraryPageChrome on _LibraryPageState {
           highlightElevation: 0,
           shape: shape,
           heroTag: "add_book_fab", // 添加唯一标识避免冲突
-          child: const Icon(Icons.add, size: 28),
+          child: AppSkinIcon.adapt(const Icon(Icons.add, size: 28)),
         ),
       ),
     );
@@ -416,12 +418,14 @@ extension _LibraryPageChrome on _LibraryPageState {
               );
               _loadBooks();
             },
-            icon: const Icon(Icons.add),
+            icon: AppSkinIcon.adapt(const Icon(Icons.add)),
             label: Text(context.l10n.importBooks),
           ),
           TextButton.icon(
             onPressed: () => _createFolder(),
-            icon: const Icon(Icons.create_new_folder_outlined),
+            icon: AppSkinIcon.adapt(
+              const Icon(Icons.create_new_folder_outlined),
+            ),
             label: Text(context.l10n.libraryNewFolder),
           ),
         ],
@@ -452,10 +456,12 @@ extension _LibraryPageChrome on _LibraryPageState {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.folder_open_outlined,
-          size: 48,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        AppSkinIcon.adapt(
+          Icon(
+            Icons.folder_open_outlined,
+            size: 48,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 16),
         Text(context.l10n.libraryFolderEmpty, textAlign: TextAlign.center),
@@ -463,7 +469,7 @@ extension _LibraryPageChrome on _LibraryPageState {
         TextButton.icon(
           key: const ValueKey('library-create-empty-folder'),
           onPressed: () => _createFolder(),
-          icon: const Icon(Icons.create_new_folder_outlined),
+          icon: AppSkinIcon.adapt(const Icon(Icons.create_new_folder_outlined)),
           label: Text(context.l10n.libraryNewFolder),
         ),
       ],

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
+import 'app_skin_icon.dart';
 import 'glass_control_surface.dart';
 
 /// Reader-owned selection actions, with one material and one overflow panel.
@@ -188,11 +189,13 @@ class _ReaderSelectionToolbarState extends State<ReaderSelectionToolbar> {
                             alpha: 0.38,
                           ),
                         ),
-                        icon: Icon(
-                          open
-                              ? Icons.expand_less_rounded
-                              : Icons.more_horiz_rounded,
-                          size: 22,
+                        icon: AppSkinIcon.adapt(
+                          Icon(
+                            open
+                                ? Icons.expand_less_rounded
+                                : Icons.more_horiz_rounded,
+                            size: 22,
+                          ),
                         ),
                       ),
                     ),
@@ -296,14 +299,16 @@ class _ReaderSelectionToolbarState extends State<ReaderSelectionToolbar> {
       child: expanded
           ? Row(
               children: [
-                Icon(
-                  action.icon ??
-                      switch (action.id) {
-                        'note' => Icons.mode_comment_outlined,
-                        'highlight' => Icons.highlight_outlined,
-                        _ => Icons.content_copy_rounded,
-                      },
-                  size: 18,
+                AppSkinIcon.adapt(
+                  Icon(
+                    action.icon ??
+                        switch (action.id) {
+                          'note' => Icons.mode_comment_outlined,
+                          'highlight' => Icons.highlight_outlined,
+                          _ => Icons.content_copy_rounded,
+                        },
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(child: Text(action.label)),

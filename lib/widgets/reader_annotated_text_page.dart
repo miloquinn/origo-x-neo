@@ -11,9 +11,11 @@ import 'package:xxread/core/reader/native_text_paginator.dart';
 import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/core/reader/reader_annotation.dart';
 import 'package:xxread/core/reader/reader_text_pagination.dart';
+import 'package:xxread/models/app_skin.dart';
 import 'package:xxread/models/book_note.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/widgets/app_skin_icon.dart';
 import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_selection_toolbar.dart';
 import 'package:xxread/widgets/reader_text_page_content.dart';
@@ -428,7 +430,12 @@ Future<void> showReaderAnnotationDetails(
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.mode_comment_outlined, color: palette.accent),
+                      AppSkinIcon.adapt(
+                        Icon(
+                          Icons.mode_comment_outlined,
+                          color: palette.accent,
+                        ),
+                      ),
                       const SizedBox(width: 9),
                       Text(
                         context.l10n.notes,
@@ -617,12 +624,18 @@ class _ReaderAnnotationEditorSheetState
                     segments: [
                       ButtonSegment(
                         value: readerAnnotationTypeHighlight,
-                        icon: const Icon(Icons.auto_awesome_rounded),
+                        icon: AppSkinIcon(
+                          slot: AppSkinIconSlot.highlight,
+                          selected: _type == readerAnnotationTypeHighlight,
+                          fallback: const Icon(Icons.auto_awesome_rounded),
+                        ),
                         label: Text(context.l10n.noteTypeHighlight),
                       ),
                       ButtonSegment(
                         value: readerAnnotationTypeUnderline,
-                        icon: const Icon(Icons.format_underlined_rounded),
+                        icon: AppSkinIcon.adapt(
+                          const Icon(Icons.format_underlined_rounded),
+                        ),
                         label: Text(context.l10n.noteTypeUnderline),
                       ),
                     ],
@@ -696,7 +709,9 @@ class _ReaderAnnotationEditorSheetState
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(50),
                         ),
-                        icon: const Icon(Icons.check_rounded),
+                        icon: AppSkinIcon.adapt(
+                          const Icon(Icons.check_rounded),
+                        ),
                         label: Text(context.l10n.save),
                       ),
                     ),
@@ -753,14 +768,16 @@ class _ReaderColorChoice extends StatelessWidget {
               ],
             ),
             child: selected
-                ? Icon(
-                    Icons.check_rounded,
-                    size: 18,
-                    color:
-                        ThemeData.estimateBrightnessForColor(color) ==
-                            Brightness.dark
-                        ? Colors.white
-                        : Colors.black87,
+                ? AppSkinIcon.adapt(
+                    Icon(
+                      Icons.check_rounded,
+                      size: 18,
+                      color:
+                          ThemeData.estimateBrightnessForColor(color) ==
+                              Brightness.dark
+                          ? Colors.white
+                          : Colors.black87,
+                    ),
                   )
                 : null,
           ),

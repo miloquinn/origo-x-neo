@@ -23,10 +23,12 @@ extension _SettingsLayoutPart on _SettingsPageState {
               color: palette.card,
               borderRadius: BorderRadius.circular(22),
             ),
-            child: Icon(
-              Icons.question_mark_rounded,
-              size: 20,
-              color: palette.iconMuted,
+            child: AppSkinIcon.adapt(
+              Icon(
+                Icons.question_mark_rounded,
+                size: 20,
+                color: palette.iconMuted,
+              ),
             ),
           ),
         ),
@@ -50,7 +52,7 @@ extension _SettingsLayoutPart on _SettingsPageState {
               : const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Row(
             children: [
-              Icon(icon, color: scheme.primary, size: 18),
+              AppSkinIcon.adapt(Icon(icon, color: scheme.primary, size: 18)),
               const SizedBox(width: 9),
               Expanded(
                 child: Text(
@@ -196,7 +198,7 @@ extension _SettingsLayoutPart on _SettingsPageState {
                     dimension: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.chevron_right_rounded),
+                : AppSkinIcon.adapt(const Icon(Icons.chevron_right_rounded)),
           ),
         ),
         _buildActionSetting(

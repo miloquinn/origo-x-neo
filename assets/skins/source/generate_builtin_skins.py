@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Build Origo X's bundled skin artwork from auditable SVG sources.
 
-The semantic icon geometry below is adapted from ByteDance IconPark v1.4.2
-(Apache-2.0). Origo X adds its own badge shapes, palettes, dark variants and
-selected states. Background compositions are original Origo X artwork.
+The original 16 semantic icon geometries below are adapted from ByteDance
+IconPark v1.4.2 (Apache-2.0). The expanded semantic set, badge shapes,
+palettes, dark variants, selected states, and background compositions are
+original Origo X artwork.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import shutil
 import subprocess
@@ -101,6 +103,213 @@ ICONS = {
     """,
 }
 
+# The first 16 semantic symbols above are optically redrawn from the pinned
+# IconPark sources recorded in NOTICE.md. The symbols below are original Origo
+# X geometry, authored on the same 48 x 48 grid so every bundled collection can
+# cover reader controls, title bars, libraries, forms, and system actions
+# without falling back to unrelated platform glyphs.
+ORIGINAL_ICON_SLOTS = tuple(ICONS)
+ICONS.update({
+    "bookmark": """
+      <path d="M11 6H37V43L24 34L11 43V6Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M17 13H31" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "catalog": """
+      <path d="M8 8H40V40H8V8Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M16 8V40M22 16H34M22 24H34M22 32H31" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "readAloud": """
+      <path d="M7 13H17L28 5V43L17 35H7V13Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M34 17C38 21 38 27 34 31M39 11C47 18 47 30 39 37" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "locate": """
+      <circle cx="24" cy="24" r="8" fill="$PAPER" stroke="$ACCENT" stroke-width="4"/>
+      <path d="M24 4V13M24 35V44M4 24H13M35 24H44" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="24" cy="24" r="2.5" fill="$LINE"/>
+    """,
+    "play": """
+      <circle cx="24" cy="24" r="19" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M20 15L34 24L20 33V15Z" fill="$PAPER" stroke="$ACCENT" stroke-width="3.5" stroke-linejoin="round"/>
+    """,
+    "pause": """
+      <circle cx="24" cy="24" r="19" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M16 14H22V34H16V14ZM27 14H33V34H27V14Z" fill="$PAPER" stroke="$ACCENT" stroke-width="3" stroke-linejoin="round"/>
+    """,
+    "stop": """
+      <circle cx="24" cy="24" r="19" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M16 16H32V32H16V16Z" fill="$PAPER" stroke="$ACCENT" stroke-width="3.5" stroke-linejoin="round"/>
+    """,
+    "previous": """
+      <path d="M10 11V37" stroke="$LINE" stroke-width="5" stroke-linecap="round"/>
+      <path d="M38 11L17 24L38 37V11Z" fill="$FILL" stroke="$ACCENT" stroke-width="4" stroke-linejoin="round"/>
+    """,
+    "next": """
+      <path d="M38 11V37" stroke="$LINE" stroke-width="5" stroke-linecap="round"/>
+      <path d="M10 11L31 24L10 37V11Z" fill="$FILL" stroke="$ACCENT" stroke-width="4" stroke-linejoin="round"/>
+    """,
+    "rewind": """
+      <path d="M25 12L8 24L25 36V12ZM42 12L25 24L42 36V12Z" fill="$FILL" stroke="$LINE" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M25 14V34" stroke="$ACCENT" stroke-width="3" stroke-linecap="round"/>
+    """,
+    "fastForward": """
+      <path d="M6 12L23 24L6 36V12ZM23 12L40 24L23 36V12Z" fill="$FILL" stroke="$LINE" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M23 14V34" stroke="$ACCENT" stroke-width="3" stroke-linecap="round"/>
+    """,
+    "speed": """
+      <path d="M7 36C7 26.6 14.6 19 24 19C33.4 19 41 26.6 41 36" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+      <path d="M24 34L35 13" stroke="$ACCENT" stroke-width="4.5" stroke-linecap="round"/>
+      <circle cx="24" cy="34" r="4" fill="$PAPER" stroke="$LINE" stroke-width="3"/>
+      <path d="M11 26L7 22M37 26L41 22M24 19V13" stroke="$LINE" stroke-width="3" stroke-linecap="round"/>
+    """,
+    "timer": """
+      <circle cx="24" cy="27" r="16" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M19 5H29M24 5V11M35 13L39 9" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+      <path d="M24 18V28L31 32" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "volume": """
+      <path d="M6 18H15L25 10V38L15 30H6V18Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M31 18C35 21 35 27 31 30M37 12C45 19 45 29 37 36" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "volumeOff": """
+      <path d="M6 18H15L25 10V38L15 30H6V18Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M32 18L43 30M43 18L32 30" stroke="$ACCENT" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "expand": """
+      <path d="M8 19V8H19M29 8H40V19M40 29V40H29M19 40H8V29" fill="none" stroke="$LINE" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9 9L19 19M39 9L29 19M39 39L29 29M9 39L19 29" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "collapse": """
+      <path d="M18 6V18H6M30 6V18H42M42 30H30V42M6 30H18V42" fill="none" stroke="$LINE" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M7 7L18 18M41 7L30 18M41 41L30 30M7 41L18 30" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "remove": """
+      <circle cx="24" cy="24" r="18" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M14 24H34" stroke="$ACCENT" stroke-width="5" stroke-linecap="round"/>
+    """,
+    "filter": """
+      <path d="M6 8H42L29 23V39L19 44V23L6 8Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M14 14H34" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "sort": """
+      <path d="M13 7V41M7 35L13 41L19 35" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M25 11H42M25 22H37M25 33H32" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "layoutGrid": """
+      <path d="M7 7H20V20H7V7ZM28 7H41V20H28V7ZM7 28H20V41H7V28ZM28 28H41V41H28V28Z" fill="$FILL" stroke="$LINE" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M10 10H17M31 10H38M10 31H17M31 31H38" stroke="$ACCENT" stroke-width="2.5" stroke-linecap="round"/>
+    """,
+    "layoutList": """
+      <path d="M7 8H14V15H7V8ZM7 21H14V28H7V21ZM7 34H14V41H7V34Z" fill="$FILL" stroke="$ACCENT" stroke-width="3"/>
+      <path d="M21 11.5H41M21 24.5H41M21 37.5H41" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "download": """
+      <path d="M24 5V31M14 22L24 32L34 22" fill="none" stroke="$ACCENT" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M8 35V42H40V35" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "upload": """
+      <path d="M24 34V8M14 17L24 7L34 17" fill="none" stroke="$ACCENT" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M8 35V42H40V35" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "folder": """
+      <path d="M5 13H20L24 18H43V40H5V13Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M9 24H37" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "createFolder": """
+      <path d="M4 13H18L22 18H43V40H4V13Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M31 23V35M25 29H37" stroke="$ACCENT" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "moveFolder": """
+      <path d="M4 14H18L22 19H42V39H4V14Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M17 29H35M29 23L35 29L29 35" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "edit": """
+      <path d="M9 36L7 43L14 41L39 16L32 9L9 36Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M28 13L35 20M8 42L16 40" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "copy": """
+      <path d="M15 14H42V42H15V14Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M8 34H6V6H33V8" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "note": """
+      <path d="M8 6H40V34L32 42H8V6Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M32 42V34H40M15 16H33M15 24H30" fill="none" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "highlight": """
+      <path d="M14 7H34L31 29H17L14 7Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M17 29L11 39H37L31 29M13 44H35" fill="$PAPER" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "history": """
+      <path d="M9 15V6M9 6H18" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 11C13.5 6.7 18.6 4 24 4C35 4 44 13 44 24C44 35 35 44 24 44C13 44 4 35 4 24" fill="$FILL" fill-opacity=".65" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+      <path d="M24 13V25L32 30" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "help": """
+      <circle cx="24" cy="24" r="19" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M17 18C17.5 12.5 21 10 25 10C30 10 34 13 34 17.5C34 23 28 24 25 28V31" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="25" cy="38" r="2.5" fill="$LINE"/>
+    """,
+    "info": """
+      <circle cx="24" cy="24" r="19" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <circle cx="24" cy="14" r="2.5" fill="$ACCENT"/>
+      <path d="M24 21V36" stroke="$ACCENT" stroke-width="5" stroke-linecap="round"/>
+    """,
+    "cloud": """
+      <path d="M14 39C8.5 39 4 34.5 4 29C4 23.8 8 19.5 13 19C15 11.5 21 7 28 8C35 9 39 14 39.5 20C43.2 21.2 45 24.5 44 29C43 35 39 39 33 39H14Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M16 29H32" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "sync": """
+      <path d="M38 18C35 10 25 7 17 11C14 12 12 14 10 17" fill="none" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+      <path d="M38 9V18H29M10 30C13 38 23 41 31 37C34 36 36 34 38 31M10 39V30H19" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "save": """
+      <path d="M7 6H36L42 12V42H7V6Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M15 6V18H33V6M15 42V27H34V42" fill="$PAPER" stroke="$ACCENT" stroke-width="3.5" stroke-linejoin="round"/>
+    """,
+    "restore": """
+      <path d="M10 15V6M10 6H19" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M11 11C14.5 7 19.5 5 25 5C35.5 5 43 13 43 24C43 35 35 43 24 43C14 43 6 36 5 27" fill="$FILL" fill-opacity=".65" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+      <path d="M17 19H32V34H17V19ZM22 19V25H28V19" fill="$PAPER" stroke="$ACCENT" stroke-width="3" stroke-linejoin="round"/>
+    """,
+    "link": """
+      <path d="M19 31L14 36C10.5 39.5 5 39.5 1.5 36C-2 32.5-2 27 1.5 23.5L10 15C13.5 11.5 19 11.5 22.5 15" transform="translate(8 0)" fill="none" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+      <path d="M29 17L34 12C37.5 8.5 43 8.5 46.5 12C50 15.5 50 21 46.5 24.5L38 33C34.5 36.5 29 36.5 25.5 33" transform="translate(-6 0)" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round"/>
+      <path d="M17 31L31 17" stroke="$LINE" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "palette": """
+      <path d="M24 5C13 5 5 13 5 24C5 35 13 43 24 43H28C31 43 33 41 33 38C33 35 31 33 28 33H25C22 33 20 31 20 28C20 25 22 23 25 23H37C41 23 43 20 43 16C43 9 34 5 24 5Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <circle cx="14" cy="20" r="3" fill="$ACCENT"/><circle cx="20" cy="13" r="3" fill="$PAPER"/><circle cx="30" cy="13" r="3" fill="$ACCENT"/>
+    """,
+    "font": """
+      <path d="M8 40L21 8H27L40 40M13 30H35" fill="none" stroke="$LINE" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M30 40L36 24H40L46 40M33 34H43" fill="none" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "image": """
+      <path d="M5 7H43V41H5V7Z" fill="$FILL" stroke="$LINE" stroke-width="4" stroke-linejoin="round"/>
+      <circle cx="16" cy="17" r="5" fill="$PAPER" stroke="$ACCENT" stroke-width="3"/>
+      <path d="M7 37L18 26L25 32L32 23L41 35" fill="none" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    """,
+    "device": """
+      <rect x="11" y="4" width="26" height="40" rx="5" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M18 10H30M21 38H27" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+    """,
+    "key": """
+      <circle cx="16" cy="21" r="10" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M23 28L41 46M31 36L36 31M36 41L41 36" stroke="$ACCENT" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="16" cy="21" r="3" fill="$PAPER"/>
+    """,
+    "extension": """
+      <path d="M7 7H20V15C20 18 22 20 25 20C28 20 30 18 30 15V7H41V20H35C32 20 30 22 30 25C30 28 32 30 35 30H41V41H28V35C28 32 26 30 23 30C20 30 18 32 18 35V41H7V28H13C16 28 18 26 18 23C18 20 16 18 13 18H7V7Z" fill="$FILL" stroke="$LINE" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M8 8H19" stroke="$ACCENT" stroke-width="3" stroke-linecap="round"/>
+    """,
+    "network": """
+      <circle cx="24" cy="24" r="19" fill="$FILL" stroke="$LINE" stroke-width="4"/>
+      <path d="M5 24H43M24 5C30 10 33 16 33 24C33 32 30 38 24 43M24 5C18 10 15 16 15 24C15 32 18 38 24 43" fill="none" stroke="$ACCENT" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M9 14H39M9 34H39" stroke="$LINE" stroke-width="2.5" stroke-linecap="round"/>
+    """,
+})
+
+EXPANDED_ICON_SLOTS = tuple(slot for slot in ICONS if slot not in ORIGINAL_ICON_SLOTS)
+
 
 THEMES = {
     "tidal": {
@@ -181,15 +390,36 @@ BACKGROUND_SVGS = {
 }
 
 
-def build() -> None:
+def _asset_manifest_lines() -> list[str]:
+    deliverables = (
+        sorted(COLLECTIONS_ROOT.rglob("*.png"))
+        + sorted(BACKGROUNDS_ROOT.glob("*.jpg"))
+        + [Path(__file__).resolve(), SKIN_ROOT / "LICENSE-ICONPARK-APACHE-2.0.txt"]
+    )
+    return [
+        f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(SKIN_ROOT)}"
+        for path in deliverables
+    ]
+
+
+def build(
+    *,
+    slots: tuple[str, ...] | None = None,
+    include_backgrounds: bool = True,
+    write_manifest: bool = False,
+) -> None:
     if MAGICK is None or SIPS is None:
         raise SystemExit("macOS `sips` and ImageMagick `magick` are required")
+    selected_slots = tuple(ICONS) if slots is None else slots
+    unknown_slots = set(selected_slots).difference(ICONS)
+    if unknown_slots:
+        raise SystemExit(f"Unknown icon slots: {', '.join(sorted(unknown_slots))}")
     with tempfile.TemporaryDirectory(prefix="origo-skins-") as temp_dir:
         temp = Path(temp_dir)
         for theme_id in THEMES:
             output_dir = COLLECTIONS_ROOT / theme_id / "icons"
             output_dir.mkdir(parents=True, exist_ok=True)
-            for slot in ICONS:
+            for slot in selected_slots:
                 for brightness in ("light", "dark"):
                     for selected in (False, True):
                         suffix = "-selected" if selected else ""
@@ -214,31 +444,73 @@ def build() -> None:
                             f"PNG8:{output}",
                         )
 
-        BACKGROUNDS_ROOT.mkdir(parents=True, exist_ok=True)
-        for (theme_id, brightness), svg in BACKGROUND_SVGS.items():
-            source = temp / f"{theme_id}-{brightness}.svg"
-            source.write_text(svg, encoding="utf-8")
-            suffix = "-dark" if brightness == "dark" else ""
-            output = BACKGROUNDS_ROOT / f"{theme_id}{suffix}.jpg"
-            rendered = temp / f"{theme_id}-{brightness}.png"
-            _run(SIPS, "-s", "format", "png", str(source), "--out", str(rendered))
-            _run(
-                MAGICK,
-                str(rendered),
-                "-strip",
-                "-depth",
-                "8",
-                "-sampling-factor",
-                "4:2:0",
-                "-quality",
-                "84",
-                str(output),
-            )
+        if include_backgrounds:
+            BACKGROUNDS_ROOT.mkdir(parents=True, exist_ok=True)
+            for (theme_id, brightness), svg in BACKGROUND_SVGS.items():
+                source = temp / f"{theme_id}-{brightness}.svg"
+                source.write_text(svg, encoding="utf-8")
+                suffix = "-dark" if brightness == "dark" else ""
+                output = BACKGROUNDS_ROOT / f"{theme_id}{suffix}.jpg"
+                rendered = temp / f"{theme_id}-{brightness}.png"
+                _run(SIPS, "-s", "format", "png", str(source), "--out", str(rendered))
+                _run(
+                    MAGICK,
+                    str(rendered),
+                    "-strip",
+                    "-depth",
+                    "8",
+                    "-sampling-factor",
+                    "4:2:0",
+                    "-quality",
+                    "84",
+                    str(output),
+                )
 
-    for path in sorted(COLLECTIONS_ROOT.rglob("*.png")) + sorted(BACKGROUNDS_ROOT.glob("*.jpg")):
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        print(f"{digest}  {path.relative_to(SKIN_ROOT)}")
+    lines = _asset_manifest_lines()
+    if write_manifest:
+        (SKIN_ROOT / "MANIFEST.sha256").write_text(
+            "\n".join(lines) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        print("\n".join(lines))
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--slots",
+        nargs="+",
+        choices=tuple(ICONS),
+        help="Generate only these semantic slots. Defaults to every slot.",
+    )
+    parser.add_argument(
+        "--expanded-only",
+        action="store_true",
+        help="Generate the Origo X original expansion without touching the original 16 slots.",
+    )
+    parser.add_argument(
+        "--skip-backgrounds",
+        action="store_true",
+        help="Do not regenerate the six existing background JPEGs.",
+    )
+    parser.add_argument(
+        "--write-manifest",
+        action="store_true",
+        help="Refresh MANIFEST.sha256 after generation instead of printing it.",
+    )
+    args = parser.parse_args()
+    if args.expanded_only and args.slots:
+        parser.error("--expanded-only cannot be combined with --slots")
+    return args
 
 
 if __name__ == "__main__":
-    build()
+    arguments = _parse_args()
+    build(
+        slots=EXPANDED_ICON_SLOTS if arguments.expanded_only else (
+            tuple(arguments.slots) if arguments.slots else None
+        ),
+        include_backgrounds=not arguments.skip_backgrounds,
+        write_manifest=arguments.write_manifest,
+    )

@@ -147,7 +147,7 @@ void main() {
       await notifier.applyInstalledTheme(paletteOnly);
       expect(notifier.currentSkinPackage?.id, canonical.id);
       expect(notifier.currentColorPackage?.id, paletteOnly.id);
-      expect(notifier.currentSkin.icons.length, AppSkinIconSlot.values.length);
+      expect(notifier.currentSkin.icons.length, 16);
 
       final paletteTheme = notifier.currentAppTheme;
       await notifier.applyInstalledTheme(skinOnly);

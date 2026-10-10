@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:xxread/widgets/app_skin_icon.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -466,10 +467,12 @@ class _LibraryPageState extends State<LibraryPage> with WidgetsBindingObserver {
       value: filter,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
-        leading: Icon(
-          selected ? Icons.radio_button_checked : Icons.radio_button_off,
-          size: 18,
-          color: selected ? scheme.primary : scheme.onSurfaceVariant,
+        leading: AppSkinIcon.adapt(
+          Icon(
+            selected ? Icons.radio_button_checked : Icons.radio_button_off,
+            size: 18,
+            color: selected ? scheme.primary : scheme.onSurfaceVariant,
+          ),
         ),
         title: Text(label),
       ),

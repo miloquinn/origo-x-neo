@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:xxread/utils/reader_themes.dart';
+import 'app_skin_icon.dart';
 import 'pill_search_field.dart';
 import 'glass_bottom_sheet.dart';
 
@@ -214,7 +215,7 @@ class _ReaderSearchSheetState extends State<_ReaderSearchSheet> {
                 IconButton(
                   tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: AppSkinIcon.adapt(const Icon(Icons.arrow_back_rounded)),
                 ),
                 Expanded(
                   child: PillSearchField(

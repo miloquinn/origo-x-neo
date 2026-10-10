@@ -32,6 +32,36 @@ void main() {
     );
   });
 
+  test(
+    'installs and reloads a normalized v2 market package with 62 slots',
+    () async {
+      final bytes = await File(
+        'test/fixtures/theme-template-v2.zip',
+      ).readAsBytes();
+      const expectedSha256 =
+          '98035e71212cd4e76d703bf9261ca7df783c468eb554e263a87196de3d83ff8d';
+      expect(sha256.convert(bytes).toString(), expectedSha256);
+      final package = await store.install(
+        bytes,
+        expectedSha256: expectedSha256,
+        expectedId: 'coastal-studio-v2-template',
+        expectedVersion: 1,
+      );
+      expect(package.schemaVersion, 2);
+      expect(package.skin.icons.keys.toSet(), AppSkinIconSlot.values.toSet());
+      for (final icons in package.skin.icons.values) {
+        expect(icons.selected, isNotNull);
+        expect(icons.normal.darkAsset, isNotNull);
+        expect(icons.selected!.darkAsset, isNotNull);
+      }
+      final reloaded = (await store.loadInstalled()).single;
+      expect(reloaded.schemaVersion, 2);
+      expect(reloaded.skin.icons.length, 62);
+      await store.remove(reloaded);
+      expect(await store.loadInstalled(), isEmpty);
+    },
+  );
+
   test('installs and reloads the canonical server theme template', () async {
     final bytes = await File(
       'test/fixtures/theme-template-v1.zip',
@@ -47,8 +77,11 @@ void main() {
       expectedVersion: 1,
     );
 
-    expect(package.skin.icons.keys.toSet(), AppSkinIconSlot.values.toSet());
-    for (final slot in AppSkinIconSlot.values) {
+    expect(
+      package.skin.icons.keys.toSet(),
+      AppSkinIconSlot.values.take(16).toSet(),
+    );
+    for (final slot in AppSkinIconSlot.values.take(16)) {
       final icon = package.skin.icons[slot]!;
       expect(icon.selected, isNotNull, reason: '$slot selected icon');
       for (final image in [icon.normal, icon.selected!]) {

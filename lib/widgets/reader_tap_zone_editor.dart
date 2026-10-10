@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/reader/reader_tap_zones.dart';
 import '../utils/localization_extension.dart';
 import '../utils/reader_themes.dart';
+import 'app_skin_icon.dart';
 import 'glass_bottom_sheet.dart';
 
 /// 全屏点击区域编辑层。
@@ -79,7 +80,9 @@ class ReaderTapZoneEditorOverlay extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     title: Text(actionLabel(sheetContext, action)),
                     trailing: action == current
-                        ? Icon(Icons.check_rounded, color: palette.accent)
+                        ? AppSkinIcon.adapt(
+                            Icon(Icons.check_rounded, color: palette.accent),
+                          )
                         : null,
                     onTap: () => Navigator.of(sheetContext).pop(action),
                   ),
@@ -122,7 +125,9 @@ class ReaderTapZoneEditorOverlay extends StatelessWidget {
                     tooltip: MaterialLocalizations.of(
                       context,
                     ).closeButtonTooltip,
-                    icon: const Icon(Icons.close_rounded, color: labelColor),
+                    icon: AppSkinIcon.adapt(
+                      const Icon(Icons.close_rounded, color: labelColor),
+                    ),
                   ),
                 ],
               ),
@@ -169,7 +174,9 @@ class ReaderTapZoneEditorOverlay extends StatelessWidget {
                 key: const ValueKey('tap-zone-editor-reset'),
                 onPressed: () => onZonesChanged(ReaderTapZones.defaults),
                 style: TextButton.styleFrom(foregroundColor: labelColor),
-                icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                icon: AppSkinIcon.adapt(
+                  const Icon(Icons.restart_alt_rounded, size: 18),
+                ),
                 label: Text(context.l10n.tapZoneReset),
               ),
             ),
