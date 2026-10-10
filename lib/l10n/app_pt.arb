@@ -2323,5 +2323,11 @@
   "accountDeleteManageThemes": "Gerenciar meus temas",
   "readerParagraphReviews": "Comentários do parágrafo",
   "readerParagraphReviewOpen": "Ver comentários",
-  "readerParagraphReviewFailed": "Não foi possível carregar os comentários. Pode continuar a ler."
+  "readerParagraphReviewFailed": "Não foi possível carregar os comentários. Pode continuar a ler.",
+  "readerProgressBarTitle": "Barra de progresso flutuante",
+  "readerProgressBarHint": "Mostrar navegação por capítulos e progresso acima dos controles de leitura",
+  "readerProgressBook": "Livro inteiro",
+  "readerProgressChapter": "Capítulo atual",
+  "readerProgressBookShort": "Livro",
+  "readerProgressChapterShort": "Capítulo"
 }

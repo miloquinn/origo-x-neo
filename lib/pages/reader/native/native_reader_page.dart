@@ -39,6 +39,8 @@ import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/core/reader/reader_position_save_queue.dart';
 import 'package:xxread/core/reader/reader_safe_area.dart';
 import 'package:xxread/core/reader/reader_settings.dart';
+import 'package:xxread/core/reader/reader_progress_position.dart';
+import 'package:xxread/widgets/reader_progress_pill.dart';
 import 'package:xxread/core/reader/reader_system_ui.dart';
 import 'package:xxread/core/reader/reader_tap_zones.dart';
 import 'package:xxread/core/reader/reader_text_characters.dart';
@@ -133,6 +135,7 @@ part 'native_reader_interaction.dart';
 part 'native_reader_controls.dart';
 part 'native_reader_auto_page_turn.dart';
 part 'native_reader_navigation.dart';
+part 'native_reader_progress.dart';
 part 'native_reader_page_cache.dart';
 part 'native_reader_shell.dart';
 part 'native_reader_scaffold.dart';
@@ -411,6 +414,9 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   ReaderTopBarStyle _topBarStyle = ReaderTopBarStyle.reader;
   ReaderChapterProgressStyle _chapterProgressStyle =
       ReaderChapterProgressStyle.hidden;
+  bool _progressBarEnabled = ReaderSettings.defaultProgressBarEnabled;
+  ReaderProgressScope _progressBarScope =
+      ReaderSettings.defaultProgressBarScope;
   ReaderAloudController? _readerAloudController;
   bool _readerAloudActive = false;
   ReaderAloudHighlight? _readerAloudHighlight;

@@ -2323,5 +2323,11 @@
   "accountDeleteManageThemes": "Управление моими темами",
   "readerParagraphReviews": "Комментарии к абзацу",
   "readerParagraphReviewOpen": "Посмотреть комментарии",
-  "readerParagraphReviewFailed": "Не удалось загрузить комментарии. Можно продолжить чтение."
+  "readerParagraphReviewFailed": "Не удалось загрузить комментарии. Можно продолжить чтение.",
+  "readerProgressBarTitle": "Плавающая шкала прогресса",
+  "readerProgressBarHint": "Показывать переходы по главам и прогресс над элементами управления чтением",
+  "readerProgressBook": "Вся книга",
+  "readerProgressChapter": "Текущая глава",
+  "readerProgressBookShort": "Книга",
+  "readerProgressChapterShort": "Глава"
 }

@@ -48,6 +48,8 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
         _topBarStyle = topBarStyle;
         _chapterTitlePageEnabled = settings.chapterTitlePageEnabled;
         _chapterProgressStyle = settings.chapterProgressStyle;
+        _progressBarEnabled = settings.progressBarEnabled;
+        _progressBarScope = settings.progressBarScope;
         _readerSettingsLoaded = true;
       });
       _autoPageTurnController.setVertical(
@@ -124,6 +126,8 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
     tabletTwoPageEnabled: _tabletTwoPageEnabled,
     chapterTitlePageEnabled: _chapterTitlePageEnabled,
     chapterProgressStyle: _chapterProgressStyle,
+    progressBarEnabled: _progressBarEnabled,
+    progressBarScope: _progressBarScope,
   );
 
   ReaderFontProfile get _readerFontProfile => resolveReaderFontProfile(
@@ -408,6 +412,25 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
     if (_chapterProgressStyle == style) return;
     _setReaderState(() => _chapterProgressStyle = style);
     await _readerSettingsStore.saveChapterProgressStyle(style);
+  }
+
+  Future<void> _setProgressBarPreferences({
+    bool? enabled,
+    ReaderProgressScope? scope,
+  }) async {
+    final nextEnabled = enabled ?? _progressBarEnabled;
+    final nextScope = scope ?? _progressBarScope;
+    if (nextEnabled == _progressBarEnabled && nextScope == _progressBarScope) {
+      return;
+    }
+    _setReaderState(() {
+      _progressBarEnabled = nextEnabled;
+      _progressBarScope = nextScope;
+    });
+    await _readerSettingsStore.saveProgressBarPreferences(
+      enabled: nextEnabled,
+      scope: nextScope,
+    );
   }
 
   Future<void> _setTopBarStyle(ReaderTopBarStyle style) async {

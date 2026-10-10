@@ -1,5 +1,23 @@
 # 阅读文字与版式调节
 
+## 悬浮阅读进度条
+
+阅读设置的「主题」页签提供「悬浮阅读进度条」开关和「全书进度／当前章节」选择。默认开启并显示全书进度；偏好由 `ReaderSettingsStore` 的 `reader_progress_bar_enabled`、`reader_progress_bar_scope` 保存。本地和在线文字阅读共享这两个键。变更只更新控制栏，不重新分页或改动阅读位置；与页脚的章节信息样式分别保存。
+
+`ReaderChromeOverlay.progressBar` 在底部控制栏上方留 12 点放置 `ReaderProgressPill`，随控制栏呼出和收起。两侧 44 点按钮跳上一章／下一章；开头、结尾和章节加载期间禁用对应操作。中间 36 点高的容器从左向右填充，显示范围与百分比；原生 `Slider` 保留拖动、键盘和辅助功能。拖动只预览，松手后一次跳转；拖动期间暂停自动翻页并取消控制栏的自动隐藏计时，跳转完成后恢复隐藏计时。
+
+- `lib/core/reader/reader_progress_position.dart`：全书以 `(章节索引 + 本章比例) / 章节数` 计算，每章占相同权重；100% 跳最后一章末尾。无需为显示进度预加载其他章节。
+- `lib/pages/reader/native/native_reader_progress.dart`：TXT 以来源章节身份合并内部 32K 存储段，按 `sourceBodyStart` 与末段原文 UTF-16 长度计算章内比例；只懒加载当前或目标逻辑章节的末段并缓存长度，不预读全书。EPUB 使用实际目录项和 fragment 锚点。分页跳转取目标页原文起点，再由现有双页恢复逻辑对齐；连续阅读按章节范围的 canonical 字符偏移恢复。正文仍沿用原来的存储段、书签和保存位置身份。
+- `lib/pages/reader/book_source/book_source_reader_progress.dart`：分页与双页阅读复用当前实际页比例，连续阅读复用 canonical 正文比例；松手委托现有 `_loadChapter` 的定位及过期请求保护。
+- `lib/pages/reader/native/native_reader_vertical_paging.dart`：连续阅读的通知值跟随 canonical 字符偏移，同一个长正文 part 内的滚动也能刷新胶囊。
+- `lib/widgets/reader_progress_bar_setting_tile.dart`：常规尺寸用横向范围选择，窄屏或大字用纵向单选列表；沿用可滚动的阅读设置页。全部文案通过现有本地化生成链路提供。
+
+外壳和内轨分别复用 `GlassSurface` 的 floating／control 材质；内轨不重复采样背景。进度填充属于内容，使用阅读主题强调色；玻璃、毛玻璃、全局关闭、Material 3、高对比和深浅色策略由公共材质解析。减少动态效果时不做填充动画。
+
+回归入口为 `test/reader_progress_position_test.dart`、`reader_progress_pill_test.dart`、`reader_progress_bar_settings_test.dart`、`native_reader_progress_navigation_test.dart` 和 `book_source_reader_progress_navigation_test.dart`；原生组件预览入口为 `tool/preview_reader_progress_pill.dart`。PDF、漫画及在线纯图片正文沿用原有页导航，不显示这条文字阅读胶囊；EPUB 纯图片正文也保持原有控制。已有 iCloud 阅读偏好白名单暂未包含新键，当前开关与范围在本机持久化。
+
+2026-10-10 的 iOS 组件预览：[液态玻璃浅色](previews/reader-progress-20261010/liquid-light.png)、[液态玻璃深色](previews/reader-progress-20261010/liquid-dark.png)、[毛玻璃](previews/reader-progress-20261010/frosted-light.png)、[实底](previews/reader-progress-20261010/solid-light.png)、[窄屏大字](previews/reader-progress-20261010/liquid-chapter-large.png)。[渲染环境](previews/reader-progress-20261010/render-context.json)记录 iOS shader 支持；生产组件预览使用独立包名，不加载用户书籍，物理设备阅读验收单独记录。
+
 阅读二级菜单的调节条由 `lib/widgets/glass_adjustment_slider.dart` 的 `GlassAdjustmentSlider` 统一提供。`lib/widgets/reader_settings_controls.dart` 的 `ReaderSettingSlider` 保留阅读设置入口，`ReaderFontWeightControl` 在同一个组件中提供字体预览与说明；本地文件和在线书源沿用各自既有的保存、重排与正文位置恢复链路。
 
 ## 材质与交互

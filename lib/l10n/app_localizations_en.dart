@@ -8119,4 +8119,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Paragraph comments could not be loaded. You can keep reading.';
+  @override
+  String get readerProgressBarTitle => 'Floating progress bar';
+
+  @override
+  String get readerProgressBarHint =>
+      'Show chapter navigation and progress above the reader controls';
+
+  @override
+  String get readerProgressBook => 'Full book';
+
+  @override
+  String get readerProgressChapter => 'Current chapter';
+
+  @override
+  String get readerProgressBookShort => 'Book';
+
+  @override
+  String get readerProgressChapterShort => 'Chapter';
+
 }

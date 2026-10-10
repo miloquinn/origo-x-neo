@@ -8,6 +8,8 @@ import 'reader_tap_zones.dart';
 
 enum ReaderTextAlignment { natural, justified }
 
+enum ReaderProgressScope { book, chapter }
+
 enum ReaderChapterProgressStyle {
   hidden,
 
@@ -105,6 +107,9 @@ class ReaderSettings {
   static const String defaultThemeId = 'day';
   static const ReaderPageMode defaultPageMode = ReaderPageMode.horizontalSlide;
   static const bool defaultTabletTwoPageEnabled = true;
+  static const bool defaultProgressBarEnabled = true;
+  static const ReaderProgressScope defaultProgressBarScope =
+      ReaderProgressScope.book;
 
   const ReaderSettings({
     required this.fontSize,
@@ -126,6 +131,8 @@ class ReaderSettings {
     this.tabletTwoPageEnabled = defaultTabletTwoPageEnabled,
     this.chapterTitlePageEnabled = true,
     this.chapterProgressStyle = ReaderChapterProgressStyle.hidden,
+    this.progressBarEnabled = defaultProgressBarEnabled,
+    this.progressBarScope = defaultProgressBarScope,
   });
 
   final double fontSize;
@@ -147,6 +154,8 @@ class ReaderSettings {
   final bool tabletTwoPageEnabled;
   final bool chapterTitlePageEnabled;
   final ReaderChapterProgressStyle chapterProgressStyle;
+  final bool progressBarEnabled;
+  final ReaderProgressScope progressBarScope;
 
   ReaderSettings copyWith({
     double? fontSize,
@@ -168,6 +177,8 @@ class ReaderSettings {
     bool? tabletTwoPageEnabled,
     bool? chapterTitlePageEnabled,
     ReaderChapterProgressStyle? chapterProgressStyle,
+    bool? progressBarEnabled,
+    ReaderProgressScope? progressBarScope,
   }) {
     return ReaderSettings(
       fontSize: (fontSize ?? this.fontSize).clamp(minFontSize, maxFontSize),
@@ -215,6 +226,8 @@ class ReaderSettings {
       chapterTitlePageEnabled:
           chapterTitlePageEnabled ?? this.chapterTitlePageEnabled,
       chapterProgressStyle: chapterProgressStyle ?? this.chapterProgressStyle,
+      progressBarEnabled: progressBarEnabled ?? this.progressBarEnabled,
+      progressBarScope: progressBarScope ?? this.progressBarScope,
     );
   }
 }
@@ -247,6 +260,8 @@ class ReaderSettingsStore {
       'native_reader_txt_chapter_title_page_enabled';
   static const tapZonesKey = 'reader_tap_zones_v1';
   static const chapterProgressStyleKey = 'reader_chapter_progress_style';
+  static const progressBarEnabledKey = 'reader_progress_bar_enabled';
+  static const progressBarScopeKey = 'reader_progress_bar_scope';
   static const legacyBookSourceLineHeightKey = 'book_source_reader_line_height';
 
   const ReaderSettingsStore();
@@ -261,6 +276,17 @@ class ReaderSettingsStore {
   ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(chapterProgressStyleKey, style.name);
+  }
+
+  Future<void> saveProgressBarPreferences({
+    required bool enabled,
+    required ReaderProgressScope scope,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await Future.wait([
+      prefs.setBool(progressBarEnabledKey, enabled),
+      prefs.setString(progressBarScopeKey, scope.name),
+    ]);
   }
 
   Future<void> saveThemeId(String themeId) async {
@@ -305,6 +331,13 @@ class ReaderSettingsStore {
     }
 
     return ReaderSettings(
+      progressBarEnabled:
+          prefs.getBool(progressBarEnabledKey) ??
+          ReaderSettings.defaultProgressBarEnabled,
+      progressBarScope: ReaderProgressScope.values.firstWhere(
+        (scope) => scope.name == prefs.getString(progressBarScopeKey),
+        orElse: () => ReaderSettings.defaultProgressBarScope,
+      ),
       chapterProgressStyle: ReaderChapterProgressStyle.values.firstWhere(
         (style) => style.name == prefs.getString(chapterProgressStyleKey),
         orElse: () => ReaderChapterProgressStyle.hidden,
@@ -403,6 +436,8 @@ class ReaderSettingsStore {
         chapterProgressStyleKey,
         settings.chapterProgressStyle.name,
       ),
+      prefs.setBool(progressBarEnabledKey, settings.progressBarEnabled),
+      prefs.setString(progressBarScopeKey, settings.progressBarScope.name),
     ]);
   }
 

@@ -2323,5 +2323,11 @@
   "accountDeleteManageThemes": "Gestisci i miei temi",
   "readerParagraphReviews": "Commenti al paragrafo",
   "readerParagraphReviewOpen": "Mostra i commenti",
-  "readerParagraphReviewFailed": "Impossibile caricare i commenti. Puoi continuare a leggere."
+  "readerParagraphReviewFailed": "Impossibile caricare i commenti. Puoi continuare a leggere.",
+  "readerProgressBarTitle": "Barra di avanzamento flottante",
+  "readerProgressBarHint": "Mostra navigazione dei capitoli e avanzamento sopra i controlli di lettura",
+  "readerProgressBook": "Intero libro",
+  "readerProgressChapter": "Capitolo attuale",
+  "readerProgressBookShort": "Libro",
+  "readerProgressChapterShort": "Capitolo"
 }

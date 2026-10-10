@@ -52,6 +52,8 @@ import 'package:xxread/core/reader/reader_desktop_resize_controller.dart';
 import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/core/reader/reader_safe_area.dart';
 import 'package:xxread/core/reader/reader_settings.dart';
+import 'package:xxread/core/reader/reader_progress_position.dart';
+import 'package:xxread/widgets/reader_progress_pill.dart';
 import 'package:xxread/core/reader/reader_system_ui.dart';
 import 'package:xxread/core/reader/reader_tap_zones.dart';
 import 'package:xxread/core/reader/reader_text_pagination.dart';
@@ -124,6 +126,7 @@ part 'book_source_reader_replacement.dart';
 part 'book_source_reader_chapter_loading.dart';
 part 'book_source_reader_pagination_cache.dart';
 part 'book_source_reader_navigation.dart';
+part 'book_source_reader_progress.dart';
 part 'book_source_reader_settings.dart';
 part 'book_source_reader_aloud_actions.dart';
 part 'book_source_reader_auto_page_turning.dart';
@@ -365,6 +368,9 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   ReaderTopBarStyle _topBarStyle = ReaderTopBarStyle.reader;
   ReaderChapterProgressStyle _chapterProgressStyle =
       ReaderChapterProgressStyle.hidden;
+  bool _progressBarEnabled = ReaderSettings.defaultProgressBarEnabled;
+  ReaderProgressScope _progressBarScope =
+      ReaderSettings.defaultProgressBarScope;
   ReaderAloudController? _readerAloudController;
   bool _readerAloudActive = false;
   ReaderAloudHighlight? _readerAloudHighlight;
@@ -410,6 +416,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
     tabletTwoPageEnabled: _tabletTwoPageEnabled,
     chapterTitlePageEnabled: _chapterTitlePageEnabled,
     chapterProgressStyle: _chapterProgressStyle,
+    progressBarEnabled: _progressBarEnabled,
+    progressBarScope: _progressBarScope,
   );
 
   ReaderSafeAreaMetrics get _readerSafeArea => ReaderSafeAreaMetrics(

@@ -71,9 +71,6 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
     );
     if (primary == null) return;
     final nextPage = primary.index.clamp(0, _visibleContinuousParts.length - 1);
-    _verticalScrollProgress.value = _visibleContinuousParts.length <= 1
-        ? 0
-        : (nextPage / (_visibleContinuousParts.length - 1)).clamp(0.0, 1.0);
     if (nextPage != _pageIndex) {
       if (nextPage > _pageIndex) _sessionPagesRead++;
       _setReaderState(() => _pageIndex = nextPage);
@@ -81,6 +78,9 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
     final chapter = _visibleChapters[_chapterIndex];
     final part = _visibleContinuousParts[nextPage];
     final offset = _continuousOffsetAtViewportCenter(chapter, part, nextPage);
+    _verticalScrollProgress.value = chapter.plainText.isEmpty
+        ? 0
+        : (offset / chapter.plainText.length).clamp(0.0, 1.0);
     // The exit snapshot needs the captured anchor even when ordinary writes
     // are gated; its final save remains the only permitted exit writer.
     _anchorOffset = offset;
@@ -131,9 +131,6 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
         nextChapter > _chapterIndex ||
         (nextChapter == _chapterIndex && nextPage > _pageIndex);
     final chapterChanged = nextChapter != _chapterIndex;
-    _verticalScrollProgress.value = parts.length <= 1
-        ? 0
-        : (nextPage / (parts.length - 1)).clamp(0.0, 1.0);
     if (chapterChanged || nextPage != _pageIndex) {
       if (movedForward) _sessionPagesRead++;
       _setReaderState(() {
@@ -158,6 +155,10 @@ extension _NativeReaderVerticalPaging on _NativeReaderPageState {
       parts[nextPage],
       nextPage,
     );
+    final nextChapterText = _visibleChapters[nextChapter].plainText;
+    _verticalScrollProgress.value = nextChapterText.isEmpty
+        ? 0
+        : (offset / nextChapterText.length).clamp(0.0, 1.0);
     _anchorOffset = offset;
     _verticalCanonicalOffset = offset;
     _saveCanonicalProgress(

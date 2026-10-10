@@ -378,8 +378,9 @@ extension _NativeReaderNavigation on _NativeReaderPageState {
 
   int _currentNavigationPosition(
     ReaderNavigationCatalog catalog,
-    List<_NativeChapter> chapters,
-  ) {
+    List<_NativeChapter> chapters, {
+    int? offsetOverride,
+  }) {
     if (_chapterIndex < 0 || _chapterIndex >= chapters.length) return -1;
     final chapter = chapters[_chapterIndex];
     final lastJumpPosition = _lastNavigationJumpPosition;
@@ -401,7 +402,7 @@ extension _NativeReaderNavigation on _NativeReaderPageState {
         }
       }
     }
-    final currentOffset = (_anchorOffset ?? 0).clamp(
+    final currentOffset = (offsetOverride ?? _anchorOffset ?? 0).clamp(
       0,
       chapter.plainText.length,
     );

@@ -16,6 +16,7 @@ import 'glass_adjustment_slider.dart';
 import 'glass_bottom_sheet.dart';
 import 'reader_theme_background.dart';
 import 'reader_chapter_progress_setting_tile.dart';
+import 'reader_progress_bar_setting_tile.dart';
 
 @immutable
 class ReaderFontChoice {
@@ -56,6 +57,10 @@ class ReaderSettingsSheet extends StatefulWidget {
     required this.topBarStyleSummary,
     this.chapterProgressStyle = ReaderChapterProgressStyle.hidden,
     this.onChapterProgressStyleChanged,
+    this.progressBarEnabled = ReaderSettings.defaultProgressBarEnabled,
+    this.progressBarScope = ReaderSettings.defaultProgressBarScope,
+    this.onProgressBarEnabledChanged,
+    this.onProgressBarScopeChanged,
     required this.pullBookmarkTitle,
     required this.pullBookmarkHint,
     required this.tapPageAnimationTitle,
@@ -152,6 +157,10 @@ class ReaderSettingsSheet extends StatefulWidget {
   final String topBarStyleSummary;
   final ReaderChapterProgressStyle chapterProgressStyle;
   final ValueChanged<ReaderChapterProgressStyle>? onChapterProgressStyleChanged;
+  final bool progressBarEnabled;
+  final ReaderProgressScope progressBarScope;
+  final ValueChanged<bool>? onProgressBarEnabledChanged;
+  final ValueChanged<ReaderProgressScope>? onProgressBarScopeChanged;
   final String pullBookmarkTitle;
   final String pullBookmarkHint;
   final String tapPageAnimationTitle;
@@ -242,6 +251,8 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   late String _themeId = widget.themeId;
   late ReaderChapterProgressStyle _chapterProgressStyle =
       widget.chapterProgressStyle;
+  late bool _progressBarEnabled = widget.progressBarEnabled;
+  late ReaderProgressScope _progressBarScope = widget.progressBarScope;
   late double _fontSize = widget.fontSize;
   late int _textBrightness = widget.textBrightness;
   late bool _dimTextInDarkMode = widget.dimTextInDarkMode;
@@ -619,6 +630,20 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
         onChanged: (style) {
           setState(() => _chapterProgressStyle = style);
           widget.onChapterProgressStyleChanged!(style);
+        },
+      ),
+    if (widget.onProgressBarEnabledChanged != null &&
+        widget.onProgressBarScopeChanged != null)
+      ReaderProgressBarSettingTile(
+        enabled: _progressBarEnabled,
+        scope: _progressBarScope,
+        onEnabledChanged: (enabled) {
+          setState(() => _progressBarEnabled = enabled);
+          widget.onProgressBarEnabledChanged!(enabled);
+        },
+        onScopeChanged: (scope) {
+          setState(() => _progressBarScope = scope);
+          widget.onProgressBarScopeChanged!(scope);
         },
       ),
   ];

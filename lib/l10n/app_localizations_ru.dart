@@ -8184,4 +8184,23 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Не удалось загрузить комментарии. Можно продолжить чтение.';
+  @override
+  String get readerProgressBarTitle => 'Плавающая шкала прогресса';
+
+  @override
+  String get readerProgressBarHint =>
+      'Показывать переходы по главам и прогресс над элементами управления чтением';
+
+  @override
+  String get readerProgressBook => 'Вся книга';
+
+  @override
+  String get readerProgressChapter => 'Текущая глава';
+
+  @override
+  String get readerProgressBookShort => 'Книга';
+
+  @override
+  String get readerProgressChapterShort => 'Глава';
+
 }

@@ -7276,5 +7276,11 @@
   "accountDeleteManageThemes": "Manage my themes",
   "readerParagraphReviews": "Paragraph comments",
   "readerParagraphReviewOpen": "View paragraph comments",
-  "readerParagraphReviewFailed": "Paragraph comments could not be loaded. You can keep reading."
+  "readerParagraphReviewFailed": "Paragraph comments could not be loaded. You can keep reading.",
+  "readerProgressBarTitle": "Floating progress bar",
+  "readerProgressBarHint": "Show chapter navigation and progress above the reader controls",
+  "readerProgressBook": "Full book",
+  "readerProgressChapter": "Current chapter",
+  "readerProgressBookShort": "Book",
+  "readerProgressChapterShort": "Chapter"
 }

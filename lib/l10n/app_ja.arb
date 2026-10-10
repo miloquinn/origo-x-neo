@@ -3583,5 +3583,11 @@
   "accountDeleteManageThemes": "自分のテーマを管理",
   "readerParagraphReviews": "段落コメント",
   "readerParagraphReviewOpen": "段落コメントを表示",
-  "readerParagraphReviewFailed": "コメントを読み込めませんでした。本文は引き続き読めます。"
+  "readerParagraphReviewFailed": "コメントを読み込めませんでした。本文は引き続き読めます。",
+  "readerProgressBarTitle": "フローティング進捗バー",
+  "readerProgressBarHint": "読書コントロールの上に章の移動と進捗を表示",
+  "readerProgressBook": "本全体",
+  "readerProgressChapter": "現在の章",
+  "readerProgressBookShort": "全体",
+  "readerProgressChapterShort": "章内"
 }

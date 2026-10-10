@@ -148,6 +148,25 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
     await _readerSettingsStore.saveChapterProgressStyle(style);
   }
 
+  Future<void> _setProgressBarPreferences({
+    bool? enabled,
+    ReaderProgressScope? scope,
+  }) async {
+    final nextEnabled = enabled ?? _progressBarEnabled;
+    final nextScope = scope ?? _progressBarScope;
+    if (nextEnabled == _progressBarEnabled && nextScope == _progressBarScope) {
+      return;
+    }
+    _updateReaderState(() {
+      _progressBarEnabled = nextEnabled;
+      _progressBarScope = nextScope;
+    });
+    await _readerSettingsStore.saveProgressBarPreferences(
+      enabled: nextEnabled,
+      scope: nextScope,
+    );
+  }
+
   Future<void> _setTopBarStyle(ReaderTopBarStyle style) async {
     if (_topBarStyle == style) return;
     // 顶部预留高度随样式变化；完全沉浸在上下滚动时取消整个预留区域。

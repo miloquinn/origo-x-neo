@@ -14071,6 +14071,42 @@ abstract class AppLocalizations {
   /// **'Paragraph comments could not be loaded. You can keep reading.'**
   String get readerParagraphReviewFailed;
 
+  /// No description provided for @readerProgressBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating progress bar'**
+  String get readerProgressBarTitle;
+
+  /// No description provided for @readerProgressBarHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show chapter navigation and progress above the reader controls'**
+  String get readerProgressBarHint;
+
+  /// No description provided for @readerProgressBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Full book'**
+  String get readerProgressBook;
+
+  /// No description provided for @readerProgressChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Current chapter'**
+  String get readerProgressChapter;
+
+  /// No description provided for @readerProgressBookShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get readerProgressBookShort;
+
+  /// No description provided for @readerProgressChapterShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter'**
+  String get readerProgressChapterShort;
+
 }
 
 class _AppLocalizationsDelegate

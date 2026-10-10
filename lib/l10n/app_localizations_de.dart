@@ -8238,4 +8238,23 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Absatzkommentare konnten nicht geladen werden. Du kannst weiterlesen.';
+  @override
+  String get readerProgressBarTitle => 'Schwebender Lesefortschritt';
+
+  @override
+  String get readerProgressBarHint =>
+      'Kapitelnavigation und Fortschritt über den Lesesteuerelementen anzeigen';
+
+  @override
+  String get readerProgressBook => 'Ganzes Buch';
+
+  @override
+  String get readerProgressChapter => 'Aktuelles Kapitel';
+
+  @override
+  String get readerProgressBookShort => 'Buch';
+
+  @override
+  String get readerProgressChapterShort => 'Kapitel';
+
 }

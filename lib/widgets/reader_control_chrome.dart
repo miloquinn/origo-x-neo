@@ -55,6 +55,7 @@ class ReaderChromeOverlay extends StatelessWidget {
     this.showSettingsAction = true,
     this.autoPageTurnController,
     this.onResumeAutoPageTurn,
+    this.progressBar,
   });
 
   final ReaderThemePalette palette;
@@ -94,6 +95,7 @@ class ReaderChromeOverlay extends StatelessWidget {
   final bool showSettingsAction;
   final ReaderAutoPageTurnController? autoPageTurnController;
   final VoidCallback? onResumeAutoPageTurn;
+  final Widget? progressBar;
 
   @override
   Widget build(BuildContext context) {
@@ -245,67 +247,77 @@ class ReaderChromeOverlay extends StatelessWidget {
           curve: Curves.easeOutCubic,
           left: 22,
           right: 22,
-          bottom: visible ? 16 : -110,
+          bottom: visible ? 16 : (progressBar == null ? -110 : -220),
           child: IgnorePointer(
             ignoring: !visible,
             child: ExcludeSemantics(
               excluding: !visible,
               child: SafeArea(
                 top: false,
-                child: ReaderControlBar(
-                  palette: palette,
-                  isTopBar: false,
-                  child: SizedBox(
-                    height: 64,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 9,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ReaderControlIconButton(
-                            palette: palette,
-                            onPressed: onTableOfContents,
-                            tooltip: tableOfContentsTooltip,
-                            icon: Icons.format_list_bulleted_rounded,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (progressBar != null) ...[
+                      progressBar!,
+                      const SizedBox(height: 12),
+                    ],
+                    ReaderControlBar(
+                      palette: palette,
+                      isTopBar: false,
+                      child: SizedBox(
+                        height: 64,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 9,
                           ),
-                          if (onSearch != null)
-                            ReaderControlIconButton(
-                              palette: palette,
-                              onPressed: onSearch,
-                              tooltip: searchTooltip ?? '',
-                              icon: Icons.search_rounded,
-                            ),
-                          if (onReadAloud != null)
-                            ReaderControlIconButton(
-                              palette: palette,
-                              onPressed: onReadAloud,
-                              tooltip: readAloudTooltip ?? '',
-                              selected: readAloudActive,
-                              icon: readAloudActive
-                                  ? Icons.graphic_eq_rounded
-                                  : Icons.headphones_rounded,
-                            ),
-                          if (onAskAi != null)
-                            ReaderControlIconButton(
-                              palette: palette,
-                              onPressed: onAskAi,
-                              tooltip: askAiTooltip ?? '',
-                              icon: Icons.auto_awesome_outlined,
-                            ),
-                          if (showSettingsAction)
-                            ReaderControlIconButton(
-                              palette: palette,
-                              onPressed: onSettings,
-                              tooltip: settingsTooltip,
-                              icon: Icons.tune_rounded,
-                            ),
-                        ],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              ReaderControlIconButton(
+                                palette: palette,
+                                onPressed: onTableOfContents,
+                                tooltip: tableOfContentsTooltip,
+                                icon: Icons.format_list_bulleted_rounded,
+                              ),
+                              if (onSearch != null)
+                                ReaderControlIconButton(
+                                  palette: palette,
+                                  onPressed: onSearch,
+                                  tooltip: searchTooltip ?? '',
+                                  icon: Icons.search_rounded,
+                                ),
+                              if (onReadAloud != null)
+                                ReaderControlIconButton(
+                                  palette: palette,
+                                  onPressed: onReadAloud,
+                                  tooltip: readAloudTooltip ?? '',
+                                  selected: readAloudActive,
+                                  icon: readAloudActive
+                                      ? Icons.graphic_eq_rounded
+                                      : Icons.headphones_rounded,
+                                ),
+                              if (onAskAi != null)
+                                ReaderControlIconButton(
+                                  palette: palette,
+                                  onPressed: onAskAi,
+                                  tooltip: askAiTooltip ?? '',
+                                  icon: Icons.auto_awesome_outlined,
+                                ),
+                              if (showSettingsAction)
+                                ReaderControlIconButton(
+                                  palette: palette,
+                                  onPressed: onSettings,
+                                  tooltip: settingsTooltip,
+                                  icon: Icons.tune_rounded,
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),

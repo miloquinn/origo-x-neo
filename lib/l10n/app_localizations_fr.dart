@@ -8272,4 +8272,23 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Les commentaires ne sont pas disponibles. Vous pouvez continuer à lire.';
+  @override
+  String get readerProgressBarTitle => 'Barre de progression flottante';
+
+  @override
+  String get readerProgressBarHint =>
+      'Afficher les chapitres et la progression au-dessus des commandes de lecture';
+
+  @override
+  String get readerProgressBook => 'Livre entier';
+
+  @override
+  String get readerProgressChapter => 'Chapitre actuel';
+
+  @override
+  String get readerProgressBookShort => 'Livre';
+
+  @override
+  String get readerProgressChapterShort => 'Chapitre';
+
 }

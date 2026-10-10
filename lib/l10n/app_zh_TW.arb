@@ -3694,5 +3694,11 @@
   "accountDeleteManageThemes": "管理我的主題",
   "readerParagraphReviews": "段評",
   "readerParagraphReviewOpen": "查看段評",
-  "readerParagraphReviewFailed": "段評暫時無法載入，仍可繼續閱讀正文。"
+  "readerParagraphReviewFailed": "段評暫時無法載入，仍可繼續閱讀正文。",
+  "readerProgressBarTitle": "懸浮閱讀進度條",
+  "readerProgressBarHint": "在閱讀控制列上方顯示章節切換和進度",
+  "readerProgressBook": "全書進度",
+  "readerProgressChapter": "目前章節",
+  "readerProgressBookShort": "全書",
+  "readerProgressChapterShort": "本章"
 }

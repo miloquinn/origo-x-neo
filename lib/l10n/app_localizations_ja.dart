@@ -7795,4 +7795,22 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get readerParagraphReviewFailed => 'コメントを読み込めませんでした。本文は引き続き読めます。';
+  @override
+  String get readerProgressBarTitle => 'フローティング進捗バー';
+
+  @override
+  String get readerProgressBarHint => '読書コントロールの上に章の移動と進捗を表示';
+
+  @override
+  String get readerProgressBook => '本全体';
+
+  @override
+  String get readerProgressChapter => '現在の章';
+
+  @override
+  String get readerProgressBookShort => '全体';
+
+  @override
+  String get readerProgressChapterShort => '章内';
+
 }

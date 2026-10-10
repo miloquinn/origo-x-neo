@@ -93,6 +93,8 @@ class _NativeChapter {
   Map<String, int>? _loadedAnchorOffsets;
   String? _loadedText;
   Future<String>? _textLoad;
+  Future<int>? _rawTextLengthLoad;
+  int? _rawTextLength;
   Future<void>? _pendingLoad;
   Future<void>? _replacementLoad;
   List<_NativeBlock>? _loadedBlocks;
@@ -327,6 +329,27 @@ class _NativeChapter {
     } finally {
       if (identical(_textLoad, future)) _textLoad = null;
     }
+  }
+
+  Future<int> rawTextLengthAsync() {
+    final cached = _rawTextLength;
+    if (cached != null) return Future<int>.value(cached);
+    final pending = _rawTextLengthLoad;
+    if (pending != null) return pending;
+    late final Future<int> loading;
+    loading =
+        () async {
+          await loadTextAsync();
+          final length = (_plainText ?? _loadedText ?? '').length;
+          _rawTextLength = length;
+          return length;
+        }().whenComplete(() {
+          if (identical(_rawTextLengthLoad, loading)) {
+            _rawTextLengthLoad = null;
+          }
+        });
+    _rawTextLengthLoad = loading;
+    return loading;
   }
 
   Future<String> _readIndexedTextAsync() async {

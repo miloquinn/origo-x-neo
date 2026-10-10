@@ -93,6 +93,8 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         _scrollByChapter = scrollByChapter;
         _chapterTitlePageEnabled = settings.chapterTitlePageEnabled;
         _chapterProgressStyle = settings.chapterProgressStyle;
+        _progressBarEnabled = settings.progressBarEnabled;
+        _progressBarScope = settings.progressBarScope;
         _loadingCatalog = false;
       });
       unawaited(_syncVolumeKeyPaging());

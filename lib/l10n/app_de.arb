@@ -2323,5 +2323,11 @@
   "accountDeleteManageThemes": "Meine Designs verwalten",
   "readerParagraphReviews": "Absatzkommentare",
   "readerParagraphReviewOpen": "Absatzkommentare ansehen",
-  "readerParagraphReviewFailed": "Absatzkommentare konnten nicht geladen werden. Du kannst weiterlesen."
+  "readerParagraphReviewFailed": "Absatzkommentare konnten nicht geladen werden. Du kannst weiterlesen.",
+  "readerProgressBarTitle": "Schwebender Lesefortschritt",
+  "readerProgressBarHint": "Kapitelnavigation und Fortschritt über den Lesesteuerelementen anzeigen",
+  "readerProgressBook": "Ganzes Buch",
+  "readerProgressChapter": "Aktuelles Kapitel",
+  "readerProgressBookShort": "Buch",
+  "readerProgressChapterShort": "Kapitel"
 }

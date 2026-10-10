@@ -8215,4 +8215,23 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Não foi possível carregar os comentários. Pode continuar a ler.';
+  @override
+  String get readerProgressBarTitle => 'Barra de progresso flutuante';
+
+  @override
+  String get readerProgressBarHint =>
+      'Mostrar navegação por capítulos e progresso acima dos controles de leitura';
+
+  @override
+  String get readerProgressBook => 'Livro inteiro';
+
+  @override
+  String get readerProgressChapter => 'Capítulo atual';
+
+  @override
+  String get readerProgressBookShort => 'Livro';
+
+  @override
+  String get readerProgressChapterShort => 'Capítulo';
+
 }

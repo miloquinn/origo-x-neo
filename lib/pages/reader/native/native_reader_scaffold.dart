@@ -474,6 +474,14 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                                     _floatingStatusHorizontalPadding,
                               ),
                             ReaderChromeOverlay(
+                              progressBar: _buildProgressPill(
+                                chapters: chapters,
+                                pages: pages,
+                                paginationSize: paginationSize,
+                                textDirection: textDirection,
+                                textScaler: textScaler,
+                                usesTwoPageLayout: usesTwoPageLayout,
+                              ),
                               autoPageTurnController: _autoPageTurnController,
                               onResumeAutoPageTurn: () =>
                                   unawaited(_resumeAutoPageTurn()),

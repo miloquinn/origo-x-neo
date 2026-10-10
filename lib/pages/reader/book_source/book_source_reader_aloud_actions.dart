@@ -387,6 +387,12 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
         chapterProgressStyle: _chapterProgressStyle,
         onChapterProgressStyleChanged: (style) =>
             unawaited(_setChapterProgressStyle(style)),
+        progressBarEnabled: _progressBarEnabled,
+        progressBarScope: _progressBarScope,
+        onProgressBarEnabledChanged: (enabled) =>
+            unawaited(_setProgressBarPreferences(enabled: enabled)),
+        onProgressBarScopeChanged: (scope) =>
+            unawaited(_setProgressBarPreferences(scope: scope)),
         title: context.l10n.readingSettings,
         tabThemeLabel: context.l10n.readerSettingsTabTheme,
         tabTextLabel: context.l10n.readerSettingsTabText,

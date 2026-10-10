@@ -431,6 +431,7 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
                         horizontalPadding: _floatingStatusHorizontalPadding,
                       ),
                     ReaderChromeOverlay(
+                      progressBar: _buildProgressPill(),
                       palette: _readerTheme,
                       visible: _controlsVisible,
                       autoPageTurnController: _autoPageTurnController,

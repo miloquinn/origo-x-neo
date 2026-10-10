@@ -3973,5 +3973,11 @@
   "accountDeleteManageThemes": "管理我的主题",
   "readerParagraphReviews": "段评",
   "readerParagraphReviewOpen": "查看段评",
-  "readerParagraphReviewFailed": "段评暂时无法加载，正文仍可继续阅读。"
+  "readerParagraphReviewFailed": "段评暂时无法加载，正文仍可继续阅读。",
+  "readerProgressBarTitle": "悬浮阅读进度条",
+  "readerProgressBarHint": "在阅读控制栏上方显示章节切换和进度",
+  "readerProgressBook": "全书进度",
+  "readerProgressChapter": "当前章节",
+  "readerProgressBookShort": "全书",
+  "readerProgressChapterShort": "本章"
 }

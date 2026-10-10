@@ -532,6 +532,12 @@ extension _NativeReaderControls on _NativeReaderPageState {
         chapterProgressStyle: _chapterProgressStyle,
         onChapterProgressStyleChanged: (style) =>
             unawaited(_setChapterProgressStyle(style)),
+        progressBarEnabled: _progressBarEnabled,
+        progressBarScope: _progressBarScope,
+        onProgressBarEnabledChanged: (enabled) =>
+            unawaited(_setProgressBarPreferences(enabled: enabled)),
+        onProgressBarScopeChanged: (scope) =>
+            unawaited(_setProgressBarPreferences(scope: scope)),
         autoPageTurnController: _autoPageTurnController,
         autoPageTurnIsVertical: _pageMode == NativePageMode.verticalScroll,
         onAutoPageTurnSettings: () => unawaited(_showAutoPageTurnSettings()),
