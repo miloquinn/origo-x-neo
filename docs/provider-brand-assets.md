@@ -2,27 +2,30 @@
 
 ## 当前显示与所有权
 
-AI 配置和云端 TTS 配置使用服务名称与 Origo X 的中性图标。用户于
-2026-10-10 确认未取得品牌方书面 Logo 授权，并选择先使用中性图标。
-`AiProviderLogo` 因此复用 `AppSkinIcon` 的 `network` 槽位，不读取第三方
-Logo 图片；`CloudTtsProviderLogo` 继续复用同一入口。原有名称、模型、
-接口和协议配置均保留。
+AI 配置和云端 TTS 配置通过同一 `AiProviderLogo` 显示离线第三方 Logo。
+自定义或无法加载素材的服务仍复用 `AppSkinIcon` 的 `network` 中性图标。
+名称、模型、接口和协议配置保持原有合同。
 
-`AIModelPreset.logoAsset` 与 `logoAssetForSettings` 的原路径目前仅作为
-服务身份匹配的兼容标识，不表示允许展示相应图片。不要因为这些字段
-仍存在，就绕过共享图标组件直接 `Image.asset`。旧 PNG 暂留在包中并保留
-版权许可；它们不是当前 UI 的显示资产。
+决策记录：2026-10-10 用户确认未取得品牌方书面 Logo 授权，并选择中性
+图标；2026-10-11 用户明确改为恢复第三方 Logo，同时要求保留核对记录。
+这次产品显示选择不等于新增品牌授权，下面的官方规则与未确认事项继续保留。
+
+图标使用素材原有配色，禁止 `onSurface` 或任意主题色染色。OpenAI、Groq、
+MiMo 使用素材自带的黑/白版本，Kimi 使用自带黑色 / 白色带蓝点版本。
+图片 `BoxFit.contain` 保持比例。国内智谱改用 `zhipu-color`，Kimi 换成
+Kimi 标识；硅基流动换成官方资源包的单图形原件，不再使用 SiliconCloud。
+原有 asset 路径兼容服务身份匹配；明暗显示版本在共享组件内解析。
 
 ## 版权与品牌权利
 
-旧素材来自 Lobe Icons 提交
+除硅基流动官方素材外，显示素材来自 Lobe Icons 提交
 `c385b2b8d1f9e19aa86e628d4e23c91ee1111a47`。完整 MIT 原文与 LobeHub
 版权声明在 `assets/ai_providers/LICENSE-MIT.txt`；来源和转换记录在同目录
 `NOTICE.md`。库的版权许可不等于第三方商标使用许可，免责声明也不能
 代替品牌要求的同意。
 
 `assets/ai_providers/BRAND-NOTICE.txt` 单独记录中英双语服务名称归属、
-无合作/赞助/认可关系、当前中性图标策略，以及恢复品牌标识的条件。
+无合作/赞助/认可关系、当前显示方式和各自来源。
 `registerProviderAssetLicenses` 被启动入口 `registerAppSkinLicenses` 调用，
 幂等注册两条离线通知到 `LicenseRegistry`；无需网络、密钥或账户。
 
@@ -47,10 +50,10 @@ Logo 图片；`CloudTtsProviderLogo` 继续复用同一入口。原有名称、�
 | 豆包 / Doubao | [官方用户协议](https://www.doubao.com/legal/terms) 第 8.5 节 | 未经事先书面同意不得展示/使用 Logo；云端 TTS 的具体许可应向相应服务权利人确认。 |
 | Xiaomi MiMo | [官方 MiMo-Code 仓库](https://github.com/XiaomiMiMo/MiMo-Code)、[模型许可](https://github.com/XiaomiMiMo/MiMo/blob/main/LICENSE) | 仓库注明 Logo 受 MiMo Trademark Policy 约束，公开政策入口未确认；Apache-2.0 第 6 节不授予商标权。恢复前获取政策及所需许可。 |
 
-旧资源的主题 `onSurface` 染色会把黑白标识变成任意主题色，不能保留。
-当前通过停止品牌图片展示同时消除了任意染色和三处身份错配。以后如
-恢复 Logo，需要逐家确认允许的黑白/全彩变体、比例、留白、背景、应用
-用途和同意记录；不要统一开启一个“MIT 所以允许”的开关。
+2026-10-11 显示更新已修正上述三处身份错配，并取消主题染色。
+硅基流动 PNG 直接取自官网资源包（`siliconflow_Single graphic LOGO@8x.png`），
+Lobe Icons MIT 不覆盖该官方品牌素材；其归属和授权边界单独保留在品牌声明。
+表中使用规范是 2026-10-10 的核对记录，不把下载入口或他人使用视作授权。
 
 ## App 内入口与共享 UI
 
@@ -70,7 +73,7 @@ Logo 图片；`CloudTtsProviderLogo` 继续复用同一入口。原有名称、�
 
 `test/provider_asset_licenses_test.dart` 验证完整 MIT、独立品牌声明、幂等
 启动注册与皮肤许可兼容；`test/ai_provider_logo_test.dart` 验证两种明暗
-模式下不加载第三方品牌图片；`test/open_source_licenses_page_test.dart`
+模式下品牌图片可加载、没有主题染色，黑白图随明暗切换；`test/open_source_licenses_page_test.dart`
 验证离线正文、多包多通知、搜索和段落格式；
 `test/open_source_licenses_rendering_test.dart` 验证玻璃/无玻璃、明暗、
 320px/200% 字号与生产组件截图；`test/app_theme_page_test.dart` 验证主题

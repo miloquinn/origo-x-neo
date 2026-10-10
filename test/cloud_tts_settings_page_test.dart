@@ -570,10 +570,10 @@ void main() {
             brightness: brightness,
           );
           addTearDown(fixture.dispose);
-          for (final provider in ReaderAloudCloudProvider.values) {
+          for (final image in tester.widgetList<Image>(find.byType(Image))) {
             await tester.runAsync(
               () => precacheImage(
-                AssetImage(CloudTtsProviderLogo.assetFor(provider)),
+                image.image,
                 tester.element(find.byType(CloudTtsSettingsPage)),
               ),
             );

@@ -157,9 +157,8 @@ Future<void> _pumpEditor(
 Future<void> _decodeLogos(WidgetTester tester) async {
   final context = tester.element(find.byType(AiProviderLogo).first);
   await tester.runAsync(() async {
-    for (final asset
-        in AIModelPresets.all.map((preset) => preset.logoAsset).toSet()) {
-      await precacheImage(AssetImage(asset), context);
+    for (final image in tester.widgetList<Image>(find.byType(Image))) {
+      await precacheImage(image.image, context);
     }
   });
   await tester.pumpAndSettle();

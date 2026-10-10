@@ -25,19 +25,43 @@ String aiProviderDisplayName(
   };
 }
 
-/// Providers use our own semantic icon until brand permissions are obtained.
-/// The legacy asset identifier is retained for service-name matching only.
+/// Shared offline provider artwork, retaining supplied colors and variants.
+/// Unknown services and failed image loads use the app's semantic icon.
 class AiProviderLogo extends StatelessWidget {
   const AiProviderLogo({super.key, this.asset, this.size = 32});
 
   final String? asset;
   final double size;
 
+  static const _darkVariants = {
+    'openai.png',
+    'groq.png',
+    'mimo.png',
+    'moonshot.png',
+  };
+
+  static String assetForBrightness(String asset, Brightness brightness) {
+    if (brightness == Brightness.dark &&
+        _darkVariants.contains(asset.split('/').last)) {
+      return asset.replaceFirst(RegExp(r'\.png$'), '-dark.png');
+    }
+    return asset;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppSkinIcon(
+    final fallback = AppSkinIcon(
       slot: AppSkinIconSlot.network,
       fallback: Icon(Icons.hub_outlined, size: size),
+    );
+    if (asset == null) return fallback;
+    return Image.asset(
+      assetForBrightness(asset!, Theme.of(context).brightness),
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).ceil(),
+      errorBuilder: (context, error, stackTrace) => fallback,
     );
   }
 }

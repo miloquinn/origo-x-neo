@@ -1,20 +1,20 @@
 # AI provider icon notice
 
-The PNG icons in this directory are resized conversions of the transparent
-provider glyphs from [Lobe Icons](https://github.com/lobehub/lobe-icons),
-commit `c385b2b8d1f9e19aa86e628d4e23c91ee1111a47`.
+Most PNG icons in this directory are unmodified assets from [Lobe Icons](https://github.com/lobehub/lobe-icons),
+commit `c385b2b8d1f9e19aa86e628d4e23c91ee1111a47`, under `packages/static-png/light` and `dark`.
 
-The source glyph names match the destination file names except for
-`zhipu.png`, which uses the `zai` Z_ glyph, and `siliconflow.png`, which uses
-the `siliconcloud-color` glyph. Cloud TTS also uses `doubao-color` for
-`doubao.png` and `xiaomimimo` for `mimo.png` from the same pinned commit.
-These are legacy resources. The app currently displays service names with its
-own neutral semantic icons instead of third-party logos because written brand
-permissions have not been obtained. Asset identifiers remain only as the
-existing service-name matching contract; neither AI nor cloud TTS configuration
-loads the provider PNGs for display. The resources and complete MIT attribution
-are retained offline. Do not restore their display without checking official
-artwork, identity and the brand's required permissions.
+Source mapping: `openai`, `claude-color`, `gemini-color`, `deepseek-color`,
+`qwen-color`, `zhipu-color`, `minimax-color`, `kimi` (light) / `kimi-color` (dark),
+`groq`, `doubao-color`, and `xiaomimimo`. The legacy `moonshot.png` filename
+now contains Kimi artwork; `zhipu.png` now contains Zhipu artwork rather than Z.ai.
+The supplied dark variants of OpenAI, Groq, Xiaomi MiMo and Kimi are bundled
+as `*-dark.png`. The app does not recolor or distort the images.
+
+`siliconflow.png` is the unchanged `siliconflow_logo_PNG/siliconflow_Single graphic LOGO@8x.png`
+from [SiliconFlow's official brand resources](https://cloud-rd.siliconflow.cn/brand),
+[resource package](https://static02.siliconflow.cn/www/cn/res/20260615/SiliconFlow_LOGO.zip).
+It replaces the old SiliconCloud glyph and is owned by SiliconFlow; the Lobe Icons
+MIT license below does not apply to this official brand resource.
 
 Lobe Icons is distributed under the MIT License:
 

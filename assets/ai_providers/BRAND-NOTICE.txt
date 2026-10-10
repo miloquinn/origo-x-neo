@@ -6,12 +6,12 @@ OpenAI、Claude / Anthropic、Google Gemini、DeepSeek、通义千问 / Qwen、�
 
 部分图标资源来自 Lobe Icons，版本固定于提交 c385b2b8d1f9e19aa86e628d4e23c91ee1111a47，按 MIT 许可证使用。完整版权和许可文本见本页的「Lobe Icons」条目。库的 MIT 许可证与第三方商标权相互独立，不代表各品牌对商标使用的统一授权。
 
-当前显示方式：服务名称配合 Origo X 自己的中性图标。因未取得品牌方书面 Logo 使用授权，应用内不展示上述第三方 Logo。旧版图标素材仍随包保留，其 MIT 版权声明同时保留；留存素材不表示获得品牌授权。今后恢复标识前，需要核对对应服务、官方原始资产、允许的用途、配色、比例与留白，并取得品牌规范所要求的许可。
+当前显示方式：第三方服务名称与 Logo，仅用于配置页的服务识别。保留素材原有配色及明暗版本，不按应用主题染色。硅基流动图标来自其官网品牌资源包，其余显示图标来自上述 Lobe Icons 版本。品牌素材的展示不表示已取得品牌方书面授权，亦不表示品牌方认可本应用。
 
 Third-party names, trademarks and logos belong to their respective rights holders. They identify services that users may configure. Their appearance does not imply partnership, sponsorship, authorized representation or endorsement of Origo X, and does not certify the operator of a custom endpoint.
 
 Some icon resources are from Lobe Icons at commit c385b2b8d1f9e19aa86e628d4e23c91ee1111a47 under the MIT License. The complete copyright and license notice is available in the Lobe Icons entry. This library license does not grant blanket permission to use third-party trademarks.
 
-Current display: service names with Origo X's own neutral icons. The app does not display these third-party logos because written brand permissions have not been obtained. Legacy icon resources remain bundled with their MIT copyright notice; retaining resources does not imply brand permission. Before restoring a mark, verify its service identity, official original artwork, permitted use, colors, proportions and clear space, and obtain any permission required by the brand guidelines.
+Current display: third-party service names and logos for identification in configuration pages. Original colors and supplied light/dark variants are preserved without application-theme tinting. SiliconFlow artwork is from its official brand resource package; the other displayed icons are from the Lobe Icons version above. Display does not represent written brand authorization or endorsement of this app.
 
 Groq is a trademark of Groq LLC and/or its affiliates. Origo X is not affiliated with or endorsed by Groq LLC.

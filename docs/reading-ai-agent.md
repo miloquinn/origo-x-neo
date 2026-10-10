@@ -19,7 +19,7 @@
 - BigModel Coding Plan 可选择 GLM 预设，使用 `https://open.bigmodel.cn/api/anthropic` 与 `glm-5.3` / `glm-5.3-flash`；实际聊天地址为 `/api/anthropic/v1/messages`。也提供智谱 OpenAI 兼容预设。Base URL、协议和模型 ID 均可修改。
 - `ai_configuration.dart` 保持自动协议在连续规范化、保存和恢复后不变；当剥离完整 endpoint 会丢失协议信号时，设置保留该 URL，由 `ai_protocol_adapter.dart` 在发请求时剥离并构造最终路径。`ai_settings_store.dart` 按服务商保存可选协议，兼容旧自定义协议和既有用户模型/地址，不用新版预设覆盖旧配置；仅刷新未配置、未修改的旧入门推荐卡片。快捷模型 JSON 保存 `protocol: null`，重新编辑仍保持自动识别。
 - “获取模型列表”使用当前地址、密钥和有效协议，请求 OpenAI `/models`、Anthropic `/v1/models` 或 Gemini `/models`；支持各协议分页，去重排序后可搜索选择。地址、密钥或协议变化使旧请求结果失效。接口明确返回 404/405/501 时提示使用预设或手填 ID；鉴权错误仍按真实错误展示，不把内置预设冒充联网返回。
-- `ai_model_presets.dart` 维护新建配置的模型 ID、端点、协议与品牌。模型来源记录在 [`assets/ai_providers/MODEL_SOURCES.md`](../assets/ai_providers/MODEL_SOURCES.md)，更新时查当前官方模型概览和账号模型列表，不能只看未退役名单。目前服务名称配合 Origo X 自己的中性图标显示，旧图片标识只用于名称匹配。MIT 许可、品牌权利及恢复 Logo 的条件见 [服务素材与许可](provider-brand-assets.md)。
+- `ai_model_presets.dart` 维护新建配置的模型 ID、端点、协议与品牌。模型来源记录在 [`assets/ai_providers/MODEL_SOURCES.md`](../assets/ai_providers/MODEL_SOURCES.md)，更新时查当前官方模型概览和账号模型列表，不能只看未退役名单。服务名称配合离线第三方 Logo 显示，自定义服务使用共享中性图标；原色及素材自带明暗版本由共享组件保持。MIT 许可、品牌权利及恢复 Logo 的条件见 [服务素材与许可](provider-brand-assets.md)。
 - 普通聊天和 Agent 共用协议参数能力判断；当前 Claude 4.7+/5 系列省略不支持的温度参数，Gemini 3+ 使用官方推荐默认温度。Anthropic 两条请求路径共用有界的 8192 输出 token 预算，包含模型思考 token。
 - 配置回归：`test/ai_configuration_test.dart`、`ai_settings_store_test.dart`、`ai_protocol_adapter_test.dart`、`ai_service_models_test.dart`、`ai_model_presets_test.dart`、`ai_settings_page_test.dart` 和 `ai_agent_service_test.dart`。配置页覆盖 GLM 自动识别、手动协议保留密钥、搜索选模型、晚到列表隔离、快捷模型恢复以及手机亮暗色和窄屏键盘布局。真实账号是否有模型权限，以及供应商是否提供列表，需要实际账号联网验收。
 
