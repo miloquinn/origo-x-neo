@@ -10,6 +10,16 @@
 - AI 建议的偏好仅为待保存建议，用户点击保存后才进入长期记忆。设置中可以新增、修改、删除、清空偏好及反馈，也可以复制 Markdown 视图。
 - 主动推荐默认关闭。用户明确提出希望持续推荐时，AI 可以展示开启入口，但模型不能修改开关。开启后，仅在前台进入 AI 页、没有当前对话且距上次成功推荐至少 24 小时时生成一次应用内消息；失败尝试至少间隔 30 分钟。当前没有操作系统推送、关闭应用后的定时任务或服务端消息投递。
 
+## 模型、协议与连接配置
+
+- `AiSettingsPage` 的模型卡片和 `AiModelEditorPage` 复用 `AIProviderSettings`。所有服务商均可选择“自动识别”、OpenAI Compatible、Anthropic Messages 或 Gemini；`protocol == null` 表示自动模式，显式协议优先。自动模式根据服务地址的协议特征识别，未知地址使用服务商默认协议，不会携带密钥试探其他主机。
+- BigModel Coding Plan 可选择 GLM 预设，使用 `https://open.bigmodel.cn/api/anthropic` 与 `glm-5.3` / `glm-5.3-flash`；实际聊天地址为 `/api/anthropic/v1/messages`。也提供智谱 OpenAI 兼容预设。Base URL、协议和模型 ID 均可修改。
+- `ai_configuration.dart` 保持自动协议在连续规范化、保存和恢复后不变；当剥离完整 endpoint 会丢失协议信号时，设置保留该 URL，由 `ai_protocol_adapter.dart` 在发请求时剥离并构造最终路径。`ai_settings_store.dart` 按服务商保存可选协议，兼容旧自定义协议和既有用户模型/地址，不用新版预设覆盖旧配置；仅刷新未配置、未修改的旧入门推荐卡片。快捷模型 JSON 保存 `protocol: null`，重新编辑仍保持自动识别。
+- “获取模型列表”使用当前地址、密钥和有效协议，请求 OpenAI `/models`、Anthropic `/v1/models` 或 Gemini `/models`；支持各协议分页，去重排序后可搜索选择。地址、密钥或协议变化使旧请求结果失效。接口明确返回 404/405/501 时提示使用预设或手填 ID；鉴权错误仍按真实错误展示，不把内置预设冒充联网返回。
+- `ai_model_presets.dart` 维护新建配置的模型 ID、端点、协议与品牌。模型来源记录在 [`assets/ai_providers/MODEL_SOURCES.md`](../assets/ai_providers/MODEL_SOURCES.md)，更新时查当前官方模型概览和账号模型列表，不能只看未退役名单。品牌图片随应用打包，无需联网加载；许可见该目录的 `NOTICE.md`。
+- 普通聊天和 Agent 共用协议参数能力判断；当前 Claude 4.7+/5 系列省略不支持的温度参数，Gemini 3+ 使用官方推荐默认温度。Anthropic 两条请求路径共用有界的 8192 输出 token 预算，包含模型思考 token。
+- 配置回归：`test/ai_configuration_test.dart`、`ai_settings_store_test.dart`、`ai_protocol_adapter_test.dart`、`ai_service_models_test.dart`、`ai_model_presets_test.dart`、`ai_settings_page_test.dart` 和 `ai_agent_service_test.dart`。配置页覆盖 GLM 自动识别、手动协议保留密钥、搜索选模型、晚到列表隔离、快捷模型恢复以及手机亮暗色和窄屏键盘布局。真实账号是否有模型权限，以及供应商是否提供列表，需要实际账号联网验收。
+
 ## 数据如何保存
 
 | 数据 | 当前真相源 | 提供给模型的形式 |

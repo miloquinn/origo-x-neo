@@ -109,7 +109,7 @@ void main() {
           ],
         },
       ],
-      'max_tokens': 1024,
+      'max_tokens': 8192,
       'temperature': 0.7,
     });
     expect(
@@ -124,6 +124,52 @@ void main() {
         },
       ),
       'first second',
+    );
+  });
+
+  test('routes automatic BigModel Anthropic URLs without duplication', () {
+    const settings = AIProviderSettings(
+      provider: AIProviderType.glm,
+      apiKey: 'glm-key',
+      baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+      model: 'glm-5',
+      temperature: 0.7,
+    );
+
+    expect(settings.protocol, isNull);
+    expect(settings.effectiveProtocol, AIProtocolType.anthropic);
+    expect(
+      adapter.chatEndpoint(settings),
+      'https://open.bigmodel.cn/api/anthropic/v1/messages',
+    );
+    expect(
+      adapter.modelListEndpoint(settings),
+      'https://open.bigmodel.cn/api/anthropic/v1/models',
+    );
+    expect(adapter.requestOptions(settings).headers?['x-api-key'], 'glm-key');
+    expect(
+      adapter.requestOptions(settings).headers,
+      isNot(contains('Authorization')),
+    );
+  });
+
+  test('manual protocol overrides automatic URL detection', () {
+    const settings = AIProviderSettings(
+      provider: AIProviderType.glm,
+      protocol: AIProtocolType.openai,
+      apiKey: 'glm-key',
+      baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+      model: 'glm-5',
+      temperature: 0.7,
+    );
+
+    expect(
+      adapter.chatEndpoint(settings),
+      'https://open.bigmodel.cn/api/anthropic/chat/completions',
+    );
+    expect(
+      adapter.requestOptions(settings).headers?['Authorization'],
+      'Bearer glm-key',
     );
   });
 
@@ -190,6 +236,34 @@ void main() {
     );
   });
 
+  test('omits unsupported temperature for current model generations', () {
+    for (final model in ['claude-sonnet-5', 'claude-4-7-sonnet']) {
+      final payload = adapter.buildPayload(
+        settings: AIProviderSettings(
+          provider: AIProviderType.claude,
+          apiKey: 'key',
+          baseUrl: 'https://api.anthropic.com',
+          model: model,
+          temperature: 0.7,
+        ),
+        messages: _messages,
+      );
+      expect(payload, isNot(contains('temperature')), reason: model);
+    }
+
+    final geminiPayload = adapter.buildPayload(
+      settings: const AIProviderSettings(
+        provider: AIProviderType.gemini,
+        apiKey: 'key',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+        model: 'gemini-3.8-flash',
+        temperature: 0.7,
+      ),
+      messages: _messages,
+    );
+    expect(geminiPayload, isNot(contains('generationConfig')));
+  });
+
   test('keeps MiniMax temperature inside its supported range', () {
     const settings = AIProviderSettings(
       provider: AIProviderType.minimax,
@@ -206,5 +280,24 @@ void main() {
       )['temperature'],
       0.01,
     );
+  });
+
+  test('MiniMax manual Anthropic protocol uses Anthropic payload', () {
+    const settings = AIProviderSettings(
+      provider: AIProviderType.minimax,
+      protocol: AIProtocolType.anthropic,
+      apiKey: 'key',
+      baseUrl: 'https://gateway.example.com/v1/messages',
+      model: 'MiniMax-M3',
+      temperature: 0.7,
+    );
+
+    final payload = adapter.buildPayload(
+      settings: settings,
+      messages: _messages,
+    );
+    expect(payload, containsPair('system', 'system prompt'));
+    expect(payload['messages'], isA<List<dynamic>>());
+    expect(payload, isNot(contains('stream')));
   });
 }

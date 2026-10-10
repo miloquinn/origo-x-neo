@@ -176,9 +176,10 @@ class _OpenAIAgentConversation extends _AgentConversation {
             },
           )
           .toList(),
-    'temperature': settings.provider == AIProviderType.minimax
-        ? settings.temperature.clamp(0.01, 1.0)
-        : settings.temperature,
+    if (const AIProtocolAdapter().supportsTemperature(settings))
+      'temperature': settings.provider == AIProviderType.minimax
+          ? settings.temperature.clamp(0.01, 1.0)
+          : settings.temperature,
     'stream': false,
   };
 
@@ -280,8 +281,9 @@ class _AnthropicAgentConversation extends _AgentConversation {
             },
           )
           .toList(),
-    'max_tokens': 1024,
-    'temperature': settings.temperature.clamp(0.0, 1.0),
+    'max_tokens': _anthropicDefaultMaxTokens,
+    if (const AIProtocolAdapter().supportsTemperature(settings))
+      'temperature': settings.temperature.clamp(0.0, 1.0),
   };
 
   @override
@@ -386,7 +388,8 @@ class _GeminiAgentConversation extends _AgentConversation {
               .toList(),
         },
       ],
-    'generationConfig': {'temperature': settings.temperature.clamp(0.0, 1.0)},
+    if (const AIProtocolAdapter().supportsTemperature(settings))
+      'generationConfig': {'temperature': settings.temperature.clamp(0.0, 1.0)},
   };
 
   @override

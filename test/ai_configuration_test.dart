@@ -3,6 +3,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 
 void main() {
+  test('automatic detection ignores trailing endpoint separators', () {
+    expect(
+      detectAIProtocol(
+        AIProviderType.glm,
+        baseUrl: 'https://gateway.example/v1/messages/',
+      ),
+      AIProtocolType.anthropic,
+    );
+    expect(
+      detectAIProtocol(
+        AIProviderType.claude,
+        baseUrl: 'https://gateway.example/v1/chat/completions///',
+      ),
+      AIProtocolType.openai,
+    );
+  });
   test('provider and protocol storage mappings remain stable', () {
     for (final provider in AIProviderType.values) {
       expect(AIProviderTypeX.fromValue(provider.value), provider);
@@ -46,6 +62,94 @@ void main() {
       ),
       'https://generativelanguage.googleapis.com/v1beta',
     );
+    expect(
+      normalizeAIBaseUrl(
+        AIProviderType.glm,
+        'https://open.bigmodel.cn/api/anthropic/v1/messages',
+      ),
+      'https://open.bigmodel.cn/api/anthropic/v1',
+    );
+  });
+
+  test('automatic protocol detection prefers URL shape then provider', () {
+    expect(
+      detectAIProtocol(
+        AIProviderType.glm,
+        baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+      ),
+      AIProtocolType.anthropic,
+    );
+    expect(
+      detectAIProtocol(
+        AIProviderType.custom,
+        baseUrl:
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+      ),
+      AIProtocolType.gemini,
+    );
+    expect(
+      detectAIProtocol(
+        AIProviderType.glm,
+        baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+      ),
+      AIProtocolType.openai,
+    );
+    expect(
+      detectAIProtocol(
+        AIProviderType.claude,
+        baseUrl: 'https://gateway.example.com/v1/chat/completions',
+      ),
+      AIProtocolType.openai,
+    );
+  });
+
+  test('normalization preserves automatic and manual protocol modes', () {
+    final automatic = const AIProviderSettings(
+      provider: AIProviderType.glm,
+      apiKey: 'key',
+      baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+      model: 'glm-5',
+      temperature: 0.7,
+    ).normalized();
+    expect(automatic.protocol, isNull);
+    expect(automatic.effectiveProtocol, AIProtocolType.anthropic);
+
+    final manual = automatic.copyWith(protocol: AIProtocolType.openai);
+    expect(manual.effectiveProtocol, AIProtocolType.openai);
+    expect(manual.copyWith(clearProtocol: true).protocol, isNull);
+  });
+
+  test('automatic endpoint normalization is idempotent', () {
+    for (final entry in <(AIProviderType, String, AIProtocolType)>[
+      (
+        AIProviderType.claude,
+        'https://gateway.example.com/v1/chat/completions',
+        AIProtocolType.openai,
+      ),
+      (
+        AIProviderType.custom,
+        'https://gateway.example.com/v1/messages',
+        AIProtocolType.anthropic,
+      ),
+      (
+        AIProviderType.custom,
+        'https://gateway.example.com/v1beta/models/gemini-reader:generateContent',
+        AIProtocolType.gemini,
+      ),
+    ]) {
+      final once = AIProviderSettings(
+        provider: entry.$1,
+        apiKey: 'key',
+        baseUrl: entry.$2,
+        model: 'reader-model',
+        temperature: 0.7,
+      ).normalized();
+      final twice = once.normalized();
+      expect(once.protocol, isNull);
+      expect(once.effectiveProtocol, entry.$3);
+      expect(twice.baseUrl, once.baseUrl);
+      expect(twice.effectiveProtocol, entry.$3);
+    }
   });
 
   test('built-in and custom provider defaults remain valid', () {
@@ -56,6 +160,7 @@ void main() {
         expect(settings.apiKey, isEmpty);
         expect(settings.baseUrl, isEmpty);
         expect(settings.model, isEmpty);
+        expect(settings.protocol, isNull);
         expect(settings.effectiveProtocol, AIProtocolType.openai);
       } else {
         expect(

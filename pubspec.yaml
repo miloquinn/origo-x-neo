@@ -137,6 +137,7 @@ flutter:
     - assets/skins/collections/celestial/icons/
     - assets/fonts/licenses/
     - assets/icons/
+    - assets/ai_providers/
     - LICENSE
     - LICENSE-MIT-LEGACY
 

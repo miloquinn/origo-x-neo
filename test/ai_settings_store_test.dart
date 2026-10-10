@@ -104,8 +104,102 @@ void main() {
     );
     expect(prefs.getString('reader_ai_custom_model_v1'), 'private-model');
     expect(prefs.getDouble('reader_ai_custom_temp_v1'), 0.7);
-    expect(prefs.getString('reader_ai_custom_protocol_v1'), 'anthropic');
+    expect(prefs.getString('reader_ai_protocol_v2_custom'), 'anthropic');
     expect(secrets.values['reader_ai_custom_api_key_v1'], 'custom-secret');
+  });
+
+  test('persists manual protocol for built-in provider', () async {
+    final store = SharedPreferencesAISettingsStore(
+      secretStore: _MemorySecretStore(),
+    );
+    await store.save(
+      const AIProviderSettings(
+        provider: AIProviderType.glm,
+        protocol: AIProtocolType.anthropic,
+        apiKey: 'glm-key',
+        baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+        model: 'glm-5',
+        temperature: 0.7,
+      ),
+    );
+
+    final restored = await store.load(AIProviderType.glm);
+    expect(restored.protocol, AIProtocolType.anthropic);
+    expect(restored.effectiveProtocol, AIProtocolType.anthropic);
+  });
+
+  test('keeps automatic protocol null across save and restore', () async {
+    final store = SharedPreferencesAISettingsStore(
+      secretStore: _MemorySecretStore(),
+    );
+    await store.save(
+      const AIProviderSettings(
+        provider: AIProviderType.glm,
+        apiKey: 'glm-key',
+        baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+        model: 'glm-5',
+        temperature: 0.7,
+      ),
+    );
+
+    final restored = await store.load(AIProviderType.glm);
+    expect(restored.protocol, isNull);
+    expect(restored.effectiveProtocol, AIProtocolType.anthropic);
+    expect(
+      (await SharedPreferences.getInstance()).containsKey(
+        'reader_ai_protocol_v2_glm',
+      ),
+      isFalse,
+    );
+  });
+
+  test('automatic custom protocol clears the legacy manual value', () async {
+    SharedPreferences.setMockInitialValues({
+      'reader_ai_custom_protocol_v1': 'anthropic',
+    });
+    final store = SharedPreferencesAISettingsStore(
+      secretStore: _MemorySecretStore(),
+    );
+    await store.save(
+      const AIProviderSettings(
+        provider: AIProviderType.custom,
+        apiKey: 'custom-key',
+        baseUrl: 'https://gateway.example.com/v1',
+        model: 'custom-model',
+        temperature: 0.7,
+      ),
+    );
+
+    final restored = await store.load(AIProviderType.custom);
+    expect(restored.protocol, isNull);
+    expect(restored.effectiveProtocol, AIProtocolType.openai);
+    expect(
+      (await SharedPreferences.getInstance()).containsKey(
+        'reader_ai_custom_protocol_v1',
+      ),
+      isFalse,
+    );
+  });
+
+  test('restores automatic protocol inferred from a full endpoint', () async {
+    final store = SharedPreferencesAISettingsStore(
+      secretStore: _MemorySecretStore(),
+    );
+    await store.save(
+      const AIProviderSettings(
+        provider: AIProviderType.custom,
+        apiKey: 'custom-key',
+        baseUrl: 'https://gateway.example.com/v1/messages',
+        model: 'custom-model',
+        temperature: 0.7,
+      ),
+    );
+
+    final restored = await store.load(AIProviderType.custom);
+    expect(restored.protocol, isNull);
+    expect(restored.baseUrl, 'https://gateway.example.com/v1/messages');
+    expect(restored.effectiveProtocol, AIProtocolType.anthropic);
+    expect(restored.normalized().effectiveProtocol, AIProtocolType.anthropic);
   });
 
   test('falls back to plaintext when secure writes are unavailable', () async {

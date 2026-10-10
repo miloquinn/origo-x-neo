@@ -130,9 +130,8 @@ String normalizeAIBaseUrl(
   }
 
   var path = uri.path.replaceAll(RegExp(r'/+$'), '');
-  final effectiveProtocol = provider == AIProviderType.custom
-      ? protocol ?? provider.defaultProtocol
-      : provider.defaultProtocol;
+  final effectiveProtocol =
+      protocol ?? detectAIProtocol(provider, baseUrl: trimmed);
   switch (effectiveProtocol) {
     case AIProtocolType.openai:
       path = path.replaceFirst(
@@ -152,10 +151,37 @@ String normalizeAIBaseUrl(
         RegExp(r'/models/[^/]+:generateContent$', caseSensitive: false),
         '',
       );
+      path = path.replaceFirst(RegExp(r'/models$', caseSensitive: false), '');
       break;
   }
 
   return uri.replace(path: path).toString().replaceAll(RegExp(r'/+$'), '');
+}
+
+/// Resolves automatic protocol selection without probing multiple authenticated
+/// endpoints. Explicit URL shapes win over the provider default.
+AIProtocolType detectAIProtocol(
+  AIProviderType provider, {
+  required String baseUrl,
+}) {
+  final uri = Uri.tryParse(baseUrl.trim());
+  final host = uri?.host.toLowerCase() ?? '';
+  final path = (uri?.path.toLowerCase() ?? baseUrl.trim().toLowerCase())
+      .replaceAll(RegExp(r'/+$'), '');
+  if (path.endsWith('/chat/completions')) {
+    return AIProtocolType.openai;
+  }
+  if (host == 'generativelanguage.googleapis.com' ||
+      path.contains(':generatecontent') ||
+      path.contains('/gemini/')) {
+    return AIProtocolType.gemini;
+  }
+  if (host == 'api.anthropic.com' ||
+      path.contains('/anthropic') ||
+      path.endsWith('/messages')) {
+    return AIProtocolType.anthropic;
+  }
+  return provider.defaultProtocol;
 }
 
 String? validateAIProviderSettings(
@@ -249,7 +275,6 @@ class AIProviderSettings {
     if (provider == AIProviderType.custom) {
       return const AIProviderSettings(
         provider: AIProviderType.custom,
-        protocol: AIProtocolType.openai,
         apiKey: '',
         baseUrl: '',
         model: '',
@@ -259,7 +284,8 @@ class AIProviderSettings {
     return AIModelPresets.defaultForProvider(provider).toSettings();
   }
 
-  AIProtocolType get effectiveProtocol => protocol ?? provider.defaultProtocol;
+  AIProtocolType get effectiveProtocol =>
+      protocol ?? detectAIProtocol(provider, baseUrl: baseUrl);
 
   AIProviderSettings copyWith({
     AIProviderType? provider,
@@ -268,10 +294,11 @@ class AIProviderSettings {
     String? baseUrl,
     String? model,
     double? temperature,
+    bool clearProtocol = false,
   }) {
     return AIProviderSettings(
       provider: provider ?? this.provider,
-      protocol: protocol ?? this.protocol,
+      protocol: clearProtocol ? null : protocol ?? this.protocol,
       apiKey: apiKey ?? this.apiKey,
       baseUrl: baseUrl ?? this.baseUrl,
       model: model ?? this.model,
@@ -280,14 +307,20 @@ class AIProviderSettings {
   }
 
   AIProviderSettings normalized() {
-    final normalizedProtocol = provider == AIProviderType.custom
-        ? effectiveProtocol
-        : provider.defaultProtocol;
-    final normalizedBaseUrl = normalizeAIBaseUrl(
+    final normalizedProtocol = protocol;
+    final trimmedBaseUrl = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final candidateBaseUrl = normalizeAIBaseUrl(
       provider,
-      baseUrl,
-      protocol: normalizedProtocol,
+      trimmedBaseUrl,
+      protocol: normalizedProtocol ?? effectiveProtocol,
     );
+    final normalizedBaseUrl =
+        normalizedProtocol == null &&
+            trimmedBaseUrl.isNotEmpty &&
+            detectAIProtocol(provider, baseUrl: candidateBaseUrl) !=
+                effectiveProtocol
+        ? trimmedBaseUrl
+        : candidateBaseUrl;
     final normalizedModel = model.trim();
     final normalizedTemperature = temperature.isFinite ? temperature : 0.7;
     return copyWith(

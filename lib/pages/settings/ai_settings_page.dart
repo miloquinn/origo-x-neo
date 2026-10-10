@@ -12,6 +12,7 @@ import 'package:xxread/services/ai/book_preprocess_service.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_style_helper.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/ai_provider_logo.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
 import 'ai_model_editor_page.dart';
@@ -107,7 +108,33 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
               )
               .whereType<_AiQuickModel>()
               .toList(growable: false);
-          if (saved.isNotEmpty) return saved;
+          if (saved.isNotEmpty) {
+            // Only refresh untouched, unconfigured starter suggestions. A user's
+            // configured endpoint/model must survive preset catalog updates.
+            const replacements = {
+              'preset-deepseek_chat': 'deepseek_v4_flash',
+              'preset-openai_gpt_4_1_mini': 'openai_gpt_6_luna',
+              'preset-gemini_2_flash': 'gemini_3_8_flash',
+            };
+            return saved
+                .map((item) {
+                  final replacement = replacements[item.id];
+                  if (replacement == null ||
+                      item.isCustom ||
+                      item.settings.isConfigured) {
+                    return item;
+                  }
+                  final preset = AIModelPresets.all.firstWhere(
+                    (preset) => preset.id == replacement,
+                  );
+                  return _AiQuickModel(
+                    id: item.id,
+                    settings: preset.toSettings(),
+                    isCustom: false,
+                  );
+                })
+                .toList(growable: false);
+          }
         }
       } catch (_) {
         // Fall back to the curated starter cards below.
@@ -118,9 +145,10 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
       _AiQuickModel.fromSettings(activeSettings, isCustom: true),
     ];
     const starterPresetIds = <String>[
-      'deepseek_chat',
-      'openai_gpt_4_1_mini',
-      'gemini_2_flash',
+      'deepseek_v4_flash',
+      'openai_gpt_6_luna',
+      'gemini_3_8_flash',
+      'bigmodel_coding_glm_5_3_flash',
     ];
     for (final presetId in starterPresetIds) {
       final preset = AIModelPresets.all.firstWhere(
@@ -162,9 +190,14 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
     String baseUrl, {
     AIProtocolType? protocol,
   }) {
-    final effectiveProtocol = provider == AIProviderType.custom
-        ? protocol ?? provider.defaultProtocol
-        : provider.defaultProtocol;
+    final effectiveProtocol = AIProviderSettings(
+      provider: provider,
+      protocol: protocol,
+      apiKey: '',
+      baseUrl: baseUrl,
+      model: '',
+      temperature: 0.7,
+    ).effectiveProtocol;
     final normalizedBase = normalizeAIBaseUrl(
       provider,
       baseUrl,
@@ -370,7 +403,7 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
       AIProtocolType.gemini => 'Gemini',
     };
     final subtitle = configured
-        ? '$providerName${item.settings.provider == AIProviderType.custom ? ' · $protocolName' : ''} · '
+        ? '$providerName · $protocolName · '
               '${host.isNotEmpty ? host : item.settings.baseUrl}'
         : l10n.settingsAiApiKeyTapToConfigure;
     return Material(
@@ -382,20 +415,9 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
           padding: const EdgeInsets.fromLTRB(20, 10, 10, 10),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: (selected ? scheme.primary : scheme.onSurfaceVariant)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  selected
-                      ? Icons.auto_awesome_rounded
-                      : Icons.auto_awesome_outlined,
-                  size: 16,
-                  color: selected ? scheme.primary : scheme.onSurfaceVariant,
-                ),
+              AiProviderLogo(
+                asset: AIModelPresets.logoAssetForSettings(item.settings),
+                size: 36,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -657,7 +679,7 @@ class _AiQuickModel {
   Map<String, dynamic> toJson() => {
     'id': id,
     'provider': settings.provider.value,
-    'protocol': settings.effectiveProtocol.value,
+    'protocol': settings.protocol?.value,
     'apiKey': settings.apiKey,
     'baseUrl': settings.baseUrl,
     'model': settings.model,
@@ -672,12 +694,14 @@ class _AiQuickModel {
     if (id.isEmpty || model.isEmpty || baseUrl.isEmpty) return null;
     final settings = AIProviderSettings(
       provider: AIProviderTypeX.fromValue(json['provider']?.toString()),
-      protocol: AIProtocolTypeX.fromValue(
-        json['protocol']?.toString(),
-        fallback: AIProviderTypeX.fromValue(
-          json['provider']?.toString(),
-        ).defaultProtocol,
-      ),
+      protocol: json['protocol'] == null
+          ? null
+          : AIProtocolTypeX.fromValue(
+              json['protocol']?.toString(),
+              fallback: AIProviderTypeX.fromValue(
+                json['provider']?.toString(),
+              ).defaultProtocol,
+            ),
       apiKey: json['apiKey']?.toString() ?? '',
       baseUrl: baseUrl,
       model: model,

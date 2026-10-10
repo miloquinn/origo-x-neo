@@ -140,44 +140,45 @@ class ReaderHttpAIService implements ConfigurableAIService, AgentAIService {
         );
 
     try {
-      final response = await _dio.get<dynamic>(endpoint, options: options);
-      dynamic body = response.data;
-      if (body is String) {
-        body = jsonDecode(body);
-      }
-      if (body is! Map) {
-        throw const AIServiceException(code: 'model_list_format_unrecognized');
+      final models = <String>{};
+      Map<String, dynamic>? query;
+      for (var page = 0; page < 20; page += 1) {
+        final response = await _dio.get<dynamic>(
+          endpoint,
+          queryParameters: query,
+          options: options,
+        );
+        final body = _decodeModelListBody(response.data);
+        _throwModelListBusinessError(body, endpoint: endpoint);
+        final rawModels = body['data'] ?? body['models'];
+        if (rawModels is! List) {
+          throw const AIServiceException(code: 'no_models_returned');
+        }
+        models.addAll(
+          _extractModelIds(rawModels, protocol: normalized.effectiveProtocol),
+        );
+        query = _nextModelPageQuery(
+          normalized.effectiveProtocol,
+          body,
+          rawModels,
+        );
+        if (query == null) break;
       }
 
-      final rawModels = body['data'] ?? body['models'];
-      if (rawModels is! List) {
-        throw const AIServiceException(code: 'no_models_returned');
-      }
+      final sortedModels = models.toList()..sort();
 
-      final models =
-          rawModels
-              .map((item) {
-                if (item is String) return item;
-                if (item is Map) {
-                  final value = item['id'] ?? item['name'] ?? item['model'];
-                  return value?.toString();
-                }
-                return null;
-              })
-              .whereType<String>()
-              .map(
-                (model) => model.replaceFirst(RegExp(r'^models/'), '').trim(),
-              )
-              .where((model) => model.isNotEmpty)
-              .toSet()
-              .toList()
-            ..sort();
-
-      if (models.isEmpty) {
+      if (sortedModels.isEmpty) {
         throw const AIServiceException(code: 'no_models_available');
       }
-      return models;
+      return sortedModels;
     } on DioException catch (error) {
+      if (_modelListIsExplicitlyUnsupported(error)) {
+        throw AIServiceException(
+          code: 'model_list_unsupported_manual_entry',
+          status: error.response?.statusCode?.toString(),
+          endpoint: endpoint,
+        );
+      }
       throw _errorTranslator.translate(error);
     } on AIServiceException {
       rethrow;
@@ -188,6 +189,104 @@ class ReaderHttpAIService implements ConfigurableAIService, AgentAIService {
       );
     }
   }
+
+  Map<dynamic, dynamic> _decodeModelListBody(dynamic data) {
+    dynamic body = data;
+    if (body is String) body = jsonDecode(body);
+    if (body is! Map) {
+      throw const AIServiceException(code: 'model_list_format_unrecognized');
+    }
+    return body;
+  }
+
+  void _throwModelListBusinessError(
+    Map<dynamic, dynamic> body, {
+    required String endpoint,
+  }) {
+    final error = body['error'];
+    final errorMap = error is Map ? error : null;
+    final rawCode =
+        body['code'] ??
+        errorMap?['code'] ??
+        errorMap?['status'] ??
+        body['status'];
+    final code = rawCode?.toString().trim().toLowerCase();
+    final hasSuccessCode =
+        code == null || code.isEmpty || code == '0' || code == '200';
+    final hasErrorObject = error != null;
+    if (hasSuccessCode && !hasErrorObject) return;
+
+    final message =
+        [
+              body['message'],
+              body['msg'],
+              errorMap?['message'],
+              error is String ? error : null,
+            ]
+            .whereType<Object>()
+            .map((value) => value.toString().toLowerCase())
+            .join(' ');
+    final isAuthenticationError =
+        code == '401' ||
+        code == '403' ||
+        message.contains('invalid api key') ||
+        message.contains('invalid_api_key') ||
+        message.contains('unauthorized') ||
+        message.contains('authentication');
+    throw AIServiceException(
+      code: isAuthenticationError
+          ? 'request_failed_provider_mismatch_hint'
+          : 'request_failed_generic',
+      status: rawCode?.toString(),
+      endpoint: endpoint,
+    );
+  }
+
+  Iterable<String> _extractModelIds(
+    List<dynamic> rawModels, {
+    required AIProtocolType protocol,
+  }) sync* {
+    for (final item in rawModels) {
+      if (protocol == AIProtocolType.gemini && item is Map) {
+        final methods = item['supportedGenerationMethods'];
+        if (methods is List &&
+            !methods.any((method) => method.toString() == 'generateContent')) {
+          continue;
+        }
+      }
+      final value = item is String
+          ? item
+          : item is Map
+          ? item['id'] ?? item['name'] ?? item['model']
+          : null;
+      final model = value
+          ?.toString()
+          .replaceFirst(RegExp(r'^models/'), '')
+          .trim();
+      if (model != null && model.isNotEmpty) yield model;
+    }
+  }
+
+  Map<String, dynamic>? _nextModelPageQuery(
+    AIProtocolType protocol,
+    Map<dynamic, dynamic> body,
+    List<dynamic> rawModels,
+  ) {
+    if (protocol == AIProtocolType.gemini) {
+      final token = body['nextPageToken']?.toString().trim();
+      return token == null || token.isEmpty ? null : {'pageToken': token};
+    }
+    if (body['has_more'] != true || rawModels.isEmpty) return null;
+    final last = rawModels.last;
+    final lastId = last is Map ? last['id']?.toString().trim() : null;
+    if (lastId == null || lastId.isEmpty) return null;
+    return {
+      protocol == AIProtocolType.anthropic ? 'after_id' : 'after': lastId,
+    };
+  }
+
+  bool _modelListIsExplicitlyUnsupported(DioException error) =>
+      const {404, 405, 501}.contains(error.response?.statusCode);
 
   @override
   Future<String> askSelection({

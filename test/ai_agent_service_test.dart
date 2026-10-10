@@ -138,6 +138,7 @@ void main() {
     expect(answer, '上海多云。');
     final first = adapter.jsonRequest(0);
     expect(first['system'], 'reader agent');
+    expect(first['max_tokens'], 8192);
     expect(first['tools'], [
       {
         'name': 'get_weather',
@@ -526,6 +527,64 @@ void main() {
     expect(messages.last, {'role': 'user', 'content': '解释本页'});
     expect(adapter.jsonRequest(0), isNot(contains('tools')));
   });
+
+  test(
+    'current Claude and Gemini agents omit unsupported temperature',
+    () async {
+      final cases = <(AIProviderSettings, Map<String, dynamic>)>[
+        (
+          const AIProviderSettings(
+            provider: AIProviderType.claude,
+            apiKey: 'key',
+            baseUrl: 'https://api.anthropic.com',
+            model: 'claude-sonnet-5',
+            temperature: 0.7,
+          ),
+          {
+            'content': [
+              {'type': 'text', 'text': 'Claude answer'},
+            ],
+          },
+        ),
+        (
+          const AIProviderSettings(
+            provider: AIProviderType.gemini,
+            apiKey: 'key',
+            baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+            model: 'gemini-3.8-flash',
+            temperature: 0.7,
+          ),
+          {
+            'candidates': [
+              {
+                'content': {
+                  'role': 'model',
+                  'parts': [
+                    {'text': 'Gemini answer'},
+                  ],
+                },
+              },
+            ],
+          },
+        ),
+      ];
+
+      for (final entry in cases) {
+        final adapter = _SequenceAdapter([_json(entry.$2)]);
+        final service = _service(adapter, _SettingsStore(entry.$1));
+        await service.chatWithTools(
+          history: const [AIChatMessage(role: 'user', content: 'question')],
+          systemPrompt: 'reader agent',
+          tools: const [],
+          onToolCall: (_) async => const {},
+        );
+
+        final payload = adapter.jsonRequest(0);
+        expect(payload, isNot(contains('temperature')));
+        expect(payload, isNot(contains('generationConfig')));
+      }
+    },
+  );
 }
 
 ReaderHttpAIService _service(

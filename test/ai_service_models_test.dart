@@ -63,6 +63,128 @@ void main() {
       expect(models, ['model-a', 'model-b']);
     });
 
+    test('accepts successful business code with model data', () async {
+      final dio = Dio()
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.resolve(
+                Response<dynamic>(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {
+                    'code': 200,
+                    'data': [
+                      {'id': 'glm-5.3'},
+                    ],
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      final service = ReaderHttpAIService(dio: dio);
+
+      final models = await service.fetchAvailableModels(
+        const AIProviderSettings(
+          provider: AIProviderType.glm,
+          apiKey: 'valid-key',
+          baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+          model: '',
+          temperature: 0.7,
+        ),
+      );
+
+      expect(models, ['glm-5.3']);
+    });
+
+    test(
+      'maps HTTP 200 business authentication failures without secrets',
+      () async {
+        const secret = 'must-not-appear-api-key';
+        final dio = Dio()
+          ..interceptors.add(
+            InterceptorsWrapper(
+              onRequest: (options, handler) {
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: {'code': 401, 'message': 'Invalid API key: $secret'},
+                  ),
+                );
+              },
+            ),
+          );
+        final service = ReaderHttpAIService(dio: dio);
+
+        await expectLater(
+          service.fetchAvailableModels(
+            const AIProviderSettings(
+              provider: AIProviderType.glm,
+              apiKey: secret,
+              baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+              model: 'glm-5.3',
+              temperature: 0.7,
+            ),
+          ),
+          throwsA(
+            isA<AIServiceException>()
+                .having(
+                  (error) => error.code,
+                  'code',
+                  'request_failed_provider_mismatch_hint',
+                )
+                .having((error) => error.status, 'status', '401')
+                .having((error) => error.text, 'text', isNull)
+                .having((error) => error.error, 'error', isNull)
+                .having((error) => error.snippet, 'snippet', isNull),
+          ),
+        );
+      },
+    );
+
+    test('maps HTTP 200 error objects before list parsing', () async {
+      final dio = Dio()
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.resolve(
+                Response<dynamic>(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {
+                    'error': {'code': 403, 'message': 'Unauthorized'},
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      final service = ReaderHttpAIService(dio: dio);
+
+      await expectLater(
+        service.fetchAvailableModels(
+          const AIProviderSettings(
+            provider: AIProviderType.openai,
+            apiKey: 'bad-key',
+            baseUrl: 'https://example.com/v1',
+            model: '',
+            temperature: 0.7,
+          ),
+        ),
+        throwsA(
+          isA<AIServiceException>()
+              .having(
+                (error) => error.code,
+                'code',
+                'request_failed_provider_mismatch_hint',
+              )
+              .having((error) => error.status, 'status', '403'),
+        ),
+      );
+    });
+
     test('parses and normalizes Gemini model names', () async {
       final dio = Dio()
         ..interceptors.add(
@@ -74,8 +196,15 @@ void main() {
                   statusCode: 200,
                   data: {
                     'models': [
-                      {'name': 'models/gemini-2.5-flash'},
+                      {
+                        'name': 'models/gemini-2.5-flash',
+                        'supportedGenerationMethods': ['generateContent'],
+                      },
                       {'name': 'models/gemini-2.5-pro'},
+                      {
+                        'name': 'models/text-embedding-004',
+                        'supportedGenerationMethods': ['embedContent'],
+                      },
                     ],
                   },
                 ),
@@ -97,6 +226,109 @@ void main() {
 
       expect(models, ['gemini-2.5-flash', 'gemini-2.5-pro']);
     });
+
+    test('follows Gemini page tokens on the same endpoint', () async {
+      final queries = <Map<String, dynamic>>[];
+      final dio = Dio()
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              queries.add(Map<String, dynamic>.from(options.queryParameters));
+              final isSecond = options.queryParameters['pageToken'] == 'next';
+              handler.resolve(
+                Response<dynamic>(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: isSecond
+                      ? {
+                          'models': [
+                            {'name': 'models/gemini-second'},
+                          ],
+                        }
+                      : {
+                          'models': [
+                            {'name': 'models/gemini-first'},
+                          ],
+                          'nextPageToken': 'next',
+                        },
+                ),
+              );
+            },
+          ),
+        );
+      final service = ReaderHttpAIService(dio: dio);
+
+      final models = await service.fetchAvailableModels(
+        const AIProviderSettings(
+          provider: AIProviderType.gemini,
+          apiKey: 'test-key',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+          model: 'gemini-first',
+          temperature: 0.7,
+        ),
+      );
+
+      expect(models, ['gemini-first', 'gemini-second']);
+      expect(queries, [
+        {},
+        {'pageToken': 'next'},
+      ]);
+    });
+
+    for (final protocol in [AIProtocolType.openai, AIProtocolType.anthropic]) {
+      test('follows ${protocol.value} cursor pagination', () async {
+        final queries = <Map<String, dynamic>>[];
+        final cursorKey = protocol == AIProtocolType.anthropic
+            ? 'after_id'
+            : 'after';
+        final dio = Dio()
+          ..interceptors.add(
+            InterceptorsWrapper(
+              onRequest: (options, handler) {
+                queries.add(Map<String, dynamic>.from(options.queryParameters));
+                final isSecond = options.queryParameters[cursorKey] == 'one';
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: isSecond
+                        ? {
+                            'data': [
+                              {'id': 'two'},
+                            ],
+                            'has_more': false,
+                          }
+                        : {
+                            'data': [
+                              {'id': 'one'},
+                            ],
+                            'has_more': true,
+                          },
+                  ),
+                );
+              },
+            ),
+          );
+        final service = ReaderHttpAIService(dio: dio);
+
+        final models = await service.fetchAvailableModels(
+          AIProviderSettings(
+            provider: AIProviderType.custom,
+            protocol: protocol,
+            apiKey: 'test-key',
+            baseUrl: 'https://models.example.com',
+            model: '',
+            temperature: 0.7,
+          ),
+        );
+
+        expect(models, ['one', 'two']);
+        expect(queries, [
+          {},
+          {cursorKey: 'one'},
+        ]);
+      });
+    }
 
     test(
       'uses Anthropic model endpoint and headers for custom provider',
@@ -144,6 +376,102 @@ void main() {
         expect(captured.headers, isNot(contains('Authorization')));
       },
     );
+
+    test(
+      'reports manual entry when GLM model endpoint is unsupported',
+      () async {
+        late RequestOptions captured;
+        final dio = Dio()
+          ..interceptors.add(
+            InterceptorsWrapper(
+              onRequest: (options, handler) {
+                captured = options;
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    response: Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 404,
+                    ),
+                    type: DioExceptionType.badResponse,
+                  ),
+                );
+              },
+            ),
+          );
+        final service = ReaderHttpAIService(dio: dio);
+
+        await expectLater(
+          service.fetchAvailableModels(
+            const AIProviderSettings(
+              provider: AIProviderType.glm,
+              apiKey: 'glm-key',
+              baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+              model: 'glm-5.3',
+              temperature: 0.7,
+            ),
+          ),
+          throwsA(
+            isA<AIServiceException>()
+                .having(
+                  (error) => error.code,
+                  'code',
+                  'model_list_unsupported_manual_entry',
+                )
+                .having((error) => error.status, 'status', '404'),
+          ),
+        );
+
+        expect(captured.uri.host, 'open.bigmodel.cn');
+        expect(captured.uri.path, '/api/anthropic/v1/models');
+        expect(captured.headers['x-api-key'], 'glm-key');
+      },
+    );
+
+    test('does not hide GLM authentication errors behind fallback', () async {
+      final dio = Dio()
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  response: Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 401,
+                    data: {
+                      'error': {'message': 'Invalid API key'},
+                    },
+                  ),
+                  type: DioExceptionType.badResponse,
+                ),
+              );
+            },
+          ),
+        );
+      final service = ReaderHttpAIService(dio: dio);
+
+      await expectLater(
+        service.fetchAvailableModels(
+          const AIProviderSettings(
+            provider: AIProviderType.glm,
+            apiKey: 'bad-key',
+            baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+            model: 'glm-5.3',
+            temperature: 0.7,
+          ),
+        ),
+        throwsA(
+          isA<AIServiceException>()
+              .having(
+                (error) => error.code,
+                'code',
+                'request_failed_provider_mismatch_hint',
+              )
+              .having((error) => error.status, 'status', '401'),
+        ),
+      );
+    });
   });
 
   group('custom AI provider protocol settings', () {

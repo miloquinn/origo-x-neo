@@ -47,6 +47,13 @@ String translateAIServiceException(
       return l10n.settingsAiModelMismatchMinimax;
 
     // fetchAvailableModels error codes.
+    case 'model_list_unsupported_manual_entry':
+      return switch (Localizations.localeOf(context).languageCode) {
+        'zh' => '该接口不提供模型列表，请手动填写模型 ID，或选择预设模型。',
+        'ja' => 'この API はモデル一覧に対応していません。モデル ID を入力するかプリセットを選択してください。',
+        _ =>
+          'This endpoint does not provide a model list. Enter a model ID or choose a preset.',
+      };
     case 'model_list_format_unrecognized':
       return l10n.settingsAiModelListFormatUnrecognized;
     case 'no_models_returned':

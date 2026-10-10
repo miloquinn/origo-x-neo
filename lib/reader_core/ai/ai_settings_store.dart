@@ -61,7 +61,8 @@ class SharedPreferencesAISettingsStore implements AISettingsStore {
   static const _claudeTemperatureKey = 'reader_ai_claude_temp_v1';
   static const _geminiTemperatureKey = 'reader_ai_gemini_temp_v1';
   static const _customTemperatureKey = 'reader_ai_custom_temp_v1';
-  static const _customProtocolKey = 'reader_ai_custom_protocol_v1';
+  static const _protocolKeyPrefix = 'reader_ai_protocol_v2_';
+  static const _legacyCustomProtocolKey = 'reader_ai_custom_protocol_v1';
 
   final Future<SharedPreferences> Function() _preferences;
   final AISecretStore _secretStore;
@@ -81,12 +82,17 @@ class SharedPreferencesAISettingsStore implements AISettingsStore {
     final temperature =
         prefs.getDouble(_temperatureKey(activeProvider)) ??
         defaults.temperature;
-    final protocol = activeProvider == AIProviderType.custom
-        ? AIProtocolTypeX.fromValue(
-            prefs.getString(_customProtocolKey),
+    final storedProtocol =
+        prefs.getString(_protocolKey(activeProvider)) ??
+        (activeProvider == AIProviderType.custom
+            ? prefs.getString(_legacyCustomProtocolKey)
+            : null);
+    final protocol = storedProtocol == null
+        ? null
+        : AIProtocolTypeX.fromValue(
+            storedProtocol,
             fallback: defaults.effectiveProtocol,
-          )
-        : activeProvider.defaultProtocol;
+          );
 
     return AIProviderSettings(
       provider: activeProvider,
@@ -114,11 +120,14 @@ class SharedPreferencesAISettingsStore implements AISettingsStore {
       _temperatureKey(normalized.provider),
       normalized.temperature,
     );
+    final protocolKey = _protocolKey(normalized.provider);
+    if (normalized.protocol == null) {
+      await prefs.remove(protocolKey);
+    } else {
+      await prefs.setString(protocolKey, normalized.protocol!.value);
+    }
     if (normalized.provider == AIProviderType.custom) {
-      await prefs.setString(
-        _customProtocolKey,
-        normalized.effectiveProtocol.value,
-      );
+      await prefs.remove(_legacyCustomProtocolKey);
     }
   }
 
@@ -232,4 +241,7 @@ class SharedPreferencesAISettingsStore implements AISettingsStore {
         return _customTemperatureKey;
     }
   }
+
+  String _protocolKey(AIProviderType provider) =>
+      '$_protocolKeyPrefix${provider.value}';
 }

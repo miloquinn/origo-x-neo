@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:xxread/reader_core/ai/ai_service.dart';
+import 'package:xxread/reader_core/ai/ai_error_translator.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_style_helper.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/ai_provider_logo.dart';
 
 class AiModelEditorResult {
   const AiModelEditorResult({required this.settings, required this.isCustom});
@@ -39,7 +41,7 @@ class AiModelEditorPage extends StatefulWidget {
 
 class _AiModelEditorPageState extends State<AiModelEditorPage> {
   late AIProviderType _provider;
-  late AIProtocolType _protocol;
+  AIProtocolType? _protocol;
   late AIModelPreset _preset;
   late bool _isCustom;
   late final TextEditingController _apiKeyController;
@@ -50,6 +52,8 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
   bool _obscureApiKey = true;
   bool _loadingModels = false;
   bool _saving = false;
+  int _connectionRevision = 0;
+  String? _modelListNotice;
   List<String> _fetchedModels = const [];
   String? _errorText;
 
@@ -58,7 +62,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
     super.initState();
     final initial = widget.initialSettings;
     _provider = initial.provider;
-    _protocol = initial.effectiveProtocol;
+    _protocol = initial.protocol;
     _preset =
         AIModelPresets.match(initial) ??
         AIModelPresets.defaultForProvider(
@@ -91,17 +95,40 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
   };
 
   String? _baseUrlHint() {
-    if (_provider != AIProviderType.custom) return null;
-    return switch (_protocol) {
+    return switch (_effectiveProtocol) {
       AIProtocolType.openai => context.l10n.settingsAiBaseUrlHintOpenAi,
       AIProtocolType.anthropic => context.l10n.settingsAiBaseUrlHintAnthropic,
       AIProtocolType.gemini => null,
     };
   }
 
+  AIProtocolType get _effectiveProtocol => AIProviderSettings(
+    provider: _provider,
+    protocol: _protocol,
+    apiKey: '',
+    baseUrl: _baseUrlController.text,
+    model: '',
+    temperature: 0.7,
+  ).effectiveProtocol;
+
+  void _invalidateModels() {
+    _connectionRevision++;
+    _fetchedModels = const [];
+    _modelListNotice = null;
+    _errorText = null;
+    _loadingModels = false;
+  }
+
+  void _connectionChanged([String? _]) {
+    setState(() {
+      _isCustom = true;
+      _invalidateModels();
+    });
+  }
+
   void _applyPreset(AIModelPreset preset) {
     final previousProvider = _provider;
-    final previousProtocol = _protocol;
+    final previousProtocol = _effectiveProtocol;
     final previousBaseUrl = normalizeAIBaseUrl(
       previousProvider,
       _baseUrlController.text,
@@ -110,7 +137,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
     final previousApiKey = _apiKeyController.text;
     _preset = preset;
     _provider = preset.provider;
-    _protocol = preset.provider.defaultProtocol;
+    _protocol = preset.toSettings().protocol;
     _baseUrlController.text = preset.baseUrl;
     _modelController.text = preset.model;
     _temperatureController.text = preset.temperature.toStringAsFixed(2);
@@ -121,17 +148,35 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
     );
     _apiKeyController.text =
         previousProvider == _provider &&
-            previousProtocol == _protocol &&
+            previousProtocol == _effectiveProtocol &&
             previousBaseUrl == nextBaseUrl
         ? previousApiKey
-        : widget.knownApiKey(_provider, preset.baseUrl, _protocol);
+        : widget.knownApiKey(_provider, preset.baseUrl, _effectiveProtocol);
     _isCustom = false;
-    _fetchedModels = const [];
-    _errorText = null;
+    _invalidateModels();
   }
 
   void _markCustomized([String? _]) {
-    if (!_isCustom) setState(() => _isCustom = true);
+    setState(() => _isCustom = true);
+  }
+
+  String _describeError(Object error) => error is AIServiceException
+      ? translateAIServiceException(context, error)
+      : '$error';
+
+  Future<void> _chooseModel() async {
+    final model = await showDialog<String>(
+      context: context,
+      builder: (context) => _AiModelPicker(
+        models: _fetchedModels,
+        selected: _modelController.text.trim(),
+      ),
+    );
+    if (!mounted || model == null) return;
+    setState(() {
+      _modelController.text = model;
+      _isCustom = true;
+    });
   }
 
   Future<void> _fetchModels() async {
@@ -141,7 +186,9 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
       setState(() => _errorText = context.l10n.settingsAiFillBaseUrlAndApiKey);
       return;
     }
+    final revision = _connectionRevision;
     setState(() {
+      _modelListNotice = null;
       _loadingModels = true;
       _errorText = null;
     });
@@ -149,16 +196,23 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
       final models = await widget.aiService.fetchAvailableModels(
         _buildSettings(),
       );
-      if (!mounted) return;
+      if (!mounted || revision != _connectionRevision) return;
       setState(() {
+        if (models.isEmpty) {
+          _modelListNotice = _copy(
+            '接口未返回可用模型，可以直接填写模型 ID。',
+            'モデルが返されませんでした。モデル ID を直接入力できます。',
+            'No models returned. You can enter a model ID manually.',
+          );
+        }
         _fetchedModels = models;
         _loadingModels = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || revision != _connectionRevision) return;
       setState(() {
         _loadingModels = false;
-        _errorText = '$error';
+        _errorText = _describeError(error);
       });
     }
   }
@@ -176,7 +230,12 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
     final settings = _buildSettings();
     final validation = validateAIProviderSettings(settings);
     if (validation != null) {
-      setState(() => _errorText = validation);
+      setState(
+        () => _errorText = translateAIServiceException(
+          context,
+          AIServiceException(code: validation),
+        ),
+      );
       return;
     }
     setState(() {
@@ -193,7 +252,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _errorText = '$error';
+        _errorText = _describeError(error);
       });
     }
   }
@@ -338,6 +397,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                       DropdownButtonFormField<AIProviderType>(
                         key: ValueKey('provider-${_provider.value}'),
                         initialValue: _provider,
+                        isExpanded: true,
                         decoration: _fieldDecoration(
                           label: l10n.settingsAiProviderLabel,
                           icon: Icons.hub_outlined,
@@ -346,10 +406,25 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                             .map(
                               (item) => DropdownMenuItem(
                                 value: item,
-                                child: Text(
-                                  item == AIProviderType.custom
-                                      ? l10n.settingsAiCustomProvider
-                                      : item.displayName,
+                                child: Row(
+                                  children: [
+                                    AiProviderLogo(
+                                      asset:
+                                          AIModelPresets.logoAssetForProvider(
+                                            item,
+                                          ),
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        item == AIProviderType.custom
+                                            ? l10n.settingsAiCustomProvider
+                                            : item.displayName,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             )
@@ -358,7 +433,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                           if (value == null) return;
                           setState(() {
                             _provider = value;
-                            _protocol = value.defaultProtocol;
+                            _protocol = null;
                             _isCustom = value == AIProviderType.custom;
                             if (value == AIProviderType.custom) {
                               final defaults = AIProviderSettings.defaults(
@@ -369,10 +444,9 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                               _apiKeyController.text = widget.knownApiKey(
                                 value,
                                 defaults.baseUrl,
-                                _protocol,
+                                _effectiveProtocol,
                               );
-                              _fetchedModels = const [];
-                              _errorText = null;
+                              _invalidateModels();
                             } else {
                               _applyPreset(
                                 AIModelPresets.defaultForProvider(value),
@@ -381,42 +455,47 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                           });
                         },
                       ),
-                      if (_provider == AIProviderType.custom) ...[
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<AIProtocolType>(
-                          key: ValueKey('protocol-${_protocol.value}'),
-                          initialValue: _protocol,
-                          decoration: _fieldDecoration(
-                            label: l10n.settingsAiProtocolLabel,
-                            icon: Icons.swap_calls_rounded,
-                          ),
-                          items:
-                              const [
-                                    AIProtocolType.openai,
-                                    AIProtocolType.anthropic,
-                                  ]
-                                  .map(
-                                    (item) => DropdownMenuItem(
-                                      value: item,
-                                      child: Text(_protocolLabel(item)),
-                                    ),
-                                  )
-                                  .toList(),
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() {
-                              _protocol = value;
-                              _apiKeyController.text = widget.knownApiKey(
-                                _provider,
-                                _baseUrlController.text,
-                                value,
-                              );
-                              _fetchedModels = const [];
-                              _errorText = null;
-                            });
-                          },
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        key: ValueKey('protocol-${_protocol?.value ?? 'auto'}'),
+                        initialValue: _protocol?.value ?? 'auto',
+                        isExpanded: true,
+                        decoration: _fieldDecoration(
+                          label: l10n.settingsAiProtocolLabel,
+                          icon: Icons.swap_calls_rounded,
+                          helper: _protocol == null
+                              ? _copy(
+                                  '根据服务地址识别：${_protocolLabel(_effectiveProtocol)}',
+                                  'URL から判定：${_protocolLabel(_effectiveProtocol)}',
+                                  'Detected from URL: ${_protocolLabel(_effectiveProtocol)}',
+                                )
+                              : null,
                         ),
-                      ],
+                        items: [
+                          DropdownMenuItem(
+                            value: 'auto',
+                            child: Text(_copy('自动识别', '自動判定', 'Automatic')),
+                          ),
+                          for (final item in AIProtocolType.values)
+                            DropdownMenuItem(
+                              value: item.value,
+                              child: Text(_protocolLabel(item)),
+                            ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _protocol = value == 'auto'
+                                ? null
+                                : AIProtocolTypeX.fromValue(
+                                    value,
+                                    fallback: AIProtocolType.openai,
+                                  );
+                            _isCustom = true;
+                            _invalidateModels();
+                          });
+                        },
+                      ),
                       if (presets.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         DropdownButtonFormField<AIModelPreset>(
@@ -431,13 +510,43 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                             label: l10n.settingsAiPresetModel,
                             icon: Icons.auto_awesome_outlined,
                           ),
+                          selectedItemBuilder: (context) => presets
+                              .map(
+                                (preset) => Row(
+                                  children: [
+                                    AiProviderLogo(
+                                      asset: preset.logoAsset,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        preset.label,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              .toList(),
                           items: presets
                               .map(
                                 (preset) => DropdownMenuItem(
                                   value: preset,
-                                  child: Text(
-                                    '${preset.vendor} · ${preset.label}',
-                                    overflow: TextOverflow.ellipsis,
+                                  child: Row(
+                                    children: [
+                                      AiProviderLogo(
+                                        asset: preset.logoAsset,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          '${preset.vendor} · ${preset.label}',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               )
@@ -452,8 +561,9 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                       _sectionLabel(_copy('服务连接', '接続', 'Connection')),
                       TextFormField(
                         controller: _baseUrlController,
-                        onChanged: _markCustomized,
+                        onChanged: _connectionChanged,
                         keyboardType: TextInputType.url,
+                        autocorrect: false,
                         decoration: _fieldDecoration(
                           label: _copy('服务地址', 'サービス URL', 'Base URL'),
                           icon: Icons.link_rounded,
@@ -463,6 +573,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _apiKeyController,
+                        onChanged: _connectionChanged,
                         obscureText: _obscureApiKey,
                         enableSuggestions: false,
                         autocorrect: false,
@@ -500,40 +611,44 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                         decoration: _fieldDecoration(
                           label: l10n.settingsAiModelNameLabel,
                           icon: Icons.smart_toy_outlined,
-                          suffix: IconButton(
-                            tooltip: l10n.settingsAiFetchModelsTooltip,
-                            onPressed: _loadingModels ? null : _fetchModels,
-                            icon: _loadingModels
-                                ? const SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.refresh_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          key: const ValueKey('fetch-ai-models'),
+                          onPressed: _loadingModels ? null : _fetchModels,
+                          icon: _loadingModels
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.cloud_download_outlined),
+                          label: Text(
+                            _copy('获取模型列表', 'モデル一覧を取得', 'Fetch model list'),
                           ),
                         ),
                       ),
+                      if (_modelListNotice != null)
+                        Text(
+                          _modelListNotice!,
+                          style: TextStyle(color: scheme.onSurfaceVariant),
+                        ),
                       if (_fetchedModels.isNotEmpty) ...[
                         const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _fetchedModels
-                              .map(
-                                (model) => ChoiceChip(
-                                  label: Text(model),
-                                  selected:
-                                      _modelController.text.trim() == model,
-                                  onSelected: (_) {
-                                    setState(() {
-                                      _modelController.text = model;
-                                      _isCustom = true;
-                                    });
-                                  },
-                                ),
-                              )
-                              .toList(),
+                        OutlinedButton.icon(
+                          onPressed: _chooseModel,
+                          icon: const Icon(Icons.list_alt_rounded),
+                          label: Text(
+                            _copy(
+                              '选择模型（${_fetchedModels.length} 个）',
+                              'モデルを選択（${_fetchedModels.length}）',
+                              'Choose model (${_fetchedModels.length})',
+                            ),
+                          ),
                         ),
                       ],
                       const SizedBox(height: 12),
@@ -575,6 +690,70 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AiModelPicker extends StatefulWidget {
+  const _AiModelPicker({required this.models, required this.selected});
+  final List<String> models;
+  final String selected;
+
+  @override
+  State<_AiModelPicker> createState() => _AiModelPickerState();
+}
+
+class _AiModelPickerState extends State<_AiModelPicker> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final models = widget.models
+        .where((model) => model.toLowerCase().contains(_query.toLowerCase()))
+        .toList();
+    return AlertDialog(
+      title: Text(context.l10n.settingsAiModelNameLabel),
+      content: SizedBox(
+        width: 480,
+        height: MediaQuery.sizeOf(context).height * 0.45,
+        child: Column(
+          children: [
+            TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search_rounded),
+                hintText: switch (Localizations.localeOf(
+                  context,
+                ).languageCode) {
+                  'zh' => '搜索模型',
+                  'ja' => 'モデルを検索',
+                  _ => 'Search models',
+                },
+              ),
+              onChanged: (query) => setState(() => _query = query),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                itemCount: models.length,
+                itemBuilder: (context, index) => ListTile(
+                  title: Text(models[index]),
+                  trailing: widget.selected == models[index]
+                      ? const Icon(Icons.check_rounded)
+                      : null,
+                  onTap: () => Navigator.of(context).pop(models[index]),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.l10n.cancel),
+        ),
+      ],
     );
   }
 }

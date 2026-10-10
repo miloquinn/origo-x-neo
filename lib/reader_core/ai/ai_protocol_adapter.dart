@@ -3,11 +3,17 @@
 
 part of 'ai_service.dart';
 
+const int _anthropicDefaultMaxTokens = 8192;
+
 class AIProtocolAdapter {
   const AIProtocolAdapter();
 
   String chatEndpoint(AIProviderSettings settings) {
-    final base = settings.baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final base = normalizeAIBaseUrl(
+      settings.provider,
+      settings.baseUrl,
+      protocol: settings.effectiveProtocol,
+    );
     switch (settings.effectiveProtocol) {
       case AIProtocolType.openai:
         return '$base/chat/completions';
@@ -22,7 +28,11 @@ class AIProtocolAdapter {
   }
 
   String modelListEndpoint(AIProviderSettings settings) {
-    final base = settings.baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final base = normalizeAIBaseUrl(
+      settings.provider,
+      settings.baseUrl,
+      protocol: settings.effectiveProtocol,
+    );
     return switch (settings.effectiveProtocol) {
       AIProtocolType.anthropic =>
         base.endsWith('/v1') ? '$base/models' : '$base/v1/models',
@@ -59,7 +69,8 @@ class AIProtocolAdapter {
     required AIProviderSettings settings,
     required List<Map<String, dynamic>> messages,
   }) {
-    if (settings.provider == AIProviderType.minimax) {
+    if (settings.provider == AIProviderType.minimax &&
+        settings.effectiveProtocol == AIProtocolType.openai) {
       return <String, dynamic>{
         'model': settings.model,
         'messages': messages,
@@ -98,8 +109,9 @@ class AIProtocolAdapter {
           'model': settings.model,
           'system': systemPrompt,
           'messages': chatMessages,
-          'max_tokens': 1024,
-          'temperature': settings.temperature.clamp(0.0, 1.0),
+          'max_tokens': _anthropicDefaultMaxTokens,
+          if (supportsTemperature(settings))
+            'temperature': settings.temperature.clamp(0.0, 1.0),
         };
       case AIProtocolType.gemini:
         final systemPrompt = _systemPrompt(messages);
@@ -125,11 +137,33 @@ class AIProtocolAdapter {
               ],
             },
           'contents': contents,
-          'generationConfig': {
-            'temperature': settings.temperature.clamp(0.0, 1.0),
-          },
+          if (supportsTemperature(settings))
+            'generationConfig': {
+              'temperature': settings.temperature.clamp(0.0, 1.0),
+            },
         };
     }
+  }
+
+  bool supportsTemperature(AIProviderSettings settings) {
+    final model = settings.model.trim().toLowerCase();
+    if (settings.effectiveProtocol == AIProtocolType.gemini) {
+      final match = RegExp(r'^gemini-(\d+)').firstMatch(model);
+      final major = int.tryParse(match?.group(1) ?? '');
+      return major == null || major < 3;
+    }
+    if (settings.effectiveProtocol == AIProtocolType.anthropic &&
+        model.startsWith('claude-')) {
+      final match = RegExp(
+        r'^claude-(?:[a-z]+-)?(\d+)(?:[-.](\d+))?',
+      ).firstMatch(model);
+      final major = int.tryParse(match?.group(1) ?? '');
+      final minor = int.tryParse(match?.group(2) ?? '') ?? 0;
+      if (major != null && (major > 4 || major == 4 && minor >= 7)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   String extractAssistantContent({
