@@ -121,10 +121,10 @@ void main() {
               theme.data.colorScheme.surface == ReaderThemes.green.surface,
         );
     final handle = find.byKey(GlassBottomSheetSurface.dragHandleKey);
-    final navigationTitle = tester.widget<Text>(find.text('阅读导航'));
+    final navigationTabs = tester.widget<TabBar>(find.byType(TabBar));
 
     expect(themed, isTrue);
-    expect(navigationTitle.style?.color, ReaderThemes.green.text);
+    expect(navigationTabs.labelColor, ReaderThemes.green.accent);
     expect(handle, findsOneWidget);
 
     await tester.tap(find.text('书签'));
@@ -159,8 +159,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      tester.widget<Text>(find.text('阅读导航')).style?.color,
-      ReaderThemes.night.text,
+      tester.widget<TabBar>(find.byType(TabBar)).labelColor,
+      ReaderThemes.night.accent,
     );
     expect(
       tester.widget<Text>(find.text('第一章')).style?.color,
@@ -218,7 +218,7 @@ void main() {
 
     expect(find.byType(OrigoReaderCurrentIcon), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
-    expect(find.byTooltip('关闭'), findsOneWidget);
+    expect(find.byTooltip('关闭'), findsNothing);
     expect(
       find.byKey(const ValueKey('reader-navigation-toggle-4')),
       findsOneWidget,
@@ -372,6 +372,10 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('reader-navigation-toggle-0')));
     await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('reader-navigation-search-toggle')),
+    );
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '深层');
     await tester.pumpAndSettle();
 
@@ -516,7 +520,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('第一章 在大雨到来之前离开旧城'), findsOneWidget);
-    expect(tester.widget<ListView>(find.byType(ListView)).itemExtent, 96);
+    expect(tester.widget<ListView>(find.byType(ListView)).itemExtent, 84);
     expect(
       find.byKey(const ValueKey('reader-navigation-current-chapter-button')),
       findsOneWidget,
@@ -612,9 +616,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('阅读导航'), findsOneWidget);
+    expect(find.text('阅读导航'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
     expect(find.text('当前'), findsNWidgets(2));
-    expect(find.text('搜索章节'), findsOneWidget);
+    expect(find.byTooltip('搜索章节'), findsOneWidget);
 
     await tester.tap(find.text('第三章 重逢'));
     expect(selectedChapter, 2);
@@ -627,4 +632,159 @@ void main() {
     await tester.tap(find.text('第二章 远行').last);
     expect(selectedBookmark?.id, 9);
   });
+  testWidgets('on-demand search clears empty results and returns to current', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_searchHost());
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.byTooltip('关闭'), findsNothing);
+    final toggle = find.byKey(
+      const ValueKey('reader-navigation-search-toggle'),
+    );
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+      isTrue,
+    );
+    await tester.enterText(find.byType(TextField), '不可能找到的章节');
+    await tester.pumpAndSettle();
+    expect(find.byType(ListView), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('reader-navigation-current-chapter-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('第二章 远行'), findsOneWidget);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '远行');
+    await tester.pumpAndSettle();
+    expect(find.text('第一章 开端'), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('reader-navigation-search-clear')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      isEmpty,
+    );
+    expect(find.text('第一章 开端'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), '远行');
+    await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('第一章 开端'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('search survives tab changes while releasing keyboard focus', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_searchHost());
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('reader-navigation-search-toggle')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '远行');
+    await tester.pumpAndSettle();
+    final focus = tester.widget<TextField>(find.byType(TextField)).focusNode!;
+    await tester.tap(find.text('书签'));
+    await tester.pumpAndSettle();
+    expect(focus.hasFocus, isFalse);
+    expect(
+      find.byKey(const ValueKey('reader-navigation-search-toggle')),
+      findsNothing,
+    );
+    await tester.tap(find.text('目录'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '远行',
+    );
+    expect(find.text('第二章 远行'), findsOneWidget);
+    expect(find.text('第一章 开端'), findsNothing);
+  });
+
+  testWidgets('parent updates preserve active search and keyboard focus', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_searchHost());
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('reader-navigation-search-toggle')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '远行');
+    final focus = tester.widget<TextField>(find.byType(TextField)).focusNode!;
+    await tester.pumpWidget(_searchHost(resolver: () => 1));
+    await tester.pump(const Duration(milliseconds: 301));
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '远行',
+    );
+    expect(focus.hasFocus, isTrue);
+    await tester.tap(find.text('书签'));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_searchHost(resolver: () => 1));
+    await tester.pump(const Duration(milliseconds: 301));
+    await tester.tap(find.text('目录'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '远行',
+    );
+    expect(find.text('第一章 开端'), findsNothing);
+  });
+
+  testWidgets('deferred subsection resolution keeps active search open', (
+    tester,
+  ) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      _searchHost(
+        resolver: () {
+          calls++;
+          return 1;
+        },
+      ),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('reader-navigation-search-toggle')),
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '远行');
+    await tester.pump(const Duration(milliseconds: 301));
+    expect(calls, 1);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '远行',
+    );
+    expect(find.text('第二章 远行'), findsOneWidget);
+  });
 }
+
+Widget _searchHost({int Function()? resolver}) => MaterialApp(
+  locale: const Locale('zh'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(
+    body: ReaderNavigationSheet(
+      palette: ReaderThemes.day,
+      chapters: const [
+        ReaderNavigationChapter(title: '第一章 开端', index: 0),
+        ReaderNavigationChapter(title: '第二章 远行', index: 1),
+        ReaderNavigationChapter(title: '第三章 重逢', index: 2),
+      ],
+      currentChapterIndex: 1,
+      resolveCurrentNavigationPosition: resolver,
+      bookmarks: const [],
+      onChapterSelected: (_) {},
+      onBookmarkSelected: (_) {},
+      onBookmarkDeleted: (_) {},
+    ),
+  ),
+);

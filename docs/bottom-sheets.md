@@ -13,6 +13,8 @@
 
 ## 消费者约定
 
+阅读目录、书签和笔记的紧凑标签、按需搜索及定位合同见[阅读导航菜单](reader-navigation.md)。
+
 `builder` 保留内容布局。共享外壳不强制所有菜单为屏幕的一半，不替换 ScrollController，也不增加键盘 inset。`backgroundColor` 表示共享背景的语义底色；透明色按主题底色解析，不能把玻璃背景一并关掉。
 
 阅读入口应给外层路由传 `theme: palette.toThemeData(parentTheme: ...)` 及阅读背景色，保留应用的外观扩展。只在内容里套 Theme 不足以改变外层玻璃与横条的颜色。

@@ -1264,6 +1264,13 @@ Future<void> _selectTocChapter(WidgetTester tester, String chapterTitle) async {
   await _pumpTransitionFrames(tester);
   final sheet = find.byType(ReaderNavigationSheet);
   expect(sheet, findsOneWidget);
+  await tester.tap(
+    find.descendant(
+      of: sheet,
+      matching: find.byKey(const ValueKey('reader-navigation-search-toggle')),
+    ),
+  );
+  await tester.pump();
   final searchField = find.descendant(
     of: sheet,
     matching: find.byType(TextField),

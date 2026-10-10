@@ -13,7 +13,8 @@ import 'app_menu.dart';
 import 'app_skin_icon.dart';
 import 'glass_bottom_sheet.dart';
 import 'origo_x_icons.dart';
-import 'pill_search_field.dart';
+import 'glass_buttons.dart';
+import 'glass_control_surface.dart';
 
 class ReaderNavigationChapter {
   const ReaderNavigationChapter({
@@ -213,6 +214,8 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
   final ScrollController _chapterScrollController = ScrollController();
   final Set<int> _collapsedChapterPositions = <int>{};
   String _query = '';
+  final FocusNode _searchFocus = FocusNode();
+  bool _searchExpanded = false;
 
   late ReaderNavigationCatalog _catalog;
   List<int>? _visibleCache;
@@ -237,6 +240,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     _resolvedNavigationPosition = widget.currentNavigationPosition;
     _navigationPositionResolved =
         widget.resolveCurrentNavigationPosition == null;
+    _searchFocus.addListener(_handleSearchFocus);
     _scheduleResolveAndScroll(animate: false);
   }
 
@@ -246,13 +250,23 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
       ..removeListener(_handleTabChanged)
       ..dispose();
     _searchController.dispose();
+    _searchFocus
+      ..removeListener(_handleSearchFocus)
+      ..dispose();
     _chapterScrollController.dispose();
     _navigationResolveTimer?.cancel();
     super.dispose();
   }
 
+  void _handleSearchFocus() {
+    if (mounted) setState(() {});
+  }
+
   void _handleTabChanged() {
-    if (!_tabController.indexIsChanging) setState(() {});
+    if (!_tabController.indexIsChanging) {
+      if (_tabController.index != 0) _searchFocus.unfocus();
+      setState(() {});
+    }
   }
 
   @override
@@ -286,7 +300,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     _navigationResolveTimer?.cancel();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _scrollToCurrent(animate: false);
+      if (!_searchExpanded) _scrollToCurrent(animate: false);
       if (widget.resolveCurrentNavigationPosition == null) return;
       _navigationResolveTimer = Timer(_navigationResolveDelay, () {
         if (mounted) _resolveAndScrollToCurrent(animate: animate);
@@ -302,7 +316,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
       _navigationPositionResolved = true;
       if (mounted) setState(() {});
     }
-    _scrollToCurrent(animate: animate);
+    if (!_searchExpanded) _scrollToCurrent(animate: animate);
   }
 
   List<int> get _visibleChapters {
@@ -399,18 +413,20 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
   }
 
   void _scrollToCurrent({bool animate = true}) {
-    if (!_chapterScrollController.hasClients || _catalog.chapters.isEmpty) {
-      return;
-    }
-    if (_query.isNotEmpty) {
+    if (_query.isNotEmpty || _searchExpanded) {
       _searchController.clear();
+      _searchFocus.unfocus();
       setState(() {
         _query = '';
+        _searchExpanded = false;
         _visibleCache = null;
       });
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _scrollToCurrent(animate: animate),
       );
+      return;
+    }
+    if (!_chapterScrollController.hasClients || _catalog.chapters.isEmpty) {
       return;
     }
     final currentPosition = _currentChapterPosition;
@@ -458,7 +474,7 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
   }
 
   double get _chapterExtent =>
-      (68 * MediaQuery.textScalerOf(context).scale(16) / 16).clamp(68.0, 96.0);
+      (56 * MediaQuery.textScalerOf(context).scale(16) / 16).clamp(56.0, 96.0);
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +499,6 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
             child: Column(
               children: [
                 _buildHeader(themedContext),
-                _buildTabs(themedContext),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -508,83 +523,153 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     );
   }
 
+  void _toggleSearch() {
+    setState(() {
+      _searchExpanded = !_searchExpanded;
+      if (!_searchExpanded) {
+        _searchController.clear();
+        _query = '';
+        _visibleCache = null;
+      }
+    });
+    if (_searchExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _searchExpanded) _searchFocus.requestFocus();
+      });
+    } else {
+      _searchFocus.unfocus();
+    }
+  }
+
   Widget _buildHeader(BuildContext context) {
-    final chapterCount = _catalog.sortedChapterIndexes.length;
-    final chapterOrdinal = _catalog.ordinalForChapter(
-      widget.currentChapterIndex,
-    );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 18, 16, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.readerNavigationTitle,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: widget.palette.text,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                  ),
+    return Semantics(
+      namesRoute: true,
+      label: context.l10n.readerNavigationTitle,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 2),
+        child: Row(
+          children: [
+            Expanded(child: _buildTabs(context)),
+            if (_tabController.index == 0) ...[
+              const SizedBox(width: 6),
+              GlassIconButton(
+                key: const ValueKey('reader-navigation-search-toggle'),
+                onPressed: _toggleSearch,
+                tooltip: _searchExpanded
+                    ? MaterialLocalizations.of(context).closeButtonTooltip
+                    : context.l10n.readerSearchChapters,
+                icon: Icon(
+                  _searchExpanded ? Icons.close_rounded : Icons.search_rounded,
                 ),
-                const SizedBox(height: 4),
-                if (chapterOrdinal != null)
-                  Text(
-                    context.l10n.readerNavigationPosition(
-                      chapterOrdinal,
-                      chapterCount,
-                    ),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: widget.palette.secondaryText,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-            style: IconButton.styleFrom(
-              backgroundColor: widget.palette.controlBar,
-              foregroundColor: widget.palette.secondaryText,
-              minimumSize: const Size(44, 44),
-            ),
-            icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded, size: 20)),
-          ),
-        ],
+                color: widget.palette.controlBar,
+                foregroundColor: widget.palette.secondaryText,
+                brightness: widget.palette.brightness,
+                outlineColor: widget.palette.border,
+                blurBackground: false,
+                highlighted: _searchExpanded,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTabs(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: TabBar(
-        controller: _tabController,
-        labelColor: widget.palette.accent,
-        unselectedLabelColor: widget.palette.secondaryText,
-        labelStyle: Theme.of(
-          context,
-        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-        unselectedLabelStyle: Theme.of(
-          context,
-        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
-        dividerColor: widget.palette.border.withValues(alpha: 0.65),
-        indicator: UnderlineTabIndicator(
-          borderSide: BorderSide(color: widget.palette.accent, width: 3),
-          insets: const EdgeInsets.symmetric(horizontal: 22),
+    return TabBar(
+      controller: _tabController,
+      labelColor: widget.palette.accent,
+      unselectedLabelColor: widget.palette.secondaryText,
+      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+      labelStyle: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+      unselectedLabelStyle: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+      dividerColor: Colors.transparent,
+      indicatorSize: TabBarIndicatorSize.tab,
+      indicatorPadding: const EdgeInsets.symmetric(vertical: 3),
+      indicator: BoxDecoration(
+        color: widget.palette.accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      tabs: [
+        Tab(height: 44, child: _tabLabel(label: context.l10n.readerToolbarTOC)),
+        Tab(height: 44, child: _tabLabel(label: context.l10n.bookmarks)),
+        Tab(height: 44, child: _tabLabel(label: context.l10n.notes)),
+      ],
+    );
+  }
+
+  Widget _buildSearch(BuildContext context) {
+    return GlassControlSurface(
+      shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(14)),
+      color: widget.palette.controlBar,
+      brightness: widget.palette.brightness,
+      outlineColor: _searchFocus.hasFocus
+          ? widget.palette.accent
+          : widget.palette.border,
+      blurBackground: false,
+      child: TextField(
+        key: const ValueKey('reader-navigation-search-field'),
+        controller: _searchController,
+        focusNode: _searchFocus,
+        onChanged: (value) => setState(() {
+          _query = value;
+          _visibleCache = null;
+        }),
+        textInputAction: TextInputAction.search,
+        textAlignVertical: TextAlignVertical.center,
+        cursorColor: widget.palette.accent,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: widget.palette.text,
+          height: 1.35,
         ),
-        tabs: [
-          Tab(
-            height: 52,
-            child: _tabLabel(label: context.l10n.readerToolbarTOC),
+        decoration: InputDecoration(
+          hintText: context.l10n.readerSearchChapters,
+          hintStyle: TextStyle(color: widget.palette.secondaryText),
+          isDense: true,
+          filled: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          constraints: const BoxConstraints(minHeight: 44),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
           ),
-          Tab(height: 52, child: _tabLabel(label: context.l10n.bookmarks)),
-          Tab(height: 52, child: _tabLabel(label: context.l10n.notes)),
-        ],
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 40,
+            minHeight: 44,
+          ),
+          prefixIcon: AppSkinIcon.adapt(
+            Icon(
+              Icons.search_rounded,
+              size: 18,
+              color: widget.palette.secondaryText,
+            ),
+          ),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  key: const ValueKey('reader-navigation-search-clear'),
+                  tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
+                  onPressed: () => setState(() {
+                    _searchController.clear();
+                    _query = '';
+                    _visibleCache = null;
+                  }),
+                  icon: AppSkinIcon.adapt(
+                    const Icon(Icons.close_rounded, size: 18),
+                  ),
+                  color: widget.palette.secondaryText,
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                ),
+        ),
       ),
     );
   }
@@ -602,27 +687,30 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
     final chapters = _visibleChapters;
     final currentPosition = _currentChapterPosition;
     final chapterExtent = _chapterExtent;
+    final chapterOrdinal = _catalog.ordinalForChapter(
+      widget.currentChapterIndex,
+    );
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 2, 12, 4),
           child: Row(
             children: [
               Expanded(
-                child: PillSearchField(
-                  controller: _searchController,
-                  onChanged: (value) => setState(() {
-                    _query = value;
-                    _visibleCache = null;
-                  }),
-                  hintText: context.l10n.readerSearchChapters,
-                  fillColor: widget.palette.controlBar,
-                  foregroundColor: widget.palette.text,
-                  hintColor: widget.palette.secondaryText,
-                  accentColor: widget.palette.accent,
-                  borderColor: widget.palette.border,
-                  brightness: widget.palette.brightness,
-                ),
+                child: _searchExpanded
+                    ? _buildSearch(context)
+                    : Text(
+                        chapterOrdinal == null
+                            ? context.l10n.readerToolbarTOC
+                            : context.l10n.readerNavigationPosition(
+                                chapterOrdinal,
+                                _catalog.sortedChapterIndexes.length,
+                              ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(color: widget.palette.secondaryText),
+                      ),
               ),
               const SizedBox(width: 8),
               Tooltip(
@@ -634,10 +722,8 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                   onPressed: _scrollToCurrent,
                   style: TextButton.styleFrom(
                     foregroundColor: widget.palette.accent,
-                    minimumSize: const Size(60, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                    minimumSize: const Size(44, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                   child: Text(context.l10n.readerCurrentChapter),
                 ),
@@ -671,6 +757,8 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                   trackBorderColor: Colors.transparent,
                   child: ListView.builder(
                     controller: _chapterScrollController,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.fromLTRB(
                       8,
                       _catalogTopPadding,

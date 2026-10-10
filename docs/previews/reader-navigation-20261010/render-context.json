@@ -1,0 +1,299 @@
+{
+  "renderer": "flutter_test software renderer; liquid shader fallback",
+  "scenes": {
+    "liquid-large-text-320.render-context": {
+      "scene": "liquid-large-text-320",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        320.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.5,
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "searchExpanded": false,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 304.0
+      }
+    },
+    "liquid-dark.render-context": {
+      "scene": "liquid-dark",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "dark",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "searchExpanded": false,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "frosted-dark-search.render-context": {
+      "scene": "frosted-dark-search",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "dark",
+      "uiStyle": "glass",
+      "glassStyle": "frosted",
+      "searchExpanded": true,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "frosted-light-search.render-context": {
+      "scene": "frosted-light-search",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "frosted",
+      "searchExpanded": true,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "liquid-large-text-320-search.render-context": {
+      "scene": "liquid-large-text-320-search",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        320.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.5,
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "searchExpanded": true,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 570.0,
+        "height": 266.0,
+        "width": 304.0
+      }
+    },
+    "liquid-dark-search.render-context": {
+      "scene": "liquid-dark-search",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "dark",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "searchExpanded": true,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "liquid-light.render-context": {
+      "scene": "liquid-light",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "searchExpanded": false,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "frosted-light.render-context": {
+      "scene": "frosted-light",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "frosted",
+      "searchExpanded": false,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "liquid-light-search.render-context": {
+      "scene": "liquid-light-search",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "searchExpanded": true,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "solid-light.render-context": {
+      "scene": "solid-light",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "light",
+      "uiStyle": "material3",
+      "glassStyle": "liquid",
+      "searchExpanded": false,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "solid-dark.render-context": {
+      "scene": "solid-dark",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "dark",
+      "uiStyle": "material3",
+      "glassStyle": "liquid",
+      "searchExpanded": false,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "solid-dark-search.render-context": {
+      "scene": "solid-dark-search",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "dark",
+      "uiStyle": "material3",
+      "glassStyle": "liquid",
+      "searchExpanded": true,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "frosted-dark.render-context": {
+      "scene": "frosted-dark",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "dark",
+      "uiStyle": "glass",
+      "glassStyle": "frosted",
+      "searchExpanded": false,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    },
+    "solid-light-search.render-context": {
+      "scene": "solid-light-search",
+      "renderer": "flutter_test software renderer",
+      "shaderFilterSupported": false,
+      "logicalSize": [
+        390.0,
+        844
+      ],
+      "sheetHeight": 430,
+      "textScale": 1.0,
+      "brightness": "light",
+      "uiStyle": "material3",
+      "glassStyle": "liquid",
+      "searchExpanded": true,
+      "keyboardVisible": false,
+      "catalogViewport": {
+        "top": 568.0,
+        "height": 268.0,
+        "width": 374.0
+      }
+    }
+  }
+}
