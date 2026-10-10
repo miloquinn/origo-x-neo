@@ -7,16 +7,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:xxread/core/reader/canonical_locator.dart';
 import 'package:xxread/core/reader/reader_page_turn_geometry.dart';
 import 'package:xxread/core/reader/reader_layout.dart';
+import 'package:xxread/core/reader/reader_margin_settings.dart';
 import 'package:xxread/core/reader/reader_settings.dart';
+import 'package:xxread/core/reader/reader_system_ui.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/reader/native/native_reader_page.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
+import 'package:xxread/widgets/reader_annotated_text_page.dart';
 import 'package:xxread/widgets/reader_paper_page_leaf.dart';
 import 'package:xxread/widgets/reader_shader_page_curl.dart';
 import 'package:xxread/widgets/reader_top_information_bar.dart';
+
+import 'support/reader_cache_test_utils.dart';
 
 void main() {
   late File bookFile;
@@ -61,6 +67,15 @@ void main() {
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       try {
+        final initialPreferences = await SharedPreferences.getInstance();
+        await initialPreferences.setDouble(
+          ReaderSettingsStore.headerOffsetKey,
+          12,
+        );
+        await initialPreferences.setDouble(
+          ReaderSettingsStore.footerOffsetKey,
+          18,
+        );
         await tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -137,7 +152,82 @@ void main() {
           isTrue,
         );
 
-        await tester.tap(find.text('Text'));
+        final headerOffsetFinder = find.descendant(
+          of: find.byKey(const ValueKey('reader-header-offset-slider')),
+          matching: find.byType(Slider),
+        );
+        final footerOffsetFinder = find.descendant(
+          of: find.byKey(const ValueKey('reader-footer-offset-slider')),
+          matching: find.byType(Slider),
+        );
+        await tester.ensureVisible(headerOffsetFinder);
+        await tester.pumpAndSettle();
+        expect(tester.widget<Slider>(headerOffsetFinder).value, 12);
+        expect(tester.widget<Slider>(footerOffsetFinder).value, 18);
+        final initialSafeArea = currentLeaf.safeArea;
+
+        tester.widget<Slider>(headerOffsetFinder).onChanged!(28);
+        await tester.pump();
+        tester.widget<Slider>(headerOffsetFinder).onChangeEnd!(28);
+        await tester.pumpAndSettle();
+        var savedSettings = await const ReaderSettingsStore().load();
+        expect(savedSettings.headerOffset, 28);
+        expect(savedSettings.footerOffset, 18);
+
+        await tester.ensureVisible(footerOffsetFinder);
+        await tester.pumpAndSettle();
+        tester.widget<Slider>(footerOffsetFinder).onChanged!(36);
+        await tester.pump();
+        tester.widget<Slider>(footerOffsetFinder).onChangeEnd!(36);
+        await tester.pumpAndSettle();
+        savedSettings = await const ReaderSettingsStore().load();
+        expect(savedSettings.headerOffset, 28);
+        expect(savedSettings.footerOffset, 36);
+        expect(savedSettings.topMargin, ReaderMarginSettings.defaultTop);
+        expect(savedSettings.bottomMargin, ReaderMarginSettings.defaultBottom);
+
+        final adjustedLeaf =
+            tester
+                    .widget<ReaderShaderPageCurl>(
+                      find.byType(ReaderShaderPageCurl).first,
+                    )
+                    .currentPage
+                    .child
+                as ReaderPaperPageLeaf;
+        final adjustedSafeArea = adjustedLeaf.safeArea;
+        expect(
+          adjustedSafeArea.readerTopBarTop,
+          greaterThan(initialSafeArea.readerTopBarTop),
+        );
+        expect(
+          adjustedSafeArea.pageNumberBottom,
+          greaterThan(initialSafeArea.pageNumberBottom),
+        );
+        expect(
+          adjustedSafeArea.contentTop,
+          greaterThanOrEqualTo(
+            adjustedSafeArea.readerTopBarTop +
+                adjustedSafeArea.headerHeight +
+                adjustedSafeArea.headerContentGap,
+          ),
+        );
+        expect(
+          adjustedSafeArea.contentBottom,
+          greaterThanOrEqualTo(
+            adjustedSafeArea.pageNumberBottom +
+                adjustedSafeArea.footerHeight +
+                adjustedSafeArea.footerContentGap,
+          ),
+        );
+
+        final settingsTabBar = find.byKey(
+          const ValueKey('reader-settings-tab-bar'),
+        );
+        await tester.ensureVisible(settingsTabBar);
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(of: settingsTabBar, matching: find.text('Text')),
+        );
         await tester.pumpAndSettle();
         final fontWeightFinder = find.byKey(
           const ValueKey('reader-font-weight-slider'),
@@ -211,6 +301,133 @@ void main() {
       } finally {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
+
+  testWidgets(
+    'native no-inset top bar style switches repaginate and retain the canonical anchor',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.padding = const FakeViewPadding();
+      tester.view.viewPadding = const FakeViewPadding();
+      final temporaryDirectory = Directory.systemTemp.createTempSync(
+        'origo-x-native-top-style-',
+      );
+      const pathProviderChannel = MethodChannel(
+        'plugins.flutter.io/path_provider',
+      );
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(
+        pathProviderChannel,
+        (call) async => call.method == 'getApplicationSupportDirectory'
+            ? temporaryDirectory.path
+            : null,
+      );
+      final txt = File('${temporaryDirectory.path}/anchor.txt');
+      final text = List.generate(
+        900,
+        (index) => '段落 $index：页眉样式切换后仍应保留这一正文位置。\n',
+      ).join();
+      txt.writeAsStringSync(text);
+      final anchorOffset = text.indexOf('段落 450');
+      final locator = CanonicalLocator.fromComponents(
+        format: BookFormat.txt,
+        chapterId: 'txt-0',
+        offset: anchorOffset,
+        excerpt: text.substring(anchorOffset, anchorOffset + 24),
+      );
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: ReaderPageMode.pageCurl.name,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+        ReaderSettingsStore.headerOffsetKey: 32.0,
+        ReaderSystemUiController.preferenceKey: ReaderTopBarStyle.reader.name,
+      });
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NativeReaderPage(
+              replaceRuleService: replaceRuleService,
+              book: Book(
+                title: 'Top style anchor',
+                filePath: txt.path,
+                format: 'txt',
+                textEncoding: 'utf8',
+                lastCanonicalLocator: LocatorCodec.encodeCanonicalLocator(
+                  locator,
+                ),
+                fileModifiedTime: txt.lastModifiedSync().millisecondsSinceEpoch,
+              ),
+            ),
+          ),
+        );
+        await tester.runAsync(() async {
+          for (var attempt = 0; attempt < 60; attempt++) {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
+            if (find.byType(ReaderShaderPageCurl).evaluate().isNotEmpty) return;
+          }
+        });
+        await _pumpUntilFound(tester, find.byType(ReaderShaderPageCurl));
+        await _pumpUntilNativeOffsetPainted(tester, anchorOffset);
+        expect(
+          MediaQuery.sizeOf(tester.element(find.byType(NativeReaderPage))),
+          const Size(400, 800),
+        );
+        final readerLeaf = _currentNativeCurlLeaf(tester);
+        final readerFingerprint = readerLeaf.metadata.layoutFingerprint;
+        expect(readerLeaf.showTopInformation, isTrue);
+        expect(readerLeaf.safeArea.viewPadding, EdgeInsets.zero);
+
+        await _setNativeTopBarStyleThroughControls(
+          tester,
+          ReaderTopBarStyle.floating,
+        );
+        await _pumpUntilNativeOffsetPainted(tester, anchorOffset);
+        final floatingLeaf = _currentNativeCurlLeaf(tester);
+        expect(
+          floatingLeaf.metadata.layoutFingerprint,
+          isNot(readerFingerprint),
+        );
+        expect(floatingLeaf.showTopInformation, isFalse);
+        expect(floatingLeaf.showFloatingStatus, isTrue);
+
+        await _setNativeTopBarStyleThroughControls(
+          tester,
+          ReaderTopBarStyle.reader,
+        );
+        await _pumpUntilNativeOffsetPainted(tester, anchorOffset);
+        final restoredReaderLeaf = _currentNativeCurlLeaf(tester);
+        expect(
+          restoredReaderLeaf.metadata.layoutFingerprint,
+          isNot(floatingLeaf.metadata.layoutFingerprint),
+        );
+        expect(restoredReaderLeaf.showTopInformation, isTrue);
+        expect(
+          (await SharedPreferences.getInstance()).getString(
+            ReaderSystemUiController.preferenceKey,
+          ),
+          ReaderTopBarStyle.reader.name,
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        await drainReaderCache(tester);
+        messenger.setMockMethodCallHandler(pathProviderChannel, null);
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        tester.view.resetPadding();
+        tester.view.resetViewPadding();
+        if (temporaryDirectory.existsSync()) {
+          temporaryDirectory.deleteSync(recursive: true);
+        }
         debugDefaultTargetPlatformOverride = null;
       }
     },
@@ -761,4 +978,68 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
     'scaffolds=${find.byType(Scaffold).evaluate().length}, '
     'exception=${tester.takeException()}.',
   );
+}
+
+ReaderPaperPageLeaf _currentNativeCurlLeaf(WidgetTester tester) =>
+    tester
+            .widget<ReaderShaderPageCurl>(
+              find.byType(ReaderShaderPageCurl).first,
+            )
+            .currentPage
+            .child
+        as ReaderPaperPageLeaf;
+
+Future<void> _pumpUntilNativeOffsetPainted(
+  WidgetTester tester,
+  int sourceOffset,
+) async {
+  for (var attempt = 0; attempt < 60; attempt++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (find.byType(ReaderShaderPageCurl).evaluate().isEmpty) continue;
+    final leaf = _currentNativeCurlLeaf(tester);
+    final pages = tester.widgetList<ReaderAnnotatedTextPage>(
+      find.descendant(
+        of: find.byWidget(leaf),
+        matching: find.byType(ReaderAnnotatedTextPage),
+      ),
+    );
+    if (pages.any(
+      (page) =>
+          page.chapterId == 'txt-0' &&
+          !page.page.isChapterTitle &&
+          page.page.startOffset <= sourceOffset &&
+          page.page.endOffset > sourceOffset,
+    )) {
+      return;
+    }
+  }
+  fail('Current native page did not retain offset txt-0:$sourceOffset.');
+}
+
+Future<void> _setNativeTopBarStyleThroughControls(
+  WidgetTester tester,
+  ReaderTopBarStyle style,
+) async {
+  final surface = find.byKey(const ValueKey('native-reader-tap-observer'));
+  final controls = find.byKey(const ValueKey('native-reader-bottom-controls'));
+  for (var attempt = 0; attempt < 3; attempt++) {
+    if (tester.widget<AnimatedPositioned>(controls).bottom == 16) break;
+    await tester.tapAt(tester.getRect(surface).center);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    if (tester.widget<AnimatedPositioned>(controls).bottom == 16) break;
+  }
+  expect(tester.widget<AnimatedPositioned>(controls).bottom, 16);
+  await tester.tap(find.byIcon(Icons.tune_rounded));
+  await tester.pumpAndSettle();
+  final styleTile = find.byKey(const ValueKey('reader-top-bar-style-tile'));
+  await tester.ensureVisible(styleTile);
+  await tester.pumpAndSettle();
+  await tester.tap(styleTile);
+  await tester.pumpAndSettle();
+  final option = find.byKey(ValueKey('reader-top-bar-style-${style.name}'));
+  await tester.ensureVisible(option);
+  await tester.pumpAndSettle();
+  await tester.tap(option);
+  await tester.pumpAndSettle();
 }

@@ -393,6 +393,9 @@ class _NativeReaderPageState extends State<NativeReaderPage>
   double _horizontalMargin = 18;
   double _topMargin = ReaderMarginSettings.defaultTop;
   double _bottomMargin = ReaderMarginSettings.defaultBottom;
+  double _headerOffset = ReaderSettings.defaultHeaderOffset;
+  double _footerOffset = ReaderSettings.defaultFooterOffset;
+  double _chromeViewportHeight = double.infinity;
   FontOption _readerFont = FontCatalog.defaultReaderFont;
   String _readerThemeId = ReaderThemes.day.id;
   bool _pullBookmarkEnabled = false;

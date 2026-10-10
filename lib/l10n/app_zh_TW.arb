@@ -1432,8 +1432,11 @@
     }
   },
   "readerHorizontalMarginLabel": "左右頁邊距",
-  "readerTopMarginLabel": "上頁邊距",
-  "readerBottomMarginLabel": "下頁邊距",
+  "readerTopMarginLabel": "正文上邊距",
+  "readerBottomMarginLabel": "正文下邊距",
+  "readerHeaderOffsetLabel": "頁眉下移",
+  "readerFooterOffsetLabel": "頁腳上移",
+  "readerChromePositionHint": "調整頁眉頁腳的位置，正文會自動留出空間。",
   "readerTxtChapterTitlePageTitle": "章節標題獨立成頁",
   "readerTxtChapterTitlePageHint": "關閉後，章節標題顯示在正文開頭",
   "readerVerticalMarginLabel": "上下頁邊距",

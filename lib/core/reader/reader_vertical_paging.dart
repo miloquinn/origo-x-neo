@@ -30,28 +30,26 @@ class ReaderViewportChromeMetrics {
     required this.safeArea,
     this.immersive = false,
     this.reservesTitle = true,
-    this.titleTopGap = 7,
     this.titleHeight = 16,
-    this.titleContentGap = 9,
+    this.titleContentGap = 12,
     this.statusContentGap = 6,
   });
 
   final ReaderSafeAreaMetrics safeArea;
   final bool immersive;
   final bool reservesTitle;
-  final double titleTopGap;
   final double titleHeight;
   final double titleContentGap;
   final double statusContentGap;
 
-  double get titleTop => safeArea.viewPadding.top + titleTopGap;
+  double get titleTop => safeArea.readerTopBarTop;
 
   double get contentTop {
     if (immersive) return 0;
     if (!reservesTitle) return safeArea.contentTop;
     return math.max(
       safeArea.contentTop,
-      titleTop + titleHeight + titleContentGap,
+      titleTop + math.max(titleHeight, safeArea.headerHeight) + titleContentGap,
     );
   }
 
@@ -59,9 +57,7 @@ class ReaderViewportChromeMetrics {
       ? 0
       : math.max(
           safeArea.contentBottom,
-          safeArea.pageNumberBottom +
-              ReaderSafeAreaMetrics.pageNumberReserve +
-              statusContentGap,
+          safeArea.pageNumberBottom + safeArea.footerHeight + statusContentGap,
         );
 
   double contentHeight(double viewportHeight) =>

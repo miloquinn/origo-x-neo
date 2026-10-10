@@ -471,6 +471,12 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
         horizontalMargin: _horizontalMargin,
         topMargin: _topMargin,
         bottomMargin: _bottomMargin,
+        headerOffset: _headerOffset,
+        footerOffset: _footerOffset,
+        showHeaderPositionControl: _topBarStyle == ReaderTopBarStyle.reader,
+        showFooterPositionControl:
+            _topBarStyle != ReaderTopBarStyle.hidden ||
+            _pageMode != BookSourcePageMode.verticalScroll,
         pullBookmarkEnabled: _pullBookmarkEnabled,
         tapPageAnimationEnabled: _tapPageAnimationEnabled,
         tabletTwoPageEnabled: _tabletTwoPageEnabled,
@@ -508,6 +514,10 @@ extension _BookSourceReaderAloudActions on _BookSourceReaderPageState {
             unawaited(_updateReadingSettings(topMargin: value)),
         onBottomMarginChanged: (value) =>
             unawaited(_updateReadingSettings(bottomMargin: value)),
+        onHeaderOffsetChanged: (value) =>
+            unawaited(_updateReadingSettings(headerOffset: value)),
+        onFooterOffsetChanged: (value) =>
+            unawaited(_updateReadingSettings(footerOffset: value)),
         onPullBookmarkChanged: (value) =>
             unawaited(_updateReadingSettings(pullBookmarkEnabled: value)),
         onTapPageAnimationChanged: (value) =>

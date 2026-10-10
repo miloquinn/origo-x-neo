@@ -2536,8 +2536,11 @@
     }
   },
   "readerHorizontalMarginLabel": "Horizontal margin",
-  "readerTopMarginLabel": "Top margin",
-  "readerBottomMarginLabel": "Bottom margin",
+  "readerTopMarginLabel": "Body top margin",
+  "readerBottomMarginLabel": "Body bottom margin",
+  "readerHeaderOffsetLabel": "Move header down",
+  "readerFooterOffsetLabel": "Move footer up",
+  "readerChromePositionHint": "Adjust header and footer positions. Space for body text is reserved automatically.",
   "readerTxtChapterTitlePageTitle": "Chapter title on its own page",
   "readerTxtChapterTitlePageHint": "When off, the chapter title appears above the body text",
   "readerVerticalMarginLabel": "Vertical margin",

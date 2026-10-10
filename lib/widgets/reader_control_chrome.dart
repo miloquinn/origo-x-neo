@@ -48,6 +48,8 @@ class ReaderChromeOverlay extends StatelessWidget {
     this.showViewportStatus = true,
     this.showViewportTitle = false,
     this.viewportTitleTop = 0,
+    this.viewportTitleHeight = 16,
+    this.viewportStatusHeight = 12,
     this.viewportTitleKey,
     this.readerStatus,
     this.viewportStatusAlignment = Alignment.centerRight,
@@ -88,6 +90,8 @@ class ReaderChromeOverlay extends StatelessWidget {
   final bool showViewportStatus;
   final bool showViewportTitle;
   final double viewportTitleTop;
+  final double viewportTitleHeight;
+  final double viewportStatusHeight;
   final Key? viewportTitleKey;
   final ReaderLeafStatusData? readerStatus;
   final AlignmentGeometry viewportStatusAlignment;
@@ -112,16 +116,20 @@ class ReaderChromeOverlay extends StatelessWidget {
             left: 30,
             right: 30,
             top: viewportTitleTop,
+            height: viewportTitleHeight,
             child: IgnorePointer(
-              child: AnimatedOpacity(
-                key: viewportTitleKey,
-                opacity: visible ? 0 : 1,
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                child: ReaderTopInformationBar(
-                  palette: palette,
-                  title: title,
-                  status: readerStatus,
+              child: ClipRect(
+                child: AnimatedOpacity(
+                  key: viewportTitleKey,
+                  opacity: visible ? 0 : 1,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  child: ReaderTopInformationBar(
+                    palette: palette,
+                    height: viewportTitleHeight,
+                    title: title,
+                    status: readerStatus,
+                  ),
                 ),
               ),
             ),
@@ -131,24 +139,27 @@ class ReaderChromeOverlay extends StatelessWidget {
             left: 0,
             right: 0,
             bottom: statusBottom,
+            height: viewportStatusHeight,
             child: IgnorePointer(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: viewportStatusHorizontalPadding,
-                ),
-                child: Align(
-                  alignment: viewportStatusAlignment,
-                  child: statusBuilder(
-                    context,
-                    textTheme.labelSmall?.copyWith(
-                      fontSize: 10,
-                      height: 1,
-                      color: palette.secondaryText.withValues(
-                        alpha: visible ? 0 : 0.58,
+              child: ClipRect(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: viewportStatusHorizontalPadding,
+                  ),
+                  child: Align(
+                    alignment: viewportStatusAlignment,
+                    child: statusBuilder(
+                      context,
+                      textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        height: 1,
+                        color: palette.secondaryText.withValues(
+                          alpha: visible ? 0 : 0.58,
+                        ),
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                      statusKey,
                     ),
-                    statusKey,
                   ),
                 ),
               ),

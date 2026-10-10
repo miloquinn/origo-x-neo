@@ -2605,10 +2605,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get readerHorizontalMarginLabel => 'Горизонтальные поля';
 
   @override
-  String get readerTopMarginLabel => 'Верхнее поле';
+  String get readerTopMarginLabel => 'Верхнее поле текста';
 
   @override
-  String get readerBottomMarginLabel => 'Нижнее поле';
+  String get readerBottomMarginLabel => 'Нижнее поле текста';
+
+  @override
+  String get readerHeaderOffsetLabel => 'Опустить верхний колонтитул';
+
+  @override
+  String get readerFooterOffsetLabel => 'Поднять нижний колонтитул';
+
+  @override
+  String get readerChromePositionHint =>
+      'Настройте положение колонтитулов. Место для текста резервируется автоматически.';
 
   @override
   String get readerTxtChapterTitlePageTitle =>

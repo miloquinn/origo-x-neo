@@ -1,18 +1,21 @@
 part of 'book_source_reader_page.dart';
 
 extension _BookSourceReaderShell on _BookSourceReaderPageState {
-  Size _stablePaginationViewport(Size viewport) =>
-      _desktopResizeController.resolve(
-        viewport,
-        enabled:
-            !kIsWeb &&
-            (defaultTargetPlatform == TargetPlatform.macOS ||
-                defaultTargetPlatform == TargetPlatform.windows ||
-                defaultTargetPlatform == TargetPlatform.linux),
-        onSettled: () {
-          if (mounted) _updateReaderState(() {});
-        },
-      );
+  Size _stablePaginationViewport(Size viewport) {
+    final resolved = _desktopResizeController.resolve(
+      viewport,
+      enabled:
+          !kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.windows ||
+              defaultTargetPlatform == TargetPlatform.linux),
+      onSettled: () {
+        if (mounted) _updateReaderState(() {});
+      },
+    );
+    _chromeViewportHeight = resolved.height;
+    return resolved;
+  }
 
   void _scheduleOpeningContentReady() {
     if (_openingContentReadyScheduled) return;
@@ -356,166 +359,183 @@ extension _BookSourceReaderShell on _BookSourceReaderPageState {
             resizeToAvoidBottomInset: false,
             body: ReaderThemeBackground(
               palette: _readerTheme,
-              child: ReaderPullBookmark(
-                enabled:
-                    _pullBookmarkEnabled &&
-                    _chapters.isNotEmpty &&
-                    !_tapZoneEditorVisible,
-                bookmarked: _currentPageIsBookmarked,
-                busy: _bookmarkBusy,
-                palette: _readerTheme,
-                addHint: context.l10n.readerPullBookmarkAddHint,
-                removeHint: context.l10n.readerPullBookmarkRemoveHint,
-                releaseHint: context.l10n.readerPullBookmarkReleaseHint,
-                onTriggered: () => unawaited(_toggleCurrentBookmark()),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Listener(
-                        onPointerDown: (event) {
-                          _paginationPointers.add(event.pointer);
-                          _handleAutoPointerDown(event);
-                        },
-                        onPointerUp: _releasePaginationPointer,
-                        onPointerCancel: _releasePaginationPointer,
-                        onPointerMove: _handleAutoPointerMove,
-                        onPointerSignal: (_) => _cancelAutoSweepOrPause(),
-                        child: ReaderDesktopInput(
-                          key: const ValueKey(
-                            'book-source-reader-desktop-input',
-                          ),
-                          enabled:
-                              _readerFontReady &&
-                              !_loadingCatalog &&
-                              (!_loadingContent || _content != null) &&
-                              _error == null &&
-                              _chapters.isNotEmpty &&
-                              _content != null &&
-                              !_annotationInteractionActive,
-                          turnPageOnPointerScroll:
-                              _pageMode != BookSourcePageMode.verticalScroll,
-                          onNext: _handleDesktopNextPage,
-                          onPrevious: _handleDesktopPreviousPage,
-                          child: ReaderTapObserver(
-                            key: const ValueKey(
-                              'book-source-reader-tap-observer',
-                            ),
-                            enabled:
-                                _readerFontReady &&
-                                !_loadingCatalog &&
-                                (!_loadingContent || _content != null) &&
-                                _error == null &&
-                                _chapters.isNotEmpty &&
-                                _content != null &&
-                                !_annotationInteractionActive,
-                            onTap: _handleReaderTap,
-                            child: Semantics(
-                              label: widget.book.title,
-                              child: KeyedSubtree(
-                                key: ValueKey(
-                                  'book-source-reader-$_bodyStateName',
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  _stablePaginationViewport(constraints.biggest);
+                  return ReaderPullBookmark(
+                    enabled:
+                        _pullBookmarkEnabled &&
+                        _chapters.isNotEmpty &&
+                        !_tapZoneEditorVisible,
+                    bookmarked: _currentPageIsBookmarked,
+                    busy: _bookmarkBusy,
+                    palette: _readerTheme,
+                    addHint: context.l10n.readerPullBookmarkAddHint,
+                    removeHint: context.l10n.readerPullBookmarkRemoveHint,
+                    releaseHint: context.l10n.readerPullBookmarkReleaseHint,
+                    onTriggered: () => unawaited(_toggleCurrentBookmark()),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Listener(
+                            onPointerDown: (event) {
+                              _paginationPointers.add(event.pointer);
+                              _handleAutoPointerDown(event);
+                            },
+                            onPointerUp: _releasePaginationPointer,
+                            onPointerCancel: _releasePaginationPointer,
+                            onPointerMove: _handleAutoPointerMove,
+                            onPointerSignal: (_) => _cancelAutoSweepOrPause(),
+                            child: ReaderDesktopInput(
+                              key: const ValueKey(
+                                'book-source-reader-desktop-input',
+                              ),
+                              enabled:
+                                  _readerFontReady &&
+                                  !_loadingCatalog &&
+                                  (!_loadingContent || _content != null) &&
+                                  _error == null &&
+                                  _chapters.isNotEmpty &&
+                                  _content != null &&
+                                  !_annotationInteractionActive,
+                              turnPageOnPointerScroll:
+                                  _pageMode !=
+                                  BookSourcePageMode.verticalScroll,
+                              onNext: _handleDesktopNextPage,
+                              onPrevious: _handleDesktopPreviousPage,
+                              child: ReaderTapObserver(
+                                key: const ValueKey(
+                                  'book-source-reader-tap-observer',
                                 ),
-                                child: _buildTransitionAwareBody(),
+                                enabled:
+                                    _readerFontReady &&
+                                    !_loadingCatalog &&
+                                    (!_loadingContent || _content != null) &&
+                                    _error == null &&
+                                    _chapters.isNotEmpty &&
+                                    _content != null &&
+                                    !_annotationInteractionActive,
+                                onTap: _handleReaderTap,
+                                child: Semantics(
+                                  label: widget.book.title,
+                                  child: KeyedSubtree(
+                                    key: ValueKey(
+                                      'book-source-reader-$_bodyStateName',
+                                    ),
+                                    child: _buildTransitionAwareBody(),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    if (_showLeafFloatingStatus &&
-                        _pageMode == BookSourcePageMode.verticalScroll)
-                      ReaderFloatingStatusOverlay(
-                        palette: _readerTheme,
-                        status: _leafStatusController.value,
-                        safeArea: _readerSafeArea,
-                        horizontalPadding: _floatingStatusHorizontalPadding,
-                      ),
-                    ReaderChromeOverlay(
-                      progressBar: _buildProgressPill(),
-                      palette: _readerTheme,
-                      visible: _controlsVisible,
-                      autoPageTurnController: _autoPageTurnController,
-                      onResumeAutoPageTurn: _resumeAutoPageTurn,
-                      title: _chapters.isEmpty
-                          ? widget.book.title
-                          : _chapters[_chapterIndex.clamp(
-                                  0,
-                                  _chapters.length - 1,
-                                )]
-                                .title,
-                      statusBottom: _readerSafeArea.pageNumberBottom,
-                      showViewportStatus:
-                          _pageMode == BookSourcePageMode.verticalScroll &&
-                          _topBarStyle != ReaderTopBarStyle.hidden,
-                      showViewportTitle:
-                          _pageMode == BookSourcePageMode.verticalScroll &&
-                          _topBarStyle == ReaderTopBarStyle.reader,
-                      viewportTitleTop: _readerSafeArea.readerTopBarTop,
-                      viewportTitleKey: const ValueKey(
-                        'book-source-viewport-title',
-                      ),
-                      readerStatus: _leafStatusController.value,
-                      viewportStatusHorizontalPadding: math.max(
-                        24,
-                        _horizontalMargin,
-                      ),
-                      statusBuilder: _buildReaderStatusText,
-                      onBack: () => unawaited(_requestExit()),
-                      onBookmark: _chapters.isEmpty
-                          ? null
-                          : () => unawaited(_toggleCurrentBookmark()),
-                      onTableOfContents: _chapters.isEmpty
-                          ? null
-                          : _showCatalog,
-                      onSearch: _chapters.isEmpty
-                          ? null
-                          : () => unawaited(_showFullTextSearch()),
-                      searchTooltip: '全文搜索',
-                      onReadAloud:
-                          _chapters.isEmpty || !isReaderAloudPlatformSupported
-                          ? null
-                          : () => unawaited(_handleReaderAloudButtonPressed()),
-                      readAloudTooltip: context.l10n.ttsReading,
-                      readAloudActive: context.select<ReaderAloudSession?, bool>(
-                        (session) =>
-                            session?.sourceId ==
-                                'source:${widget.source.id}:${widget.book.id}' &&
-                            (session?.isActive ?? false),
-                      ),
-                      onLocateReadAloud: () => unawaited(_locateReaderAloud()),
-                      onAskAi: _chapters.isEmpty
-                          ? null
-                          : () => unawaited(_showAskAiPanel()),
-                      askAiTooltip: context.l10n.readerAskAi,
-                      onBookSettings: () => unawaited(_showBookSettings()),
-                      onSettings: _showReadingSettings,
-                      backTooltip: MaterialLocalizations.of(
-                        context,
-                      ).backButtonTooltip,
-                      bookmarkTooltip: _currentPageIsBookmarked
-                          ? context.l10n.bookmarkRemoved
-                          : context.l10n.readerAddBookmark,
-                      tableOfContentsTooltip: context.l10n.readerToolbarTOC,
-                      settingsTooltip: context.l10n.readingSettings,
-                      bookmarked: _currentPageIsBookmarked,
-                      bookmarkBusy: _bookmarkBusy,
-                      topKey: const ValueKey('book-source-top-controls'),
-                      bottomKey: const ValueKey('book-source-bottom-controls'),
-                      statusKey: const ValueKey('book-source-reader-status'),
-                    ),
-                    if (_tapZoneEditorVisible)
-                      Positioned.fill(
-                        child: ReaderTapZoneEditorOverlay(
+                        if (_showLeafFloatingStatus &&
+                            _pageMode == BookSourcePageMode.verticalScroll)
+                          ReaderFloatingStatusOverlay(
+                            palette: _readerTheme,
+                            status: _leafStatusController.value,
+                            safeArea: _readerSafeArea,
+                            horizontalPadding: _floatingStatusHorizontalPadding,
+                          ),
+                        ReaderChromeOverlay(
+                          progressBar: _buildProgressPill(),
                           palette: _readerTheme,
-                          zones: _tapZones,
-                          onZonesChanged: _setTapZones,
-                          onClose: () => _updateReaderState(
-                            () => _tapZoneEditorVisible = false,
+                          visible: _controlsVisible,
+                          autoPageTurnController: _autoPageTurnController,
+                          onResumeAutoPageTurn: _resumeAutoPageTurn,
+                          title: _chapters.isEmpty
+                              ? widget.book.title
+                              : _chapters[_chapterIndex.clamp(
+                                      0,
+                                      _chapters.length - 1,
+                                    )]
+                                    .title,
+                          statusBottom: _readerSafeArea.pageNumberBottom,
+                          showViewportStatus:
+                              _pageMode == BookSourcePageMode.verticalScroll &&
+                              _topBarStyle != ReaderTopBarStyle.hidden,
+                          showViewportTitle:
+                              _pageMode == BookSourcePageMode.verticalScroll &&
+                              _topBarStyle == ReaderTopBarStyle.reader,
+                          viewportTitleTop: _readerSafeArea.readerTopBarTop,
+                          viewportTitleHeight: _readerSafeArea.headerHeight,
+                          viewportStatusHeight: _readerSafeArea.footerHeight,
+                          viewportTitleKey: const ValueKey(
+                            'book-source-viewport-title',
+                          ),
+                          readerStatus: _leafStatusController.value,
+                          viewportStatusHorizontalPadding: math.max(
+                            24,
+                            _horizontalMargin,
+                          ),
+                          statusBuilder: _buildReaderStatusText,
+                          onBack: () => unawaited(_requestExit()),
+                          onBookmark: _chapters.isEmpty
+                              ? null
+                              : () => unawaited(_toggleCurrentBookmark()),
+                          onTableOfContents: _chapters.isEmpty
+                              ? null
+                              : _showCatalog,
+                          onSearch: _chapters.isEmpty
+                              ? null
+                              : () => unawaited(_showFullTextSearch()),
+                          searchTooltip: '全文搜索',
+                          onReadAloud:
+                              _chapters.isEmpty ||
+                                  !isReaderAloudPlatformSupported
+                              ? null
+                              : () => unawaited(
+                                  _handleReaderAloudButtonPressed(),
+                                ),
+                          readAloudTooltip: context.l10n.ttsReading,
+                          readAloudActive: context
+                              .select<ReaderAloudSession?, bool>(
+                                (session) =>
+                                    session?.sourceId ==
+                                        'source:${widget.source.id}:${widget.book.id}' &&
+                                    (session?.isActive ?? false),
+                              ),
+                          onLocateReadAloud: () =>
+                              unawaited(_locateReaderAloud()),
+                          onAskAi: _chapters.isEmpty
+                              ? null
+                              : () => unawaited(_showAskAiPanel()),
+                          askAiTooltip: context.l10n.readerAskAi,
+                          onBookSettings: () => unawaited(_showBookSettings()),
+                          onSettings: _showReadingSettings,
+                          backTooltip: MaterialLocalizations.of(
+                            context,
+                          ).backButtonTooltip,
+                          bookmarkTooltip: _currentPageIsBookmarked
+                              ? context.l10n.bookmarkRemoved
+                              : context.l10n.readerAddBookmark,
+                          tableOfContentsTooltip: context.l10n.readerToolbarTOC,
+                          settingsTooltip: context.l10n.readingSettings,
+                          bookmarked: _currentPageIsBookmarked,
+                          bookmarkBusy: _bookmarkBusy,
+                          topKey: const ValueKey('book-source-top-controls'),
+                          bottomKey: const ValueKey(
+                            'book-source-bottom-controls',
+                          ),
+                          statusKey: const ValueKey(
+                            'book-source-reader-status',
                           ),
                         ),
-                      ),
-                  ],
-                ),
+                        if (_tapZoneEditorVisible)
+                          Positioned.fill(
+                            child: ReaderTapZoneEditorOverlay(
+                              palette: _readerTheme,
+                              zones: _tapZones,
+                              onZonesChanged: _setTapZones,
+                              onClose: () => _updateReaderState(
+                                () => _tapZoneEditorVisible = false,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),

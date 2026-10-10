@@ -137,15 +137,18 @@ class ReaderPaperPageLeaf extends StatelessWidget {
                 left: horizontalPadding,
                 right: horizontalPadding,
                 top: safeArea.readerTopBarTop,
-                height: ReaderSafeAreaMetrics.readerTopBarHeight,
-                child: ReaderTopInformationBar(
-                  key: ValueKey(
-                    'reader-leaf-top-information:${metadata.pageIdentity}',
+                height: safeArea.headerHeight,
+                child: ClipRect(
+                  child: ReaderTopInformationBar(
+                    key: ValueKey(
+                      'reader-leaf-top-information:${metadata.pageIdentity}',
+                    ),
+                    palette: palette,
+                    height: safeArea.headerHeight,
+                    title: metadata.chapterTitle,
+                    status: status,
+                    layout: topInformationLayout,
                   ),
-                  palette: palette,
-                  title: metadata.chapterTitle,
-                  status: status,
-                  layout: topInformationLayout,
                 ),
               ),
             if (showFloatingStatus)
@@ -168,18 +171,22 @@ class ReaderPaperPageLeaf extends StatelessWidget {
                 left: pageNumberHorizontalPadding,
                 right: pageNumberHorizontalPadding,
                 bottom: safeArea.pageNumberBottom,
-                height: ReaderSafeAreaMetrics.pageNumberReserve,
-                child: ReaderProgressFooter(
-                  key: ValueKey('reader-leaf-footer:${metadata.pageIdentity}'),
-                  chapterLabel: chapterProgressLabel,
-                  pageLabel: metadata.pageLabel,
-                  pageKey: ValueKey(
-                    'reader-leaf-page:${metadata.pageIdentity}',
+                height: safeArea.footerHeight,
+                child: ClipRect(
+                  child: ReaderProgressFooter(
+                    key: ValueKey(
+                      'reader-leaf-footer:${metadata.pageIdentity}',
+                    ),
+                    chapterLabel: chapterProgressLabel,
+                    pageLabel: metadata.pageLabel,
+                    pageKey: ValueKey(
+                      'reader-leaf-page:${metadata.pageIdentity}',
+                    ),
+                    pageOnLeft:
+                        pageNumberPlacement ==
+                        ReaderPageNumberPlacement.bottomLeft,
+                    style: footerStyle,
                   ),
-                  pageOnLeft:
-                      pageNumberPlacement ==
-                      ReaderPageNumberPlacement.bottomLeft,
-                  style: footerStyle,
                 ),
               ),
           ],

@@ -4605,14 +4605,32 @@ abstract class AppLocalizations {
   /// No description provided for @readerTopMarginLabel.
   ///
   /// In en, this message translates to:
-  /// **'Top margin'**
+  /// **'Body top margin'**
   String get readerTopMarginLabel;
 
   /// No description provided for @readerBottomMarginLabel.
   ///
   /// In en, this message translates to:
-  /// **'Bottom margin'**
+  /// **'Body bottom margin'**
   String get readerBottomMarginLabel;
+
+  /// No description provided for @readerHeaderOffsetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Move header down'**
+  String get readerHeaderOffsetLabel;
+
+  /// No description provided for @readerFooterOffsetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Move footer up'**
+  String get readerFooterOffsetLabel;
+
+  /// No description provided for @readerChromePositionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust header and footer positions. Space for body text is reserved automatically.'**
+  String get readerChromePositionHint;
 
   /// No description provided for @readerTxtChapterTitlePageTitle.
   ///

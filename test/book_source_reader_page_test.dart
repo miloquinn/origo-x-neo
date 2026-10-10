@@ -19,6 +19,7 @@ import 'package:xxread/core/reader/reader_page_turn_geometry.dart';
 import 'package:xxread/core/reader/reader_auto_page_turn_controller.dart';
 import 'package:xxread/core/reader/reader_margin_settings.dart';
 import 'package:xxread/core/reader/reader_settings.dart';
+import 'package:xxread/core/reader/reader_system_ui.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/reader/book_source/book_source_reader_page.dart';
@@ -1247,6 +1248,247 @@ void main() {
       ReaderMarginSettings.defaultBottom,
     );
   });
+
+  for (final mode in [
+    BookSourcePageMode.instantPage,
+    BookSourcePageMode.horizontalSlide,
+    BookSourcePageMode.coverSlide,
+    BookSourcePageMode.pageCurl,
+  ]) {
+    testWidgets(
+      'paged source preserves its body anchor while moving chrome in ${mode.name}',
+      (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(400, 800);
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey: mode.name,
+          ReaderSettingsStore.chapterTitlePageKey: false,
+          ReaderSettingsStore.topMarginKey: 17.0,
+          ReaderSettingsStore.bottomMarginKey: 13.0,
+          ReaderSettingsStore.headerOffsetKey: 4.0,
+          ReaderSettingsStore.footerOffsetKey: 6.0,
+        });
+        const chapterProgress = 0.4;
+        await _progressFixture.store.save(
+          sourceId: _testSource().id,
+          bookId: 'book-1',
+          progress: BookSourceReadingProgress(
+            chapterId: 'chapter-1',
+            chapterIndex: 0,
+            chapterProgress: chapterProgress,
+            updatedAt: DateTime.utc(2026, 10, 10),
+          ),
+        );
+        final client = _LongFakeBookSourceClient();
+        addTearDown(client.close);
+
+        await tester.pumpWidget(_slideTestReader(client));
+        await _pumpUntilFound(tester, find.byType(ReaderAnnotatedTextPage));
+        await tester.pumpAndSettle();
+        expect(
+          MediaQuery.sizeOf(tester.element(find.byType(BookSourceReaderPage))),
+          const Size(400, 800),
+        );
+        final canonicalOffset = _currentSourceAnchor(tester);
+        expect(canonicalOffset, greaterThan(0));
+
+        await _setSourceChromeOffsetsThroughControls(
+          tester,
+          initialHeader: 4,
+          initialFooter: 6,
+          header: 26,
+          footer: 34,
+        );
+        await _pumpUntilCurrentSourceOffsetPainted(
+          tester,
+          sourceOffset: canonicalOffset,
+        );
+
+        final settings = await const ReaderSettingsStore().load();
+        expect(settings.headerOffset, 26);
+        expect(settings.footerOffset, 34);
+        expect(settings.topMargin, 17);
+        expect(settings.bottomMargin, 13);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'source no-inset top bar style switches repaginate and retain the canonical anchor',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.padding = const FakeViewPadding();
+      tester.view.viewPadding = const FakeViewPadding();
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        tester.view.resetPadding();
+        tester.view.resetViewPadding();
+      });
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: BookSourcePageMode.instantPage.name,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+        ReaderSettingsStore.headerOffsetKey: 32.0,
+        ReaderSystemUiController.preferenceKey: ReaderTopBarStyle.reader.name,
+      });
+      const chapterProgress = 0.4;
+      await _progressFixture.store.save(
+        sourceId: _testSource().id,
+        bookId: 'book-1',
+        progress: BookSourceReadingProgress(
+          chapterId: 'chapter-1',
+          chapterIndex: 0,
+          chapterProgress: chapterProgress,
+          updatedAt: DateTime.utc(2026, 10, 10),
+        ),
+      );
+      final client = _LongFakeBookSourceClient();
+      addTearDown(client.close);
+
+      await tester.pumpWidget(_slideTestReader(client));
+      await _pumpUntilFound(tester, find.byType(ReaderAnnotatedTextPage));
+      await tester.pumpAndSettle();
+      expect(
+        MediaQuery.sizeOf(tester.element(find.byType(BookSourceReaderPage))),
+        const Size(400, 800),
+      );
+      final canonicalOffset = _currentSourceAnchor(tester);
+      expect(canonicalOffset, greaterThan(0));
+      final readerLeaf = _currentSourceLeaf(tester);
+      final readerFingerprint = readerLeaf.metadata.layoutFingerprint;
+      expect(readerLeaf.showTopInformation, isTrue);
+      expect(readerLeaf.safeArea.viewPadding, EdgeInsets.zero);
+
+      await _setSourceTopBarStyleThroughControls(
+        tester,
+        ReaderTopBarStyle.floating,
+      );
+      await _pumpUntilCurrentSourceOffsetPainted(
+        tester,
+        sourceOffset: canonicalOffset,
+      );
+      final floatingLeaf = _currentSourceLeaf(tester);
+      expect(floatingLeaf.metadata.layoutFingerprint, isNot(readerFingerprint));
+      expect(floatingLeaf.showTopInformation, isFalse);
+      expect(floatingLeaf.showFloatingStatus, isTrue);
+
+      // Reflow can move the page boundary. The next change restores the
+      // currently visible page's source anchor, as normal reading does.
+      final floatingAnchor = _currentSourceAnchor(tester);
+      await _setSourceTopBarStyleThroughControls(
+        tester,
+        ReaderTopBarStyle.reader,
+      );
+      await _pumpUntilCurrentSourceOffsetPainted(
+        tester,
+        sourceOffset: floatingAnchor,
+      );
+      final restoredReaderLeaf = _currentSourceLeaf(tester);
+      expect(
+        restoredReaderLeaf.metadata.layoutFingerprint,
+        isNot(floatingLeaf.metadata.layoutFingerprint),
+      );
+      expect(restoredReaderLeaf.showTopInformation, isTrue);
+      expect(
+        (await SharedPreferences.getInstance()).getString(
+          ReaderSystemUiController.preferenceKey,
+        ),
+        ReaderTopBarStyle.reader.name,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'vertical source moves chrome outside the reading window and retains its anchor',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(400, 800);
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      SharedPreferences.setMockInitialValues({
+        ReaderSettingsStore.pageModeKey: BookSourcePageMode.verticalScroll.name,
+        ReaderSettingsStore.scrollByChapterKey: false,
+        ReaderSettingsStore.chapterTitlePageKey: false,
+        ReaderSettingsStore.topMarginKey: 14.0,
+        ReaderSettingsStore.bottomMarginKey: 10.0,
+        ReaderSettingsStore.headerOffsetKey: 2.0,
+        ReaderSettingsStore.footerOffsetKey: 3.0,
+      });
+      await _progressFixture.store.save(
+        sourceId: _testSource().id,
+        bookId: 'book-1',
+        progress: BookSourceReadingProgress(
+          chapterId: 'chapter-1',
+          chapterIndex: 0,
+          chapterProgress: 0.45,
+          updatedAt: DateTime.utc(2026, 10, 10),
+        ),
+      );
+      final client = _LongFakeBookSourceClient();
+      addTearDown(client.close);
+
+      await tester.pumpWidget(_slideTestReader(client));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const ValueKey('book-source-vertical-reading-window')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        MediaQuery.sizeOf(tester.element(find.byType(BookSourceReaderPage))),
+        const Size(400, 800),
+      );
+      final anchor = _sourceCenterAnchor(tester);
+      final initialTitleRect = tester.getRect(
+        find.byKey(const ValueKey('book-source-viewport-title')),
+      );
+      final initialFooterRect = tester.getRect(
+        find.byKey(const ValueKey('book-source-reader-status')),
+      );
+
+      await _setSourceChromeOffsetsThroughControls(
+        tester,
+        initialHeader: 2,
+        initialFooter: 3,
+        header: 24,
+        footer: 32,
+      );
+      await _pumpUntilSourceOffsetPainted(
+        tester,
+        chapterId: anchor.$1,
+        sourceOffset: anchor.$2,
+      );
+      await tester.pumpAndSettle();
+
+      final restoredAnchor = _sourceCenterAnchor(tester);
+      expect(restoredAnchor.$1, anchor.$1);
+      expect(restoredAnchor.$2, closeTo(anchor.$2, 40));
+      expect(
+        _sourceAnchorY(tester, anchor.$1, anchor.$2),
+        closeTo(anchor.$3, 35),
+      );
+      final listRect = tester.getRect(find.byType(ScrollablePositionedList));
+      final titleRect = tester.getRect(
+        find.byKey(const ValueKey('book-source-viewport-title')),
+      );
+      final footerRect = tester.getRect(
+        find.byKey(const ValueKey('book-source-reader-status')),
+      );
+      expect(titleRect.top, greaterThan(initialTitleRect.top));
+      expect(footerRect.bottom, lessThan(initialFooterRect.bottom));
+      expect(titleRect.bottom, lessThanOrEqualTo(listRect.top));
+      expect(footerRect.top, greaterThanOrEqualTo(listRect.bottom));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'automatic page turning advances source text and pauses on touch',
@@ -3509,13 +3751,165 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
 
 Future<void> _showReaderControls(WidgetTester tester) async {
   final controls = find.byKey(const ValueKey('book-source-bottom-controls'));
+  final surface = find.byKey(const ValueKey('book-source-reader-tap-observer'));
   for (var attempt = 0; attempt < 3; attempt++) {
-    await tester.tapAt(tester.getCenter(find.byType(BookSourceReaderPage)));
+    if (tester.widget<AnimatedPositioned>(controls).bottom == 16) return;
+    await tester.tapAt(tester.getCenter(surface));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     if (tester.widget<AnimatedPositioned>(controls).bottom == 16) return;
   }
   expect(tester.widget<AnimatedPositioned>(controls).bottom, 16);
+}
+
+Future<void> _setSourceChromeOffsetsThroughControls(
+  WidgetTester tester, {
+  required double initialHeader,
+  required double initialFooter,
+  required double header,
+  required double footer,
+}) async {
+  await _showReaderControls(tester);
+  await tester.tap(find.byIcon(Icons.tune_rounded));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Layout'));
+  await tester.pumpAndSettle();
+
+  final headerSlider = find.descendant(
+    of: find.byKey(const ValueKey('reader-header-offset-slider')),
+    matching: find.byType(Slider),
+  );
+  final footerSlider = find.descendant(
+    of: find.byKey(const ValueKey('reader-footer-offset-slider')),
+    matching: find.byType(Slider),
+  );
+  await tester.ensureVisible(headerSlider);
+  await tester.pumpAndSettle();
+  expect(tester.widget<Slider>(headerSlider).value, initialHeader);
+  expect(tester.widget<Slider>(footerSlider).value, initialFooter);
+
+  tester.widget<Slider>(headerSlider).onChanged!(header);
+  await tester.pump();
+  tester.widget<Slider>(headerSlider).onChangeEnd!(header);
+  await tester.pumpAndSettle();
+  var settings = await const ReaderSettingsStore().load();
+  expect(settings.headerOffset, header);
+  expect(settings.footerOffset, initialFooter);
+
+  await tester.ensureVisible(footerSlider);
+  await tester.pumpAndSettle();
+  tester.widget<Slider>(footerSlider).onChanged!(footer);
+  await tester.pump();
+  tester.widget<Slider>(footerSlider).onChangeEnd!(footer);
+  await tester.pumpAndSettle();
+  settings = await const ReaderSettingsStore().load();
+  expect(settings.headerOffset, header);
+  expect(settings.footerOffset, footer);
+
+  Navigator.of(tester.element(footerSlider)).pop();
+  await tester.pumpAndSettle();
+}
+
+ReaderPaperPageLeaf _currentSourceLeaf(WidgetTester tester) {
+  final curl = find.byType(ReaderShaderPageCurl);
+  if (curl.evaluate().isNotEmpty) {
+    return tester.widget<ReaderShaderPageCurl>(curl.first).currentPage.child
+        as ReaderPaperPageLeaf;
+  }
+  final cover = find.byType(ReaderCoverPageTurn);
+  if (cover.evaluate().isNotEmpty) {
+    return tester.widget<ReaderCoverPageTurn>(cover.first).currentPage.child
+        as ReaderPaperPageLeaf;
+  }
+  final center = tester.getCenter(
+    find.byKey(const ValueKey('book-source-reader-tap-observer')),
+  );
+  return tester
+      .widgetList<ReaderPaperPageLeaf>(find.byType(ReaderPaperPageLeaf))
+      .firstWhere((leaf) {
+        if (!leaf.showPageNumber) return false;
+        return tester.getRect(find.byWidget(leaf)).contains(center);
+      });
+}
+
+ReaderAnnotatedTextPage _currentSourceBodyPage(WidgetTester tester) {
+  final leaf = _currentSourceLeaf(tester);
+  return tester
+      .widgetList<ReaderAnnotatedTextPage>(
+        find.descendant(
+          of: find.byWidget(leaf),
+          matching: find.byType(ReaderAnnotatedTextPage),
+        ),
+      )
+      .firstWhere((page) => !page.page.isChapterTitle);
+}
+
+int _currentSourceAnchor(WidgetTester tester) =>
+    _currentSourceBodyPage(tester).page.startOffset;
+
+Future<void> _pumpUntilCurrentSourceOffsetPainted(
+  WidgetTester tester, {
+  required int sourceOffset,
+}) async {
+  for (var attempt = 0; attempt < 60; attempt++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    try {
+      final page = _currentSourceBodyPage(tester);
+      if (page.page.startOffset <= sourceOffset &&
+          page.page.endOffset > sourceOffset) {
+        return;
+      }
+    } on StateError {
+      // The current leaf can be between pagination generations for one frame.
+    }
+  }
+  final current = _currentSourceBodyPage(tester).page;
+  fail(
+    'Current source page ${current.startOffset}-${current.endOffset} '
+    'did not retain offset $sourceOffset.',
+  );
+}
+
+Future<void> _setSourceTopBarStyleThroughControls(
+  WidgetTester tester,
+  ReaderTopBarStyle style,
+) async {
+  await _showReaderControls(tester);
+  await tester.tap(find.byIcon(Icons.tune_rounded));
+  await tester.pumpAndSettle();
+  final styleTile = find.byKey(const ValueKey('reader-top-bar-style-tile'));
+  await tester.ensureVisible(styleTile);
+  await tester.pumpAndSettle();
+  await tester.tap(styleTile);
+  await tester.pumpAndSettle();
+  final option = find.byKey(ValueKey('reader-top-bar-style-${style.name}'));
+  await tester.ensureVisible(option);
+  await tester.pumpAndSettle();
+  await tester.tap(option);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpUntilSourceOffsetPainted(
+  WidgetTester tester, {
+  required String chapterId,
+  required int sourceOffset,
+}) async {
+  for (var attempt = 0; attempt < 60; attempt++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    final containsOffset = tester
+        .widgetList<ReaderAnnotatedTextPage>(
+          find.byType(ReaderAnnotatedTextPage),
+        )
+        .any(
+          (page) =>
+              page.chapterId == chapterId &&
+              !page.page.isChapterTitle &&
+              page.page.startOffset <= sourceOffset &&
+              page.page.endOffset > sourceOffset,
+        );
+    if (containsOffset) return;
+  }
+  fail('Source offset $chapterId:$sourceOffset was not painted.');
 }
 
 Finder _sourceBodyText(ReaderAnnotatedTextPage page) => find.descendant(
@@ -4059,14 +4453,16 @@ class _LongFakeBookSourceClient extends _FakeBookSourceClient {
       bookId: bookId,
       chapterId: chapterId,
       title: chapterId == 'chapter-1' ? 'Tablet chapter' : 'Next chapter',
-      content: List.generate(
-        360,
-        (index) => 'Paragraph $index keeps both tablet leaves populated.',
-      ).join('\n'),
+      content: _longSourceChapterText(),
       contentType: 'text/plain',
     );
   }
 }
+
+String _longSourceChapterText() => List.generate(
+  360,
+  (index) => 'Paragraph $index keeps both tablet leaves populated.',
+).join('\n');
 
 /// UI behavior tests own their storage; SQLite persistence has separate coverage.
 class _MemoryPaginationCacheDao extends PaginationCacheDao {

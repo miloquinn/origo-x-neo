@@ -2500,10 +2500,20 @@ class AppLocalizationsJa extends AppLocalizations {
   String get readerHorizontalMarginLabel => '左右余白';
 
   @override
-  String get readerTopMarginLabel => '上余白';
+  String get readerTopMarginLabel => '本文の上余白';
 
   @override
-  String get readerBottomMarginLabel => '下余白';
+  String get readerBottomMarginLabel => '本文の下余白';
+
+  @override
+  String get readerHeaderOffsetLabel => 'ヘッダーを下に移動';
+
+  @override
+  String get readerFooterOffsetLabel => 'フッターを上に移動';
+
+  @override
+  String get readerChromePositionHint =>
+      'ヘッダーとフッターの位置を調整します。本文のスペースは自動的に確保されます。';
 
   @override
   String get readerTxtChapterTitlePageTitle => '章タイトルを独立ページに表示';

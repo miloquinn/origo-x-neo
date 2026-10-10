@@ -16,7 +16,7 @@ void main() {
       ),
     );
 
-    expect(metrics.titleTop, 31);
+    expect(metrics.titleTop, 28);
     expect(metrics.contentTop, 56);
     expect(metrics.contentBottom, 26);
     expect(metrics.contentHeight(800), 718);

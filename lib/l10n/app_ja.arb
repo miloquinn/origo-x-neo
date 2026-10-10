@@ -1358,8 +1358,11 @@
     }
   },
   "readerHorizontalMarginLabel": "左右余白",
-  "readerTopMarginLabel": "上余白",
-  "readerBottomMarginLabel": "下余白",
+  "readerTopMarginLabel": "本文の上余白",
+  "readerBottomMarginLabel": "本文の下余白",
+  "readerHeaderOffsetLabel": "ヘッダーを下に移動",
+  "readerFooterOffsetLabel": "フッターを上に移動",
+  "readerChromePositionHint": "ヘッダーとフッターの位置を調整します。本文のスペースは自動的に確保されます。",
   "readerTxtChapterTitlePageTitle": "章タイトルを独立ページに表示",
   "readerTxtChapterTitlePageHint": "オフにすると、章タイトルは本文の先頭に表示されます",
   "readerVerticalMarginLabel": "上下余白",

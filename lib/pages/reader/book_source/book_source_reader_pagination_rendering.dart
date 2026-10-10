@@ -161,6 +161,8 @@ extension _BookSourceReaderPaginationRendering on _BookSourceReaderPageState {
       _horizontalMargin,
       _topMargin,
       _bottomMargin,
+      _headerOffset,
+      _footerOffset,
       _topBarStyle,
       _pageMode,
       _firstLineIndent,

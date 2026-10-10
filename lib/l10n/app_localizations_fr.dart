@@ -2622,10 +2622,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get readerHorizontalMarginLabel => 'Marge horizontale';
 
   @override
-  String get readerTopMarginLabel => 'Marge supérieure';
+  String get readerTopMarginLabel => 'Marge supérieure du texte';
 
   @override
-  String get readerBottomMarginLabel => 'Marge inférieure';
+  String get readerBottomMarginLabel => 'Marge inférieure du texte';
+
+  @override
+  String get readerHeaderOffsetLabel => 'Abaisser l’en-tête';
+
+  @override
+  String get readerFooterOffsetLabel => 'Remonter le pied de page';
+
+  @override
+  String get readerChromePositionHint =>
+      'Ajustez la position de l’en-tête et du pied de page. L’espace du texte est réservé automatiquement.';
 
   @override
   String get readerTxtChapterTitlePageTitle =>

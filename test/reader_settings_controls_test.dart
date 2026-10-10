@@ -24,6 +24,8 @@ void main() {
       int? changedTextBrightness;
       bool? dimTextInDarkMode;
       double? changedLetterSpacing;
+      double? changedHeaderOffset;
+      double? changedFooterOffset;
       ReaderTextAlignment? changedAlignment;
       bool? pullBookmark;
       bool? tapAnimation;
@@ -120,6 +122,8 @@ void main() {
             horizontalMargin: 18,
             topMargin: 4,
             bottomMargin: 0,
+            headerOffset: 20,
+            footerOffset: 30,
             pullBookmarkEnabled: false,
             tapPageAnimationEnabled: true,
             tabletTwoPageEnabled: true,
@@ -144,6 +148,8 @@ void main() {
             onHorizontalMarginChanged: (_) {},
             onTopMarginChanged: (_) {},
             onBottomMarginChanged: (_) {},
+            onHeaderOffsetChanged: (value) => changedHeaderOffset = value,
+            onFooterOffsetChanged: (value) => changedFooterOffset = value,
             onPullBookmarkChanged: (value) => pullBookmark = value,
             onTapPageAnimationChanged: (value) => tapAnimation = value,
             onTabletTwoPageChanged: (value) => tabletTwoPage = value,
@@ -342,6 +348,39 @@ void main() {
       titlePageSwitch.onChanged!(false);
       expect(chapterTitlePage, isFalse);
 
+      final headerFinder = find.descendant(
+        of: find.byKey(const ValueKey('reader-header-offset-slider')),
+        matching: find.byType(Slider),
+      );
+      final footerFinder = find.descendant(
+        of: find.byKey(const ValueKey('reader-footer-offset-slider')),
+        matching: find.byType(Slider),
+      );
+      expect(tester.widget<Slider>(headerFinder).value, 20);
+      expect(tester.widget<Slider>(footerFinder).value, 30);
+      expect(tester.widget<Slider>(headerFinder).max, 80);
+      tester.widget<Slider>(headerFinder).onChanged!(80);
+      await tester.pump();
+      expect(changedHeaderOffset, isNull);
+      tester.widget<Slider>(headerFinder).onChangeEnd!(80);
+      expect(changedHeaderOffset, 80);
+      expect(changedFooterOffset, isNull);
+      tester.widget<Slider>(footerFinder).onChanged!(60);
+      await tester.pump();
+      tester.widget<Slider>(footerFinder).onChangeEnd!(60);
+      expect(changedFooterOffset, 60);
+      for (final entry in [
+        ('reader-top-margin-slider', 4.0),
+        ('reader-bottom-margin-slider', 0.0),
+      ]) {
+        final finder = find.descendant(
+          of: find.byKey(ValueKey(entry.$1)),
+          matching: find.byType(Slider),
+        );
+        expect(tester.widget<Slider>(finder).value, entry.$2);
+      }
+      await tester.ensureVisible(find.text('Theme tab'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Theme tab'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byType(ReaderThemeStrip));

@@ -2616,10 +2616,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get readerHorizontalMarginLabel => 'Horizontaler Rand';
 
   @override
-  String get readerTopMarginLabel => 'Oberer Rand';
+  String get readerTopMarginLabel => 'Oberer Textrand';
 
   @override
-  String get readerBottomMarginLabel => 'Unterer Rand';
+  String get readerBottomMarginLabel => 'Unterer Textrand';
+
+  @override
+  String get readerHeaderOffsetLabel => 'Kopfzeile nach unten';
+
+  @override
+  String get readerFooterOffsetLabel => 'Fußzeile nach oben';
+
+  @override
+  String get readerChromePositionHint =>
+      'Kopf- und Fußzeile verschieben. Der Platz für den Text wird automatisch freigehalten.';
 
   @override
   String get readerTxtChapterTitlePageTitle => 'Kapiteltitel auf eigener Seite';

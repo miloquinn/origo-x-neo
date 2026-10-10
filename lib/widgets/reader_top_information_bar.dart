@@ -13,12 +13,14 @@ class ReaderTopInformationBar extends StatelessWidget {
     required this.title,
     required this.status,
     this.layout = ReaderTopInformationLayout.full,
+    this.height = ReaderSafeAreaMetrics.readerTopBarHeight,
   });
 
   final ReaderThemePalette palette;
   final String title;
   final ReaderLeafStatusData? status;
   final ReaderTopInformationLayout layout;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +81,7 @@ class ReaderTopInformationBar extends StatelessWidget {
       container: true,
       label: semanticsParts.where((part) => part.isNotEmpty).join(', '),
       child: SizedBox(
-        height: 16,
+        height: height,
         child: switch (layout) {
           ReaderTopInformationLayout.full => Stack(
             fit: StackFit.expand,

@@ -121,6 +121,7 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                               if (mounted) _setReaderState(() {});
                             },
                           );
+                      _chromeViewportHeight = paginationViewport.height;
                       final usesTwoPageLayout = _usesTwoPageLayout(
                         paginationViewport,
                       );
@@ -498,6 +499,9 @@ extension _NativeReaderScaffold on _NativeReaderPageState {
                                   _pageMode == NativePageMode.verticalScroll &&
                                   _topBarStyle == ReaderTopBarStyle.reader,
                               viewportTitleTop: _readerSafeArea.readerTopBarTop,
+                              viewportTitleHeight: _readerSafeArea.headerHeight,
+                              viewportStatusHeight:
+                                  _readerSafeArea.footerHeight,
                               viewportTitleKey: const ValueKey(
                                 'native-reader-viewport-title',
                               ),

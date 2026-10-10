@@ -621,6 +621,12 @@ extension _NativeReaderControls on _NativeReaderPageState {
         horizontalMargin: _horizontalMargin,
         topMargin: _topMargin,
         bottomMargin: _bottomMargin,
+        headerOffset: _headerOffset,
+        footerOffset: _footerOffset,
+        showHeaderPositionControl: _topBarStyle == ReaderTopBarStyle.reader,
+        showFooterPositionControl:
+            _topBarStyle != ReaderTopBarStyle.hidden ||
+            _pageMode != NativePageMode.verticalScroll,
         pullBookmarkEnabled: _pullBookmarkEnabled,
         tapPageAnimationEnabled: _tapPageAnimationEnabled,
         tabletTwoPageEnabled: _tabletTwoPageEnabled,
@@ -654,6 +660,10 @@ extension _NativeReaderControls on _NativeReaderPageState {
             unawaited(_updateLayout(topMargin: value)),
         onBottomMarginChanged: (value) =>
             unawaited(_updateLayout(bottomMargin: value)),
+        onHeaderOffsetChanged: (value) =>
+            unawaited(_updateLayout(headerOffset: value)),
+        onFooterOffsetChanged: (value) =>
+            unawaited(_updateLayout(footerOffset: value)),
         onPullBookmarkChanged: (value) =>
             unawaited(_setInteractionPreferences(pullBookmark: value)),
         onTapPageAnimationChanged: (value) =>

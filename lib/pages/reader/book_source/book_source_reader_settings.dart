@@ -31,6 +31,8 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
     double? horizontalMargin,
     double? topMargin,
     double? bottomMargin,
+    double? headerOffset,
+    double? footerOffset,
     String? themeId,
     BookSourcePageMode? pageMode,
     bool? pullBookmarkEnabled,
@@ -51,6 +53,8 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
         horizontalMargin != null ||
         topMargin != null ||
         bottomMargin != null ||
+        headerOffset != null ||
+        footerOffset != null ||
         (tabletTwoPageEnabled != null &&
             tabletTwoPageEnabled != _tabletTwoPageEnabled) ||
         (pageMode != null && pageMode != _pageMode);
@@ -107,6 +111,14 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
       _bottomMargin = (bottomMargin ?? _bottomMargin).clamp(
         ReaderMarginSettings.min,
         ReaderMarginSettings.max,
+      );
+      _headerOffset = (headerOffset ?? _headerOffset).clamp(
+        ReaderSettings.minChromeOffset,
+        ReaderSettings.maxChromeOffset,
+      );
+      _footerOffset = (footerOffset ?? _footerOffset).clamp(
+        ReaderSettings.minChromeOffset,
+        ReaderSettings.maxChromeOffset,
       );
       _readerThemeId = ReaderThemes.byId(themeId ?? _readerThemeId).id;
       if (pageMode != null && pageMode != _pageMode) {
@@ -172,6 +184,8 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
     // 顶部预留高度随样式变化；完全沉浸在上下滚动时取消整个预留区域。
     final repaginate =
         _topChromeReserveFor(_topBarStyle) != _topChromeReserveFor(style) ||
+        (_topBarStyle == ReaderTopBarStyle.reader) !=
+            (style == ReaderTopBarStyle.reader) ||
         (_topBarStyle == ReaderTopBarStyle.hidden) !=
             (style == ReaderTopBarStyle.hidden);
     if (repaginate) {

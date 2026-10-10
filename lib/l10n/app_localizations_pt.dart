@@ -2612,10 +2612,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get readerHorizontalMarginLabel => 'Margem horizontal';
 
   @override
-  String get readerTopMarginLabel => 'Margem superior';
+  String get readerTopMarginLabel => 'Margem superior do texto';
 
   @override
-  String get readerBottomMarginLabel => 'Margem inferior';
+  String get readerBottomMarginLabel => 'Margem inferior do texto';
+
+  @override
+  String get readerHeaderOffsetLabel => 'Mover cabeçalho para baixo';
+
+  @override
+  String get readerFooterOffsetLabel => 'Mover rodapé para cima';
+
+  @override
+  String get readerChromePositionHint =>
+      'Ajuste a posição do cabeçalho e do rodapé. O espaço do texto é reservado automaticamente.';
 
   @override
   String get readerTxtChapterTitlePageTitle =>

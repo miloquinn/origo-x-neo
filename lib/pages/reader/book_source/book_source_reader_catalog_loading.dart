@@ -79,6 +79,8 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
         _horizontalMargin = settings.horizontalMargin;
         _topMargin = settings.topMargin;
         _bottomMargin = settings.bottomMargin;
+        _headerOffset = settings.headerOffset;
+        _footerOffset = settings.footerOffset;
         _lineHeight = settings.lineHeight;
         _letterSpacing = settings.letterSpacing;
         _textAlignment = settings.textAlignment;

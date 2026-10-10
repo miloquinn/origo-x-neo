@@ -2585,10 +2585,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerHorizontalMarginLabel => 'Horizontal margin';
 
   @override
-  String get readerTopMarginLabel => 'Top margin';
+  String get readerTopMarginLabel => 'Body top margin';
 
   @override
-  String get readerBottomMarginLabel => 'Bottom margin';
+  String get readerBottomMarginLabel => 'Body bottom margin';
+
+  @override
+  String get readerHeaderOffsetLabel => 'Move header down';
+
+  @override
+  String get readerFooterOffsetLabel => 'Move footer up';
+
+  @override
+  String get readerChromePositionHint =>
+      'Adjust header and footer positions. Space for body text is reserved automatically.';
 
   @override
   String get readerTxtChapterTitlePageTitle => 'Chapter title on its own page';

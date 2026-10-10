@@ -37,6 +37,8 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
         _horizontalMargin = settings.horizontalMargin;
         _topMargin = settings.topMargin;
         _bottomMargin = settings.bottomMargin;
+        _headerOffset = settings.headerOffset;
+        _footerOffset = settings.footerOffset;
         _firstLineIndent = settings.firstLineIndent;
         _paragraphSpacing = settings.paragraphSpacing;
         _scrollByChapter = scrollByChapter;
@@ -117,6 +119,8 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
     horizontalMargin: _horizontalMargin,
     topMargin: _topMargin,
     bottomMargin: _bottomMargin,
+    headerOffset: _headerOffset,
+    footerOffset: _footerOffset,
     themeId: _readerThemeId,
     pageMode: _pageMode,
     firstLineIndent: _firstLineIndent,
@@ -270,12 +274,34 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
     },
   );
 
-  ReaderSafeAreaMetrics get _readerSafeArea => ReaderSafeAreaMetrics(
-    viewPadding: MediaQuery.viewPaddingOf(context),
-    topMargin: _topMargin,
-    bottomMargin: _bottomMargin,
-    topChromeReserve: _topChromeReserveFor(_topBarStyle),
-  );
+  ReaderSafeAreaMetrics get _readerSafeArea {
+    final informationHeight = readerInformationTextHeight(
+      MediaQuery.textScalerOf(context),
+      Localizations.maybeLocaleOf(context),
+      style: Theme.of(context).textTheme.labelSmall,
+    );
+    return ReaderSafeAreaMetrics(
+      viewPadding: MediaQuery.viewPaddingOf(context),
+      topMargin: _topMargin,
+      bottomMargin: _bottomMargin,
+      headerOffset: _headerOffset,
+      footerOffset: _footerOffset,
+      topChromeReserve: _topChromeReserveFor(_topBarStyle),
+      hasReaderHeader: _topBarStyle == ReaderTopBarStyle.reader,
+      headerHeight: math.max(
+        ReaderSafeAreaMetrics.readerTopBarHeight,
+        informationHeight,
+      ),
+      footerHeight: math.max(
+        ReaderSafeAreaMetrics.pageNumberReserve,
+        informationHeight,
+      ),
+      headerContentGap: _pageMode == NativePageMode.verticalScroll ? 12 : 4,
+      footerContentGap: _pageMode == NativePageMode.verticalScroll ? 6 : 4,
+      viewportHeight: _chromeViewportHeight,
+      minimumContentHeight: math.max(120, _fontSize * _lineHeight),
+    );
+  }
 
   /// 阅读信息栏占一条固定信息条；灵动信息栏借用状态栏区域，仅在设备
   /// 没有状态栏 inset（隐藏后归零）时补足最小高度，避免正文顶进时间与
@@ -302,6 +328,8 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
         ? _leafStatusController.value.revision
         : 0,
     _annotationRevision,
+    _headerOffset,
+    _footerOffset,
     _chapterProgressStyle,
     _chapterProgressStyle == ReaderChapterProgressStyle.hidden
         ? 0
@@ -337,6 +365,8 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
     double? horizontalMargin,
     double? topMargin,
     double? bottomMargin,
+    double? headerOffset,
+    double? footerOffset,
   }) async {
     _setReaderState(() {
       _fontSize = (fontSize ?? _fontSize).clamp(
@@ -378,6 +408,14 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
         ReaderMarginSettings.min,
         ReaderMarginSettings.max,
       );
+      _headerOffset = (headerOffset ?? _headerOffset).clamp(
+        ReaderSettings.minChromeOffset,
+        ReaderSettings.maxChromeOffset,
+      );
+      _footerOffset = (footerOffset ?? _footerOffset).clamp(
+        ReaderSettings.minChromeOffset,
+        ReaderSettings.maxChromeOffset,
+      );
       _pageIndex = 0;
       _requestPositionRestore();
     });
@@ -401,7 +439,9 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
       '${_letterSpacing.toStringAsFixed(1)}:${_textAlignment.name}:'
       '${_horizontalMargin.toStringAsFixed(1)}:'
       '${_topMargin.toStringAsFixed(1)}:'
-      '${_bottomMargin.toStringAsFixed(1)}:${_pageMode.name}:'
+      '${_bottomMargin.toStringAsFixed(1)}:'
+      '${_headerOffset.toStringAsFixed(1)}:'
+      '${_footerOffset.toStringAsFixed(1)}:${_pageMode.name}:'
       '$_firstLineIndent:$_paragraphSpacing:'
       '${_readerFontProfile.cacheSignature}:'
       '$_chapterTitlePageEnabled';
@@ -438,6 +478,8 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
     // 顶部预留高度随样式变化；完全沉浸在上下滚动时取消整个预留区域。
     final repaginate =
         _topChromeReserveFor(_topBarStyle) != _topChromeReserveFor(style) ||
+        (_topBarStyle == ReaderTopBarStyle.reader) !=
+            (style == ReaderTopBarStyle.reader) ||
         (_topBarStyle == ReaderTopBarStyle.hidden) !=
             (style == ReaderTopBarStyle.hidden);
     _setReaderState(() {

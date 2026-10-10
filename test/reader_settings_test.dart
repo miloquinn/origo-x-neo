@@ -58,7 +58,62 @@ void main() {
     expect(settings.lineHeight, ReaderSettings.defaultLineHeight);
     expect(settings.letterSpacing, ReaderSettings.defaultLetterSpacing);
     expect(settings.textAlignment, ReaderTextAlignment.natural);
+    expect(settings.headerOffset, ReaderSettings.defaultHeaderOffset);
+    expect(settings.footerOffset, ReaderSettings.defaultFooterOffset);
     expect(settings.chapterTitlePageEnabled, isTrue);
+  });
+
+  test('missing chrome offsets preserve existing reader margins', () async {
+    SharedPreferences.setMockInitialValues({
+      ReaderSettingsStore.topMarginKey: 23.0,
+      ReaderSettingsStore.bottomMarginKey: 31.0,
+    });
+
+    final settings = await const ReaderSettingsStore().load();
+
+    expect(settings.topMargin, 23);
+    expect(settings.bottomMargin, 31);
+    expect(settings.headerOffset, ReaderSettings.defaultHeaderOffset);
+    expect(settings.footerOffset, ReaderSettings.defaultFooterOffset);
+  });
+
+  test('copies and persists header and footer offsets independently', () async {
+    SharedPreferences.setMockInitialValues({});
+    const store = ReaderSettingsStore();
+    final defaults = await store.load();
+
+    final headerChanged = defaults.copyWith(headerOffset: 18);
+    expect(headerChanged.headerOffset, 18);
+    expect(headerChanged.footerOffset, ReaderSettings.defaultFooterOffset);
+
+    final bothChanged = headerChanged.copyWith(footerOffset: 42);
+    expect(bothChanged.headerOffset, 18);
+    expect(bothChanged.footerOffset, 42);
+
+    await store.save(bothChanged);
+    final restored = await store.load();
+    expect(restored.headerOffset, 18);
+    expect(restored.footerOffset, 42);
+  });
+
+  test('clamps persisted and copied chrome offsets independently', () async {
+    SharedPreferences.setMockInitialValues({
+      ReaderSettingsStore.headerOffsetKey: -12.0,
+      ReaderSettingsStore.footerOffsetKey: 104.0,
+    });
+
+    final restored = await const ReaderSettingsStore().load();
+
+    expect(restored.headerOffset, ReaderSettings.minChromeOffset);
+    expect(restored.footerOffset, ReaderSettings.maxChromeOffset);
+    expect(
+      restored.copyWith(headerOffset: 200).headerOffset,
+      ReaderSettings.maxChromeOffset,
+    );
+    expect(
+      restored.copyWith(footerOffset: -1).footerOffset,
+      ReaderSettings.minChromeOffset,
+    );
   });
 
   test('maps text brightness relative to the active reader theme', () {

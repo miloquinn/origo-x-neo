@@ -2623,10 +2623,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get readerHorizontalMarginLabel => 'Margine orizzontale';
 
   @override
-  String get readerTopMarginLabel => 'Margine superiore';
+  String get readerTopMarginLabel => 'Margine superiore del testo';
 
   @override
-  String get readerBottomMarginLabel => 'Margine inferiore';
+  String get readerBottomMarginLabel => 'Margine inferiore del testo';
+
+  @override
+  String get readerHeaderOffsetLabel => 'Abbassa intestazione';
+
+  @override
+  String get readerFooterOffsetLabel => 'Alza piè di pagina';
+
+  @override
+  String get readerChromePositionHint =>
+      'Regola la posizione di intestazione e piè di pagina. Lo spazio per il testo viene riservato automaticamente.';
 
   @override
   String get readerTxtChapterTitlePageTitle =>

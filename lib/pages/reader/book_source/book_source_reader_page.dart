@@ -280,6 +280,9 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   double _horizontalMargin = ReaderSettings.defaultHorizontalMargin;
   double _topMargin = ReaderMarginSettings.defaultTop;
   double _bottomMargin = ReaderMarginSettings.defaultBottom;
+  double _headerOffset = ReaderSettings.defaultHeaderOffset;
+  double _footerOffset = ReaderSettings.defaultFooterOffset;
+  double _chromeViewportHeight = double.infinity;
   String _readerThemeId = ReaderThemes.day.id;
   BookSourcePageMode _pageMode = ReaderSettings.defaultPageMode;
   bool _pullBookmarkEnabled = false;
@@ -407,6 +410,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
     horizontalMargin: _horizontalMargin,
     topMargin: _topMargin,
     bottomMargin: _bottomMargin,
+    headerOffset: _headerOffset,
+    footerOffset: _footerOffset,
     themeId: _readerThemeId,
     pageMode: _pageMode,
     firstLineIndent: _firstLineIndent,
@@ -420,12 +425,34 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
     progressBarScope: _progressBarScope,
   );
 
-  ReaderSafeAreaMetrics get _readerSafeArea => ReaderSafeAreaMetrics(
-    viewPadding: MediaQuery.viewPaddingOf(context),
-    topMargin: _topMargin,
-    bottomMargin: _bottomMargin,
-    topChromeReserve: _topChromeReserveFor(_topBarStyle),
-  );
+  ReaderSafeAreaMetrics get _readerSafeArea {
+    final informationHeight = readerInformationTextHeight(
+      MediaQuery.textScalerOf(context),
+      Localizations.maybeLocaleOf(context),
+      style: Theme.of(context).textTheme.labelSmall,
+    );
+    return ReaderSafeAreaMetrics(
+      viewPadding: MediaQuery.viewPaddingOf(context),
+      topMargin: _topMargin,
+      bottomMargin: _bottomMargin,
+      headerOffset: _headerOffset,
+      footerOffset: _footerOffset,
+      topChromeReserve: _topChromeReserveFor(_topBarStyle),
+      hasReaderHeader: _topBarStyle == ReaderTopBarStyle.reader,
+      headerHeight: math.max(
+        ReaderSafeAreaMetrics.readerTopBarHeight,
+        informationHeight,
+      ),
+      footerHeight: math.max(
+        ReaderSafeAreaMetrics.pageNumberReserve,
+        informationHeight,
+      ),
+      headerContentGap: _pageMode == BookSourcePageMode.verticalScroll ? 12 : 4,
+      footerContentGap: _pageMode == BookSourcePageMode.verticalScroll ? 6 : 4,
+      viewportHeight: _chromeViewportHeight,
+      minimumContentHeight: math.max(120, _fontSize * _lineHeight),
+    );
+  }
 
   /// 阅读信息栏占一条固定信息条；灵动信息栏借用状态栏区域，仅在设备
   /// 没有状态栏 inset（隐藏后归零）时补足最小高度，避免正文顶进时间与
@@ -462,6 +489,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
           ]),
         ),
     ]),
+    _headerOffset,
+    _footerOffset,
     _chapterProgressStyle,
     _chapterProgressStyle == ReaderChapterProgressStyle.hidden
         ? 0

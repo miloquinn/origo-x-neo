@@ -98,6 +98,10 @@ class ReaderSettings {
   static const ReaderTextAlignment defaultTextAlignment =
       ReaderTextAlignment.natural;
   static const double defaultHorizontalMargin = 18;
+  static const double minChromeOffset = 0;
+  static const double maxChromeOffset = 80;
+  static const double defaultHeaderOffset = 0;
+  static const double defaultFooterOffset = 0;
   static const int minFirstLineIndent = 0;
   static const int maxFirstLineIndent = 4;
   static const int defaultFirstLineIndent = 2;
@@ -122,6 +126,8 @@ class ReaderSettings {
     required this.horizontalMargin,
     required this.topMargin,
     required this.bottomMargin,
+    this.headerOffset = defaultHeaderOffset,
+    this.footerOffset = defaultFooterOffset,
     required this.themeId,
     required this.pageMode,
     this.firstLineIndent = defaultFirstLineIndent,
@@ -145,6 +151,8 @@ class ReaderSettings {
   final double horizontalMargin;
   final double topMargin;
   final double bottomMargin;
+  final double headerOffset;
+  final double footerOffset;
   final String themeId;
   final ReaderPageMode pageMode;
   final int firstLineIndent;
@@ -168,6 +176,8 @@ class ReaderSettings {
     double? horizontalMargin,
     double? topMargin,
     double? bottomMargin,
+    double? headerOffset,
+    double? footerOffset,
     String? themeId,
     ReaderPageMode? pageMode,
     int? firstLineIndent,
@@ -209,6 +219,14 @@ class ReaderSettings {
         ReaderMarginSettings.min,
         ReaderMarginSettings.max,
       ),
+      headerOffset: (headerOffset ?? this.headerOffset).clamp(
+        minChromeOffset,
+        maxChromeOffset,
+      ),
+      footerOffset: (footerOffset ?? this.footerOffset).clamp(
+        minChromeOffset,
+        maxChromeOffset,
+      ),
       themeId: themeId ?? this.themeId,
       pageMode: pageMode ?? this.pageMode,
       firstLineIndent: (firstLineIndent ?? this.firstLineIndent).clamp(
@@ -245,6 +263,8 @@ class ReaderSettingsStore {
   static const horizontalMarginKey = 'native_reader_horizontal_margin';
   static const topMarginKey = 'native_reader_top_margin';
   static const bottomMarginKey = 'native_reader_bottom_margin';
+  static const headerOffsetKey = 'native_reader_header_offset';
+  static const footerOffsetKey = 'native_reader_footer_offset';
   static const legacyVerticalMarginKey = 'native_reader_vertical_margin';
   static const themeKey = 'native_reader_theme';
   static const pageModeKey = 'native_reader_page_mode';
@@ -382,6 +402,20 @@ class ReaderSettingsStore {
               ),
       topMargin: margins.top,
       bottomMargin: margins.bottom,
+      headerOffset:
+          (prefs.getDouble(headerOffsetKey) ??
+                  ReaderSettings.defaultHeaderOffset)
+              .clamp(
+                ReaderSettings.minChromeOffset,
+                ReaderSettings.maxChromeOffset,
+              ),
+      footerOffset:
+          (prefs.getDouble(footerOffsetKey) ??
+                  ReaderSettings.defaultFooterOffset)
+              .clamp(
+                ReaderSettings.minChromeOffset,
+                ReaderSettings.maxChromeOffset,
+              ),
       themeId: prefs.getString(themeKey) ?? ReaderSettings.defaultThemeId,
       pageMode: readerPageModeFromName(
         prefs.getString(pageModeKey),
@@ -424,6 +458,8 @@ class ReaderSettingsStore {
       prefs.setDouble(horizontalMarginKey, settings.horizontalMargin),
       prefs.setDouble(topMarginKey, settings.topMargin),
       prefs.setDouble(bottomMarginKey, settings.bottomMargin),
+      prefs.setDouble(headerOffsetKey, settings.headerOffset),
+      prefs.setDouble(footerOffsetKey, settings.footerOffset),
       prefs.setString(themeKey, settings.themeId),
       prefs.setString(pageModeKey, settings.pageMode.name),
       prefs.setInt(firstLineIndentKey, settings.firstLineIndent),

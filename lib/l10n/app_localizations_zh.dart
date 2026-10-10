@@ -2466,10 +2466,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerHorizontalMarginLabel => '左右页边距';
 
   @override
-  String get readerTopMarginLabel => '上页边距';
+  String get readerTopMarginLabel => '正文上边距';
 
   @override
-  String get readerBottomMarginLabel => '下页边距';
+  String get readerBottomMarginLabel => '正文下边距';
+
+  @override
+  String get readerHeaderOffsetLabel => '页眉下移';
+
+  @override
+  String get readerFooterOffsetLabel => '页脚上移';
+
+  @override
+  String get readerChromePositionHint => '调节页眉页脚的位置，正文会自动留出空间。';
 
   @override
   String get readerTxtChapterTitlePageTitle => '章节标题独立成页';
@@ -10140,10 +10149,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get readerHorizontalMarginLabel => '左右頁邊距';
 
   @override
-  String get readerTopMarginLabel => '上頁邊距';
+  String get readerTopMarginLabel => '正文上邊距';
 
   @override
-  String get readerBottomMarginLabel => '下頁邊距';
+  String get readerBottomMarginLabel => '正文下邊距';
+
+  @override
+  String get readerHeaderOffsetLabel => '頁眉下移';
+
+  @override
+  String get readerFooterOffsetLabel => '頁腳上移';
+
+  @override
+  String get readerChromePositionHint => '調整頁眉頁腳的位置，正文會自動留出空間。';
 
   @override
   String get readerTxtChapterTitlePageTitle => '章節標題獨立成頁';

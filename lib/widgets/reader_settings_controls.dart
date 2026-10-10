@@ -113,6 +113,10 @@ class ReaderSettingsSheet extends StatefulWidget {
     required this.horizontalMargin,
     required this.topMargin,
     required this.bottomMargin,
+    this.headerOffset = ReaderSettings.defaultHeaderOffset,
+    this.footerOffset = ReaderSettings.defaultFooterOffset,
+    this.showHeaderPositionControl = true,
+    this.showFooterPositionControl = true,
     required this.pullBookmarkEnabled,
     required this.tapPageAnimationEnabled,
     required this.tabletTwoPageEnabled,
@@ -138,6 +142,8 @@ class ReaderSettingsSheet extends StatefulWidget {
     required this.onHorizontalMarginChanged,
     required this.onTopMarginChanged,
     required this.onBottomMarginChanged,
+    this.onHeaderOffsetChanged,
+    this.onFooterOffsetChanged,
     required this.onPullBookmarkChanged,
     required this.onTapPageAnimationChanged,
     required this.onTabletTwoPageChanged,
@@ -213,6 +219,10 @@ class ReaderSettingsSheet extends StatefulWidget {
   final double horizontalMargin;
   final double topMargin;
   final double bottomMargin;
+  final double headerOffset;
+  final double footerOffset;
+  final bool showHeaderPositionControl;
+  final bool showFooterPositionControl;
   final bool pullBookmarkEnabled;
   final bool tapPageAnimationEnabled;
   final bool tabletTwoPageEnabled;
@@ -238,6 +248,8 @@ class ReaderSettingsSheet extends StatefulWidget {
   final ValueChanged<double> onHorizontalMarginChanged;
   final ValueChanged<double> onTopMarginChanged;
   final ValueChanged<double> onBottomMarginChanged;
+  final ValueChanged<double>? onHeaderOffsetChanged;
+  final ValueChanged<double>? onFooterOffsetChanged;
   final ValueChanged<bool> onPullBookmarkChanged;
   final ValueChanged<bool> onTapPageAnimationChanged;
   final ValueChanged<bool> onTabletTwoPageChanged;
@@ -273,6 +285,8 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
   late double _horizontalMargin = widget.horizontalMargin;
   late double _topMargin = widget.topMargin;
   late double _bottomMargin = widget.bottomMargin;
+  late double _headerOffset = widget.headerOffset;
+  late double _footerOffset = widget.footerOffset;
   late bool _pullBookmarkEnabled = widget.pullBookmarkEnabled;
   late bool _tapPageAnimationEnabled = widget.tapPageAnimationEnabled;
   late bool _tabletTwoPageEnabled = widget.tabletTwoPageEnabled;
@@ -600,6 +614,44 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
       onTopChangeEnd: widget.onTopMarginChanged,
       onBottomChangeEnd: widget.onBottomMarginChanged,
     ),
+    if (widget.showHeaderPositionControl &&
+        widget.onHeaderOffsetChanged != null)
+      ReaderSettingSlider(
+        key: const ValueKey('reader-header-offset-slider'),
+        label: context.l10n.readerHeaderOffsetLabel,
+        value: _headerOffset,
+        valueLabel: _headerOffset.round().toString(),
+        min: ReaderSettings.minChromeOffset,
+        max: ReaderSettings.maxChromeOffset,
+        divisions:
+            (ReaderSettings.maxChromeOffset - ReaderSettings.minChromeOffset)
+                .round(),
+        onChanged: (value) => setState(() => _headerOffset = value),
+        onChangeEnd: widget.onHeaderOffsetChanged,
+      ),
+    if (widget.showFooterPositionControl &&
+        widget.onFooterOffsetChanged != null)
+      ReaderSettingSlider(
+        key: const ValueKey('reader-footer-offset-slider'),
+        label: context.l10n.readerFooterOffsetLabel,
+        value: _footerOffset,
+        valueLabel: _footerOffset.round().toString(),
+        min: ReaderSettings.minChromeOffset,
+        max: ReaderSettings.maxChromeOffset,
+        divisions:
+            (ReaderSettings.maxChromeOffset - ReaderSettings.minChromeOffset)
+                .round(),
+        onChanged: (value) => setState(() => _footerOffset = value),
+        onChangeEnd: widget.onFooterOffsetChanged,
+      ),
+    if ((widget.showHeaderPositionControl &&
+            widget.onHeaderOffsetChanged != null) ||
+        (widget.showFooterPositionControl &&
+            widget.onFooterOffsetChanged != null))
+      Text(
+        context.l10n.readerChromePositionHint,
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
   ];
 
   List<Widget> _themeTabChildren(ThemeData theme) => [

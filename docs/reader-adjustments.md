@@ -40,9 +40,20 @@
 | 首行缩进 | 0–4 字格 | 1 |
 | 段间距 | 0–4 额外空行 | 1 |
 | 左右边距 | 0–96 | 1 |
-| 上、下边距 | 各 0–120 | 1 |
+| 正文上、下边距 | 各 0–120 | 1 |
+| 页眉下移、页脚上移 | 各 0–80 | 1 |
 
 范围由 `lib/core/reader/reader_settings.dart` 和 `reader_margin_settings.dart` 所有。`copyWith`、存储恢复、`native_reader_configuration.dart`、`book_source_reader_settings.dart` 以及最终 `ReaderTextLayout.build` 共同引用这些约束。偏好键、默认值、旧亮度与边距迁移不变；字重仍遵循字体自身的可变轴能力。修改范围时同时检查 UI divisions 和辅助功能数值格式。
+
+## 页眉页脚与正文的空间约定
+
+版式菜单分别提供正文上下边距、页眉下移和页脚上移。位移默认 0，保持原来的位置；正文边距仍使用原键，位移独立保存在 `native_reader_header_offset` / `native_reader_footer_offset`。页眉调节只作用于「阅读信息栏」，系统状态栏与灵动信息栏保持原位；完全沉浸的连续滚动不显示这两项控件，也不占用其空间。
+
+`lib/core/reader/reader_safe_area.dart` 的 `ReaderSafeAreaMetrics` 统一解析正文 inset、页眉顶部、页脚底部和信息条高度。本地文件与在线书源的分页测量、纸页绘制及连续滚动窗口都消费这一套结果。已有留白容纳得下位移时正文边界不变；否则扩大实际正文 inset，并按原始字符位置重排，不能将新的信息条直接覆盖到原来的正文上。分页正文与信息条至少间隔 4；连续滚动保留既有页眉间隔 12、页脚间隔 6。`ReaderViewportChromeMetrics.titleTop` 与实际 overlay 使用相同的页眉位置。
+
+短横屏或小窗口优先保留系统安全区、信息条及正文空间，再同比压缩实际多余留白和位移；用户保存的边距与位移不被改写。两套阅读器传入稳定后的分页视口高度，桌面拖动窗口期间保持既有 140ms 稳定重排策略。正文最低空间目标为 `max(120, 字号 × 行高)`，受实际屏幕可用空间限制；这个目标不是更改正文文字或缩小字号。信息条按当前主题字体和系统文字缩放测量其高度，纸页与固定 overlay 使用相同高度，并将信息条绘制裁切在各自区域内，防止异常字体或窄宽度换行绘制到正文上。
+
+实际正文边界、信息条位置和高度进入 `paginationSignature`；两个位移也进入纸页内容 revision / 原生布局签名。即使只在现有空白中移动信息条，卷页快照仍必须刷新。在线后台准备还检查位移 token，阻止旧几何结果在设置变更后发布。设置变更沿用 canonical 字符锚点恢复，正文、书签与批注源偏移不变；阅读信息栏与其他样式互换时也触发恢复，即使系统 inset 为 0 且基础预留高度相同。
 
 ## 验证入口与边界
 
@@ -50,10 +61,12 @@
 - `test/reader_settings_controls_test.dart`、`reader_margin_controls_test.dart`：二级菜单的字体预览、独立边距、切页与共享控件接入。
 - `test/reader_settings_test.dart`、`reader_margin_settings_test.dart`、`reader_text_layout_mapping_test.dart`：新上限保存恢复、旧默认值、段间距投影与源偏移映射。
 - `test/native_reader_settings_wiring_test.dart`、`native_text_paginator_test.dart`、`book_source_text_paginator_test.dart`、`reader_justified_indent_test.dart`：实际读取/保存、共享分页与缩进测量。
+- `test/reader_chrome_position_test.dart`：默认几何、128 组独立边距/位移组合、短视口保护、三种分页入口的完整字符覆盖与每页实际高度、带样式文字、主题字体测量、大字模式下真实纸页首尾字形与信息条矩形、窄宽度换行的绘制裁切、桌面稳定视口。
+- `test/native_reader_settings_wiring_test.dart`、`book_source_reader_page_test.dart` 的页眉页脚用例：生产阅读器的偏好读取与保存、各翻页模式和连续滚动中的正文锚点与几何检查、无系统 inset 时阅读信息栏与灵动样式互换；与其他有状态套件分进程执行。每次变更恢复变更前当前页的字符锚点，重排后的页码及页首可能变化。
 - `tool/preview_reader_adjustment_slider.dart`：使用生产控件的真实 iOS 模拟器组件预览，包含毛玻璃/液态玻璃深浅色、实底、大字窄屏、横屏。纯 widget 测试不能证明液态 shader；预览记录 shader 支持状态。
 
 2026-10-10 的组件预览：[毛玻璃浅色](previews/reader-adjustments-20261010/frosted-light.png)、[毛玻璃深色](previews/reader-adjustments-20261010/frosted-dark.png)、[液态玻璃浅色](previews/reader-adjustments-20261010/liquid-light.png)、[液态玻璃深色](previews/reader-adjustments-20261010/liquid-dark.png)、[实底](previews/reader-adjustments-20261010/solid-light.png)、[窄屏大字](previews/reader-adjustments-20261010/liquid-large-text.png)、[横屏](previews/reader-adjustments-20261010/liquid-landscape.png)。[渲染环境](previews/reader-adjustments-20261010/render-context.json)记录 iOS shader 支持；截图使用生产组件，不能代替物理阅读菜单验收。
 
 有状态 widget 套件独立进程执行；Flutter 命令顺序运行，避免同时写同一 native-assets 构建目录。缩进和段间距只改变显示投影，不改变原始正文、书签或批注源偏移。很大的字号、行高和边距组合会减少每页内容；极窄窗口及长内嵌章节标题仍沿用现有正文容器限制，不能从正文完整性测试推断所有极端组合的物理可读性。额外空行跨页时可折叠，原始位置映射保持完整。
 
-模拟器组件预览、签名构建、原地安装/启动与用户的物理阅读 UI 验收分别记录；本轮证据见[2026-10-10 验证记录](reviews/2026-10-10-reader-adjustment-slider.md)。当前共用材质约定见[共用玻璃材质](glass-material.md)。
+模拟器组件预览、签名构建、原地安装/启动与用户的物理阅读 UI 验收分别记录；滑条证据见[2026-10-10 控件验证记录](reviews/2026-10-10-reader-adjustment-slider.md)，页眉页脚证据见[2026-10-10 位置调节验证记录](reviews/2026-10-10-reader-chrome-position.md)。当前共用材质约定见[共用玻璃材质](glass-material.md)。
