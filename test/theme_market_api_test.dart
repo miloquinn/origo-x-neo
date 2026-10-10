@@ -7,6 +7,7 @@ import 'package:xxread/services/account/account.dart';
 import 'package:xxread/services/themes/theme_market_item.dart';
 
 Map<String, dynamic> _item({int size = 3}) => {
+  'schemaVersion': 1,
   'id': 'paper-garden',
   'version': 2,
   'name': 'Paper Garden',
@@ -19,6 +20,20 @@ Map<String, dynamic> _item({int size = 3}) => {
 };
 
 void main() {
+  test('public metadata requires an explicit integer schemaVersion', () {
+    final missing = _item()..remove('schemaVersion');
+    for (final metadata in [
+      missing,
+      for (final invalid in [null, true, 1.0, '1'])
+        {..._item(), 'schemaVersion': invalid},
+    ]) {
+      expect(
+        () => ThemeMarketItem.fromJson(metadata),
+        throwsA(isA<TypeError>()),
+      );
+    }
+  });
+
   test('public metadata uses only official exact-version paths', () async {
     final adapter = _Adapter((options) async {
       expect(options.headers['Authorization'], isNull);

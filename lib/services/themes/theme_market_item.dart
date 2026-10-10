@@ -5,7 +5,7 @@ import '../../models/theme_package.dart';
 /// Public metadata identifies one approved, immutable downloadable version.
 class ThemeMarketItem {
   ThemeMarketItem.fromJson(Map<String, dynamic> json)
-    : schemaVersion = (json['schemaVersion'] ?? 1) as int,
+    : schemaVersion = json['schemaVersion'] as int,
       id = json['id'] as String,
       version = json['version'] as int,
       name = json['name'] as String,

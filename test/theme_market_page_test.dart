@@ -483,6 +483,7 @@ ThemeMarketItem _item(
   String id = 'paper-garden',
   int version = 1,
 }) => ThemeMarketItem.fromJson({
+  'schemaVersion': 1,
   'id': id,
   'version': version,
   'name': 'Paper Garden',
