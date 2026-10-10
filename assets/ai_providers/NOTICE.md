@@ -1,8 +1,13 @@
 # AI provider icon notice
 
-The PNG icons in this directory are resized conversions of the provider
-avatars from [Lobe Icons](https://github.com/lobehub/lobe-icons), commit
-`c385b2b8d1f9e19aa86e628d4e23c91ee1111a47`.
+The PNG icons in this directory are resized conversions of the transparent
+provider glyphs from [Lobe Icons](https://github.com/lobehub/lobe-icons),
+commit `c385b2b8d1f9e19aa86e628d4e23c91ee1111a47`.
+
+The source glyph names match the destination file names except for
+`zhipu.png`, which uses the `zai` Z_ glyph, and `siliconflow.png`, which uses
+the `siliconcloud-color` glyph. Color variants are used when Lobe Icons
+provides one; monochrome glyphs are tinted by the app theme at runtime.
 
 Lobe Icons is distributed under the MIT License:
 

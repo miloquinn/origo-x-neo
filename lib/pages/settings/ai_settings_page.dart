@@ -12,6 +12,8 @@ import 'package:xxread/services/ai/book_preprocess_service.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_style_helper.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/glass_dialog.dart';
 import 'package:xxread/widgets/ai_provider_logo.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
@@ -225,6 +227,13 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final palette = PageStyleHelper.palette(context);
+    final addedModels = _aiQuickModels
+        .where(
+          (item) =>
+              item.settings.isConfigured ||
+              item.settings.provider == AIProviderType.custom,
+        )
+        .toList(growable: false);
     return FloatingSubpageScaffold(
       title: l10n.settingsAiAssistantTitle,
       body: !_aiSettingsLoaded
@@ -252,16 +261,55 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
                                 height: 1.4,
                               ),
                         ),
-                        const SizedBox(height: 16),
-                        _buildCard(
+                        const SizedBox(height: 22),
+                        _buildSectionLabel(
+                          _copy('常用提供商', 'よく使うプロバイダー', 'Providers'),
+                        ),
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: GlassTextButton(
+                            onPressed: () => unawaited(
+                              _openAiModelEditor(
+                                initialSettings: AIProviderSettings.defaults(
+                                  AIProviderType.custom,
+                                ),
+                                initialIsCustom: true,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.add_rounded, size: 18),
+                                const SizedBox(width: 7),
+                                Text(l10n.settingsAiAddModel),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSettingsList(
                           palette,
                           children: [
-                            for (final item in _aiQuickModels)
-                              _buildAiModelRow(item),
-                            _buildAddAiModelRow(),
+                            for (final preset in _providerCatalog)
+                              _buildProviderRow(preset),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        if (addedModels.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          _buildSectionLabel(
+                            _copy('已添加的模型', '追加済みモデル', 'Added models'),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildSettingsList(
+                            palette,
+                            children: [
+                              for (final item in addedModels)
+                                _buildAiModelRow(item),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 24),
                         _buildCard(
                           palette,
                           children: [_buildPreprocessSwitch()],
@@ -273,6 +321,68 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
               ],
             ),
     );
+  }
+
+  List<AIModelPreset> get _providerCatalog {
+    final byBrand = <String, AIModelPreset>{};
+    for (final preset in AIModelPresets.all) {
+      byBrand.putIfAbsent(preset.brand, () => preset);
+    }
+    return [
+      for (final brand in [
+        'openai',
+        'claude',
+        'gemini',
+        'deepseek',
+        'qwen',
+        'zhipu',
+        'minimax',
+        'moonshot',
+        'groq',
+        'siliconflow',
+      ])
+        ?byBrand.remove(brand),
+      ...byBrand.values,
+    ];
+  }
+
+  _AiQuickModel? _configuredModelForBrand(AIModelPreset preset) {
+    for (final item in _aiQuickModels) {
+      if (item.settings.isConfigured &&
+          AIModelPresets.logoAssetForSettings(item.settings) ==
+              preset.logoAsset) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  Widget _buildSectionLabel(String label) => Text(
+    label,
+    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+    ),
+  );
+
+  Widget _buildSettingsList(
+    PageVisualPalette palette, {
+    required List<Widget> children,
+  }) {
+    final separated = <Widget>[];
+    for (var index = 0; index < children.length; index++) {
+      if (index > 0) {
+        separated.add(
+          Divider(
+            height: 1,
+            indent: 64,
+            color: palette.border.withValues(alpha: 0.65),
+          ),
+        );
+      }
+      separated.add(children[index]);
+    }
+    return Column(children: separated);
   }
 
   Widget _buildCard(
@@ -366,15 +476,16 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
       }
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
+        builder: (dialogContext) => GlassDialog(
           title: Text(l10n.settingsAiPreprocessTitle),
           content: Text(l10n.settingsAiPreprocessWarning),
           actions: [
-            TextButton(
+            GlassTextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(l10n.cancel),
             ),
-            FilledButton.tonal(
+            GlassTextButton(
+              highlighted: true,
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: Text(l10n.confirm),
             ),
@@ -393,26 +504,23 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
     final scheme = Theme.of(context).colorScheme;
     final selected = item.id == _activeAiQuickModelId;
     final configured = item.settings.isConfigured;
-    final host = Uri.tryParse(item.settings.baseUrl)?.host ?? '';
-    final providerName = item.settings.provider == AIProviderType.custom
-        ? l10n.settingsAiCustomProvider
-        : item.settings.provider.displayName;
-    final protocolName = switch (item.settings.effectiveProtocol) {
-      AIProtocolType.openai => l10n.settingsAiProtocolOpenAi,
-      AIProtocolType.anthropic => l10n.settingsAiProtocolAnthropic,
-      AIProtocolType.gemini => 'Gemini',
-    };
+    final providerName = aiProviderDisplayName(
+      context,
+      AIModelPresets.logoAssetForSettings(item.settings),
+      fallback: item.settings.provider == AIProviderType.custom
+          ? l10n.settingsAiCustomProvider
+          : item.settings.provider.displayName,
+    );
     final subtitle = configured
-        ? '$providerName · $protocolName · '
-              '${host.isNotEmpty ? host : item.settings.baseUrl}'
-        : l10n.settingsAiApiKeyTapToConfigure;
+        ? item.settings.model
+        : _copy('未配置', '未設定', 'Not configured');
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => unawaited(_activateAiQuickModel(item)),
         onLongPress: () => unawaited(_showAiQuickModelMenu(item)),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 10, 10),
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
           child: Row(
             children: [
               AiProviderLogo(
@@ -425,7 +533,7 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.settings.model,
+                      providerName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -461,18 +569,18 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
                         dimension: 20,
                       ),
               ),
-              IconButton(
-                tooltip: l10n.edit,
-                onPressed: () => unawaited(_openAiModelEditor(editing: item)),
-                icon: const Icon(Icons.edit_outlined, size: 20),
-                visualDensity: VisualDensity.compact,
-              ),
-              if (item.isCustom && _aiQuickModels.length > 1)
-                IconButton(
-                  onPressed: () => unawaited(_showAiQuickModelMenu(item)),
-                  icon: const Icon(Icons.more_vert_rounded, size: 20),
-                  visualDensity: VisualDensity.compact,
+              Tooltip(
+                message: l10n.edit,
+                child: InkResponse(
+                  key: ValueKey('edit-ai-model-${item.id}'),
+                  radius: 22,
+                  onTap: () => unawaited(_openAiModelEditor(editing: item)),
+                  child: const SizedBox.square(
+                    dimension: 44,
+                    child: Icon(Icons.chevron_right_rounded, size: 22),
+                  ),
                 ),
+              ),
             ],
           ),
         ),
@@ -480,37 +588,88 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
     );
   }
 
-  Widget _buildAddAiModelRow() {
-    final l10n = context.l10n;
+  Widget _buildProviderRow(AIModelPreset preset) {
     final scheme = Theme.of(context).colorScheme;
+    final configuredModel = _configuredModelForBrand(preset);
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => unawaited(_openAiModelEditor()),
+        key: ValueKey('provider-directory-${preset.brand}'),
+        onTap: () => unawaited(_openProviderPreset(preset)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(Icons.add_rounded, size: 16, color: scheme.primary),
-              ),
+              AiProviderLogo(asset: preset.logoAsset, size: 36),
               const SizedBox(width: 12),
-              Text(
-                l10n.settingsAiAddModel,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      aiProviderDisplayName(
+                        context,
+                        preset.logoAsset,
+                        fallback: preset.vendor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      configuredModel?.settings.model ??
+                          _copy('未配置', '未設定', 'Not configured'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 11),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _openProviderPreset(AIModelPreset preset) async {
+    final configured = _configuredModelForBrand(preset);
+    if (configured != null) {
+      await _openAiModelEditor(editing: configured);
+      return;
+    }
+
+    final presetSettings = preset.toSettings(
+      apiKey: _knownAiApiKey(
+        preset.provider,
+        preset.baseUrl,
+        protocol: preset.protocol,
+      ),
+    );
+    _AiQuickModel? existing;
+    for (final item in _aiQuickModels) {
+      if (item.matches(presetSettings)) {
+        existing = item;
+        break;
+      }
+    }
+    await _openAiModelEditor(
+      editing: existing,
+      initialSettings: presetSettings,
+      initialIsCustom: false,
     );
   }
 
@@ -546,7 +705,6 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
     final action = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
-      showDragHandle: true,
       builder: (sheetContext) {
         final scheme = Theme.of(sheetContext).colorScheme;
         return SafeArea(
@@ -595,9 +753,14 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
     await _persistAiQuickModels();
   }
 
-  Future<void> _openAiModelEditor({_AiQuickModel? editing}) async {
+  Future<void> _openAiModelEditor({
+    _AiQuickModel? editing,
+    AIProviderSettings? initialSettings,
+    bool? initialIsCustom,
+  }) async {
     final initial =
         editing?.settings ??
+        initialSettings ??
         AIProviderSettings.defaults(_selectedAiProvider).copyWith(
           apiKey: _aiDraftByProvider[_selectedAiProvider]?.apiKey ?? '',
         );
@@ -606,7 +769,9 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
         builder: (_) => AiModelEditorPage(
           initialSettings: initial,
           initialIsCustom:
-              editing?.isCustom ?? initial.provider == AIProviderType.custom,
+              editing?.isCustom ??
+              initialIsCustom ??
+              initial.provider == AIProviderType.custom,
           isEditing: editing != null,
           aiService: _aiService,
           knownApiKey: (provider, baseUrl, protocol) =>

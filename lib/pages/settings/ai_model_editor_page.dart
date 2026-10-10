@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/reader_core/ai/ai_error_translator.dart';
 import 'package:xxread/utils/localization_extension.dart';
-import 'package:xxread/utils/page_style_helper.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/ai_provider_logo.dart';
+import 'package:xxread/widgets/pill_input_surface.dart';
+import 'package:xxread/widgets/pill_search_field.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
+import 'package:xxread/widgets/glass_dialog.dart';
 
 class AiModelEditorResult {
   const AiModelEditorResult({required this.settings, required this.isCustom});
@@ -56,6 +59,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
   String? _modelListNotice;
   List<String> _fetchedModels = const [];
   String? _errorText;
+  String? _focusedField;
 
   @override
   void initState() {
@@ -63,12 +67,16 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
     final initial = widget.initialSettings;
     _provider = initial.provider;
     _protocol = initial.protocol;
+    final logo = AIModelPresets.logoAssetForSettings(initial);
     _preset =
         AIModelPresets.match(initial) ??
-        AIModelPresets.defaultForProvider(
-          _provider == AIProviderType.custom
-              ? AIProviderType.openai
-              : _provider,
+        AIModelPresets.all.firstWhere(
+          (preset) => preset.logoAsset == logo && preset.provider == _provider,
+          orElse: () => AIModelPresets.defaultForProvider(
+            _provider == AIProviderType.custom
+                ? AIProviderType.openai
+                : _provider,
+          ),
         );
     _isCustom = widget.initialIsCustom;
     _apiKeyController = TextEditingController(text: initial.apiKey);
@@ -257,36 +265,90 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
     }
   }
 
-  InputDecoration _fieldDecoration({
+  Widget _field({
     required String label,
-    required IconData icon,
+    required Widget child,
     String? helper,
-    Widget? suffix,
-  }) {
-    final palette = PageStyleHelper.palette(context);
-    return InputDecoration(
-      labelText: label,
-      helperText: helper,
-      helperMaxLines: 3,
-      prefixIcon: Icon(icon),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: palette.card,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: palette.border),
-      ),
-    );
-  }
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 6),
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        ),
+        Focus(
+          canRequestFocus: false,
+          onFocusChange: (focused) => setState(() {
+            if (focused) {
+              _focusedField = label;
+            } else if (_focusedField == label) {
+              _focusedField = null;
+            }
+          }),
+          child: PillInputSurface(
+            focusColor: _focusedField == label
+                ? Theme.of(context).colorScheme.primary
+                : null,
+            child: child,
+          ),
+        ),
+        if (helper != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              helper,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
 
-  Widget _sectionLabel(String text) => Padding(
-    padding: const EdgeInsets.only(left: 4, bottom: 10),
-    child: Text(
-      text,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
+  InputDecoration _inputDecoration({String? hint, Widget? suffix}) =>
+      InputDecoration(
+        hintText: hint,
+        suffixIcon: suffix,
+        filled: false,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 16,
+        ),
+        isDense: true,
+      );
+
+  Widget _selector<T>({
+    required Key key,
+    required String label,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+    String? helper,
+    DropdownButtonBuilder? selectedItemBuilder,
+  }) => _field(
+    label: label,
+    helper: helper,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          key: key,
+          value: value,
+          isExpanded: true,
+          borderRadius: BorderRadius.circular(20),
+          menuMaxHeight: MediaQuery.sizeOf(context).height * .55,
+          icon: const Icon(Icons.expand_more_rounded),
+          items: items,
+          selectedItemBuilder: selectedItemBuilder,
+          onChanged: onChanged,
+        ),
       ),
     ),
   );
@@ -302,9 +364,14 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
-    final presets = _provider == AIProviderType.custom
-        ? const <AIModelPreset>[]
-        : AIModelPresets.byProvider(_provider);
+    final brand = _provider == AIProviderType.custom ? 'custom' : _preset.brand;
+    final presets = AIModelPresets.all
+        .where((preset) => preset.brand == brand)
+        .toList();
+    final brands = <String, AIModelPreset>{};
+    for (final preset in AIModelPresets.all) {
+      brands.putIfAbsent(preset.brand, () => preset);
+    }
     return PopScope(
       canPop: !_saving,
       child: FloatingSubpageScaffold(
@@ -320,16 +387,12 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
           ),
           child: SafeArea(
             top: false,
-            child: Container(
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                border: Border(top: BorderSide(color: scheme.outlineVariant)),
-              ),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
               child: Center(
                 heightFactor: 1,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
+                  constraints: const BoxConstraints(maxWidth: 560),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -344,24 +407,22 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                         ),
                         const SizedBox(height: 8),
                       ],
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                        ),
+                      GlassTextButton(
+                        minimumHeight: 52,
+                        highlighted: true,
                         onPressed: _saving ? null : _save,
-                        icon: _saving
+                        child: _saving
                             ? const SizedBox.square(
                                 dimension: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.check_rounded),
-                        label: Text(
-                          widget.isEditing
-                              ? l10n.settingsAiSaveAndEnable
-                              : l10n.settingsAiAddAndEnable,
-                        ),
+                            : Text(
+                                widget.isEditing
+                                    ? l10n.settingsAiSaveAndEnable
+                                    : l10n.settingsAiAddAndEnable,
+                              ),
                       ),
                     ],
                   ),
@@ -373,104 +434,149 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
         body: AbsorbPointer(
           absorbing: _saving,
           child: ListView(
-            padding: floatingSubpagePadding(context, bottom: 24),
+            padding: floatingSubpagePadding(
+              context,
+              left: 24,
+              right: 24,
+              bottom: 24,
+            ),
             children: [
               Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
+                  constraints: const BoxConstraints(maxWidth: 560),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        _copy(
-                          '选择服务商，填写密钥并确认模型。预设参数也可以直接修改。',
-                          'プロバイダーとキーを設定し、モデルを確認します。プリセットの内容も変更できます。',
-                          'Choose a provider, enter its key, and confirm the model. Preset details remain editable.',
-                        ),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _sectionLabel(_copy('服务商', 'プロバイダー', 'Provider')),
-                      DropdownButtonFormField<AIProviderType>(
-                        key: ValueKey('provider-${_provider.value}'),
-                        initialValue: _provider,
-                        isExpanded: true,
-                        decoration: _fieldDecoration(
-                          label: l10n.settingsAiProviderLabel,
-                          icon: Icons.hub_outlined,
-                        ),
-                        items: AIProviderType.values
-                            .map(
-                              (item) => DropdownMenuItem(
-                                value: item,
-                                child: Row(
-                                  children: [
-                                    AiProviderLogo(
-                                      asset:
-                                          AIModelPresets.logoAssetForProvider(
-                                            item,
-                                          ),
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        item == AIProviderType.custom
-                                            ? l10n.settingsAiCustomProvider
-                                            : item.displayName,
-                                        overflow: TextOverflow.ellipsis,
+                      _selector<String>(
+                        key: ValueKey('provider-$brand'),
+                        label: l10n.settingsAiProviderLabel,
+                        value: brand,
+                        items: [
+                          for (final preset in brands.values)
+                            DropdownMenuItem(
+                              value: preset.brand,
+                              child: Row(
+                                children: [
+                                  AiProviderLogo(
+                                    asset: preset.logoAsset,
+                                    size: 28,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      aiProviderDisplayName(
+                                        context,
+                                        preset.logoAsset,
+                                        fallback: preset.vendor,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            )
-                            .toList(),
+                            ),
+                          DropdownMenuItem(
+                            value: 'custom',
+                            child: Text(l10n.settingsAiCustomProvider),
+                          ),
+                        ],
                         onChanged: (value) {
                           if (value == null) return;
                           setState(() {
-                            _provider = value;
-                            _protocol = null;
-                            _isCustom = value == AIProviderType.custom;
-                            if (value == AIProviderType.custom) {
+                            if (value == 'custom') {
+                              _provider = AIProviderType.custom;
+                              _protocol = null;
+                              _isCustom = true;
                               final defaults = AIProviderSettings.defaults(
-                                value,
+                                _provider,
                               );
                               _baseUrlController.text = defaults.baseUrl;
                               _modelController.text = defaults.model;
                               _apiKeyController.text = widget.knownApiKey(
-                                value,
+                                _provider,
                                 defaults.baseUrl,
                                 _effectiveProtocol,
                               );
                               _invalidateModels();
                             } else {
-                              _applyPreset(
-                                AIModelPresets.defaultForProvider(value),
-                              );
+                              _applyPreset(brands[value]!);
                             }
                           });
                         },
                       ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        key: ValueKey('protocol-${_protocol?.value ?? 'auto'}'),
-                        initialValue: _protocol?.value ?? 'auto',
-                        isExpanded: true,
-                        decoration: _fieldDecoration(
-                          label: l10n.settingsAiProtocolLabel,
-                          icon: Icons.swap_calls_rounded,
-                          helper: _protocol == null
-                              ? _copy(
-                                  '根据服务地址识别：${_protocolLabel(_effectiveProtocol)}',
-                                  'URL から判定：${_protocolLabel(_effectiveProtocol)}',
-                                  'Detected from URL: ${_protocolLabel(_effectiveProtocol)}',
-                                )
-                              : null,
+                      if (presets.isNotEmpty)
+                        _selector<AIModelPreset>(
+                          key: ValueKey(
+                            'preset-${_provider.value}-${_preset.id}',
+                          ),
+                          label: l10n.settingsAiPresetModel,
+                          // Custom edits keep the source preset visible as a starting point.
+                          value: presets.contains(_preset)
+                              ? _preset
+                              : presets.first,
+                          selectedItemBuilder: (_) => presets
+                              .map(
+                                (preset) => Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Text(
+                                    preset.label,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          items: presets
+                              .map(
+                                (preset) => DropdownMenuItem(
+                                  value: preset,
+                                  child: Row(
+                                    children: [
+                                      AiProviderLogo(
+                                        asset: preset.logoAsset,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          '${preset.vendor} · ${preset.label}',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _applyPreset(value));
+                          },
                         ),
+                      _field(
+                        label: _copy('服务地址', 'サービス URL', 'Base URL'),
+                        helper: _provider == AIProviderType.custom
+                            ? _baseUrlHint()
+                            : null,
+                        child: TextFormField(
+                          controller: _baseUrlController,
+                          onChanged: _connectionChanged,
+                          keyboardType: TextInputType.url,
+                          autocorrect: false,
+                          textInputAction: TextInputAction.next,
+                          decoration: _inputDecoration(hint: 'https://…'),
+                        ),
+                      ),
+                      _selector<String>(
+                        key: ValueKey('protocol-${_protocol?.value ?? 'auto'}'),
+                        label: l10n.settingsAiProtocolLabel,
+                        value: _protocol?.value ?? 'auto',
+                        helper: _protocol == null
+                            ? _copy(
+                                '根据服务地址识别：${_protocolLabel(_effectiveProtocol)}',
+                                'URL から判定：${_protocolLabel(_effectiveProtocol)}',
+                                'Detected from URL: ${_protocolLabel(_effectiveProtocol)}',
+                              )
+                            : null,
                         items: [
                           DropdownMenuItem(
                             value: 'auto',
@@ -496,187 +602,128 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                           });
                         },
                       ),
-                      if (presets.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<AIModelPreset>(
-                          key: ValueKey(
-                            'preset-${_provider.value}-${_preset.id}',
-                          ),
-                          initialValue: !_isCustom && presets.contains(_preset)
-                              ? _preset
-                              : null,
-                          isExpanded: true,
-                          decoration: _fieldDecoration(
-                            label: l10n.settingsAiPresetModel,
-                            icon: Icons.auto_awesome_outlined,
-                          ),
-                          selectedItemBuilder: (context) => presets
-                              .map(
-                                (preset) => Row(
-                                  children: [
-                                    AiProviderLogo(
-                                      asset: preset.logoAsset,
-                                      size: 24,
+                      _field(
+                        label: l10n.settingsAiApiKeyLabel,
+                        child: TextFormField(
+                          controller: _apiKeyController,
+                          onChanged: _connectionChanged,
+                          obscureText: _obscureApiKey,
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          textInputAction: TextInputAction.next,
+                          decoration: _inputDecoration(
+                            hint: _copy(
+                              '填写 API Key',
+                              'API Key を入力',
+                              'Enter API Key',
+                            ),
+                            suffix: IconButton(
+                              tooltip: _obscureApiKey
+                                  ? _copy(
+                                      '显示 API Key',
+                                      'API Key を表示',
+                                      'Show API Key',
+                                    )
+                                  : _copy(
+                                      '隐藏 API Key',
+                                      'API Key を隠す',
+                                      'Hide API Key',
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        preset.label,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                              .toList(),
-                          items: presets
-                              .map(
-                                (preset) => DropdownMenuItem(
-                                  value: preset,
-                                  child: Row(
-                                    children: [
-                                      AiProviderLogo(
-                                        asset: preset.logoAsset,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          '${preset.vendor} · ${preset.label}',
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _applyPreset(value));
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-                      _sectionLabel(_copy('服务连接', '接続', 'Connection')),
-                      TextFormField(
-                        controller: _baseUrlController,
-                        onChanged: _connectionChanged,
-                        keyboardType: TextInputType.url,
-                        autocorrect: false,
-                        decoration: _fieldDecoration(
-                          label: _copy('服务地址', 'サービス URL', 'Base URL'),
-                          icon: Icons.link_rounded,
-                          helper: _baseUrlHint(),
+                              onPressed: () => setState(
+                                () => _obscureApiKey = !_obscureApiKey,
+                              ),
+                              icon: Icon(
+                                _obscureApiKey
+                                    ? Icons.visibility_off_rounded
+                                    : Icons.visibility_rounded,
+                                size: 20,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _apiKeyController,
-                        onChanged: _connectionChanged,
-                        obscureText: _obscureApiKey,
-                        enableSuggestions: false,
-                        autocorrect: false,
-                        decoration: _fieldDecoration(
-                          label: l10n.settingsAiApiKeyLabel,
-                          icon: Icons.key_rounded,
-                          suffix: IconButton(
-                            tooltip: _obscureApiKey
-                                ? _copy(
-                                    '显示 API Key',
-                                    'API Key を表示',
-                                    'Show API Key',
+                      _field(
+                        label: l10n.settingsAiModelNameLabel,
+                        child: TextFormField(
+                          controller: _modelController,
+                          onChanged: _markCustomized,
+                          decoration: _inputDecoration(
+                            hint: _copy(
+                              '填写模型 ID',
+                              'モデル ID を入力',
+                              'Enter model ID',
+                            ),
+                          ),
+                        ),
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          GlassTextButton(
+                            key: const ValueKey('fetch-ai-models'),
+                            onPressed: _loadingModels ? null : _fetchModels,
+                            child: _loadingModels
+                                ? const SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
-                                : _copy(
-                                    '隐藏 API Key',
-                                    'API Key を隠す',
-                                    'Hide API Key',
+                                : Text(
+                                    _copy(
+                                      '获取模型列表',
+                                      'モデル一覧を取得',
+                                      'Fetch model list',
+                                    ),
                                   ),
-                            onPressed: () => setState(
-                              () => _obscureApiKey = !_obscureApiKey,
-                            ),
-                            icon: Icon(
-                              _obscureApiKey
-                                  ? Icons.visibility_off_rounded
-                                  : Icons.visibility_rounded,
-                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _sectionLabel(_copy('模型', 'モデル', 'Model')),
-                      TextFormField(
-                        controller: _modelController,
-                        onChanged: _markCustomized,
-                        decoration: _fieldDecoration(
-                          label: l10n.settingsAiModelNameLabel,
-                          icon: Icons.smart_toy_outlined,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          key: const ValueKey('fetch-ai-models'),
-                          onPressed: _loadingModels ? null : _fetchModels,
-                          icon: _loadingModels
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.cloud_download_outlined),
-                          label: Text(
-                            _copy('获取模型列表', 'モデル一覧を取得', 'Fetch model list'),
-                          ),
-                        ),
+                          if (_fetchedModels.isNotEmpty)
+                            GlassTextButton(
+                              onPressed: _chooseModel,
+                              child: Text(
+                                _copy(
+                                  '选择模型（${_fetchedModels.length} 个）',
+                                  'モデルを選択（${_fetchedModels.length}）',
+                                  'Choose model (${_fetchedModels.length})',
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       if (_modelListNotice != null)
-                        Text(
-                          _modelListNotice!,
-                          style: TextStyle(color: scheme.onSurfaceVariant),
-                        ),
-                      if (_fetchedModels.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        OutlinedButton.icon(
-                          onPressed: _chooseModel,
-                          icon: const Icon(Icons.list_alt_rounded),
-                          label: Text(
-                            _copy(
-                              '选择模型（${_fetchedModels.length} 个）',
-                              'モデルを選択（${_fetchedModels.length}）',
-                              'Choose model (${_fetchedModels.length})',
-                            ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            _modelListNotice!,
+                            style: TextStyle(color: scheme.onSurfaceVariant),
                           ),
                         ),
-                      ],
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Theme(
                         data: Theme.of(
                           context,
                         ).copyWith(dividerColor: Colors.transparent),
                         child: ExpansionTile(
                           tilePadding: const EdgeInsets.symmetric(
-                            horizontal: 4,
+                            horizontal: 16,
                           ),
-                          childrenPadding: const EdgeInsets.only(bottom: 8),
+                          childrenPadding: const EdgeInsets.only(top: 8),
                           title: Text(
                             _copy('更多选项', 'その他の設定', 'More options'),
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           children: [
-                            TextFormField(
-                              controller: _temperatureController,
-                              onChanged: _markCustomized,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              decoration: _fieldDecoration(
-                                label: l10n.settingsAiTemperatureLabel,
-                                icon: Icons.thermostat_rounded,
+                            _field(
+                              label: l10n.settingsAiTemperatureLabel,
+                              child: TextFormField(
+                                controller: _temperatureController,
+                                onChanged: _markCustomized,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: _inputDecoration(),
                               ),
                             ),
                           ],
@@ -711,25 +758,20 @@ class _AiModelPickerState extends State<_AiModelPicker> {
     final models = widget.models
         .where((model) => model.toLowerCase().contains(_query.toLowerCase()))
         .toList();
-    return AlertDialog(
+    return GlassDialog(
       title: Text(context.l10n.settingsAiModelNameLabel),
       content: SizedBox(
         width: 480,
         height: MediaQuery.sizeOf(context).height * 0.45,
         child: Column(
           children: [
-            TextField(
+            PillSearchField(
               autofocus: true,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search_rounded),
-                hintText: switch (Localizations.localeOf(
-                  context,
-                ).languageCode) {
-                  'zh' => '搜索模型',
-                  'ja' => 'モデルを検索',
-                  _ => 'Search models',
-                },
-              ),
+              hintText: switch (Localizations.localeOf(context).languageCode) {
+                'zh' => '搜索模型',
+                'ja' => 'モデルを検索',
+                _ => 'Search models',
+              },
               onChanged: (query) => setState(() => _query = query),
             ),
             const SizedBox(height: 8),
@@ -749,7 +791,7 @@ class _AiModelPickerState extends State<_AiModelPicker> {
         ),
       ),
       actions: [
-        TextButton(
+        GlassTextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(context.l10n.cancel),
         ),
