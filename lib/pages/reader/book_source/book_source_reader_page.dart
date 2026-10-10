@@ -556,7 +556,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
       }
       return;
     }
-    // Save and invalidate once for the whole inactive/hidden/paused sequence.
+    // Save once for the whole inactive/hidden/paused sequence. A retained
+    // viewport needs no relocation; geometry changes have their own restore.
     if (_appLifecycleActive) {
       _appLifecycleActive = false;
       _pauseAutoPageTurn();
@@ -564,7 +565,10 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
       if (_pageMode == BookSourcePageMode.verticalScroll &&
           !_loadingCatalog &&
           !_loadingContent &&
-          _error == null) {
+          _error == null &&
+          (_restorePagedPosition || _autoScrollRestoring)) {
+        // Only suspend an unfinished navigation/layout restore. Replaying a
+        // completed restore paints the chapter start before its caret anchor.
         _requestVerticalPositionRestore();
       }
       unawaited(_flushReadingSession());

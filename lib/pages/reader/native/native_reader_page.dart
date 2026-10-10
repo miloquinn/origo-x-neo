@@ -523,18 +523,16 @@ class _NativeReaderPageState extends State<NativeReaderPage>
       if (_readerSettingsLoaded) unawaited(_syncVolumeKeyPaging());
       return;
     }
-    // Save and invalidate once for the whole inactive/hidden/paused sequence.
+    // Save once for the whole inactive/hidden/paused sequence. Keep a completed
+    // viewport painted; geometry changes independently request relocation.
     if (_appLifecycleActive) {
       unawaited(_flushReadingSession());
       unawaited(_persistCurrentReaderPosition(reason: 'lifecycle'));
       _appLifecycleActive = false;
       if (_pageMode == NativePageMode.verticalScroll &&
-          _initialPositionRestored &&
-          !_exitInProgress) {
-        _requestPositionRestore();
-        _restoreContinuousAnchorCentered = (_anchorOffset ?? 0) > 0;
-      } else if (_pageMode == NativePageMode.verticalScroll &&
           !_initialPositionRestored) {
+        // Suspend only an unfinished restore so its old callbacks cannot
+        // publish while hidden. Resume will lay out the same pending anchor.
         ++_verticalScrollRevision;
         _initialPositionRestoreScheduled = false;
       }

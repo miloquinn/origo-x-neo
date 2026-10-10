@@ -1725,6 +1725,97 @@ void main() {
 
   for (final scrollByChapter in [false, true]) {
     for (final titlePage in [false, true]) {
+      testWidgets('vertical source stays painted on every resume frame '
+          '(scrollByChapter=$scrollByChapter, titlePage=$titlePage)', (
+        tester,
+      ) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey:
+              BookSourcePageMode.verticalScroll.name,
+          ReaderSettingsStore.scrollByChapterKey: scrollByChapter,
+          ReaderSettingsStore.chapterTitlePageKey: titlePage,
+        });
+        await tester.binding.setSurfaceSize(const Size(400, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final client = _ConfigurableBookSourceClient({
+          for (var index = 1; index <= 12; index++)
+            'chapter-$index': _tabletChapterText(150),
+        });
+        addTearDown(client.close);
+        await _progressFixture.store.save(
+          sourceId: _testSource().id,
+          bookId: 'book-1',
+          progress: BookSourceReadingProgress(
+            chapterId: 'chapter-8',
+            chapterIndex: 7,
+            chapterProgress: 0.35,
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        );
+        await tester.pumpWidget(_buildTabletSourceReader(client));
+        final surface = find.byKey(
+          const ValueKey('book-source-reader-surface'),
+        );
+        await _pumpUntilFound(tester, surface);
+        await tester.pumpAndSettle();
+        await tester.drag(surface, const Offset(0, -240));
+        await tester.pumpAndSettle();
+        final anchor = _sourceCenterAnchor(tester);
+        final anchorY = _sourceAnchorY(tester, anchor.$1, anchor.$2);
+        final paragraph = tester.renderObject<RenderParagraph>(
+          _sourceBodyText(
+            tester
+                .widgetList<ReaderAnnotatedTextPage>(
+                  find.byType(ReaderAnnotatedTextPage),
+                )
+                .firstWhere(
+                  (page) =>
+                      page.chapterId == anchor.$1 &&
+                      page.page.startOffset <= anchor.$2 &&
+                      page.page.endOffset > anchor.$2,
+                ),
+          ),
+        );
+        void expectStableFrame() {
+          expect(surface, findsOneWidget);
+          expect(
+            _sourceAnchorY(tester, anchor.$1, anchor.$2),
+            closeTo(anchorY, 0.01),
+            reason: 'App switching must not reposition already painted text.',
+          );
+          expect(paragraph.attached, isTrue);
+          expect(tester.takeException(), isNull);
+        }
+
+        for (var cycle = 0; cycle < 2; cycle++) {
+          for (final state in [
+            AppLifecycleState.inactive,
+            AppLifecycleState.hidden,
+            AppLifecycleState.paused,
+          ]) {
+            tester.binding.handleAppLifecycleStateChanged(state);
+            await tester.pump();
+            expectStableFrame();
+          }
+          for (final state in [
+            AppLifecycleState.hidden,
+            AppLifecycleState.inactive,
+            AppLifecycleState.resumed,
+          ]) {
+            tester.binding.handleAppLifecycleStateChanged(state);
+          }
+          for (var frame = 0; frame < 8; frame++) {
+            await tester.pump(const Duration(milliseconds: 16));
+            expectStableFrame();
+          }
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        debugDefaultTargetPlatformOverride = null;
+      });
+
       testWidgets('vertical source keeps its anchor across background relayout '
           '(scrollByChapter=$scrollByChapter, titlePage=$titlePage)', (
         tester,
@@ -1830,12 +1921,9 @@ void main() {
     final surface = find.byKey(const ValueKey('book-source-reader-surface'));
     await _pumpUntilFound(tester, surface);
     await tester.pumpAndSettle();
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    // A real layout change still restores an already-aligned chapter start.
+    // An unchanged app resume intentionally needs no restore frames.
+    await tester.binding.setSurfaceSize(const Size(430, 800));
     await tester.pump();
     await tester.pump();
     expect(

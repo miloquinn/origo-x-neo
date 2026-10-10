@@ -1005,7 +1005,7 @@ void main() {
   }
 
   testWidgets(
-    'iOS vertical TXT keeps its canonical center anchor across all lifecycle layout configurations',
+    'iOS vertical TXT keeps every lifecycle frame stable across all layout configurations',
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       tester.view.devicePixelRatio = 1;
@@ -1170,6 +1170,8 @@ void main() {
             final stableMetricsAfter = _nativeCenterAnchor(tester);
             _expectSameNativeCenterAnchor(after, stableMetricsAfter);
 
+            final unchangedViewportAnchor = stableMetricsAfter;
+
             tester
                 .widget<ReaderChromeOverlay>(find.byType(ReaderChromeOverlay))
                 .onTableOfContents!();
@@ -1198,6 +1200,57 @@ void main() {
             final navigationSheet = find.byType(ReaderNavigationSheet);
             Navigator.of(tester.element(navigationSheet)).pop();
             await tester.pumpAndSettle();
+
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.inactive,
+            );
+            await _pumpStableNativeResumeFrame(
+              tester,
+              unchangedViewportAnchor,
+              'inactive',
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.hidden,
+            );
+            await _pumpStableNativeResumeFrame(
+              tester,
+              unchangedViewportAnchor,
+              'hidden',
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.paused,
+            );
+            await _pumpStableNativeResumeFrame(
+              tester,
+              unchangedViewportAnchor,
+              'paused',
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.hidden,
+            );
+            await _pumpStableNativeResumeFrame(
+              tester,
+              unchangedViewportAnchor,
+              'returning hidden',
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.inactive,
+            );
+            await _pumpStableNativeResumeFrame(
+              tester,
+              unchangedViewportAnchor,
+              'returning inactive',
+            );
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.resumed,
+            );
+            for (var frame = 1; frame <= 8; frame++) {
+              await _pumpStableNativeResumeFrame(
+                tester,
+                unchangedViewportAnchor,
+                'resumed frame $frame',
+              );
+            }
             await tester.pumpWidget(const SizedBox.shrink());
             await tester.pumpAndSettle();
           }
@@ -1583,6 +1636,10 @@ typedef _NativeCenterAnchor = ({
   int chapterIndex,
   String chapterTitle,
   int sourceOffset,
+  String bodyText,
+  int textOffset,
+  Rect bodyRect,
+  Offset caretOffset,
   double caretY,
 });
 
@@ -1600,6 +1657,59 @@ void _expectSameNativeCenterAnchor(
     after.caretY,
     closeTo(before.caretY, 20),
     reason: 'The canonical text anchor must remain at viewport center.',
+  );
+}
+
+Future<void> _pumpStableNativeResumeFrame(
+  WidgetTester tester,
+  _NativeCenterAnchor expected,
+  String phase,
+) async {
+  await tester.pump(const Duration(milliseconds: 16));
+  expect(
+    find.byKey(const ValueKey('native-reader-positioning-placeholder')),
+    findsNothing,
+    reason: '$phase must keep the painted reader content mounted.',
+  );
+  expect(
+    find.byKey(const ValueKey('native-reader-content')),
+    findsOneWidget,
+    reason: '$phase must keep the native reader visible.',
+  );
+  final actual = _nativeCenterAnchor(tester);
+  expect(actual.chapterIndex, expected.chapterIndex, reason: phase);
+  expect(actual.bodyText, expected.bodyText, reason: phase);
+  expect(actual.textOffset, expected.textOffset, reason: phase);
+  expect(actual.sourceOffset, expected.sourceOffset, reason: phase);
+  expect(
+    actual.bodyRect.left,
+    closeTo(expected.bodyRect.left, 0.01),
+    reason: phase,
+  );
+  expect(
+    actual.bodyRect.top,
+    closeTo(expected.bodyRect.top, 0.01),
+    reason: phase,
+  );
+  expect(
+    actual.bodyRect.width,
+    closeTo(expected.bodyRect.width, 0.01),
+    reason: phase,
+  );
+  expect(
+    actual.bodyRect.height,
+    closeTo(expected.bodyRect.height, 0.01),
+    reason: phase,
+  );
+  expect(
+    actual.caretOffset.dx,
+    closeTo(expected.caretOffset.dx, 0.01),
+    reason: phase,
+  );
+  expect(
+    actual.caretOffset.dy,
+    closeTo(expected.caretOffset.dy, 0.01),
+    reason: phase,
   );
 }
 
@@ -1635,11 +1745,18 @@ _NativeCenterAnchor _nativeCenterAnchor(WidgetTester tester) {
       final position = paragraph.getPositionForOffset(
         Offset(paragraph.size.width / 2, center - top),
       );
+      final caretOffset = paragraph.localToGlobal(
+        paragraph.getOffsetForCaret(position, Rect.zero),
+      );
       return (
         chapterIndex: page.chapterIndex,
         chapterTitle: page.chapterTitle,
         sourceOffset: page.page.sourceOffsetForTextOffset(position.offset),
-        caretY: top + paragraph.getOffsetForCaret(position, Rect.zero).dy,
+        bodyText: (rich.widget as RichText).text.toPlainText(),
+        textOffset: position.offset,
+        bodyRect: paragraph.localToGlobal(Offset.zero) & paragraph.size,
+        caretOffset: caretOffset,
+        caretY: caretOffset.dy,
       );
     }
   }

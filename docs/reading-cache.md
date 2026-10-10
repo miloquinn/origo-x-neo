@@ -88,11 +88,15 @@ when iOS changes viewport or safe-area metrics during an app switch.
 
 Both readers initialize foreground ownership from the binding's current
 lifecycle state. On the first transition out of the foreground, the reader
-persists its last accepted position and keeps a restore pending. Subsequent
-`inactive`, `hidden` and `paused` notifications do not repeat that snapshot or
-reset its restore generation. Hidden position callbacks cannot change the
-chapter or progress. On resume, the current viewport and chrome are laid out before the
-canonical anchor is restored. Chapter starts retain their opening title/inline
+persists its last accepted position. A completed layout keeps its mounted list,
+painted text and scroll position across an unchanged app switch; lifecycle alone
+must not request canonical relocation or show a positioning placeholder.
+Only an unfinished navigation/layout restore is suspended and rescheduled.
+Subsequent `inactive`, `hidden` and `paused` notifications do not repeat that
+snapshot or reset its restore generation. Hidden position callbacks cannot
+change the chapter or progress. When a restore is needed, the current viewport
+and chrome are laid out before the canonical anchor is restored on resume.
+Chapter starts retain their opening title/inline
 heading alignment; body anchors return to screen center. Geometry changes use
 the same restore even without a lifecycle transition. Native reflow preserves
 an existing navigation cancellation predicate and completion rather than
@@ -123,9 +127,14 @@ Implementation: `native_reader_page.dart`, `native_reader_scaffold.dart`,
 and `book_source_reader_settings.dart`
 under `lib/pages/reader/`.
 Run the lifecycle cases in `test/native_reader_txt_title_page_test.dart` and
-`test/book_source_reader_page_test.dart` separately from other stateful suites,
-then the vertical TOC/saved-anchor cases, native EPUB initial-position cases,
-online chapter recovery and aloud navigation guard suites. Opt-in real-source
+`test/book_source_reader_page_test.dart` separately from other stateful suites.
+Their unchanged-viewport frame checks require the same text caret position and
+no native positioning placeholder on every background frame and the first eight
+resumed frames, for both chapter-scoped/whole-book scrolling and both title
+policies. Checking only the settled saved anchor
+misses flashes and intermediate chapter-start jumps. Also run the vertical
+TOC/saved-anchor cases, native EPUB initial-position cases, online chapter
+recovery and aloud navigation guard suites. Opt-in real-source
 diagnostics live in `tool/reader_vertical_live_fetch_test.dart` and
 `tool/reader_vertical_live_books_test.dart`: fetch actual chapters, then render
 those snapshots through the production online reader with controlled iOS
@@ -136,6 +145,7 @@ budgets are unchanged by this restore contract.
 
 Historical validation: [2026-10-09 iOS vertical reading position](reviews/2026-10-09-ios-vertical-reading-position.md).
 Follow-up cleanup and real-book validation: [2026-10-10 audit](reviews/2026-10-10-ios-vertical-reading-cleanup.md).
+Unchanged-viewport frame validation: [2026-10-10 resume flicker](reviews/2026-10-10-reader-resume-flicker.md).
 
 ## Online chapter preparation
 
