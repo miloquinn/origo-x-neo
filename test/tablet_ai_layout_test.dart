@@ -8,6 +8,7 @@ import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 
 class _ConfiguredAiService implements ConfigurableAIService {
   const _ConfiguredAiService({this.answer = 'answer'});
@@ -135,6 +136,12 @@ AiChatHistorySession _longSession() {
 }
 
 void main() {
+  setUp(() {
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: false);
+  });
+  tearDown(() {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+  });
   setUp(() {
     SharedPreferences.setMockInitialValues(const {});
   });

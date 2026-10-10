@@ -10,6 +10,7 @@ import 'package:xxread/pages/reader/comic/comic_reader_page.dart';
 import 'package:xxread/pages/reader/comic/online_comic_kind.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 
 /// Builds the correct online reader while callers retain resource ownership.
 Widget buildOnlineReader({
@@ -46,11 +47,14 @@ Widget buildOnlineReader({
     resolvedBook = sourceBook!;
   }
   if (isOnlineComicSource(resolvedSource, resolvedBook)) {
-    return ComicReaderPage.online(
-      source: resolvedSource,
-      book: resolvedBook,
-      client: client,
-      theme: initialTheme,
+    return StoreReaderAccessGate(
+      requireAccountFeatureAccess: true,
+      pageBuilder: (_) => ComicReaderPage.online(
+        source: resolvedSource,
+        book: resolvedBook,
+        client: client,
+        theme: initialTheme,
+      ),
     );
   }
   return BookSourceReaderPage(

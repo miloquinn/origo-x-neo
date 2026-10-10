@@ -590,9 +590,13 @@ extension _SettingsAppearancePart on _SettingsPageState {
           ? l10n.customFontsEmpty
           : l10n.customFontsCount(count),
       icon: Icons.folder_copy_outlined,
-      onTap: () => Navigator.of(
-        context,
-      ).push(MaterialPageRoute<void>(builder: (_) => const CustomFontsPage())),
+      onTap: () async {
+        if (!await ensureAccountReaderFeatureAccess(context)) return;
+        if (!mounted) return;
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const CustomFontsPage()),
+        );
+      },
     );
   }
 

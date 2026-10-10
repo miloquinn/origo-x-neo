@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,6 +21,7 @@ import 'pill_input_surface.dart';
 import 'measured_size.dart';
 import 'glass_bottom_sheet.dart';
 import 'side_toast.dart';
+import 'store_reader_access_gate.dart';
 
 /// Selection context that seeds the conversation when the panel is opened
 /// from the text-selection toolbar.
@@ -54,7 +56,9 @@ Future<void> showReaderAiPanelSheet({
   String bookTitle = '',
   ReaderAiSelectionContext? selection,
   ConfigurableAIService? aiService,
-}) {
+}) async {
+  if (!await ensureAccountReaderFeatureAccess(context)) return;
+  if (!context.mounted) return;
   final historyStore = context.read<AiChatHistoryStore>();
   return showGlassBottomSheet<void>(
     context: context,
@@ -150,6 +154,7 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
   String? _sessionId;
   DateTime? _sessionCreatedAt;
   double _overlayHeight = 52;
+  CancelToken? _sendCancelToken;
 
   @override
   void initState() {
@@ -159,6 +164,7 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
 
   @override
   void dispose() {
+    _sendCancelToken?.cancel('AI feature access ended');
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -214,6 +220,7 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
     required String display,
     required String content,
   }) async {
+    final cancelToken = _sendCancelToken = CancelToken();
     setState(() {
       _entries.add(
         _ReaderAiChatEntry(role: 'user', display: display, content: content),
@@ -234,7 +241,9 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
           history: history,
           pageText: widget.pageText,
           meta: widget.meta,
+          cancelToken: cancelToken,
         ),
+        onAccessRevoked: () => cancelToken.cancel('AI feature access ended'),
       );
       if (!mounted) return;
       setState(() {
@@ -254,6 +263,14 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
         _sending = false;
         _error = translateAIServiceException(context, exception);
       });
+    } on DioException catch (exception) {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _error = CancelToken.isCancel(exception)
+            ? null
+            : context.l10n.readerAiUnknownError;
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -261,6 +278,7 @@ class _ReaderAiPanelState extends State<ReaderAiPanel> {
         _error = context.l10n.readerAiUnknownError;
       });
     }
+    if (identical(_sendCancelToken, cancelToken)) _sendCancelToken = null;
     _scrollToBottomSoon();
   }
 

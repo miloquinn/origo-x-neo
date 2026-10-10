@@ -212,6 +212,29 @@ void main() {
     },
   );
 
+  testWidgets('Explore states Read inclusion and unlimited source quota', (
+    tester,
+  ) async {
+    AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);
+    final store = _FakeAppleStore();
+    final account = _TestAccount(store: store, permanentReader: false);
+    addTearDown(account.dispose);
+    addTearDown(store.close);
+    await _pumpPage(tester, account: account);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('premium-benefit-read')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('premium-benefit-unlimited-sources')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('普通账号最多 2 个'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('premium-benefit-private-network')),
+      findsOneWidget,
+    );
+  });
+
   for (final premium in [false, true]) {
     testWidgets('restore and redemption share a row, premium=$premium', (
       tester,
@@ -685,7 +708,9 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.text('更多书源协议'), findsWidgets);
+      expect(find.text('其他协议书源不限量'), findsWidgets);
+      expect(find.textContaining('AI 阅读助手'), findsWidgets);
+      expect(find.textContaining('漫画阅读'), findsWidgets);
       expect(find.textContaining('局域网'), findsOneWidget);
       final pageColors = Theme.of(
         tester.element(find.byKey(const ValueKey('premium-membership-card'))),
@@ -1479,6 +1504,19 @@ class _TestAccount extends MemberAccountController {
 
   @override
   bool get hasPermanentReaderAccess => permanentReader;
+
+  @override
+  bool get hasAccountReaderFeatureAccess => permanentReader || premium;
+
+  @override
+  bool get hasPermanentAccountReaderFeatureAccess => permanentReader || premium;
+
+  @override
+  bool get readerFeaturesForDisplay => hasAccountReaderFeatureAccess;
+
+  @override
+  bool get permanentReaderFeaturesForDisplay =>
+      hasPermanentAccountReaderFeatureAccess;
 
   @override
   bool get premiumPurchaseLoading =>

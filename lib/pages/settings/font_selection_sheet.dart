@@ -8,6 +8,7 @@ import 'package:xxread/utils/font_catalog_helper.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/side_toast.dart';
 import 'package:xxread/widgets/glass_bottom_sheet.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 
 class FontSelectionSheet extends StatefulWidget {
   const FontSelectionSheet({
@@ -67,6 +68,8 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
   }
 
   Future<void> _importFont() async {
+    if (!await ensureAccountReaderFeatureAccess(context)) return;
+    if (!mounted) return;
     setState(() => _importing = true);
     try {
       final result = await _settings.importCustomFont(widget.domain);
@@ -88,6 +91,11 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
   }
 
   Future<void> _selectFont(String id) async {
+    final isCustom = _settings.availableCustomFonts.any(
+      (option) => option.id == id,
+    );
+    if (isCustom && !await ensureAccountReaderFeatureAccess(context)) return;
+    if (!mounted) return;
     switch (widget.domain) {
       case FontDomain.app:
         await _settings.setAppFontId(id);
@@ -160,6 +168,7 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.tonalIcon(
+                        key: const ValueKey('font-selection-import'),
                         onPressed:
                             _importing || !_settings.customFontImportSupported
                             ? null

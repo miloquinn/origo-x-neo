@@ -87,6 +87,7 @@ class AppSettingsNotifier extends ChangeNotifier {
       LibraryBookOpenAnimationPace.fast;
   final MemberAccountController? _account;
   late bool _lastAdvancedFeaturesUnlocked;
+  late bool _lastReaderFeaturesUnlocked;
   bool _additionalSourceProtocolsEnabled = true;
   bool _showDiscoverSourceFilters = true;
   bool _privateBookSourceNetworkEnabled = true;
@@ -109,6 +110,7 @@ class AppSettingsNotifier extends ChangeNotifier {
        _displayRefreshRateController =
            displayRefreshRateController ?? DisplayRefreshRateController() {
     _lastAdvancedFeaturesUnlocked = advancedFeaturesUnlocked;
+    _lastReaderFeaturesUnlocked = readerFeaturesUnlocked;
     _account?.addListener(_handleMembershipChanged);
     _syncAdvancedFeatureAccess();
     _loadSettings();
@@ -118,9 +120,30 @@ class AppSettingsNotifier extends ChangeNotifier {
   String get localeCode => _localeCode;
   int get appTextScaleLevel => _appTextScaleLevel;
   double get appTextScaleFactor => appTextScaleFactors[_appTextScaleLevel];
-  String get appFontId => _appFontId;
-  String get readerFontId => _readerFontId;
-  String get epubReaderFontId => _epubReaderFontId;
+  String get appFontId =>
+      !readerFeaturesUnlocked &&
+          FontCatalog.appFontForId(
+            _appFontId,
+            customFonts: availableCustomFonts,
+          ).isCustom
+      ? FontCatalog.defaultAppFont.id
+      : _appFontId;
+  String get readerFontId =>
+      !readerFeaturesUnlocked &&
+          FontCatalog.readerFontForId(
+            _readerFontId,
+            customFonts: availableCustomFonts,
+          ).isCustom
+      ? FontCatalog.defaultReaderFont.id
+      : _readerFontId;
+  String get epubReaderFontId =>
+      !readerFeaturesUnlocked &&
+          FontCatalog.epubReaderFontForId(
+            _epubReaderFontId,
+            customFonts: availableCustomFonts,
+          ).isCustom
+      ? FontCatalog.bookEmbeddedId
+      : _epubReaderFontId;
   bool get hideNavigationLabels => _hideNavigationLabels;
   bool get showNavigationLabels => !_hideNavigationLabels;
   List<HomeNavigationDestination> get homeNavigationOrder =>
@@ -155,22 +178,32 @@ class AppSettingsNotifier extends ChangeNotifier {
       _libraryBookOpenAnimationPace;
   bool get advancedFeaturesUnlocked =>
       _account?.hasAdvancedSourceAccess ?? false;
+  bool get readerFeaturesUnlocked =>
+      _account?.hasAccountReaderFeatureAccess ?? false;
   bool get additionalSourceProtocolsEnabled =>
-      advancedFeaturesUnlocked && _additionalSourceProtocolsEnabled;
+      _additionalSourceProtocolsEnabled;
   bool get showDiscoverSourceFilters => _showDiscoverSourceFilters;
   bool get privateBookSourceNetworkEnabled =>
       advancedFeaturesUnlocked && _privateBookSourceNetworkEnabled;
 
   void _syncAdvancedFeatureAccess() {
-    AdvancedFeatureAccess.premiumUnlocked = advancedFeaturesUnlocked;
+    AdvancedFeatureAccess.update(
+      readerUnlocked: readerFeaturesUnlocked,
+      premiumUnlocked: advancedFeaturesUnlocked,
+    );
     BookSourceNetworkPolicy.preferredPrivateNetwork =
         privateBookSourceNetworkEnabled;
   }
 
   void _handleMembershipChanged() {
     final unlocked = advancedFeaturesUnlocked;
-    if (unlocked == _lastAdvancedFeaturesUnlocked) return;
+    final readerUnlocked = readerFeaturesUnlocked;
+    if (unlocked == _lastAdvancedFeaturesUnlocked &&
+        readerUnlocked == _lastReaderFeaturesUnlocked) {
+      return;
+    }
     _lastAdvancedFeaturesUnlocked = unlocked;
+    _lastReaderFeaturesUnlocked = readerUnlocked;
     _syncAdvancedFeatureAccess();
     notifyListeners();
   }
@@ -209,13 +242,13 @@ class AppSettingsNotifier extends ChangeNotifier {
   ];
 
   FontOption get appFont =>
-      FontCatalog.appFontForId(_appFontId, customFonts: availableCustomFonts);
+      FontCatalog.appFontForId(appFontId, customFonts: availableCustomFonts);
   FontOption get readerFont => FontCatalog.readerFontForId(
-    _readerFontId,
+    readerFontId,
     customFonts: availableCustomFonts,
   );
   FontOption get epubReaderFont => FontCatalog.epubReaderFontForId(
-    _epubReaderFontId,
+    epubReaderFontId,
     customFonts: availableCustomFonts,
   );
   String? get appFontFamily => appFont.family;
@@ -468,19 +501,28 @@ class AppSettingsNotifier extends ChangeNotifier {
     _appFontId = await _restoreFontSelection(
       prefs: prefs,
       key: _keyAppFontId,
-      option: appFont,
+      option: FontCatalog.appFontForId(
+        _appFontId,
+        customFonts: availableCustomFonts,
+      ),
       fallbackId: FontCatalog.defaultAppFont.id,
     );
     _readerFontId = await _restoreFontSelection(
       prefs: prefs,
       key: _keyReaderFontId,
-      option: readerFont,
+      option: FontCatalog.readerFontForId(
+        _readerFontId,
+        customFonts: availableCustomFonts,
+      ),
       fallbackId: FontCatalog.defaultReaderFont.id,
     );
     _epubReaderFontId = await _restoreFontSelection(
       prefs: prefs,
       key: _keyEpubReaderFontId,
-      option: epubReaderFont,
+      option: FontCatalog.epubReaderFontForId(
+        _epubReaderFontId,
+        customFonts: availableCustomFonts,
+      ),
       fallbackId: FontCatalog.bookEmbeddedId,
     );
   }
@@ -563,7 +605,9 @@ class AppSettingsNotifier extends ChangeNotifier {
       normalized,
       customFonts: availableCustomFonts,
     );
+    if (option.isCustom) AdvancedFeatureAccess.requireReaderFeatures();
     if (!await _ensureFontLoaded(option)) return;
+    if (option.isCustom) AdvancedFeatureAccess.requireReaderFeatures();
     _appFontId = normalized;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
@@ -580,7 +624,9 @@ class AppSettingsNotifier extends ChangeNotifier {
       normalized,
       customFonts: availableCustomFonts,
     );
+    if (option.isCustom) AdvancedFeatureAccess.requireReaderFeatures();
     if (!await _ensureFontLoaded(option)) return;
+    if (option.isCustom) AdvancedFeatureAccess.requireReaderFeatures();
     _readerFontId = normalized;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
@@ -597,7 +643,9 @@ class AppSettingsNotifier extends ChangeNotifier {
       normalized,
       customFonts: availableCustomFonts,
     );
+    if (option.isCustom) AdvancedFeatureAccess.requireReaderFeatures();
     if (!await _ensureFontLoaded(option)) return;
+    if (option.isCustom) AdvancedFeatureAccess.requireReaderFeatures();
     _epubReaderFontId = normalized;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
@@ -757,7 +805,6 @@ class AppSettingsNotifier extends ChangeNotifier {
   }
 
   Future<void> setAdditionalSourceProtocolsEnabled(bool value) async {
-    if (value && !advancedFeaturesUnlocked) return;
     if (_additionalSourceProtocolsEnabled == value) return;
     _additionalSourceProtocolsEnabled = value;
     notifyListeners();
@@ -797,7 +844,9 @@ class AppSettingsNotifier extends ChangeNotifier {
   }
 
   Future<CustomFontImportResult> importCustomFont([FontDomain? domain]) async {
+    AdvancedFeatureAccess.requireReaderFeatures();
     final result = await _customFontService.importFont();
+    AdvancedFeatureAccess.requireReaderFeatures();
     final imported = result.font;
     if (imported == null) return result;
     notifyListeners();

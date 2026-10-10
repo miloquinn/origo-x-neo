@@ -17,10 +17,17 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 import 'package:xxread/services/ai/reading_agent_data_source.dart';
 import 'package:xxread/services/ai/reading_agent_memory_store.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 import 'package:xxread/widgets/glass_surface.dart';
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues(const {}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues(const {});
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: false);
+  });
+  tearDown(() {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+  });
 
   testWidgets(
     'disabled agent keeps old chat path and never starts automatically',

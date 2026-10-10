@@ -10,13 +10,18 @@ import 'package:xxread/services/core/advanced_feature_access.dart';
 
 void main() {
   test(
-    'runtime checks membership on every operation despite saved opt-in',
+    'runtime compatibility switch is independent from premium access',
     () async {
       SharedPreferences.setMockInitialValues({
-        additionalSourceProtocolsPreferenceKey: true,
+        additionalSourceProtocolsPreferenceKey: false,
       });
-      AdvancedFeatureAccess.premiumUnlocked = false;
-      addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
+      AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: true);
+      addTearDown(
+        () => AdvancedFeatureAccess.update(
+          readerUnlocked: false,
+          premiumUnlocked: false,
+        ),
+      );
       final runtime = _LoginRuntime();
       final backend = ReadingSourceBackend(() => runtime);
       final source = RegisteredBookSource(
@@ -39,10 +44,15 @@ void main() {
         throwsA(isA<BookSourceProtocolException>()),
       );
       expect(runtime.calls, 0);
-      AdvancedFeatureAccess.premiumUnlocked = true;
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(additionalSourceProtocolsPreferenceKey, true);
+      AdvancedFeatureAccess.update(
+        readerUnlocked: false,
+        premiumUnlocked: false,
+      );
       expect(await backend.loadLoginFields(source), isEmpty);
       expect(runtime.calls, 1);
-      AdvancedFeatureAccess.premiumUnlocked = false;
+      await preferences.setBool(additionalSourceProtocolsPreferenceKey, false);
       await expectLater(
         backend.loadLoginFields(source),
         throwsA(isA<BookSourceProtocolException>()),

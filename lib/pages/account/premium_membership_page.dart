@@ -9,6 +9,7 @@ import '../../services/account/account.dart';
 import '../../services/core/app_distribution.dart';
 import '../../utils/localization_extension.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/glass_surface.dart';
 import '../../widgets/purchase_icons.dart';
 import '../../widgets/purchase_page_scaffold.dart';
 import 'account_page.dart';
@@ -263,86 +264,11 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
 
   Widget _summary(MemberAccountController account) {
     final l10n = context.l10n;
-    final membership = account.membershipForDisplay;
-    final premium = account.premiumForDisplay;
     final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Column(
-          key: const ValueKey('premium-membership-card'),
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.premiumEditorialSubtitle,
-              style: TextStyle(
-                color: colors.onSurfaceVariant,
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-        if (premium) ...[
-          const SizedBox(height: 16),
-          if (membership?.premiumExpiresAt != null)
-            DecoratedBox(
-              key: const ValueKey('premium-trial-status'),
-              decoration: BoxDecoration(
-                color: colors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                child: Row(
-                  key: const ValueKey('premium-active'),
-                  children: [
-                    Icon(
-                      Icons.schedule_rounded,
-                      size: 17,
-                      color: colors.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _membershipSourceMessage(context, membership),
-                        key: const ValueKey('premium-membership-source'),
-                        style: TextStyle(
-                          color: colors.onSurfaceVariant,
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Text(
-              _membershipSourceMessage(context, membership),
-              key: const ValueKey('premium-membership-source'),
-              style: TextStyle(
-                color: colors.onSurfaceVariant,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-        ],
-        if (account.membershipSyncFailed ||
-            (account.isAuthenticated && membership == null)) ...[
-          const SizedBox(height: 8),
-          Text(
-            account.membershipSyncFailed
-                ? l10n.premiumSyncFailed
-                : l10n.premiumSyncPending,
-            key: const ValueKey('premium-sync-failed'),
-            style: TextStyle(color: colors.error, fontSize: 13, height: 1.4),
-          ),
-        ],
+        _membershipHeader(account),
         const SizedBox(height: 24),
         Text(
           l10n.premiumBenefitsTitle,
@@ -354,29 +280,19 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
         Column(
           key: const ValueKey('premium-benefits'),
           children: [
-            _benefit(
-              PurchaseIcons.bookOpenText,
-              l10n.storeReaderLifetimeTitle,
-              l10n.premiumIncludesReaderAccess,
-            ),
-            Divider(
-              height: 1,
-              color: colors.outlineVariant.withValues(alpha: 0.5),
-            ),
-            _benefit(
-              PurchaseIcons.stack,
-              l10n.settingsAdditionalSourceProtocolsTitle,
-              l10n.premiumProtocolsBenefit,
-            ),
-            Divider(
-              height: 1,
-              color: colors.outlineVariant.withValues(alpha: 0.5),
-            ),
-            _benefit(
-              PurchaseIcons.graph,
-              l10n.settingsPrivateBookSourceNetworkTitle,
-              l10n.premiumPrivateNetworkBenefit,
-            ),
+            for (final (index, benefit) in _premiumBenefits().indexed) ...[
+              if (index > 0)
+                Divider(
+                  height: 1,
+                  color: colors.outlineVariant.withValues(alpha: 0.5),
+                ),
+              _benefit(
+                benefit.icon,
+                benefit.title,
+                benefit.description,
+                key: benefit.key,
+              ),
+            ],
           ],
         ),
         Padding(
@@ -417,6 +333,143 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
         ),
       ],
     );
+  }
+
+  Widget _membershipHeader(MemberAccountController account) {
+    final l10n = context.l10n;
+    final colors = Theme.of(context).colorScheme;
+    final membership = account.membershipForDisplay;
+    final premium = account.premiumForDisplay;
+    final syncPending =
+        account.membershipSyncFailed ||
+        (account.isAuthenticated && membership == null);
+    return GlassSurface(
+      key: const ValueKey('premium-membership-card'),
+      role: GlassSurfaceRole.panel,
+      emphasized: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: colors.primaryContainer.withValues(alpha: 0.72),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.explore_rounded,
+                color: colors.onPrimaryContainer,
+                size: 25,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.premiumLifetimeTitle,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    account.permanentReaderFeaturesForDisplay
+                        ? l10n.storePremiumPrerequisiteBody
+                        : l10n.premiumEditorialSubtitle,
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 13,
+                      height: 1.45,
+                    ),
+                  ),
+                  if (premium) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      key: membership?.premiumExpiresAt != null
+                          ? const ValueKey('premium-trial-status')
+                          : null,
+                      child: Row(
+                        key: membership?.premiumExpiresAt != null
+                            ? const ValueKey('premium-active')
+                            : null,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            membership?.premiumExpiresAt != null
+                                ? Icons.schedule_rounded
+                                : Icons.verified_rounded,
+                            size: 17,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              _membershipSourceMessage(context, membership),
+                              key: const ValueKey('premium-membership-source'),
+                              style: TextStyle(
+                                color: colors.onSurfaceVariant,
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (syncPending) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      account.membershipSyncFailed
+                          ? l10n.premiumSyncFailed
+                          : l10n.premiumSyncPending,
+                      key: const ValueKey('premium-sync-failed'),
+                      style: TextStyle(
+                        color: colors.error,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<({IconData icon, String title, String description, Key key})>
+  _premiumBenefits() {
+    final l10n = context.l10n;
+    return [
+      (
+        icon: PurchaseIcons.bookOpenText,
+        title: l10n.storeReaderLifetimeTitle,
+        description: l10n.premiumIncludesReaderAccess,
+        key: const ValueKey('premium-benefit-read'),
+      ),
+      (
+        icon: PurchaseIcons.stack,
+        title: l10n.premiumUnlimitedSourcesTitle,
+        description: l10n.premiumUnlimitedSourcesBenefit(2),
+        key: const ValueKey('premium-benefit-unlimited-sources'),
+      ),
+      (
+        icon: PurchaseIcons.graph,
+        title: l10n.settingsPrivateBookSourceNetworkTitle,
+        description: l10n.premiumPrivateNetworkBenefit,
+        key: const ValueKey('premium-benefit-private-network'),
+      ),
+    ];
   }
 
   Widget _footer(MemberAccountController account) {
@@ -678,7 +731,13 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
     ),
   );
 
-  Widget _benefit(IconData icon, String title, String description) => Padding(
+  Widget _benefit(
+    IconData icon,
+    String title,
+    String description, {
+    Key? key,
+  }) => Padding(
+    key: key,
     padding: const EdgeInsets.symmetric(vertical: 14),
     child: Row(
       children: [
@@ -723,18 +782,8 @@ class _PremiumMembershipContentState extends State<_PremiumMembershipContent>
           child: PurchaseDetailsPage(
             title: l10n.premiumBenefitsTitle,
             children: [
-              _detailsSection(
-                l10n.storeReaderLifetimeTitle,
-                l10n.premiumIncludesReaderAccess,
-              ),
-              _detailsSection(
-                l10n.settingsAdditionalSourceProtocolsTitle,
-                l10n.premiumProtocolsBenefit,
-              ),
-              _detailsSection(
-                l10n.settingsPrivateBookSourceNetworkTitle,
-                l10n.premiumPrivateNetworkBenefit,
-              ),
+              for (final benefit in _premiumBenefits())
+                _detailsSection(benefit.title, benefit.description),
               _detailsSection(
                 l10n.premiumBenefitsTitle,
                 l10n.premiumSourceNotice,

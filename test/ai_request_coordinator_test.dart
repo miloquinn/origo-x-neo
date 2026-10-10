@@ -7,6 +7,8 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_request_coordinator.dart';
 import 'package:xxread/services/ai/book_preprocess_service.dart';
 import 'package:xxread/services/ai/global_ai_reading_service.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
+import 'package:xxread/services/account/account_api_client.dart';
 import 'package:xxread/services/books/book_text_extraction_service.dart';
 
 /// 记录调用并按外部指令放行的假 AI 服务；可预置若干次失败。
@@ -84,6 +86,25 @@ class _InFlightAIService extends _RecordingAIService {
   }
 }
 
+class _BlockingCancelableAIService extends _RecordingAIService {
+  final Completer<void> started = Completer<void>();
+  CancelToken? transportCancelToken;
+
+  @override
+  Future<String> chat({
+    required List<AIChatMessage> history,
+    required String pageText,
+    required AIRequestMeta meta,
+    CancelToken? cancelToken,
+  }) async {
+    transportCancelToken = cancelToken;
+    if (!started.isCompleted) started.complete();
+    if (cancelToken == null) return Completer<String>().future;
+    final cancellation = await cancelToken.whenCancel;
+    throw cancellation;
+  }
+}
+
 class _FakeExtractor extends BookTextExtractionService {
   const _FakeExtractor();
 
@@ -148,7 +169,61 @@ BookPreprocessService _testService({
 }
 
 void main() {
+  setUp(
+    () => AdvancedFeatureAccess.update(
+      readerUnlocked: true,
+      premiumUnlocked: false,
+    ),
+  );
+  tearDown(
+    () => AdvancedFeatureAccess.update(
+      readerUnlocked: false,
+      premiumUnlocked: false,
+    ),
+  );
+
   group('AiRequestCoordinator', () {
+    test('normal account cannot start an interactive AI request', () async {
+      AdvancedFeatureAccess.update(
+        readerUnlocked: false,
+        premiumUnlocked: false,
+      );
+      var called = false;
+
+      await expectLater(
+        AiRequestCoordinator.forTesting().runInteractive(() async {
+          called = true;
+          return 'answer';
+        }),
+        throwsA(isA<MemberAccountException>()),
+      );
+      expect(called, isFalse);
+    });
+
+    test(
+      'revocation signals cancellation and discards an in-flight result',
+      () async {
+        final coordinator = AiRequestCoordinator.forTesting();
+        final provider = Completer<String>();
+        var revoked = false;
+        final request = coordinator.runInteractive(
+          () => provider.future,
+          onAccessRevoked: () {
+            revoked = true;
+            provider.complete('stale answer');
+          },
+        );
+
+        AdvancedFeatureAccess.update(
+          readerUnlocked: false,
+          premiumUnlocked: false,
+        );
+
+        await expectLater(request, throwsA(isA<MemberAccountException>()));
+        expect(revoked, isTrue);
+        expect(coordinator.hasInteractiveRequests, isFalse);
+      },
+    );
     test('无交互请求时 waitUntilInteractiveIdle 立即完成', () async {
       final coordinator = AiRequestCoordinator.forTesting();
       var idle = false;
@@ -227,6 +302,52 @@ void main() {
   });
 
   group('BookPreprocessService 与对话并发', () {
+    test('normal account cannot bypass preprocessing service', () async {
+      AdvancedFeatureAccess.update(
+        readerUnlocked: false,
+        premiumUnlocked: false,
+      );
+      final ai = _RecordingAIService();
+      final knowledge = _MemoryKnowledge();
+      final service = _testService(
+        ai: ai,
+        knowledge: knowledge,
+        coordinator: AiRequestCoordinator.forTesting(),
+      );
+
+      await expectLater(
+        service.preprocessBook(book: _testBook()),
+        throwsA(isA<MemberAccountException>()),
+      );
+      expect(ai.chatCalls, isEmpty);
+      expect(knowledge.summaries, isEmpty);
+    });
+
+    test(
+      'membership revocation cancels blocked provider transport without saving',
+      () async {
+        final ai = _BlockingCancelableAIService();
+        final knowledge = _MemoryKnowledge();
+        final service = _testService(
+          ai: ai,
+          knowledge: knowledge,
+          coordinator: AiRequestCoordinator.forTesting(),
+        );
+
+        final preprocess = service.preprocessBook(book: _testBook());
+        await ai.started.future;
+
+        AdvancedFeatureAccess.update(
+          readerUnlocked: false,
+          premiumUnlocked: false,
+        );
+
+        await expectLater(preprocess, throwsA(isA<BookPreprocessCancelled>()));
+        expect(ai.transportCancelToken?.isCancelled, isTrue);
+        expect(knowledge.summaries, isEmpty);
+      },
+    );
+
     test('预处理让行：对话请求在途时分块请求暂停，结束后继续', () async {
       final coordinator = AiRequestCoordinator.forTesting();
       final ai = _RecordingAIService();

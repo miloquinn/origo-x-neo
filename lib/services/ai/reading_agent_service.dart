@@ -6,6 +6,7 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_request_coordinator.dart';
 import 'package:xxread/services/ai/reading_agent_data_source.dart';
 import 'package:xxread/services/ai/reading_agent_memory_store.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 
 class ReadingAgentRecommendation {
   const ReadingAgentRecommendation({required this.book, required this.reason});
@@ -75,6 +76,7 @@ class ReadingAgentService {
     String bookContext = '',
     void Function(String tool)? onTool,
   }) async {
+    AdvancedFeatureAccess.requireReaderFeatures();
     await memory.ensureLoaded();
     if (!memory.permissions.enabled) {
       throw const AIServiceException(code: 'agent_disabled');
@@ -95,6 +97,7 @@ class ReadingAgentService {
     void checkCurrent() {
       if (generation != _generation ||
           cancellation.isCancelled ||
+          !AdvancedFeatureAccess.readerFeaturesUnlocked ||
           !memory.permissions.enabled) {
         if (!cancellation.isCancelled) {
           cancellation.cancel('Agent access revoked');
@@ -254,6 +257,7 @@ class ReadingAgentService {
                 throw const AIServiceException(code: 'agent_timeout');
               },
             ),
+        onAccessRevoked: cancel,
       );
       checkCurrent();
       return ReadingAgentResult(

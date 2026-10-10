@@ -60,6 +60,8 @@ extension _LibraryPageBookCommands on _LibraryPageState {
   /// 手动 AI 预处理：校验模型可用并确认 token 消耗后加入后台队列，
   /// 进度到"下载任务"页的 AI 预处理 Tab 查看。
   Future<void> _confirmAiPreprocess(Book book) async {
+    if (!await ensureAccountReaderFeatureAccess(context)) return;
+    if (!mounted) return;
     final l10n = context.l10n;
     final settings = await ReaderHttpAIService().loadSettings();
     if (!mounted) return;
@@ -93,6 +95,8 @@ extension _LibraryPageBookCommands on _LibraryPageState {
     final fullBook = book.id == null
         ? null
         : await _bookDao.getBookById(book.id!);
+    if (!mounted) return;
+    if (!await ensureAccountReaderFeatureAccess(context)) return;
     if (!mounted) return;
     AiPreprocessTaskController().enqueue(fullBook ?? book);
     showSideToast(

@@ -24,6 +24,20 @@ class _Account extends MemberAccountController {
   @override
   bool get hasPermanentReaderAccess => permanent;
   @override
+  bool get hasAccountReaderFeatureAccess =>
+      premium ||
+      temporary ||
+      readerEntitlement ||
+      (AppDistribution.isStore && permanent);
+  @override
+  bool get hasPermanentAccountReaderFeatureAccess =>
+      premium || readerEntitlement || (AppDistribution.isStore && permanent);
+  @override
+  bool get readerFeaturesForDisplay => hasAccountReaderFeatureAccess;
+  @override
+  bool get permanentReaderFeaturesForDisplay =>
+      hasPermanentAccountReaderFeatureAccess;
+  @override
   bool get hasPremiumAccess => premium;
   @override
   bool get hasStoreReaderEntitlement => readerEntitlement;
@@ -108,11 +122,11 @@ void main() {
       );
       expect(
         find.byKey(const ValueKey('settings-reader-license')),
-        findsNothing,
+        findsOneWidget,
       );
       expect(
         find.byKey(const ValueKey('settings-membership-entry')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.byKey(const ValueKey('settings-account-reader-badge')),
@@ -157,21 +171,21 @@ void main() {
       final explore = find.byKey(
         const ValueKey('settings-explore-entitlement'),
       );
-      expect(reader, findsNothing);
-      expect(upgrade, findsOneWidget);
+      expect(reader, findsOneWidget);
+      expect(upgrade, findsNothing);
       expect(explore, findsNothing);
       // The direct build is free to use; free access is not a paid Read badge.
       expect(readerBadge, findsNothing);
       expect(exploreBadge, findsNothing);
 
-      // Store testing access is temporary and must not impersonate ownership.
+      // Temporary access does not impersonate permanent ownership.
       account.grantTemporaryAccess();
       await tester.pump();
       expect(readerBadge, findsNothing);
       expect(exploreBadge, findsNothing);
       expect(explore, findsNothing);
-      expect(reader, findsNothing);
-      expect(upgrade, findsOneWidget);
+      expect(reader, findsOneWidget);
+      expect(upgrade, findsNothing);
 
       // Explore includes reading, even when no separate Read purchase exists.
       account.update(ownsApp: false, ownsPremium: true);
@@ -216,31 +230,42 @@ void main() {
   }
 
   for (final reducedMotion in [false, true]) {
-    testWidgets('paper entrance respects reduced motion: $reducedMotion', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: MediaQueryData(disableAnimations: reducedMotion),
-            child: Scaffold(
-              body: MembershipOfferCard(offerRead: true, onTap: () {}),
+    testWidgets(
+      'glass membership offer is static and accessible: $reducedMotion',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MediaQuery(
+              data: MediaQueryData(disableAnimations: reducedMotion),
+              child: Scaffold(
+                body: MembershipOfferCard(offerRead: true, onTap: () {}),
+              ),
             ),
           ),
-        ),
-      );
-      final art = find.byKey(const ValueKey('membership-paper-art'));
-      final first = tester.widget<CustomPaint>(art).painter!;
-      await tester.pump(const Duration(milliseconds: 500));
-      final middle = tester.widget<CustomPaint>(art).painter!;
-      expect(middle.shouldRepaint(first), !reducedMotion);
-      await tester.pumpAndSettle();
-      expect(tester.binding.transientCallbackCount, 0);
-      expect(tester.takeException(), isNull);
-    });
+        );
+        expect(
+          find.byKey(const ValueKey('membership-paper-art')),
+          findsNothing,
+        );
+        final offer = find.byKey(const ValueKey('settings-reader-license'));
+        expect(offer.hitTestable(), findsOneWidget);
+        expect(tester.getRect(offer).height, greaterThanOrEqualTo(48));
+        expect(
+          find.byKey(const ValueKey('settings-membership-benefits')),
+          findsOneWidget,
+        );
+        final benefits = tester.widget<Text>(
+          find.byKey(const ValueKey('settings-membership-benefits')),
+        );
+        expect(benefits.maxLines, isNull);
+        expect(benefits.overflow, isNull);
+        expect(tester.binding.transientCallbackCount, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   for (final layout in [
@@ -254,7 +279,7 @@ void main() {
     (name: 'english', read: true, explore: false, dark: false, scale: 1.6),
     (name: 'german', read: false, explore: false, dark: false, scale: 1.0),
   ]) {
-    testWidgets('separate account and illustrated membership ${layout.name}', (
+    testWidgets('separate account and glass membership ${layout.name}', (
       tester,
     ) async {
       AppDistribution.debugOverride(channel: AppDistributionChannel.appleStore);

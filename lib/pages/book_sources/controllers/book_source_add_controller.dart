@@ -47,6 +47,7 @@ class BookSourceAddCommitResult {
     required this.analysis,
     required this.importedCount,
     this.conflictedCount = 0,
+    this.quotaRejectedCount = 0,
   });
 
   final List<RegisteredBookSource> sources;
@@ -57,6 +58,10 @@ class BookSourceAddCommitResult {
   /// different origin — a likely id collision, not the same source. Everyone
   /// else in the batch still imports normally.
   final int conflictedCount;
+
+  /// Selected compatible sources skipped because the current account has no
+  /// remaining other-protocol slots. Earlier selected entries still import.
+  final int quotaRejectedCount;
 }
 
 const _unchanged = Object();
@@ -191,6 +196,7 @@ class BookSourceAddController extends ChangeNotifier {
       late final List<RegisteredBookSource> sources;
       late final int importedCount;
       var conflictedCount = 0;
+      var quotaRejectedCount = 0;
       if (analysis.kind == BookSourceImportKind.orsp) {
         sources = await _registry.upsert(analysis.sources.single);
         importedCount = 1;
@@ -200,7 +206,8 @@ class BookSourceAddController extends ChangeNotifier {
         final result = await _registry.upsertAll(imported);
         sources = result.sources;
         conflictedCount = result.conflicted.length;
-        importedCount = imported.length - conflictedCount;
+        quotaRejectedCount = result.quotaRejected.length;
+        importedCount = imported.length - conflictedCount - quotaRejectedCount;
       }
       if (!_isCurrent(generation)) return null;
       _emit(
@@ -215,6 +222,7 @@ class BookSourceAddController extends ChangeNotifier {
         analysis: analysis,
         importedCount: importedCount,
         conflictedCount: conflictedCount,
+        quotaRejectedCount: quotaRejectedCount,
       );
     } on Object catch (error) {
       if (!_isCurrent(generation)) return null;

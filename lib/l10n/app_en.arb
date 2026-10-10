@@ -2749,7 +2749,7 @@
   "settingsSectionGeneral": "General",
   "settingsSectionAdvancedFeatures": "Advanced features",
   "settingsAdditionalSourceProtocolsTitle": "More source protocols",
-  "settingsAdditionalSourceProtocolsSubtitle": "Enable support for additional source protocols.",
+  "settingsAdditionalSourceProtocolsSubtitle": "Standard accounts can keep up to 2 additional-protocol sources; Explore removes this limit.",
   "settingsPrivateBookSourceNetworkTitle": "Allow private-network sources",
   "@settingsPrivateBookSourceNetworkTitle": {
     "description": "Settings toggle that allows book sources on LAN, loopback, and other private addresses"
@@ -2827,6 +2827,19 @@
       "conflicted": {
         "type": "int"
       }
+    }
+  },
+  "additionalSourcesImportedWithQuota": "Imported {importedCount} sources; {quotaRejectedCount} exceeded your plan limit",
+  "@additionalSourcesImportedWithQuota": {
+    "placeholders": {
+      "importedCount": {"type": "int"},
+      "quotaRejectedCount": {"type": "int"}
+    }
+  },
+  "additionalSourcesQuotaReached": "Your plan allows up to {limit} additional sources. Remove one or unlock Explore to add another.",
+  "@additionalSourcesQuotaReached": {
+    "placeholders": {
+      "limit": {"type": "int"}
     }
   },
   "@settingsSectionGeneral": {
@@ -6738,7 +6751,7 @@
   "storeRestoreEmpty": "No restorable purchase was found. Check your store account and the linked Origo X account.",
   "basicRestoreEmpty": "No Origo Read purchase was found. Check your Origo account and store account.",
   "storeGoogleRefundTerms": "Request a refund through Google Play. A verified refund removes only the access associated with that purchase; independent entitlements remain valid.",
-  "storeReaderLegacyNotice": "Your existing basic reading access is preserved. Advanced source compatibility still requires Explore.",
+  "storeReaderLegacyNotice": "Your existing basic reading access is preserved. Standard accounts can keep up to 2 additional-protocol sources; Explore removes this limit.",
   "storePrivacyPurchaseBody": "Store verification data and an account identifier are sent to our server to verify and restore access. Google Play verification includes a purchase token and a hashed account identifier. We do not receive payment card details.",
   "@storeTrialStart": {
     "placeholders": {
@@ -6859,9 +6872,22 @@
   "basicSourcesBody": "Import compatible ORSP sources to search and read online. The app supplies no source addresses or book content.",
   "basicSyncTitle": "Library & backup",
   "basicSyncBody": "Manage your local library and back up or restore books, reading data and settings with WebDAV.",
-  "basicServicesNote": "AI and cloud TTS require your own service configuration; third-party fees are not included.",
+  "basicServicesNote": "AI and cloud TTS require your own service configuration; third-party fees are not included with Origo Read.",
+  "basicComicTitle": "Comic reading",
+  "basicComicBody": "Read image-based comics with a layout made for panels and long pages.",
+  "basicCustomFontsTitle": "Custom fonts",
+  "basicCustomFontsBody": "Import your own TTF or OTF fonts and use them in the reader.",
+  "premiumUnlimitedSourcesTitle": "Unlimited additional sources",
+  "premiumUnlimitedSourcesBenefit": "Use additional source protocols without the standard {limit}-source limit.",
+  "@premiumUnlimitedSourcesBenefit": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
   "basicEditionTitle": "Origo Read",
-  "basicEditionSummary": "One purchase. The complete reading experience.",
+  "basicEditionSummary": "AI assistant, cloud TTS, comic reading and custom fonts",
   "basicEditionAccountBound": "Linked to Origo · cross-platform access",
   "premiumEditionSummary": "Optional source extension. More compatible formats.",
   "storeReaderLicenseTitle": "Origo Read",
@@ -6877,7 +6903,7 @@
   "storePremiumPriceCaption": "Lifetime source extension · cross-platform account access",
   "premiumCrossPlatformAccess": "Use the same Origo account to keep access on supported platforms.",
   "storeBetaAccessAvailable": "All features are available during beta testing",
-  "premiumIncludesReaderAccess": "Includes permanent Origo Read access plus broader source format compatibility.",
+  "premiumIncludesReaderAccess": "Includes all Origo Read benefits: AI assistant, cloud TTS, comic reading and custom fonts.",
   "storeExploreBundlePriceCaption": "Origo Read + Explore · one purchase, cross-platform access",
   "storeExploreUpgradePriceCaption": "Origo Read owned · upgrade to Explore",
   "storeExploreBundleBilling": "This is a one-time purchase containing Origo Read and the Explore extension, with no auto-renewal. {store} displays the price and processes payment. Access is linked to your current Origo account after verification.",

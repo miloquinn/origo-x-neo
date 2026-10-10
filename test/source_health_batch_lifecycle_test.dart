@@ -7,6 +7,7 @@ import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/book_sources/source_engine/source_config.dart';
 import 'package:xxread/book_sources/source_engine/source_health_checker.dart';
 import 'package:xxread/book_sources/source_engine/source_request.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -15,8 +16,13 @@ void main() {
     () async {
       await BookSourceRegistry.resetForTesting();
       SharedPreferences.setMockInitialValues({});
+      AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: true);
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       addTearDown(() async {
+        AdvancedFeatureAccess.update(
+          readerUnlocked: false,
+          premiumUnlocked: false,
+        );
         debugDefaultTargetPlatformOverride = null;
         await BookSourceRegistry.resetForTesting();
       });

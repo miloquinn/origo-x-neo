@@ -18,6 +18,7 @@ import 'glass_bottom_sheet.dart';
 import 'app_menu.dart';
 import 'reader_aloud_transcript.dart';
 import 'side_toast.dart';
+import 'store_reader_access_gate.dart';
 
 /// Reader entry point: presentation is shared by local and source books.
 Future<void> showReaderAloud({
@@ -1883,6 +1884,11 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
       final selected = selection.first;
       if (selected == aloud.engineType) return;
       unawaited(() async {
+        if (selected == ReaderAloudEngineType.cloud &&
+            !await ensureAccountReaderFeatureAccess(context)) {
+          return;
+        }
+        if (!context.mounted) return;
         final resumeAfterChange =
             controller.state == ReaderAloudPlaybackState.playing;
         if (resumeAfterChange) await controller.pause();
@@ -2003,6 +2009,8 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
     BuildContext context,
     ReaderAloudService aloud,
   ) async {
+    if (!await ensureAccountReaderFeatureAccess(context)) return;
+    if (!context.mounted) return;
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => CloudTtsSettingsPage(

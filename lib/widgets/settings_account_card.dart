@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../pages/account/account_page.dart';
 import '../pages/account/premium_membership_page.dart';
+import '../pages/account/store_reader_unlock_page.dart';
 import '../services/account/account.dart';
 import '../services/core/app_distribution.dart';
 import '../utils/localization_extension.dart';
@@ -23,8 +24,7 @@ class SettingsAccountCard extends StatelessWidget {
         avatarUrl: summary?.avatarUrl,
         loading: account.loading && summary == null,
         premium: account.premiumForDisplay,
-        storeReader: account.hasStoreReaderEntitlement,
-        permanentReader: account.hasPermanentReaderAccess,
+        permanentReader: account.permanentReaderFeaturesForDisplay,
       );
     });
     final account = context.read<MemberAccountController>();
@@ -38,8 +38,7 @@ class SettingsAccountCard extends StatelessWidget {
         AccountIdentityCard(
           tier: explore
               ? AccountIdentityTier.explore
-              : accountState.storeReader ||
-                    (AppDistribution.isStore && accountState.permanentReader)
+              : accountState.permanentReader
               ? AccountIdentityTier.read
               : AccountIdentityTier.none,
           title: accountState.effectiveName ?? l10n.settingsGuestTitle,
@@ -60,11 +59,15 @@ class SettingsAccountCard extends StatelessWidget {
         if (!explore) ...[
           const SizedBox(height: 14),
           MembershipOfferCard(
-            offerRead: false,
+            offerRead: !accountState.permanentReader,
             onTap: () => Navigator.of(context).push<void>(
               MaterialPageRoute(
-                builder: (_) =>
-                    PremiumMembershipPage(account: account, focusBilling: true),
+                builder: (_) => accountState.permanentReader
+                    ? PremiumMembershipPage(
+                        account: account,
+                        focusBilling: true,
+                      )
+                    : StoreReaderUnlockPage(account: account),
               ),
             ),
           ),

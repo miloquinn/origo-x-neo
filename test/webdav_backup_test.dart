@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:xxread/book_sources/services/book_source_registry_storage.dart';
+import 'package:xxread/book_sources/models/registered_book_source.dart';
+import 'package:xxread/book_sources/services/book_source_registry.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 import 'package:xxread/services/backup/backup_archive.dart';
 import 'package:xxread/services/backup/backup_selection.dart';
 import 'package:xxread/services/backup/webdav_backup_controller.dart';
@@ -25,6 +27,8 @@ void main() {
   late SharedPreferences prefs;
   late _Sources sources;
   setUp(() async {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+    await BookSourceRegistry.resetForTesting();
     sqfliteFfiInit();
     db = await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
     await db.execute('PRAGMA foreign_keys = ON');
@@ -95,6 +99,8 @@ void main() {
     );
   });
   tearDown(() async {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+    await BookSourceRegistry.resetForTesting();
     await db.close();
     await documents.delete(recursive: true);
   });
@@ -190,6 +196,38 @@ void main() {
     await result.writeAsBytes(ZipEncoder().encode(updated)!);
     return result;
   }
+
+  test(
+    'source quota rejection happens before restore mutates local data',
+    () async {
+      final localSources = _storedReadingSources(['local-one', 'local-two']);
+      sources.raw = localSources;
+      final zip = await editManifest(await snapshot(), (data) {
+        data['sources'] = _storedReadingSources([
+          'backup-one',
+          'backup-two',
+          'backup-three',
+        ]);
+      });
+      final originalBackupBytes = await zip.readAsBytes();
+      await db.update('books', {'title': '本机保留'});
+      final checked = await archive.validate(zip);
+
+      await expectLater(
+        archive.restore(checked),
+        throwsA(isA<BookSourceQuotaExceededException>()),
+      );
+
+      expect(sources.raw, localSources);
+      expect((await db.query('books')).single['title'], '本机保留');
+      expect(await zip.readAsBytes(), originalBackupBytes);
+      expect(
+        await File('${documents.path}/backups/restore-pending.json').exists(),
+        isFalse,
+      );
+      await checked.directory.delete(recursive: true);
+    },
+  );
 
   test(
     'full restore retains nested and empty folders in parent order',
@@ -950,6 +988,39 @@ void main() {
       },
     );
   }
+  test(
+    'interrupted rollback restores grandfathered sources without rechecking quota',
+    () async {
+      final beforeSources = _storedReadingSources([
+        'legacy-one',
+        'legacy-two',
+        'legacy-three',
+      ]);
+      final afterSources = _storedReadingSources(['after-one', 'after-two']);
+      sources.raw = afterSources;
+      final journal = File('${documents.path}/backups/restore-pending.json');
+      await journal.parent.create();
+      await journal.writeAsString(
+        jsonEncode({
+          'id': 'uncommitted-operation',
+          'before': {
+            'preferences': {'reader_font_size': 12.0},
+            'sources': beforeSources,
+          },
+          'after': {
+            'preferences': {'reader_font_size': 22.0},
+            'sources': afterSources,
+          },
+        }),
+      );
+
+      expect(AdvancedFeatureAccess.premiumUnlocked, isFalse);
+      expect(await archive.recoverInterruptedRestore(), isFalse);
+      expect(sources.raw, beforeSources);
+      expect(prefs.getDouble('reader_font_size'), 12.0);
+      expect(await journal.exists(), isFalse);
+    },
+  );
   test('restore works in a different documents directory', () async {
     final zip = await snapshot();
     final second = await Directory.systemTemp.createTemp('backup-second-');
@@ -1105,6 +1176,34 @@ void main() {
     },
   );
 }
+
+String _storedReadingSources(Iterable<String> identities) => jsonEncode({
+  'version': 2,
+  'sources': identities
+      .map((identity) => _readingSource(identity).toJson())
+      .toList(),
+  'groups': <String>[],
+});
+
+RegisteredBookSource _readingSource(String identity) => RegisteredBookSource(
+  id: '$identity-id',
+  name: identity,
+  description: '',
+  manifestUrl: Uri.parse('https://$identity.example'),
+  apiBaseUrl: Uri.parse('https://$identity.example'),
+  protocolVersion: 'reading-source-1',
+  languages: const [],
+  capabilities: const {'search'},
+  enabled: true,
+  addedAt: DateTime.utc(2026),
+  sourceProtocol: BookSourceProtocolKind.readingSource,
+  sourceConfig: {
+    'bookSourceName': identity,
+    'bookSourceUrl': 'https://$identity.example',
+    'searchUrl': '/search?q={{key}}',
+    'ruleSearch': {'bookList': '.book'},
+  },
+);
 
 class _Sources implements BookSourceRegistryStorage {
   String raw =

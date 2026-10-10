@@ -7,11 +7,17 @@ import 'package:xxread/book_sources/services/book_source_health_check_service.da
 import 'package:xxread/book_sources/services/book_source_maintenance_coordinator.dart';
 import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/book_sources/source_engine/source_health_checker.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 
 void main() {
   setUp(() async {
     await BookSourceRegistry.resetForTesting();
     SharedPreferences.setMockInitialValues({});
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: true);
+  });
+
+  tearDown(() {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
   });
 
   test(

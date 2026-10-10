@@ -516,6 +516,51 @@ class MemberAccountController extends ChangeNotifier {
             membershipConfig?.appleBillingEnabled == true;
   bool get hasStoreReaderEntitlement =>
       _user != null && _membership?.hasStoreReaderEntitlement == true;
+
+  /// Paid/granted reading features are channel-independent. Free basic reading
+  /// and the old free-reader migration never grant AI, cloud TTS, comics or fonts.
+  bool get hasAccountReaderFeatureAccess =>
+      hasAdvancedSourceAccess ||
+      hasStoreReaderEntitlement ||
+      _hasSandboxDirectReaderLifetime ||
+      _hasSandboxReaderTrial ||
+      (_accountReaderAttestationIsCurrent &&
+          (_accountReaderAttestation!.readerUnlocked ||
+              _accountReaderAttestation!.trialExpiresAt?.isAfter(
+                    DateTime.now(),
+                  ) ==
+                  true)) ||
+      _readerAttestationGrantsAccess;
+
+  bool get hasPermanentAccountReaderFeatureAccess =>
+      (hasPremiumAccess && _membership?.premiumExpiresAt == null) ||
+      _hasPermanentStoreReaderEntitlement ||
+      _hasSandboxPermanentReaderAccess ||
+      (_accountReaderAttestationIsCurrent &&
+          _accountReaderAttestation!.readerUnlocked &&
+          _accountReaderAttestation!.permanent) ||
+      (_readerAttestationIsCurrent &&
+          _readerAttestation!.readerUnlocked &&
+          _readerAttestation!.trialExpiresAt == null);
+
+  /// Last-known ownership labels only; never use these for feature execution.
+  bool get readerFeaturesForDisplay =>
+      hasAccountReaderFeatureAccess ||
+      premiumForDisplay ||
+      membershipForDisplay?.hasStoreReaderEntitlement == true;
+
+  bool get permanentReaderFeaturesForDisplay =>
+      hasPermanentAccountReaderFeatureAccess ||
+      (membershipForDisplay?.hasActivePremium == true &&
+          membershipForDisplay?.premiumExpiresAt == null) ||
+      (membershipForDisplay?.entitlements.any(
+            (entry) =>
+                entry.featureKey == 'store_reader' &&
+                entry.status == 'active' &&
+                entry.expiresAt == null,
+          ) ??
+          false);
+
   bool get _hasPermanentStoreReaderEntitlement =>
       _user != null &&
       (_membership?.entitlements.any(
@@ -727,26 +772,28 @@ class MemberAccountController extends ChangeNotifier {
               ? cached
               : null;
         }
-        if (AppDistribution.isStore) {
-          try {
-            _readerCredential = await _readerCredentialStore.getOrCreate();
-            _requireNetworkAllowed(networkGeneration);
-            _accountReaderAttestation = await _readerAccessCache.loadAccount(
-              credential: _readerCredential!,
-              sessionBinding: sessionBinding,
-            );
-            _requireNetworkAllowed(networkGeneration);
-            _offlineReaderAccountId = _accountReaderAttestation?.accountId;
+        // Account licenses also authorize features in direct/GitHub builds.
+        // Anonymous installation licenses retain their original store boundary.
+        try {
+          _readerCredential = await _readerCredentialStore.getOrCreate();
+          _requireNetworkAllowed(networkGeneration);
+          _accountReaderAttestation = await _readerAccessCache.loadAccount(
+            credential: _readerCredential!,
+            sessionBinding: sessionBinding,
+          );
+          _requireNetworkAllowed(networkGeneration);
+          _offlineReaderAccountId = _accountReaderAttestation?.accountId;
+          if (AppDistribution.isStore) {
             _readerAttestation = await _readerAccessCache.load(
               credential: _readerCredential!,
               channel: _readerChannel,
             );
-            _requireNetworkAllowed(networkGeneration);
-          } catch (error) {
-            if (_isLegalConsentRequired(error)) rethrow;
-            // A current server status is preferred; a still-valid opaque
-            // attestation keeps the reader available during a network outage.
           }
+          _requireNetworkAllowed(networkGeneration);
+        } catch (error) {
+          if (_isLegalConsentRequired(error)) rethrow;
+          // A current server status is preferred; a still-valid opaque
+          // attestation keeps the reader available during a network outage.
         }
         _scheduleMembershipExpiry();
         _initialized = true;

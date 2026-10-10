@@ -267,13 +267,17 @@ extension _SettingsLayoutPart on _SettingsPageState {
             'Speech service and voice for read aloud',
             '読み上げサービスと音声を設定',
           ),
-          onTap: () => Navigator.of(context).push<bool>(
-            MaterialPageRoute(
-              builder: (_) => CloudTtsSettingsPage(
-                service: context.read<ReaderAloudService>(),
+          onTap: () async {
+            if (!await ensureAccountReaderFeatureAccess(context)) return;
+            if (!mounted) return;
+            await Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => CloudTtsSettingsPage(
+                  service: context.read<ReaderAloudService>(),
+                ),
               ),
-            ),
-          ),
+            );
+          },
           icon: Icons.record_voice_over_outlined,
         ),
       ],
@@ -335,14 +339,15 @@ extension _SettingsLayoutPart on _SettingsPageState {
           icon: Icons.extension_outlined,
           persistPageSettings: false,
         ),
-        _buildSwitchSetting(
-          title: l10n.settingsPrivateBookSourceNetworkTitle,
-          subtitle: l10n.settingsPrivateBookSourceNetworkSubtitle,
-          value: appSettings.privateBookSourceNetworkEnabled,
-          onChanged: appSettings.setPrivateBookSourceNetworkEnabled,
-          icon: Icons.lan_outlined,
-          persistPageSettings: false,
-        ),
+        if (appSettings.advancedFeaturesUnlocked)
+          _buildSwitchSetting(
+            title: l10n.settingsPrivateBookSourceNetworkTitle,
+            subtitle: l10n.settingsPrivateBookSourceNetworkSubtitle,
+            value: appSettings.privateBookSourceNetworkEnabled,
+            onChanged: appSettings.setPrivateBookSourceNetworkEnabled,
+            icon: Icons.lan_outlined,
+            persistPageSettings: false,
+          ),
       ],
     );
   }

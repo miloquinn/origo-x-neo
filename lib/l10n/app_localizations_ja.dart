@@ -2693,7 +2693,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsAdditionalSourceProtocolsSubtitle =>
-      '有効にすると、追加のブックソースプロトコルを利用できます。';
+      '通常アカウントは追加プロトコルのソースを 2 件まで利用でき、Explore では上限がなくなります。';
 
   @override
   String get settingsPrivateBookSourceNetworkTitle => 'プライベートネットワークのソースを許可';
@@ -2761,6 +2761,19 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String additionalSourcesImportedWithConflicts(int count, int conflicted) {
     return '$count 件をインポートし、別のオリジンで既に登録済みの $conflicted 件をスキップしました';
+  }
+
+  @override
+  String additionalSourcesImportedWithQuota(
+    int importedCount,
+    int quotaRejectedCount,
+  ) {
+    return '$importedCount 件をインポートし、$quotaRejectedCount 件はプラン上限を超えました';
+  }
+
+  @override
+  String additionalSourcesQuotaReached(int limit) {
+    return 'このプランで追加できるソースは $limit 件までです。削除するか Explore を有効にしてください。';
   }
 
   @override
@@ -6929,7 +6942,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get storeReaderLegacyNotice =>
-      'これまでの基本的な読書機能の利用権は保持されます。高度なソース互換機能には引き続きExploreが必要です。';
+      '従来の基本読書権は維持されます。通常アカウントは追加ソース 2 件まで、Explore は無制限です。';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7116,13 +7129,33 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get basicServicesNote =>
-      'AIとクラウドTTSにはご自身のサービス設定が必要です。第三者サービスの料金は含まれません。';
+      'AI とクラウド TTS は各自のサービス設定が必要で、第三者の料金は Origo Read に含まれません。';
+
+  @override
+  String get basicComicTitle => 'コミック閲覧';
+
+  @override
+  String get basicComicBody => 'コマや縦長ページに適した表示で画像コミックを読めます。';
+
+  @override
+  String get basicCustomFontsTitle => 'カスタムフォント';
+
+  @override
+  String get basicCustomFontsBody => '手持ちの TTF / OTF フォントを取り込み、リーダーで使えます。';
+
+  @override
+  String get premiumUnlimitedSourcesTitle => '追加ソース数が無制限';
+
+  @override
+  String premiumUnlimitedSourcesBenefit(int limit) {
+    return '通常の上限 $limit 件を超えて、追加プロトコルのソースを使えます。';
+  }
 
   @override
   String get basicEditionTitle => 'Origo Read';
 
   @override
-  String get basicEditionSummary => '一度の購入で、充実した読書体験を。';
+  String get basicEditionSummary => 'AI 読書アシスタント、クラウド TTS、コミック閲覧、カスタムフォント';
 
   @override
   String get basicEditionAccountBound => 'Origoに連携 · 対応プラットフォーム共通';
@@ -7179,7 +7212,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get premiumIncludesReaderAccess =>
-      'Origo Readの永久利用権と、より多くの書籍ソース形式への対応が含まれます。';
+      'Origo Read の全機能（AI、クラウド TTS、コミック、カスタムフォント）を含みます。';
 
   @override
   String get storeExploreBundlePriceCaption =>

@@ -104,6 +104,7 @@ void main() {
       );
       final registry = _Registry(
         conflictedNames: const {'Conflicting Reading Source source'},
+        quotaRejectedNames: const {'Saved Reading Source source'},
       );
       final controller = BookSourceAddController(
         registry: registry,
@@ -132,9 +133,10 @@ void main() {
         'name': 'h3@text',
       });
       expect(saved.sourceConfig?['ruleContent'], {'content': '#content@html'});
-      expect(result?.importedCount, 1);
+      expect(result?.importedCount, 0);
       expect(result?.conflictedCount, 1);
-      expect(result?.sources.single.name, 'Saved Reading Source source');
+      expect(result?.quotaRejectedCount, 1);
+      expect(result?.sources, isEmpty);
     },
   );
 
@@ -219,9 +221,13 @@ class _Analyzer extends BookSourceImportAnalyzer {
 }
 
 class _Registry extends BookSourceRegistry {
-  _Registry({this.conflictedNames = const {}});
+  _Registry({
+    this.conflictedNames = const {},
+    this.quotaRejectedNames = const {},
+  });
 
   final Set<String> conflictedNames;
+  final Set<String> quotaRejectedNames;
   List<RegisteredBookSource> upserted = const [];
   List<RegisteredBookSource> bulkUpserted = const [];
 
@@ -239,11 +245,19 @@ class _Registry extends BookSourceRegistry {
     final conflicted = bulkUpserted
         .where((source) => conflictedNames.contains(source.name))
         .toList(growable: false);
+    final quotaRejected = bulkUpserted
+        .where((source) => quotaRejectedNames.contains(source.name))
+        .toList(growable: false);
     return BookSourceUpsertAllResult(
       sources: bulkUpserted
-          .where((source) => !conflictedNames.contains(source.name))
+          .where(
+            (source) =>
+                !conflictedNames.contains(source.name) &&
+                !quotaRejectedNames.contains(source.name),
+          )
           .toList(growable: false),
       conflicted: conflicted,
+      quotaRejected: quotaRejected,
     );
   }
 }

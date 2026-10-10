@@ -2822,7 +2822,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsAdditionalSourceProtocolsSubtitle =>
-      'Activa la compatibilidad con protocolos de fuente adicionales.';
+      'Las cuentas estándar pueden guardar hasta 2 fuentes de protocolos adicionales; Explore elimina este límite.';
 
   @override
   String get settingsPrivateBookSourceNetworkTitle =>
@@ -2891,6 +2891,19 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String additionalSourcesImportedWithConflicts(int count, int conflicted) {
     return 'Se importaron $count fuentes; se omitieron $conflicted cuyo id ya estaba registrado desde otro origen';
+  }
+
+  @override
+  String additionalSourcesImportedWithQuota(
+    int importedCount,
+    int quotaRejectedCount,
+  ) {
+    return 'Se importaron $importedCount fuentes; $quotaRejectedCount superaron el límite del plan';
+  }
+
+  @override
+  String additionalSourcesQuotaReached(int limit) {
+    return 'Tu plan admite hasta $limit fuentes adicionales. Elimina una o desbloquea Explore.';
   }
 
   @override
@@ -7322,7 +7335,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get storeReaderLegacyNotice =>
-      'Tu acceso básico a la lectura se conserva. La compatibilidad avanzada con fuentes sigue requiriendo Explore.';
+      'Se conserva tu acceso básico. Las cuentas estándar admiten hasta 2 fuentes adicionales; Explore elimina el límite.';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7522,14 +7535,36 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get basicServicesNote =>
-      'La IA y el TTS en la nube requieren tus propios servicios; las tarifas de terceros no están incluidas.';
+      'La IA y el TTS en la nube requieren servicios propios; Origo Read no incluye cargos de terceros.';
+
+  @override
+  String get basicComicTitle => 'Lectura de cómics';
+
+  @override
+  String get basicComicBody =>
+      'Lee cómics de imágenes con un diseño para viñetas y páginas largas.';
+
+  @override
+  String get basicCustomFontsTitle => 'Fuentes personalizadas';
+
+  @override
+  String get basicCustomFontsBody =>
+      'Importa tus fuentes TTF u OTF y úsalas en el lector.';
+
+  @override
+  String get premiumUnlimitedSourcesTitle => 'Fuentes adicionales ilimitadas';
+
+  @override
+  String premiumUnlimitedSourcesBenefit(int limit) {
+    return 'Usa protocolos de fuentes adicionales sin el límite estándar de $limit fuentes.';
+  }
 
   @override
   String get basicEditionTitle => 'Origo Read';
 
   @override
   String get basicEditionSummary =>
-      'Un solo pago. La experiencia de lectura completa.';
+      'Asistente de IA, TTS en la nube, cómics y fuentes personalizadas';
 
   @override
   String get basicEditionAccountBound =>
@@ -7590,7 +7625,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get premiumIncludesReaderAccess =>
-      'Incluye acceso permanente a Origo Read y compatibilidad con más formatos de fuentes.';
+      'Incluye todo Origo Read: asistente de IA, TTS en la nube, cómics y fuentes personalizadas.';
 
   @override
   String get storeExploreBundlePriceCaption =>

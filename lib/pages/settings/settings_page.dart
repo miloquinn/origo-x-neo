@@ -26,6 +26,7 @@ import 'package:xxread/pages/settings/about/open_source_licenses_page.dart';
 import 'package:xxread/pages/settings/ai_settings_page.dart';
 import 'package:xxread/pages/settings/app_theme_page.dart';
 import 'package:xxread/pages/settings/cloud_tts_settings_page.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 import 'package:xxread/pages/support/feedback_copy.dart';
 import 'package:xxread/pages/support/feedback_page.dart';
 import 'package:xxread/services/diagnostics/diagnostics_controller.dart';
@@ -263,6 +264,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _openAiSettings() async {
+    if (!await ensureAccountReaderFeatureAccess(context)) return;
+    if (!mounted) return;
     await Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const AiSettingsPage()));

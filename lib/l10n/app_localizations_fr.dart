@@ -2827,7 +2827,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsAdditionalSourceProtocolsSubtitle =>
-      'Activez la prise en charge de protocoles de sources supplémentaires.';
+      'Les comptes standard peuvent garder jusqu’à 2 sources utilisant d’autres protocoles ; Explore supprime cette limite.';
 
   @override
   String get settingsPrivateBookSourceNetworkTitle =>
@@ -2897,6 +2897,19 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String additionalSourcesImportedWithConflicts(int count, int conflicted) {
     return '$count sources importées ; $conflicted ignorées car leur identifiant est déjà enregistré depuis une autre origine';
+  }
+
+  @override
+  String additionalSourcesImportedWithQuota(
+    int importedCount,
+    int quotaRejectedCount,
+  ) {
+    return '$importedCount sources importées ; $quotaRejectedCount dépassaient la limite du forfait';
+  }
+
+  @override
+  String additionalSourcesQuotaReached(int limit) {
+    return 'Votre forfait autorise jusqu’à $limit sources supplémentaires. Supprimez-en une ou débloquez Explore.';
   }
 
   @override
@@ -7349,7 +7362,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get storeReaderLegacyNotice =>
-      'Votre accès de base à la lecture est conservé. La compatibilité avancée avec les sources nécessite toujours Explore.';
+      'Votre accès de base est conservé. Les comptes standard ont jusqu’à 2 sources supplémentaires ; Explore lève cette limite.';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7554,14 +7567,37 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get basicServicesNote =>
-      'L’IA et le TTS cloud nécessitent vos propres services ; les frais de tiers ne sont pas inclus.';
+      'L’IA et le TTS cloud exigent vos propres services ; leurs frais ne sont pas inclus avec Origo Read.';
+
+  @override
+  String get basicComicTitle => 'Lecture de BD';
+
+  @override
+  String get basicComicBody =>
+      'Lisez les BD en images avec une mise en page adaptée aux cases et aux pages longues.';
+
+  @override
+  String get basicCustomFontsTitle => 'Polices personnalisées';
+
+  @override
+  String get basicCustomFontsBody =>
+      'Importez vos polices TTF ou OTF et utilisez-les dans le lecteur.';
+
+  @override
+  String get premiumUnlimitedSourcesTitle =>
+      'Sources supplémentaires illimitées';
+
+  @override
+  String premiumUnlimitedSourcesBenefit(int limit) {
+    return 'Utilisez des protocoles supplémentaires sans la limite standard de $limit sources.';
+  }
 
   @override
   String get basicEditionTitle => 'Origo Read';
 
   @override
   String get basicEditionSummary =>
-      'Un achat unique. L’expérience de lecture complète.';
+      'Assistant IA, TTS cloud, lecture de BD et polices personnalisées';
 
   @override
   String get basicEditionAccountBound => 'Lié à Origo · accès multiplateforme';
@@ -7622,7 +7658,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get premiumIncludesReaderAccess =>
-      'Inclut l’accès permanent à Origo Read et une compatibilité étendue avec les formats de sources.';
+      'Inclut tous les avantages Origo Read : assistant IA, TTS cloud, BD et polices personnalisées.';
 
   @override
   String get storeExploreBundlePriceCaption =>

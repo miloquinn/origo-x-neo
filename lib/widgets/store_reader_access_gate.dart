@@ -6,8 +6,24 @@ import 'package:provider/provider.dart';
 import '../pages/account/store_reader_unlock_page.dart';
 import '../services/account/account.dart';
 import '../services/core/app_distribution.dart';
+import '../services/core/advanced_feature_access.dart';
 import '../services/reader_aloud_session.dart';
 import '../utils/localization_extension.dart';
+
+Future<bool> ensureAccountReaderFeatureAccess(BuildContext context) async {
+  if (AdvancedFeatureAccess.readerFeaturesUnlocked) return true;
+  final account = context.read<MemberAccountController?>();
+  if (account == null) return false;
+  if (!account.initialized) await account.initialize();
+  if (!context.mounted) return false;
+  if (account.hasAccountReaderFeatureAccess) return true;
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute(builder: (_) => StoreReaderUnlockPage(account: account)),
+  );
+  if (!context.mounted) return false;
+  await account.synchronize();
+  return account.hasAccountReaderFeatureAccess;
+}
 
 /// App-level observer that stops a background read-aloud session when a store
 /// reader entitlement expires after its reader route has already been closed.
@@ -54,10 +70,12 @@ class StoreReaderAccessGate extends StatefulWidget {
     super.key,
     required this.pageBuilder,
     this.onBlockedContentReady,
+    this.requireAccountFeatureAccess = false,
   });
 
   final WidgetBuilder pageBuilder;
   final VoidCallback? onBlockedContentReady;
+  final bool requireAccountFeatureAccess;
 
   @override
   State<StoreReaderAccessGate> createState() => _StoreReaderAccessGateState();
@@ -72,7 +90,9 @@ class _StoreReaderAccessGateState extends State<StoreReaderAccessGate> {
   @override
   void didUpdateWidget(covariant StoreReaderAccessGate oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.pageBuilder, widget.pageBuilder)) {
+    if (!identical(oldWidget.pageBuilder, widget.pageBuilder) ||
+        oldWidget.requireAccountFeatureAccess !=
+            widget.requireAccountFeatureAccess) {
       _readerPage = null;
     }
   }
@@ -131,13 +151,17 @@ class _StoreReaderAccessGateState extends State<StoreReaderAccessGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (!AppDistribution.readerLicenseRequired) {
+    if (!widget.requireAccountFeatureAccess &&
+        !AppDistribution.readerLicenseRequired) {
       _stoppedDeniedSession = false;
       return _reader(context);
     }
 
     final account = context.watch<MemberAccountController?>();
-    if (account?.hasReaderAccess == true) {
+    final hasAccess = widget.requireAccountFeatureAccess
+        ? account?.hasAccountReaderFeatureAccess == true
+        : account?.hasReaderAccess == true;
+    if (hasAccess) {
       _stoppedDeniedSession = false;
       return _reader(context);
     }

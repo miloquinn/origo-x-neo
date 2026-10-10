@@ -3,6 +3,63 @@
     "entries": [
         {
             "version": "2.7.3",
+            "buildNumber": "261011003",
+            "notes": {
+                "zh": [
+                    "普通和开卷账号可导入其他协议书源合计 2 个，探元不限量；标准 ORSP 书源保持不限量。",
+                    "开卷解锁 AI 阅读助手、云端 TTS、漫画阅读和自定义字体导入与使用；探元包含开卷全部权益。",
+                    "重做会员入口、权益和开通页面，统一应用主题及玻璃材质，适配底部安全区、窄屏、大字体和键盘。",
+                    "Apple、Google Play 与 GitHub 直装版采用同一账号权益校验；缓存会员标签不能代替功能授权，基础文字阅读与系统朗读继续免费。",
+                    "批量导入、同步和备份恢复共用书源配额；同身份更新不重复占名额，保留旧用户已有书源和中断恢复能力。",
+                    "权益到期或退出后停止 AI、云端语音的在途请求；保留原配置、历史及字体选择，恢复权益后可继续使用。",
+                    "发现页新增“书源布局”：顶部可直接切换和搜索书源；分类可横向滑动，也可展开全部分类后搜索和选择。",
+                    "ORSP 书源显示“推荐 / 分类 / 最新”，Legado 书源直接显示其探索分类。",
+                    "书源与分类选择统一使用 edge-to-edge 玻璃半屏菜单，仅保留拖动条；标题与搜索同行，右侧显示滚动条。",
+                    "加速超长 HTML 目录首次加载，避免重复扫描父级节点，同时保留目录请求取消和共享复用。",
+                    "主题市场仅在明确识别为受支持的主题协议时显示已认证状态，避免普通链接被误标。",
+                    "改善 Legado 声明式登录表单、书源管理卡片与筛选栏，在窄屏和大字体下保持清晰。",
+                    "修复已缓存 ORSP 在线书籍再次打开仍等待目录网络的问题；优先显示已缓存正文，目录过期时按需后台刷新，显式更新和缺章恢复仍会强制刷新。",
+                    "Android、iOS 和 macOS 的文字阅读支持带段评入口的 Legado 书源；替换净化后保持原段落对应，删除整段时移除入口。",
+                    "新增阅读进度胶囊，可切换全书或本章进度、拖动跳转，并快速切换上一章和下一章。",
+                    "扩大字号、行距、字距和段间距范围，可分别调整页眉、页脚位置，减少信息遮挡正文。",
+                    "精简目录布局并按需展开搜索；修复连续滚动章节定位，减少 iOS 切回阅读页时的正文闪动。",
+                    "重整听书页面，突出封面与朗读正文，支持收起或展开播放控件，改善语速、音量和定时操作。",
+                    "新增书库整理，支持按最近添加、最近阅读和阅读进度排序，也可长按拖动当前目录中的书籍与文件夹。",
+                    "最近阅读时间按正文成功展示或听书开始记录，改善排序准确性。",
+                    "优化书籍信息和多标签的折叠展示，适配窄屏与大字体。",
+                    "可按需开启 iCloud 同步，在 iPhone、iPad 和 Mac 间同步书籍、子书架、进度、书签笔记及部分设置，并提供冲突版本选择。",
+                    "手动顺序和最近阅读时间纳入 iCloud 同步及 WebDAV 备份恢复，兼容已有备份。",
+                    "新增可按需开启的阅读 Agent；仅在授权后使用阅读记录、书架和偏好，从已启用书源中推荐书籍并说明理由。",
+                    "AI 请求可在切换页面后继续，并支持随时停止；服务配置支持协议识别、自定义端点和账号模型列表。",
+                    "优化云朗读配置，将服务、模型、音色和已保存配置集中展示。",
+                    "新增主题与外观页面及社区主题市场，支持预览、下载、应用和移除主题包。",
+                    "统一弹层、菜单和反馈提示的材质，改善安全区、键盘布局及 iPhone 首页浮动导航位置。"
+                ],
+                "en": [
+                    "Ordinary and Read accounts can import a total of two sources using additional protocols; Explore removes this limit. Standard ORSP sources stay unlimited.",
+                    "Read unlocks the AI assistant, cloud TTS, comics and custom font import and use. Explore includes every Read benefit.",
+                    "Membership, benefits and purchase pages now share the app theme and glass materials, with safe-area, narrow-screen, large-text and keyboard support.",
+                    "Apple, Google Play and GitHub builds use the same account entitlement checks. Display caches do not authorize paid features; basic text reading and system speech stay free.",
+                    "Imports, sync and backup restoration share the source quota. Updates keep their identity, existing sources are preserved, and interrupted restoration remains recoverable.",
+                    "Expired or revoked access cancels active AI and cloud voice requests while keeping settings, history and saved font choices.",
+                    "Discovery adds a source-focused layout with searchable source switching, scrolling category tabs, and an all-categories picker.",
+                    "ORSP sources show Recommended, Categories, and Latest; Legado sources show their exploration categories directly.",
+                    "Source and category pickers now use edge-to-edge glass sheets with a drag handle, inline search, and a visible scrollbar.",
+                    "Cached ORSP books now reopen with saved text immediately while stale catalogs refresh in the background; explicit updates and missing-chapter recovery still force a refresh.",
+                    "Large HTML catalogs open faster without repeated parent scans, and verified theme status now requires an explicitly supported protocol.",
+                    "Text reading supports Legado paragraph reviews and adds book or chapter progress, scrubbing, and previous/next chapter controls.",
+                    "Expanded typography and header/footer controls, a simpler catalog search, and steadier continuous and iOS resume behavior improve reading.",
+                    "The redesigned read-aloud page improves cover, transcript, playback, speed, volume, and timer controls.",
+                    "Library organization adds recent and progress sorting plus drag ordering; book details and tags better support narrow screens and large text.",
+                    "Optional iCloud sync covers books, nested shelves, progress, bookmarks, notes, and selected settings across Apple devices, with conflict choices.",
+                    "Manual order and recent-reading time are included in iCloud sync and WebDAV backup and restore while preserving older backups.",
+                    "The optional Reading Agent uses reading history, shelves, and preferences only after permission; AI requests can continue across pages or be stopped.",
+                    "New appearance themes and a community theme market join unified sheet, menu, feedback, safe-area, keyboard, and iPhone navigation refinements."
+                ]
+            }
+        },
+        {
+            "version": "2.7.3",
             "buildNumber": "261011002",
             "notes": {
                 "zh": [

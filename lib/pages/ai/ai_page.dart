@@ -607,6 +607,7 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
             ),
             cancelToken: cancelToken,
           ),
+          onAccessRevoked: () => cancelToken.cancel('AI feature access ended'),
         );
       }
       if (!isCurrent()) return;

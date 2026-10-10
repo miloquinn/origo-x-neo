@@ -256,47 +256,40 @@ void main() {
     },
   );
 
-  testWidgets(
-    'additional source commit rechecks membership after the dialog opens',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({
-        additionalSourceProtocolsPreferenceKey: true,
-      });
-      AdvancedFeatureAccess.premiumUnlocked = true;
-      addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
-      final analyzer = _Analyzer();
-      final controller = _CommitController(analyzer);
-      await _open(tester, controller: controller);
-      await _start(tester);
-      final importer = SourceImportService();
-      addTearDown(importer.close);
-      analyzer.pending.complete(
-        BookSourceImportAnalysis.additional(
-          importer.parseDecoded({
-            'bookSourceName': 'Reading Source example',
-            'bookSourceUrl': 'https://books.example',
-            'searchUrl': '/search?q={{key}}',
-            'ruleSearch': {'bookList': '.book'},
-            'ruleToc': {'chapterList': '.chapter'},
-            'ruleContent': {'content': '#content@text'},
-          }),
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('premium changes do not disable a compatible source import', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      additionalSourceProtocolsPreferenceKey: true,
+    });
+    AdvancedFeatureAccess.premiumUnlocked = true;
+    addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
+    final analyzer = _Analyzer();
+    final controller = _CommitController(analyzer);
+    await _open(tester, controller: controller);
+    await _start(tester);
+    final importer = SourceImportService();
+    addTearDown(importer.close);
+    analyzer.pending.complete(
+      BookSourceImportAnalysis.additional(
+        importer.parseDecoded({
+          'bookSourceName': 'Reading Source example',
+          'bookSourceUrl': 'https://books.example',
+          'searchUrl': '/search?q={{key}}',
+          'ruleSearch': {'bookList': '.book'},
+          'ruleToc': {'chapterList': '.chapter'},
+          'ruleContent': {'content': '#content@text'},
+        }),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      AdvancedFeatureAccess.premiumUnlocked = false;
-      await tester.tap(find.byKey(const Key('bookSourceConnectButton')));
-      await tester.pumpAndSettle();
-      expect(controller.commits, 0);
-      expect(
-        find.text(
-          'This source is unavailable for the current account or settings.',
-        ),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    },
-  );
+    AdvancedFeatureAccess.premiumUnlocked = false;
+    await tester.tap(find.byKey(const Key('bookSourceConnectButton')));
+    await tester.pump();
+    expect(controller.commits, 1);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('verified membership can commit an additional source', (
     tester,

@@ -8,7 +8,7 @@ import '../../services/account/account.dart';
 import '../../services/core/app_distribution.dart';
 import '../../utils/localization_extension.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
-import '../../widgets/purchase_artwork.dart';
+import '../../widgets/glass_surface.dart';
 import '../../widgets/purchase_icons.dart';
 import '../../widgets/purchase_page_scaffold.dart';
 import 'account_page.dart';
@@ -34,7 +34,6 @@ class _ReaderPurchaseContent extends StatefulWidget {
 
 class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
     with WidgetsBindingObserver {
-  int _featureIndex = 0;
   String? _message;
   bool _messageIsError = false;
 
@@ -52,6 +51,7 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
   }
 
   Future<void> _initializeStore() async {
+    if (!AppDistribution.usesStoreBilling) return;
     try {
       if (widget.account.readerLifetimeProduct == null) {
         await widget.account.loadStoreProducts();
@@ -127,10 +127,21 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
       final l10n = context.l10n;
       final colors = Theme.of(context).colorScheme;
       final licenseRequired = AppDistribution.readerLicenseRequired;
-      final permanent = account.hasPermanentReaderAccess;
+      final usesStoreBilling = AppDistribution.usesStoreBilling;
+      final active = account.readerFeaturesForDisplay;
+      final permanent = account.permanentReaderFeaturesForDisplay;
       final trial = account.hasActiveReaderTrial;
       final busy = account.readerPurchaseLoading || account.loading;
       final status = _message ?? _purchaseStatus(context, account);
+      final String activeLabel = permanent
+          ? l10n.storeReaderCrossPlatformAccess
+          : (trial && account.readerTrialExpiresAt != null)
+          ? l10n.storeReaderTrialExpiresAt(
+              MaterialLocalizations.of(
+                context,
+              ).formatFullDate(account.readerTrialExpiresAt!.toLocal()),
+            )
+          : l10n.premiumCrossPlatformAccess;
       return PurchasePageScaffold(
         key: const ValueKey('store-reader-license-page'),
         title: l10n.storeReaderLicenseTitle,
@@ -166,88 +177,49 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              l10n.basicEditorialTitle,
+              l10n.basicEditionSummary,
+              key: const ValueKey('store-reader-benefits-heading'),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 28,
-                fontWeight: FontWeight.w500,
-                height: 1.35,
+                fontSize: 27,
+                fontWeight: FontWeight.w700,
+                height: 1.25,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.basicEditorialSubtitle,
+              l10n.storeReaderLicenseSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colors.onSurfaceVariant,
-                height: 1.6,
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 6),
-            PurchaseArtwork(
-              key: ValueKey('basic-artwork-$_featureIndex'),
-              scene: PurchaseArtworkScene.values[_featureIndex],
-              height: 174,
-            ),
-            _featureTabs(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
+            _coreBenefits(),
+            const SizedBox(height: 14),
             Text(
-              [
-                l10n.basicReadingHeadline,
-                l10n.basicListeningHeadline,
-                l10n.basicNotesHeadline,
-              ][_featureIndex],
-              key: const ValueKey('basic-feature-headline'),
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              [
-                l10n.basicReadingSummary,
-                l10n.basicListeningSummary,
-                l10n.basicNotesSummary,
-              ][_featureIndex],
+              l10n.basicServicesNote,
+              key: const ValueKey('store-reader-service-cost-note'),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colors.onSurfaceVariant,
-                height: 1.6,
+                height: 1.45,
               ),
             ),
-            if (permanent) ...[
+            if (active) ...[
               const SizedBox(height: 16),
               _summaryLine(
                 Icons.verified_rounded,
-                l10n.storeReaderCrossPlatformAccess,
-                key: const ValueKey('store-reader-active'),
+                activeLabel,
+                key: trial && account.readerTrialExpiresAt != null
+                    ? const ValueKey('store-trial-status')
+                    : const ValueKey('store-reader-active'),
                 textStyle: TextStyle(
-                  color: colors.onSurfaceVariant,
+                  color: colors.primary,
                   fontSize: 12,
                   height: 1.5,
                 ),
               ),
-            ] else if (!licenseRequired) ...[
-              const SizedBox(height: 16),
-              _summaryLine(
-                Icons.menu_book_rounded,
-                l10n.storeReaderCurrentlyFree,
-                key: const ValueKey('store-reader-free-access'),
-                textStyle: TextStyle(
-                  color: colors.onSurfaceVariant,
-                  fontSize: 12,
-                  height: 1.5,
-                ),
-              ),
-            ] else if (trial && account.readerTrialExpiresAt != null) ...[
-              const SizedBox(height: 20),
-              Text(
-                l10n.storeReaderTrialExpiresAt(
-                  MaterialLocalizations.of(
-                    context,
-                  ).formatFullDate(account.readerTrialExpiresAt!.toLocal()),
-                ),
-                key: const ValueKey('store-trial-status'),
-                style: TextStyle(color: colors.primary),
-              ),
-            ] else if (account.readerTrialExpiresAt != null) ...[
+            ] else if (licenseRequired &&
+                account.readerTrialExpiresAt != null) ...[
               const SizedBox(height: 20),
               Text(
                 l10n.storeTrialExpired,
@@ -262,35 +234,37 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (!permanent) ...[
-              if (account.readerLifetimeProduct case final product?) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        product.price,
-                        key: const ValueKey('store-reader-lifetime-price'),
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Text(
-                        '${l10n.premiumLifetimeCaption}\n${l10n.purchaseAccountCaption}',
-                        textAlign: TextAlign.end,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
-                          color: colors.onSurfaceVariant,
-                          height: 1.6,
+              if (usesStoreBilling)
+                if (account.readerLifetimeProduct case final product?) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          product.price,
+                          key: const ValueKey('store-reader-lifetime-price'),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(fontWeight: FontWeight.w500),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-              ],
-              if (!account.storeBillingReady) ...[
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          '${l10n.premiumLifetimeCaption}\n${l10n.purchaseAccountCaption}',
+                          textAlign: TextAlign.end,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontSize: 11,
+                                color: colors.onSurfaceVariant,
+                                height: 1.6,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                ],
+              if (usesStoreBilling && !account.storeBillingReady) ...[
                 Text(
                   l10n.storeBillingUnavailable,
                   textAlign: TextAlign.center,
@@ -314,11 +288,18 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                     ? null
                     : !account.isAuthenticated
                     ? _openSignIn
-                    : () => _perform(
+                    : usesStoreBilling
+                    ? () => _perform(
                         account.readerLifetimeProduct == null ||
                                 !account.storeBillingReady
                             ? account.loadStoreProducts
                             : account.purchaseReaderLifetime,
+                      )
+                    : () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              MembershipRedemptionPage(account: account),
+                        ),
                       ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -330,9 +311,9 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                     Flexible(
                       child: Text(
                         !account.isAuthenticated
-                            ? licenseRequired
-                                  ? l10n.storeReaderSignInAction
-                                  : l10n.storeReaderFreePurchaseSignInAction
+                            ? l10n.storeReaderSignInAction
+                            : !usesStoreBilling
+                            ? l10n.accountHaveRedemptionCode
                             : account.readerLifetimeProduct == null ||
                                   !account.storeBillingReady
                             ? l10n.accountAppleProductRetry
@@ -344,7 +325,10 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                 ),
               ),
             ],
-            if (licenseRequired && !permanent && account.canStartReaderTrial)
+            if (usesStoreBilling &&
+                licenseRequired &&
+                !permanent &&
+                account.canStartReaderTrial)
               TextButton(
                 key: const ValueKey('store-start-trial'),
                 onPressed: busy
@@ -359,28 +343,29 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
               ),
             PurchaseActionRow(
               children: [
-                TextButton(
-                  key: const ValueKey('store-reader-restore'),
-                  onPressed: busy
-                      ? null
-                      : () => _performAccountAction(
-                          account.restoreReaderPurchases,
+                if (usesStoreBilling)
+                  TextButton(
+                    key: const ValueKey('store-reader-restore'),
+                    onPressed: busy
+                        ? null
+                        : () => _performAccountAction(
+                            account.restoreReaderPurchases,
+                          ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.restore_rounded, size: 17),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            l10n.accountAppleRestore,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.restore_rounded, size: 17),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          l10n.accountAppleRestore,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                if (account.isAuthenticated)
+                if (usesStoreBilling && account.isAuthenticated)
                   TextButton(
                     key: const ValueKey('store-reader-redeem-entry'),
                     onPressed: busy
@@ -423,55 +408,63 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
     },
   );
 
-  Widget _featureTabs() {
+  Widget _coreBenefits() {
     final l10n = context.l10n;
-    final labels = [
-      l10n.basicReadingTab,
-      l10n.basicListeningTab,
-      l10n.basicNotesTab,
-    ];
-    final colors = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: colors.outlineVariant)),
+    final benefits = [
+      (key: 'ai', icon: PurchaseIcons.sparkle, title: l10n.basicAiTitle),
+      (
+        key: 'cloud-tts',
+        icon: Icons.cloud_outlined,
+        title: l10n.basicCloudTtsTitle,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      (
+        key: 'comics',
+        icon: Icons.photo_library_outlined,
+        title: l10n.basicComicTitle,
+      ),
+      (
+        key: 'fonts',
+        icon: Icons.font_download_outlined,
+        title: l10n.basicCustomFontsTitle,
+      ),
+    ];
+    final scheme = Theme.of(context).colorScheme;
+    final largeText = MediaQuery.textScalerOf(context).scale(14) > 18;
+    return LayoutBuilder(
+      builder: (context, constraints) => GridView.count(
+        key: const ValueKey('store-reader-core-benefits'),
+        crossAxisCount: constraints.maxWidth >= 340 && !largeText ? 2 : 1,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: constraints.maxWidth >= 340 && !largeText ? 3.2 : 5,
         children: [
-          for (var i = 0; i < labels.length; i++)
-            Expanded(
-              child: Semantics(
-                selected: i == _featureIndex,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: i == _featureIndex
-                            ? colors.primary
-                            : Colors.transparent,
-                        width: 2,
+          for (final benefit in benefits)
+            GlassSurface(
+              key: ValueKey('store-reader-feature-${benefit.key}'),
+              role: GlassSurfaceRole.control,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Icon(benefit.icon, size: 21, color: scheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        benefit.title,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  child: TextButton(
-                    key: ValueKey('basic-feature-tab-$i'),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 3,
-                        vertical: 12,
-                      ),
-                      minimumSize: const Size(48, 48),
-                      foregroundColor: i == _featureIndex
-                          ? colors.onSurface
-                          : colors.onSurfaceVariant,
-                    ),
-                    onPressed: () => setState(() => _featureIndex = i),
-                    child: Text(
-                      labels[i],
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -504,19 +497,9 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
     final l10n = context.l10n;
     return [
       (
-        icon: PurchaseIcons.bookOpenText,
-        title: l10n.basicReadingTitle,
-        body: l10n.basicReadingBody,
-      ),
-      (
-        icon: Icons.palette_outlined,
-        title: l10n.basicAppearanceTitle,
-        body: l10n.basicAppearanceBody,
-      ),
-      (
-        icon: PurchaseIcons.headphones,
-        title: l10n.basicTtsTitle,
-        body: l10n.basicTtsBody,
+        icon: PurchaseIcons.sparkle,
+        title: l10n.basicAiTitle,
+        body: l10n.basicAiBody,
       ),
       (
         icon: Icons.cloud_outlined,
@@ -524,24 +507,14 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
         body: l10n.basicCloudTtsBody,
       ),
       (
-        icon: PurchaseIcons.sparkle,
-        title: l10n.basicAiTitle,
-        body: l10n.basicAiBody,
+        icon: Icons.photo_library_outlined,
+        title: l10n.basicComicTitle,
+        body: l10n.basicComicBody,
       ),
       (
-        icon: Icons.sync_rounded,
-        title: l10n.basicSyncTitle,
-        body: l10n.basicSyncBody,
-      ),
-      (
-        icon: Icons.edit_note_rounded,
-        title: l10n.basicNotesTitle,
-        body: l10n.basicNotesBody,
-      ),
-      (
-        icon: Icons.public_rounded,
-        title: l10n.basicSourcesTitle,
-        body: l10n.basicSourcesBody,
+        icon: Icons.font_download_outlined,
+        title: l10n.basicCustomFontsTitle,
+        body: l10n.basicCustomFontsBody,
       ),
     ];
   }
@@ -593,11 +566,9 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 10),
-              Text(
-                AppDistribution.readerLicenseRequired
-                    ? l10n.storeReaderBenefitBody
-                    : l10n.storeReaderCurrentlyFree,
-              ),
+              Text(l10n.basicEditionSummary),
+              const SizedBox(height: 8),
+              Text(l10n.basicServicesNote),
               const SizedBox(height: 24),
               Text(l10n.storePurchaseBilling(_storeName)),
               if (AppDistribution.readerLicenseRequired) ...[
@@ -630,23 +601,25 @@ class _StoreReaderUnlockPageState extends State<_ReaderPurchaseContent>
     return switch (account.readerPurchasePhase) {
       StorePurchasePhase.idle => null,
       StorePurchasePhase.loadingProduct =>
-        account.hasPermanentReaderAccess
+        account.hasPermanentAccountReaderFeatureAccess
             ? null
             : l10n.accountAppleProductLoading,
       StorePurchasePhase.productUnavailable =>
-        account.hasPermanentReaderAccess ? null : l10n.storeBillingUnavailable,
+        account.hasPermanentAccountReaderFeatureAccess
+            ? null
+            : l10n.storeBillingUnavailable,
       StorePurchasePhase.purchasing => l10n.loading,
       StorePurchasePhase.pending => l10n.storeReaderPendingApproval(_storeName),
       StorePurchasePhase.verifying => l10n.storeReaderVerifying,
       StorePurchasePhase.restoring => l10n.storeReaderRestoring,
       StorePurchasePhase.purchased =>
-        account.hasPermanentReaderAccess
+        account.hasPermanentAccountReaderFeatureAccess
             ? l10n.storeReaderPurchaseSuccess
             : account.hasActiveReaderTrial
             ? l10n.storeTrialStarted
             : null,
       StorePurchasePhase.restored =>
-        account.hasPermanentReaderAccess
+        account.hasPermanentAccountReaderFeatureAccess
             ? l10n.storeReaderRestoreSuccess
             : account.hasActiveReaderTrial
             ? l10n.storeTrialStarted

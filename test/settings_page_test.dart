@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/account/account_page.dart';
+import 'package:xxread/pages/account/store_reader_unlock_page.dart';
 import 'package:xxread/pages/legal/legal_documents_page.dart';
 import 'package:xxread/pages/settings/about/open_source_licenses_page.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
@@ -41,6 +42,23 @@ class _SettingsAloudService extends ChangeNotifier
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _SettingsReaderAccount extends MemberAccountController {
+  @override
+  bool get initialized => true;
+
+  @override
+  bool get hasAccountReaderFeatureAccess => true;
+
+  @override
+  bool get readerFeaturesForDisplay => true;
+
+  @override
+  Future<void> initialize({bool force = false}) async {}
+
+  @override
+  Future<void> synchronize({bool force = false}) async {}
+}
+
 class _FakeCacheManager extends AppCacheManager {
   @override
   Future<AppCacheUsage> usage() async => AppCacheUsage({
@@ -65,6 +83,7 @@ Future<ValueNotifier<double>> _pumpSettingsPage(
   required Locale locale,
   double textScaleFactor = 1,
   ReaderAloudService? aloudService,
+  MemberAccountController? account,
   Size surfaceSize = const Size(390, 1200),
 }) async {
   tester.view.devicePixelRatio = 1;
@@ -74,11 +93,11 @@ Future<ValueNotifier<double>> _pumpSettingsPage(
   final theme = ThemeNotifier();
   final appSettings = AppSettingsNotifier();
   final webDav = WebDavBackupController();
-  final account = MemberAccountController();
+  final resolvedAccount = account ?? MemberAccountController();
   addTearDown(theme.dispose);
   addTearDown(appSettings.dispose);
   addTearDown(webDav.dispose);
-  addTearDown(account.dispose);
+  addTearDown(resolvedAccount.dispose);
   final textScale = ValueNotifier(textScaleFactor);
   addTearDown(textScale.dispose);
 
@@ -88,7 +107,7 @@ Future<ValueNotifier<double>> _pumpSettingsPage(
         ChangeNotifierProvider.value(value: theme),
         ChangeNotifierProvider.value(value: appSettings),
         ChangeNotifierProvider.value(value: webDav),
-        ChangeNotifierProvider.value(value: account),
+        ChangeNotifierProvider.value(value: resolvedAccount),
         if (aloudService != null)
           ChangeNotifierProvider<ReaderAloudService>.value(value: aloudService),
       ],
@@ -232,11 +251,13 @@ void main() {
     tester,
   ) async {
     final aloud = _SettingsAloudService();
+    final account = _SettingsReaderAccount();
     addTearDown(aloud.dispose);
     await _pumpSettingsPage(
       tester,
       locale: const Locale('zh'),
       aloudService: aloud,
+      account: account,
     );
     await _openSettingsCategory(tester, SettingsCategory.contentServices);
     await tester.scrollUntilVisible(
@@ -272,7 +293,7 @@ void main() {
     expect(find.text(l10n.settingsGuestTitle), findsOneWidget);
     expect(find.text(l10n.settingsGuestSubtitle), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('settings-membership-entry')),
+      find.byKey(const ValueKey('settings-reader-license')),
       findsOneWidget,
     );
     expect(
@@ -308,16 +329,10 @@ void main() {
     expect(find.byKey(const ValueKey('settings-premium-card')), findsNothing);
     expect(find.text(l10n.settingsVolumeKeyTurnTitle), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('settings-membership-entry')));
+    await tester.tap(find.byKey(const ValueKey('settings-reader-license')));
     await tester.pumpAndSettle();
-    expect(find.byType(PremiumMembershipPage), findsOneWidget);
-    expect(
-      tester
-          .widget<PremiumMembershipPage>(find.byType(PremiumMembershipPage))
-          .focusBilling,
-      isTrue,
-    );
-    expect(find.byKey(const ValueKey('premium-sign-in')), findsOneWidget);
+    expect(find.byType(StoreReaderUnlockPage), findsOneWidget);
+    expect(find.byKey(const ValueKey('store-reader-purchase')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('floating-subpage-back')));
     await tester.pumpAndSettle();
 
@@ -363,9 +378,9 @@ void main() {
     tester,
   ) async {
     await _pumpSettingsPage(tester, locale: const Locale('zh'));
-    await tester.tap(find.byKey(const ValueKey('settings-membership-entry')));
+    await tester.tap(find.byKey(const ValueKey('settings-reader-license')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('premium-sign-in')));
+    await tester.tap(find.byKey(const ValueKey('store-reader-purchase')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(AccountPage), findsOneWidget);
@@ -391,7 +406,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('settings-membership-entry')),
+      find.byKey(const ValueKey('settings-reader-license')),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

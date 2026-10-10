@@ -9,6 +9,7 @@ import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/book_sources/source_engine/source_config.dart';
 import 'package:xxread/book_sources/source_engine/source_health_checker.dart';
 import 'package:xxread/book_sources/source_engine/source_request.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,9 +17,11 @@ void main() {
   setUp(() async {
     await BookSourceRegistry.resetForTesting();
     SharedPreferences.setMockInitialValues({});
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: true);
   });
 
   tearDown(() {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
     debugDefaultTargetPlatformOverride = null;
   });
 
@@ -123,18 +126,21 @@ void main() {
             '<article id="content"><p>正文</p></article>',
       });
       final registry = BookSourceRegistry(storage: _MemoryRegistryStorage());
-      final config = _fixtureSource(includeExplore: true);
-      final stale = config.toRegisteredSource(
-        id: 'stale-source',
-        enabled: true,
+      final freshConfig = _fixtureSource(
+        includeExplore: true,
+        identity: 'fresh',
       );
+      final stale = _fixtureSource(
+        includeExplore: true,
+        identity: 'stale',
+      ).toRegisteredSource(id: 'stale-source', enabled: true);
       final freshResult = SourceHealthCheckResult(
         checked: SourceHealthCheckResult.fullAvailabilityCapabilities,
         failed: const {},
         checkedAt: DateTime.now().toUtc(),
       );
       final fresh = withSourceHealthCheckResult(
-        config.toRegisteredSource(id: 'fresh-source', enabled: true),
+        freshConfig.toRegisteredSource(id: 'fresh-source', enabled: true),
         freshResult,
       );
       await registry.applySynced(fresh);
@@ -226,10 +232,9 @@ void main() {
         final registry = BookSourceRegistry(storage: _MemoryRegistryStorage());
         final sources = List.generate(
           expectedConcurrency + 2,
-          (index) => _fixtureSource().toRegisteredSource(
-            id: 'source-$index',
-            enabled: true,
-          ),
+          (index) => _fixtureSource(
+            identity: 'source-$index',
+          ).toRegisteredSource(id: 'source-$index', enabled: true),
         );
         for (final source in sources) {
           await registry.applySynced(source);
@@ -259,7 +264,7 @@ void main() {
     () async {
       final storage = _MemoryRegistryStorage();
       final registry = BookSourceRegistry(storage: storage);
-      final config = _fixtureSource();
+      final config = _fixtureSource(identity: 'fresh');
       final fresh = withSourceHealthCheckResult(
         config.toRegisteredSource(id: 'fresh-source', enabled: true),
         SourceHealthCheckResult(
@@ -268,10 +273,9 @@ void main() {
           checkedAt: DateTime.now().toUtc(),
         ),
       );
-      final blocking = config.toRegisteredSource(
-        id: 'blocking-source',
-        enabled: true,
-      );
+      final blocking = _fixtureSource(
+        identity: 'blocking',
+      ).toRegisteredSource(id: 'blocking-source', enabled: true);
       await registry.applySynced(fresh);
       await registry.applySynced(blocking);
       final transport = _BlockingTransport();
@@ -333,31 +337,33 @@ void main() {
   });
 }
 
-ReadingSourceConfig _fixtureSource({bool includeExplore = false}) =>
-    ReadingSourceConfig.fromJson({
-      'bookSourceName': 'Health service test',
-      'bookSourceUrl': 'https://books.test',
-      'searchUrl': '/search?q={{key}}&page={{page}}',
-      if (includeExplore) 'exploreUrl': '发现::/explore?page={{page}}',
-      'ruleSearch': {
-        'bookList': 'class.book',
-        'name': 'class.name@text',
-        'bookUrl': 'tag.a@href',
-      },
-      if (includeExplore)
-        'ruleExplore': {
-          'bookList': 'class.book',
-          'name': 'class.name@text',
-          'bookUrl': 'tag.a@href',
-        },
-      'ruleBookInfo': {'name': 'h1@text', 'tocUrl': 'class.toc@href'},
-      'ruleToc': {
-        'chapterList': '#chapters@li',
-        'chapterName': 'a@text',
-        'chapterUrl': 'a@href',
-      },
-      'ruleContent': {'content': '#content@html'},
-    });
+ReadingSourceConfig _fixtureSource({
+  bool includeExplore = false,
+  String? identity,
+}) => ReadingSourceConfig.fromJson({
+  'bookSourceName': 'Health service test',
+  'bookSourceUrl': 'https://books.test${identity == null ? '' : '#$identity'}',
+  'searchUrl': '/search?q={{key}}&page={{page}}',
+  if (includeExplore) 'exploreUrl': '发现::/explore?page={{page}}',
+  'ruleSearch': {
+    'bookList': 'class.book',
+    'name': 'class.name@text',
+    'bookUrl': 'tag.a@href',
+  },
+  if (includeExplore)
+    'ruleExplore': {
+      'bookList': 'class.book',
+      'name': 'class.name@text',
+      'bookUrl': 'tag.a@href',
+    },
+  'ruleBookInfo': {'name': 'h1@text', 'tocUrl': 'class.toc@href'},
+  'ruleToc': {
+    'chapterList': '#chapters@li',
+    'chapterName': 'a@text',
+    'chapterUrl': 'a@href',
+  },
+  'ruleContent': {'content': '#content@html'},
+});
 
 class _FakeTransport implements SourceTransport {
   _FakeTransport(this.responses);

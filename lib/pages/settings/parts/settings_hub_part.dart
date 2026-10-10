@@ -262,8 +262,7 @@ extension _SettingsHubPart on _SettingsPageState {
       ],
       SettingsCategory.contentServices => <WidgetBuilder>[
         (_) => _buildContentServicesSection(l10n),
-        if (appSettings.advancedFeaturesUnlocked)
-          (_) => _buildAdvancedSettingsSection(l10n, appSettings),
+        (_) => _buildAdvancedSettingsSection(l10n, appSettings),
       ],
       SettingsCategory.aboutSupport => <WidgetBuilder>[
         (_) => _buildSupportSettingsSection(l10n),

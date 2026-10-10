@@ -39,6 +39,7 @@ import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_surface.dart';
 import 'package:xxread/widgets/page_system_ui.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 
 import 'home_dashboard_page.dart';
 import 'home_mobile_chrome.dart';
@@ -218,9 +219,12 @@ class _HomeShellPageState extends State<HomeShellPage> {
         icon: Icons.auto_awesome_outlined,
         selectedIcon: Icons.auto_awesome,
         label: l10n.navAi,
-        page: AiPage(
-          controller: _aiPageController,
-          historyStore: widget.aiChatHistoryStore,
+        page: StoreReaderAccessGate(
+          requireAccountFeatureAccess: true,
+          pageBuilder: (_) => AiPage(
+            controller: _aiPageController,
+            historyStore: widget.aiChatHistoryStore,
+          ),
         ),
       ),
       HomeNavigationDestination.settings: HomeNavigationItem(

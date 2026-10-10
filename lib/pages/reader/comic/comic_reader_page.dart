@@ -23,6 +23,7 @@ import 'package:xxread/utils/page_transitions.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_settings_controls.dart';
 import 'package:xxread/widgets/glass_bottom_sheet.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 
 /// The single comic reader for local archives and online image chapters.
 ///
@@ -74,6 +75,8 @@ class ComicReaderPage extends StatefulWidget {
     ReaderThemePalette? initialTheme,
     bool waitForReaderClose = true,
   }) async {
+    if (!await ensureAccountReaderFeatureAccess(context)) return;
+    if (!context.mounted) return;
     final theme = initialTheme ?? await ReaderThemes.loadSavedPalette();
     if (!context.mounted) return;
     final route = BookOpenTransition.createRoute<void>(

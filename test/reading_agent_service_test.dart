@@ -12,9 +12,39 @@ import 'package:xxread/services/ai/ai_request_coordinator.dart';
 import 'package:xxread/services/ai/reading_agent_data_source.dart';
 import 'package:xxread/services/ai/reading_agent_memory_store.dart';
 import 'package:xxread/services/ai/reading_agent_service.dart';
+import 'package:xxread/services/account/account_api_client.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues(const {}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues(const {});
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: false);
+  });
+  tearDown(
+    () => AdvancedFeatureAccess.update(
+      readerUnlocked: false,
+      premiumUnlocked: false,
+    ),
+  );
+
+  test('normal account cannot bypass the reading agent service', () async {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+    final memory = await _enabledMemory();
+    addTearDown(memory.dispose);
+    final ai = _FakeAgentAI();
+    final data = _FakeDataSource();
+
+    await expectLater(
+      ReadingAgentService(
+        ai: ai,
+        data: data,
+        memory: memory,
+      ).chat(history: _question),
+      throwsA(isA<MemberAccountException>()),
+    );
+    expect(ai.calls, 0);
+    expect(data.beginCount, 0);
+  });
 
   test('disabled agent makes no model or reading-data calls', () async {
     final ai = _FakeAgentAI();
@@ -284,6 +314,45 @@ void main() {
           ),
         ),
       );
+    },
+  );
+
+  test(
+    'membership revocation cancels agent work and drops late output',
+    () async {
+      final memory = await _enabledMemory();
+      addTearDown(memory.dispose);
+      final data = _FakeDataSource(blockOverview: true);
+      final service = ReadingAgentService(
+        ai: _FakeAgentAI(
+          script: (tools) async {
+            await tools('reading_overview', const {});
+            return 'late paid output';
+          },
+        ),
+        data: data,
+        memory: memory,
+      );
+
+      final pending = service.chat(history: _question);
+      await data.overviewStarted.future;
+      AdvancedFeatureAccess.update(
+        readerUnlocked: false,
+        premiumUnlocked: false,
+      );
+      data.releaseOverview();
+
+      await expectLater(
+        pending,
+        throwsA(
+          isA<AIServiceException>().having(
+            (error) => error.code,
+            'code',
+            'agent_cancelled',
+          ),
+        ),
+      );
+      expect(data.cancelCount, greaterThan(0));
     },
   );
 

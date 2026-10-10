@@ -12,6 +12,7 @@ import 'package:xxread/models/app_skin.dart';
 import 'package:xxread/utils/app_skin_theme.dart';
 import 'package:xxread/services/reader_aloud_service.dart';
 import 'package:xxread/services/reader_aloud_session.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 import 'package:xxread/services/tts_service.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_aloud_panel.dart';
@@ -19,7 +20,13 @@ import 'package:xxread/widgets/reader_aloud_cover.dart';
 import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: false);
+  });
+  tearDown(() {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+  });
 
   testWidgets('themed playback stays usable at narrow width and large text', (
     tester,
@@ -1137,6 +1144,26 @@ void main() {
     await tester.tap(cloudOption);
     await tester.pumpAndSettle();
     expect(fixture.aloud.engineType, ReaderAloudEngineType.cloud);
+  });
+
+  testWidgets('normal account cannot select the cloud engine', (tester) async {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+    final fixture = await _openSettingsFromPlayer(
+      tester,
+      size: const Size(390, 844),
+    );
+    addTearDown(fixture.dispose);
+    final sheet = find.byType(BottomSheet);
+    final cloudOption = find.descendant(
+      of: sheet,
+      matching: find.text('云端 TTS'),
+    );
+    await tester.ensureVisible(cloudOption);
+    await tester.tap(cloudOption);
+    await tester.pumpAndSettle();
+
+    expect(fixture.aloud.engineType, ReaderAloudEngineType.system);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('settings sheet scrolls on a narrow phone with large text', (

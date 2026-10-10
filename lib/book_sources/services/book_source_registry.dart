@@ -26,10 +26,43 @@ class BookSourceUpsertAllResult {
   const BookSourceUpsertAllResult({
     required this.sources,
     required this.conflicted,
+    this.quotaRejected = const [],
   });
 
   final List<RegisteredBookSource> sources;
   final List<RegisteredBookSource> conflicted;
+  final List<RegisteredBookSource> quotaRejected;
+}
+
+@immutable
+class BookSourceReplacementPreflight {
+  const BookSourceReplacementPreflight({
+    required this.limit,
+    required this.existingAdditionalCount,
+    required this.newAdditionalSourceIds,
+    required this.rejectedSourceIds,
+  });
+
+  final int limit;
+  final int existingAdditionalCount;
+  final List<String> newAdditionalSourceIds;
+  final List<String> rejectedSourceIds;
+
+  bool get allowed => rejectedSourceIds.isEmpty;
+}
+
+class BookSourceQuotaExceededException extends BookSourceProtocolException {
+  const BookSourceQuotaExceededException({
+    required this.limit,
+    required this.existingCount,
+    this.rejectedSourceIds = const [],
+  }) : super(
+         'This account can add at most $limit other-protocol book sources.',
+       );
+
+  final int limit;
+  final int existingCount;
+  final List<String> rejectedSourceIds;
 }
 
 class ReadingSourceEditConflictException extends BookSourceProtocolException {
@@ -47,6 +80,7 @@ class BookSourceRegistry {
 
   static const String _storageKey = 'origo_x_book_sources_v1';
   static const int _backgroundDecodeThreshold = 256 * 1024;
+  static const int standardAdditionalProtocolLimit = 2;
   static final StreamController<void> _changesController =
       StreamController<void>.broadcast();
   static Future<void> _mutationTail = Future<void>.value();
@@ -127,9 +161,18 @@ class BookSourceRegistry {
   Future<List<RegisteredBookSource>> upsert(RegisteredBookSource source) async {
     return _mutate(() async {
       final sources = (await _load()).toList();
-      final index = sources.indexWhere((item) => item.id == source.id);
+      final identity = _sourceIdentity(source);
+      final index = sources.indexWhere(
+        (item) =>
+            item.id == source.id ||
+            (source.sourceProtocol == BookSourceProtocolKind.readingSource &&
+                _sourceIdentity(item) == identity),
+      );
       if (index >= 0) {
         final previous = sources[index];
+        if (_requiresAdditionalProtocolSlot(previous, source)) {
+          _ensureCanAddAdditionalProtocol(sources, source);
+        }
         // 防止书源 id 劫持：清单 id 由服务端自报，若同 id 的源来自
         // 不同域名，则拒绝静默覆盖已注册源的 API 地址。用户如确要
         // 更换域名，需先删除旧源再添加。
@@ -143,30 +186,9 @@ class BookSourceRegistry {
             'source with the same id from a different host.',
           );
         }
-        sources[index] = RegisteredBookSource(
-          id: source.id,
-          name: source.name,
-          description: source.description,
-          manifestUrl: source.manifestUrl,
-          apiBaseUrl: source.apiBaseUrl,
-          iconUrl: source.iconUrl,
-          websiteUrl: source.websiteUrl,
-          operatorName: source.operatorName,
-          contactUrl: source.contactUrl,
-          contentLicense: source.contentLicense,
-          rightsStatement: source.rightsStatement,
-          protocolVersion: source.protocolVersion,
-          languages: source.languages,
-          capabilities: source.capabilities,
-          maxCatalogPageSize: source.maxCatalogPageSize,
-          enabled: previous.enabled,
-          isFavorite: previous.isFavorite,
-          groups: previous.groups,
-          addedAt: previous.addedAt,
-          sourceProtocol: source.sourceProtocol,
-          sourceConfig: source.sourceConfig,
-        );
+        sources[index] = _mergeImportedSource(previous, source);
       } else {
+        _ensureCanAddAdditionalProtocol(sources, source);
         sources.add(source);
       }
       return _saveAndPublish(sources);
@@ -188,6 +210,7 @@ class BookSourceRegistry {
     Iterable<RegisteredBookSource> imported,
   ) async {
     final conflicted = <RegisteredBookSource>[];
+    final quotaRejected = <RegisteredBookSource>[];
     final sources = await _mutate(() async {
       final sources = (await _load()).toList();
       final indexes = <String, int>{
@@ -198,6 +221,10 @@ class BookSourceRegistry {
         final identity = _sourceIdentity(source);
         final index = indexes[identity];
         if (index == null) {
+          if (!_canAddAdditionalProtocol(sources, source)) {
+            quotaRejected.add(source);
+            continue;
+          }
           indexes[identity] = sources.length;
           sources.add(source);
           continue;
@@ -211,30 +238,10 @@ class BookSourceRegistry {
           conflicted.add(source);
           continue;
         }
-        sources[index] = RegisteredBookSource(
-          // Preserve the original ID when migrating imported-source naming;
-          // shelf entries and downloaded books may already reference it.
-          id: previous.id,
-          name: source.name,
-          description: source.description,
-          manifestUrl: source.manifestUrl,
-          apiBaseUrl: source.apiBaseUrl,
-          iconUrl: source.iconUrl,
-          websiteUrl: source.websiteUrl,
-          operatorName: source.operatorName,
-          contactUrl: source.contactUrl,
-          contentLicense: source.contentLicense,
-          rightsStatement: source.rightsStatement,
-          protocolVersion: source.protocolVersion,
-          languages: source.languages,
-          capabilities: source.capabilities,
-          maxCatalogPageSize: source.maxCatalogPageSize,
-          enabled: previous.enabled && source.capabilities.isNotEmpty,
-          isFavorite: previous.isFavorite,
-          groups: previous.groups,
-          addedAt: previous.addedAt,
-          sourceProtocol: source.sourceProtocol,
-          sourceConfig: source.sourceConfig,
+        sources[index] = _mergeImportedSource(
+          previous,
+          source,
+          disableWhenUnsupported: true,
         );
       }
       return _saveAndPublish(sources);
@@ -242,6 +249,7 @@ class BookSourceRegistry {
     return BookSourceUpsertAllResult(
       sources: sources,
       conflicted: List.unmodifiable(conflicted),
+      quotaRejected: List.unmodifiable(quotaRejected),
     );
   }
 
@@ -627,15 +635,66 @@ class BookSourceRegistry {
   ) async {
     return _mutate(() async {
       final sources = (await _load()).toList();
-      final index = sources.indexWhere((item) => item.id == source.id);
+      final identity = _sourceIdentity(source);
+      final index = sources.indexWhere(
+        (item) =>
+            item.id == source.id ||
+            (source.sourceProtocol == BookSourceProtocolKind.readingSource &&
+                _sourceIdentity(item) == identity),
+      );
       if (index < 0) {
+        _ensureCanAddAdditionalProtocol(sources, source);
         sources.add(source);
       } else {
-        sources[index] = source;
+        final previous = sources[index];
+        if (_requiresAdditionalProtocolSlot(previous, source)) {
+          _ensureCanAddAdditionalProtocol(sources, source);
+        }
+        sources[index] = previous.id == source.id
+            ? source
+            : _replaceSourceId(source, previous.id);
       }
       return _saveAndPublish(sources);
     });
   }
+
+  /// Evaluates a complete replacement without writing it. Callers that will
+  /// apply the replacement must use [runWithValidatedReplacement], which
+  /// repeats this check while holding the process-wide registry mutation lock.
+  Future<BookSourceReplacementPreflight> preflightReplacement(
+    String replacementRaw,
+  ) => _mutate(() async {
+    final current = await _load();
+    final replacement = _decodeReplacementSources(replacementRaw);
+    return _replacementPreflight(current, replacement);
+  });
+
+  /// Runs a raw-storage replacement only after validating it under the same
+  /// serialized mutation boundary used by imports and sync. [operation] must
+  /// write the supplied replacement directly and must not call this registry.
+  Future<T> runWithValidatedReplacement<T>(
+    String replacementRaw,
+    Future<T> Function() operation,
+  ) => _mutate(() async {
+    final current = await _load();
+    final replacement = _decodeReplacementSources(replacementRaw);
+    final preflight = _replacementPreflight(current, replacement);
+    if (!preflight.allowed) {
+      throw BookSourceQuotaExceededException(
+        limit: preflight.limit,
+        existingCount: preflight.existingAdditionalCount,
+        rejectedSourceIds: preflight.rejectedSourceIds,
+      );
+    }
+    return operation();
+  });
+
+  /// Serializes recovery of a replacement that was already validated before
+  /// its restore journal was written. Recovery must be able to roll back a
+  /// grandfathered registry even when the app restarts without premium access.
+  /// New restore/import/sync operations must use their quota-checking APIs.
+  Future<T> runSerializedRestoreRecovery<T>(Future<T> Function() operation) =>
+      _mutate(operation);
 
   /// Applies the ordered explicit group directory received from sync.
   ///
@@ -664,6 +723,72 @@ class BookSourceRegistry {
 
     _mutationTail = _mutationTail.then<void>(run, onError: run);
     return completer.future;
+  }
+
+  bool _canAddAdditionalProtocol(
+    List<RegisteredBookSource> sources,
+    RegisteredBookSource source,
+  ) {
+    if (source.sourceProtocol == BookSourceProtocolKind.orsp ||
+        AdvancedFeatureAccess.premiumUnlocked) {
+      return true;
+    }
+    return _additionalProtocolCount(sources) < standardAdditionalProtocolLimit;
+  }
+
+  void _ensureCanAddAdditionalProtocol(
+    List<RegisteredBookSource> sources,
+    RegisteredBookSource source,
+  ) {
+    if (_canAddAdditionalProtocol(sources, source)) return;
+    throw BookSourceQuotaExceededException(
+      limit: standardAdditionalProtocolLimit,
+      existingCount: _additionalProtocolCount(sources),
+      rejectedSourceIds: [source.id],
+    );
+  }
+
+  BookSourceReplacementPreflight _replacementPreflight(
+    List<RegisteredBookSource> current,
+    List<RegisteredBookSource> replacement,
+  ) {
+    final existingCount = _additionalProtocolCount(current);
+    final existingOccurrences = <String, int>{};
+    for (final source in current) {
+      if (source.sourceProtocol == BookSourceProtocolKind.orsp) continue;
+      final identity = _sourceIdentity(source);
+      existingOccurrences.update(
+        identity,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+    }
+    var retainedExistingCount = 0;
+    final newSourceIds = <String>[];
+    for (final source in replacement) {
+      if (source.sourceProtocol == BookSourceProtocolKind.orsp) continue;
+      final identity = _sourceIdentity(source);
+      final existingCountForIdentity = existingOccurrences[identity] ?? 0;
+      if (existingCountForIdentity > 0) {
+        existingOccurrences[identity] = existingCountForIdentity - 1;
+        retainedExistingCount++;
+        continue;
+      }
+      newSourceIds.add(source.id);
+    }
+    final remaining = standardAdditionalProtocolLimit - retainedExistingCount;
+    final available = AdvancedFeatureAccess.premiumUnlocked
+        ? newSourceIds.length
+        : remaining > 0
+        ? remaining
+        : 0;
+    final rejected = newSourceIds.skip(available).toList(growable: false);
+    return BookSourceReplacementPreflight(
+      limit: standardAdditionalProtocolLimit,
+      existingAdditionalCount: existingCount,
+      newAdditionalSourceIds: List.unmodifiable(newSourceIds),
+      rejectedSourceIds: List.unmodifiable(rejected),
+    );
   }
 
   Future<void> _save(
@@ -737,6 +862,94 @@ String _sourceIdentity(RegisteredBookSource source) {
   }
   return 'protocol:${source.sourceProtocol.name}:id:${source.id}';
 }
+
+List<RegisteredBookSource> _decodeReplacementSources(String raw) {
+  final decoded = jsonDecode(raw);
+  final items = decoded is List
+      ? decoded
+      : decoded is Map && decoded['sources'] is List
+      ? decoded['sources']! as List
+      : throw const FormatException('Invalid book source replacement.');
+  return items
+      .map((item) {
+        if (item is! Map) {
+          throw const FormatException('Invalid book source replacement.');
+        }
+        final source = RegisteredBookSource.fromJson(
+          item.map((key, value) => MapEntry('$key', value)),
+        );
+        return _refreshStoredCompatibility(source);
+      })
+      .toList(growable: false);
+}
+
+int _additionalProtocolCount(Iterable<RegisteredBookSource> sources) => sources
+    .where((source) => source.sourceProtocol != BookSourceProtocolKind.orsp)
+    .length;
+
+bool _requiresAdditionalProtocolSlot(
+  RegisteredBookSource previous,
+  RegisteredBookSource replacement,
+) =>
+    previous.sourceProtocol == BookSourceProtocolKind.orsp &&
+    replacement.sourceProtocol != BookSourceProtocolKind.orsp;
+
+RegisteredBookSource _mergeImportedSource(
+  RegisteredBookSource previous,
+  RegisteredBookSource source, {
+  bool disableWhenUnsupported = false,
+}) => RegisteredBookSource(
+  // Preserve local identity because shelf records and downloads can refer to
+  // it even when a compatible-source importer changes its generated id.
+  id: previous.id,
+  name: source.name,
+  description: source.description,
+  manifestUrl: source.manifestUrl,
+  apiBaseUrl: source.apiBaseUrl,
+  iconUrl: source.iconUrl,
+  websiteUrl: source.websiteUrl,
+  operatorName: source.operatorName,
+  contactUrl: source.contactUrl,
+  contentLicense: source.contentLicense,
+  rightsStatement: source.rightsStatement,
+  protocolVersion: source.protocolVersion,
+  languages: source.languages,
+  capabilities: source.capabilities,
+  maxCatalogPageSize: source.maxCatalogPageSize,
+  enabled:
+      previous.enabled &&
+      (!disableWhenUnsupported || source.capabilities.isNotEmpty),
+  isFavorite: previous.isFavorite,
+  groups: previous.groups,
+  addedAt: previous.addedAt,
+  sourceProtocol: source.sourceProtocol,
+  sourceConfig: source.sourceConfig,
+);
+
+RegisteredBookSource _replaceSourceId(RegisteredBookSource source, String id) =>
+    RegisteredBookSource(
+      id: id,
+      name: source.name,
+      description: source.description,
+      manifestUrl: source.manifestUrl,
+      apiBaseUrl: source.apiBaseUrl,
+      iconUrl: source.iconUrl,
+      websiteUrl: source.websiteUrl,
+      operatorName: source.operatorName,
+      contactUrl: source.contactUrl,
+      contentLicense: source.contentLicense,
+      rightsStatement: source.rightsStatement,
+      protocolVersion: source.protocolVersion,
+      languages: source.languages,
+      capabilities: source.capabilities,
+      maxCatalogPageSize: source.maxCatalogPageSize,
+      enabled: source.enabled,
+      isFavorite: source.isFavorite,
+      groups: source.groups,
+      addedAt: source.addedAt,
+      sourceProtocol: source.sourceProtocol,
+      sourceConfig: source.sourceConfig,
+    );
 
 Map<String, dynamic> _copyJsonMap(Map<String, dynamic> source) =>
     source.map((key, value) => MapEntry(key, _copyJsonValue(value)));

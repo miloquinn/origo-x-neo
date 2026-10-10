@@ -8,9 +8,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
+import 'package:xxread/services/account/member_account_controller.dart';
+import 'package:xxread/services/account/account_api_client.dart';
 import 'package:xxread/services/core/custom_font_service.dart';
 import 'package:xxread/services/core/online_font_service.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
+
+class _FontAccount extends MemberAccountController {
+  _FontAccount() : super(networkAllowed: false);
+  bool unlocked = false;
+
+  @override
+  bool get hasAccountReaderFeatureAccess => unlocked;
+
+  void setUnlocked(bool value) {
+    unlocked = value;
+    notifyListeners();
+  }
+}
 
 class _BurstOnlineFontService extends OnlineFontService {
   OnlineFontDownloadProgress? _currentProgress;
@@ -153,10 +168,12 @@ Uint8List _customVariableTtfBytes() {
 }
 
 Future<AppSettingsNotifier> _loadNotifier({
+  MemberAccountController? account,
   CustomFontService? customFontService,
   OnlineFontService? onlineFontService,
 }) async {
   final notifier = AppSettingsNotifier(
+    account: account,
     customFontService: customFontService,
     onlineFontService: onlineFontService,
   );
@@ -515,7 +532,12 @@ void main() {
         ]),
         registrar: (family, bytes) async {},
       );
-      final notifier = await _loadNotifier(customFontService: service);
+      final account = _FontAccount()..setUnlocked(true);
+      addTearDown(account.dispose);
+      final notifier = await _loadNotifier(
+        account: account,
+        customFontService: service,
+      );
       addTearDown(notifier.dispose);
 
       final result = await notifier.importCustomFont(FontDomain.reader);
@@ -544,10 +566,57 @@ void main() {
       expect(notifier.appFontId, customId);
       expect(notifier.epubReaderFontId, customId);
       expect(notifier.isReaderFont(customId), isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      account.setUnlocked(false);
+      expect(notifier.appFontId, FontCatalog.defaultAppFont.id);
+      expect(notifier.epubReaderFontId, FontCatalog.bookEmbeddedId);
+      expect(notifier.customFonts.single.id, customId);
+      expect(prefs.getString('app_font_id_v2'), customId);
+      expect(prefs.getString('epub_reader_font_id_v1'), customId);
+      await expectLater(
+        notifier.setReaderFontId(customId),
+        throwsA(isA<MemberAccountException>()),
+      );
+      account.setUnlocked(true);
+      expect(notifier.appFontId, customId);
+      expect(notifier.epubReaderFontId, customId);
+      account.setUnlocked(false);
+      final restored = await _loadNotifier(
+        account: account,
+        customFontService: CustomFontService(
+          supportDirectory: () async => sandbox,
+          registrar: (family, bytes) async {},
+        ),
+      );
+      addTearDown(restored.dispose);
+      expect(restored.appFontId, FontCatalog.defaultAppFont.id);
+      expect(restored.epubReaderFontId, FontCatalog.bookEmbeddedId);
+      account.setUnlocked(true);
+      expect(restored.appFontId, customId);
+      expect(restored.epubReaderFontId, customId);
       await notifier.deleteCustomFont(customId);
       expect(notifier.appFontId, FontCatalog.defaultAppFont.id);
       expect(notifier.readerFontId, FontCatalog.defaultReaderFont.id);
       expect(notifier.epubReaderFontId, FontCatalog.bookEmbeddedId);
     },
   );
+
+  test('ordinary users cannot import fonts or open the file picker', () async {
+    var pickerCalls = 0;
+    final service = CustomFontService(
+      filePicker: () async {
+        pickerCalls++;
+        return null;
+      },
+    );
+    final notifier = await _loadNotifier(customFontService: service);
+    addTearDown(notifier.dispose);
+    await expectLater(
+      notifier.importCustomFont(),
+      throwsA(isA<MemberAccountException>()),
+    );
+    expect(pickerCalls, 0);
+    await notifier.setReaderFontId(FontCatalog.systemId);
+    expect(notifier.readerFontId, FontCatalog.systemId);
+  });
 }

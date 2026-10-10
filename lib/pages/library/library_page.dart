@@ -32,6 +32,7 @@ import 'package:xxread/pages/home/home_shell_page.dart';
 import 'package:xxread/pages/home/widgets/home_page_wrappers.dart';
 import 'package:xxread/pages/book_sources/book_source_change_page.dart';
 import 'package:xxread/pages/reader/book_source/online_reader_factory.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_preprocess_task_controller.dart';
 import 'package:xxread/services/books/book_services.dart';

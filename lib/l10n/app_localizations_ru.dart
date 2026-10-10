@@ -2809,7 +2809,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsAdditionalSourceProtocolsSubtitle =>
-      'Включите поддержку дополнительных протоколов источников.';
+      'Обычный аккаунт может хранить до 2 источников с другими протоколами; Explore снимает лимит.';
 
   @override
   String get settingsPrivateBookSourceNetworkTitle =>
@@ -2878,6 +2878,19 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String additionalSourcesImportedWithConflicts(int count, int conflicted) {
     return 'Импортировано источников: $count; пропущено $conflicted, чей id уже зарегистрирован из другого источника';
+  }
+
+  @override
+  String additionalSourcesImportedWithQuota(
+    int importedCount,
+    int quotaRejectedCount,
+  ) {
+    return 'Импортировано: $importedCount; сверх лимита тарифа: $quotaRejectedCount';
+  }
+
+  @override
+  String additionalSourcesQuotaReached(int limit) {
+    return 'Тариф позволяет добавить до $limit источников. Удалите один или откройте Explore.';
   }
 
   @override
@@ -7278,7 +7291,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storeReaderLegacyNotice =>
-      'Ваш прежний базовый доступ к чтению сохраняется. Для расширенной совместимости с источниками по-прежнему нужен Explore.';
+      'Прежний базовый доступ сохранён. Обычному аккаунту доступно до 2 дополнительных источников; Explore снимает лимит.';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -7478,13 +7491,37 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get basicServicesNote =>
-      'Для ИИ и облачного TTS нужны ваши собственные сервисы; сторонние платежи не включены.';
+      'Для AI и облачного TTS нужны ваши сервисы; их плата не входит в Origo Read.';
+
+  @override
+  String get basicComicTitle => 'Чтение комиксов';
+
+  @override
+  String get basicComicBody =>
+      'Читайте графические комиксы в режиме для панелей и длинных страниц.';
+
+  @override
+  String get basicCustomFontsTitle => 'Свои шрифты';
+
+  @override
+  String get basicCustomFontsBody =>
+      'Импортируйте шрифты TTF или OTF и используйте их в читалке.';
+
+  @override
+  String get premiumUnlimitedSourcesTitle =>
+      'Дополнительные источники без лимита';
+
+  @override
+  String premiumUnlimitedSourcesBenefit(int limit) {
+    return 'Используйте дополнительные протоколы без обычного лимита в $limit источника.';
+  }
 
   @override
   String get basicEditionTitle => 'Origo Read';
 
   @override
-  String get basicEditionSummary => 'Одна покупка. Полноценное чтение.';
+  String get basicEditionSummary =>
+      'AI-помощник, облачный TTS, комиксы и свои шрифты';
 
   @override
   String get basicEditionAccountBound =>
@@ -7545,7 +7582,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumIncludesReaderAccess =>
-      'Включает бессрочный доступ к Origo Read и поддержку дополнительных форматов источников.';
+      'Включает все функции Origo Read: AI-помощник, облачный TTS, комиксы и свои шрифты.';
 
   @override
   String get storeExploreBundlePriceCaption =>

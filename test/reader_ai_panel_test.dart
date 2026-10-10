@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/ui_style.dart';
@@ -66,6 +67,12 @@ Widget _wrapPanel(ReaderAiPanel panel) => MaterialApp(
 );
 
 void main() {
+  setUp(() {
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: false);
+  });
+  tearDown(() {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+  });
   const meta = AIRequestMeta(bookId: '1', chapterId: 'chapter-1', pageIndex: 2);
 
   setUp(() {

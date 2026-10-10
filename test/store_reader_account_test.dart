@@ -30,6 +30,49 @@ void main() {
     AppDistribution.debugReset();
   });
 
+  for (final channel in AppDistributionChannel.values) {
+    for (final tier in ['normal', 'reader', 'premium']) {
+      test('$channel $tier uses verified account feature rights', () async {
+        AppDistribution.debugOverride(
+          channel: channel,
+          readerLicenseRequired: false,
+        );
+        final fixture = _Fixture((request) {
+          if (request.uri.path.endsWith('/reader/status')) {
+            return _routes(request, access: 'locked');
+          }
+          if (request.uri.path == '/api/v1/membership') {
+            return _json({
+              'user_id': _userId,
+              'premium': tier == 'premium',
+              'features': const <String, bool>{},
+              'entitlements': const <Object>[],
+            });
+          }
+          return _routes(
+            request,
+            access: tier == 'normal' ? 'locked' : 'lifetime',
+          );
+        });
+        final account = fixture.account();
+        addTearDown(account.dispose);
+        await account.initialize();
+        expect(account.hasAccountReaderFeatureAccess, isFalse);
+        await account.loginPassword('reader@example.com', 'password');
+        expect(account.hasReaderAccess, isTrue);
+        expect(account.hasAccountReaderFeatureAccess, tier != 'normal');
+        expect(
+          account.hasPermanentAccountReaderFeatureAccess,
+          tier != 'normal',
+        );
+        expect(account.hasAdvancedSourceAccess, tier == 'premium');
+        await account.logout();
+        expect(account.hasAccountReaderFeatureAccess, isFalse);
+        expect(account.hasPermanentAccountReaderFeatureAccess, isFalse);
+      });
+    }
+  }
+
   test(
     'store startup displays cache before auth and config without StoreKit work',
     () async {
@@ -104,6 +147,9 @@ void main() {
       expect(account.isAuthenticated, isFalse);
       expect(account.premiumForDisplay, isTrue);
       expect(account.hasPremiumAccess, isFalse);
+      expect(account.readerFeaturesForDisplay, isTrue);
+      expect(account.hasAccountReaderFeatureAccess, isFalse);
+      expect(account.hasPermanentAccountReaderFeatureAccess, isFalse);
       expect(store.isAvailableCalls, 0);
       expect(store.queryProductDetailsCalls, 0);
       expect(store.restoreCalls, 0);
@@ -616,6 +662,8 @@ void main() {
       expect(trialStarted, isTrue);
       expect(account.hasActiveReaderTrial, isTrue);
       expect(account.hasReaderAccess, isTrue);
+      expect(account.hasAccountReaderFeatureAccess, isTrue);
+      expect(account.hasPermanentAccountReaderFeatureAccess, isFalse);
       expect(account.hasPermanentReaderAccess, isFalse);
       expect(account.hasPremiumAccess, isFalse);
       expect(account.hasAdvancedSourceAccess, isFalse);
@@ -869,54 +917,67 @@ void main() {
     expect(account.hasAccountReaderUpgradeEligibility, isFalse);
   });
 
-  test('signed account attestation keeps Explore available offline', () async {
-    final key = base64UrlEncode(List<int>.generate(32, (index) => index));
-    final now = DateTime.now();
-    const refresh = 'offline-refresh';
-    FlutterSecureStorage.setMockInitialValues({
-      ReaderInstallationCredentialStore.storageKey: key,
-      ReaderAccessCache.accountStorageKey: jsonEncode({
-        'session_binding': sha256.convert(utf8.encode(refresh)).toString(),
-        'license': {
-          'version': 2,
-          'account_id': _userId,
-          'subject_type': 'account',
-          'permanent': true,
-          'derived_from_premium': true,
-          'upgrade_eligible': false,
-          'issued_at': now.toIso8601String(),
-          'valid_until': now.add(const Duration(days: 7)).toIso8601String(),
-          'reader_unlocked': true,
-          'trial_expires_at': null,
-          'installation_key_hash': sha256.convert(utf8.encode(key)).toString(),
-          'channel': 'account',
-          'signature': 'opaque-server-attestation',
-        },
-      }),
-    });
-    final tokens = _Tokens(access: 'offline-access', refresh: refresh);
-    final account = _accountWithRoutes(tokens, (request) {
-      if (request.uri.path == '/api/v1/auth/me') return _json(_session());
-      if (request.uri.path == '/api/v1/membership/referral') {
-        return _json({
-          'invite_code': 'TEST',
-          'invite_url': 'https://example.test/invite',
+  for (final channel in AppDistributionChannel.values) {
+    test(
+      '$channel account attestation keeps features available offline',
+      () async {
+        AppDistribution.debugOverride(
+          channel: channel,
+          readerLicenseRequired: false,
+        );
+        final key = base64UrlEncode(List<int>.generate(32, (index) => index));
+        final now = DateTime.now();
+        const refresh = 'offline-refresh';
+        FlutterSecureStorage.setMockInitialValues({
+          ReaderInstallationCredentialStore.storageKey: key,
+          ReaderAccessCache.accountStorageKey: jsonEncode({
+            'session_binding': sha256.convert(utf8.encode(refresh)).toString(),
+            'license': {
+              'version': 2,
+              'account_id': _userId,
+              'subject_type': 'account',
+              'permanent': true,
+              'derived_from_premium': true,
+              'upgrade_eligible': false,
+              'issued_at': now.toIso8601String(),
+              'valid_until': now.add(const Duration(days: 7)).toIso8601String(),
+              'reader_unlocked': true,
+              'trial_expires_at': null,
+              'installation_key_hash': sha256
+                  .convert(utf8.encode(key))
+                  .toString(),
+              'channel': 'account',
+              'signature': 'opaque-server-attestation',
+            },
+          }),
         });
-      }
-      if (request.uri.path == '/api/v1/auth/config' ||
-          request.uri.path == '/api/v1/membership/config') {
-        return _routes(request, access: 'locked');
-      }
-      return _json({'detail': 'offline'}, statusCode: 503);
-    });
-    addTearDown(account.dispose);
+        final tokens = _Tokens(access: 'offline-access', refresh: refresh);
+        final account = _accountWithRoutes(tokens, (request) {
+          if (request.uri.path == '/api/v1/auth/me') return _json(_session());
+          if (request.uri.path == '/api/v1/membership/referral') {
+            return _json({
+              'invite_code': 'TEST',
+              'invite_url': 'https://example.test/invite',
+            });
+          }
+          if (request.uri.path == '/api/v1/auth/config' ||
+              request.uri.path == '/api/v1/membership/config') {
+            return _routes(request, access: 'locked');
+          }
+          return _json({'detail': 'offline'}, statusCode: 503);
+        });
+        addTearDown(account.dispose);
 
-    await account.initialize();
+        await account.initialize();
 
-    expect(account.isAuthenticated, isTrue);
-    expect(account.hasPremiumAccess, isFalse);
-    expect(account.hasAdvancedSourceAccess, isTrue);
-  });
+        expect(account.isAuthenticated, isTrue);
+        expect(account.hasPremiumAccess, isFalse);
+        expect(account.hasAdvancedSourceAccess, isTrue);
+        expect(account.hasAccountReaderFeatureAccess, isTrue);
+        expect(account.hasPermanentAccountReaderFeatureAccess, isTrue);
+      },
+    );
+  }
 
   test(
     'active Premium notifies listeners when its entitlement expires',
@@ -994,6 +1055,7 @@ void main() {
       );
       expect(account.hasActiveReaderTrial, isFalse);
       expect(account.hasReaderAccess, isFalse);
+      expect(account.hasAccountReaderFeatureAccess, isFalse);
     },
   );
 

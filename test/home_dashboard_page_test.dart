@@ -15,7 +15,7 @@ import 'package:xxread/models/book.dart';
 import 'package:xxread/pages/home/home_mobile_dashboard_page.dart';
 import 'package:xxread/pages/reading_stats/detailed_stats_page.dart';
 import 'package:xxread/pages/reader/book_source/book_source_reader_page.dart';
-import 'package:xxread/pages/reader/comic/comic_reader_page.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 import 'package:xxread/pages/reader/book_source/online_reader_factory.dart';
 import 'package:xxread/services/books/book_services.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
@@ -432,7 +432,11 @@ void main() {
       replaceRuleService: replaceRules,
     );
 
-    expect(reader, isA<ComicReaderPage>());
+    expect(reader, isA<StoreReaderAccessGate>());
+    expect(
+      (reader as StoreReaderAccessGate).requireAccountFeatureAccess,
+      isTrue,
+    );
   });
 
   test('在线阅读工厂拒绝不完整或冲突的输入', () {

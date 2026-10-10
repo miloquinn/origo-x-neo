@@ -10,7 +10,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uuid/uuid.dart';
 import 'package:uuid/validation.dart';
 
-import '../../book_sources/services/book_source_registry_storage.dart';
+import '../../book_sources/services/book_source_registry.dart';
 import '../../book_sources/models/registered_book_source.dart';
 import '../books/book_storage_paths.dart';
 import 'backup_selection.dart';
@@ -542,7 +542,20 @@ class BackupArchive {
       File(p.join(documents.path, 'backups', 'restore-pending.json'));
 
   Future<bool> recoverInterruptedRestore() async {
-    if (!await _journal.exists()) return false;
+    return BookSourceRegistry(storage: sources).runSerializedRestoreRecovery(
+      () async {
+        final pending = await _pendingRestoreState();
+        if (pending == null) return false;
+        return _recoverInterruptedRestoreState(
+          pending.state,
+          committed: pending.committed,
+        );
+      },
+    );
+  }
+
+  Future<({Map state, bool committed})?> _pendingRestoreState() async {
+    if (!await _journal.exists()) return null;
     final data = jsonDecode(await _journal.readAsString()) as Map;
     await database.execute(
       'CREATE TABLE IF NOT EXISTS backup_restore_commit(id TEXT PRIMARY KEY)',
@@ -553,6 +566,22 @@ class BackupArchive {
       whereArgs: [data['id']],
     )).isNotEmpty;
     final state = data[committed ? 'after' : 'before'] as Map;
+    return (state: state, committed: committed);
+  }
+
+  Future<bool> _recoverInterruptedRestoreUnlocked() async {
+    final pending = await _pendingRestoreState();
+    if (pending == null) return false;
+    return _recoverInterruptedRestoreState(
+      pending.state,
+      committed: pending.committed,
+    );
+  }
+
+  Future<bool> _recoverInterruptedRestoreState(
+    Map state, {
+    required bool committed,
+  }) async {
     await _replacePreferences(
       (state['preferences'] as Map).cast<String, Object?>(),
     );
@@ -600,102 +629,112 @@ class BackupArchive {
             (scope?['overwrite'] == false && _hasSources(beforeSources))
         ? beforeSources
         : backup.data['sources'];
-    await database.execute(
-      'CREATE TABLE IF NOT EXISTS backup_restore_commit(id TEXT PRIMARY KEY)',
-    );
-    await _journal.parent.create(recursive: true);
-    final journalTemp = File('${_journal.path}.tmp');
-    await journalTemp.writeAsString(
-      jsonEncode({
-        'id': id,
-        'before': {'preferences': beforePrefs, 'sources': beforeSources},
-        'after': {'preferences': afterPrefs, 'sources': afterSources},
-      }),
-      flush: true,
-    );
-    await journalTemp.rename(_journal.path);
-    try {
-      for (final kind in ['books', 'covers']) {
-        if (scope?['reading'] == false || scope?['files'] == false) continue;
-        final staged = Directory(p.join(backup.directory.path, kind));
-        if (!await staged.exists()) continue;
-        final target = Directory(p.join(documents.path, kind, 'restored-$id'));
-        await target.parent.create(recursive: true);
-        await staged.rename(target.path);
-        moved.add(target);
-      }
-      final rows = (backup.data['tables'] as Map).cast<String, dynamic>();
-      final restoreTables = _tablesForSchema(await database.getVersion());
-      await database.transaction((tx) async {
-        if (scope != null) {
-          await _restoreSelected(
-            tx,
-            backup,
-            id,
-            scope,
-            hasFolders: restoreTables.contains('shelf_folders'),
+    await BookSourceRegistry(
+      storage: sources,
+    ).runWithValidatedReplacement(afterSources as String, () async {
+      await database.execute(
+        'CREATE TABLE IF NOT EXISTS backup_restore_commit(id TEXT PRIMARY KEY)',
+      );
+      await _journal.parent.create(recursive: true);
+      final journalTemp = File('${_journal.path}.tmp');
+      await journalTemp.writeAsString(
+        jsonEncode({
+          'id': id,
+          'before': {'preferences': beforePrefs, 'sources': beforeSources},
+          'after': {'preferences': afterPrefs, 'sources': afterSources},
+        }),
+        flush: true,
+      );
+      await journalTemp.rename(_journal.path);
+      try {
+        for (final kind in ['books', 'covers']) {
+          if (scope?['reading'] == false || scope?['files'] == false) continue;
+          final staged = Directory(p.join(backup.directory.path, kind));
+          if (!await staged.exists()) continue;
+          final target = Directory(
+            p.join(documents.path, kind, 'restored-$id'),
           );
-        } else {
-          for (final table in restoreTables.reversed) {
-            await tx.delete(table);
-          }
-          for (final table in restoreTables) {
-            final originals = table == 'shelf_folders'
-                ? _orderedFolders(rows[table] as List? ?? const [])
-                : rows[table] as List;
-            for (final original in originals) {
-              final row = Map<String, Object?>.from(original as Map);
-              if (table == 'books') {
-                for (final key in ['filePath', 'cover_image_path']) {
-                  final value = row[key];
-                  if (value is String && value.isNotEmpty) {
-                    final parts = value.split('/');
-                    row[key] =
-                        '${parts.first}/restored-$id/${parts.skip(1).join('/')}';
+          await target.parent.create(recursive: true);
+          await staged.rename(target.path);
+          moved.add(target);
+        }
+        final rows = (backup.data['tables'] as Map).cast<String, dynamic>();
+        final restoreTables = _tablesForSchema(await database.getVersion());
+        await database.transaction((tx) async {
+          if (scope != null) {
+            await _restoreSelected(
+              tx,
+              backup,
+              id,
+              scope,
+              hasFolders: restoreTables.contains('shelf_folders'),
+            );
+          } else {
+            for (final table in restoreTables.reversed) {
+              await tx.delete(table);
+            }
+            for (final table in restoreTables) {
+              final originals = table == 'shelf_folders'
+                  ? _orderedFolders(rows[table] as List? ?? const [])
+                  : rows[table] as List;
+              for (final original in originals) {
+                final row = Map<String, Object?>.from(original as Map);
+                if (table == 'books') {
+                  for (final key in ['filePath', 'cover_image_path']) {
+                    final value = row[key];
+                    if (value is String && value.isNotEmpty) {
+                      final parts = value.split('/');
+                      row[key] =
+                          '${parts.first}/restored-$id/${parts.skip(1).join('/')}';
+                    }
                   }
                 }
+                await tx.insert(table, row);
               }
-              await tx.insert(table, row);
+            }
+            if ((await tx.rawQuery('PRAGMA foreign_key_check')).isNotEmpty) {
+              throw const FormatException('Invalid backup references');
+            }
+            // Old sync state must not bind restored book ids to previous identities.
+            final legacy = await tx.rawQuery(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'sync_%'",
+            );
+            for (final table in legacy) {
+              final name = table['name'] as String;
+              if (RegExp(r'^sync_[a-z_]+$').hasMatch(name)) {
+                await tx.delete(name);
+              }
+            }
+            await tx.execute(
+              'CREATE TABLE IF NOT EXISTS sync_local_state(key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+            );
+            for (final identity
+                in (backup.data['identities'] as List? ?? const [])) {
+              await tx.insert(
+                'sync_local_state',
+                Map<String, Object?>.from(identity as Map),
+              );
             }
           }
-          if ((await tx.rawQuery('PRAGMA foreign_key_check')).isNotEmpty) {
-            throw const FormatException('Invalid backup references');
-          }
-          // Old sync state must not bind restored book ids to previous identities.
-          final legacy = await tx.rawQuery(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'sync_%'",
+          await tx.delete('backup_restore_commit');
+          await tx.insert('backup_restore_commit', {'id': id});
+          await _replacePreferences(
+            (afterPrefs as Map).cast<String, Object?>(),
           );
-          for (final table in legacy) {
-            final name = table['name'] as String;
-            if (RegExp(r'^sync_[a-z_]+$').hasMatch(name)) await tx.delete(name);
-          }
-          await tx.execute(
-            'CREATE TABLE IF NOT EXISTS sync_local_state(key TEXT PRIMARY KEY, value TEXT NOT NULL)',
-          );
-          for (final identity
-              in (backup.data['identities'] as List? ?? const [])) {
-            await tx.insert(
-              'sync_local_state',
-              Map<String, Object?>.from(identity as Map),
-            );
-          }
+          await _writeSources(afterSources);
+        });
+      } catch (_) {
+        if (await _recoverInterruptedRestoreUnlocked()) return;
+        for (final dir in moved) {
+          await dir.delete(recursive: true);
         }
-        await tx.delete('backup_restore_commit');
-        await tx.insert('backup_restore_commit', {'id': id});
-        await _replacePreferences((afterPrefs as Map).cast<String, Object?>());
-        await _writeSources(afterSources as String);
-      });
-    } catch (_) {
-      if (await recoverInterruptedRestore()) return;
-      for (final dir in moved) {
-        await dir.delete(recursive: true);
+        rethrow;
       }
-      rethrow;
-    }
-    // Once committed, a cleanup failure must not be reported as a failed restore.
-    try {
-      await _journal.delete();
-    } catch (_) {}
+      // Once committed, a cleanup failure must not be reported as a failed restore.
+      try {
+        await _journal.delete();
+      } catch (_) {}
+    });
   }
 
   Future<void> _restoreSelected(

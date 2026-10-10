@@ -5,6 +5,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:xxread/services/core/advanced_feature_access.dart';
+
 /// 协调交互式 AI 请求（阅读器问 AI、AI 页对话）与后台批量请求
 /// （书籍预处理）的并发关系：
 ///
@@ -31,11 +33,25 @@ class AiRequestCoordinator {
   bool get hasInteractiveRequests => _interactiveInFlight > 0;
 
   /// 执行一次交互式请求；异常原样上抛，结束后唤醒等待的后台任务。
-  Future<T> runInteractive<T>(Future<T> Function() action) async {
+  Future<T> runInteractive<T>(
+    Future<T> Function() action, {
+    VoidCallback? onAccessRevoked,
+  }) async {
+    AdvancedFeatureAccess.requireReaderFeatures();
+    void handleAccessChanged() {
+      if (!AdvancedFeatureAccess.readerFeaturesUnlocked) {
+        onAccessRevoked?.call();
+      }
+    }
+
+    AdvancedFeatureAccess.accessChanges.addListener(handleAccessChanged);
     _interactiveInFlight += 1;
     try {
-      return await action();
+      final result = await action();
+      AdvancedFeatureAccess.requireReaderFeatures();
+      return result;
     } finally {
+      AdvancedFeatureAccess.accessChanges.removeListener(handleAccessChanged);
       _interactiveInFlight -= 1;
       if (_interactiveInFlight == 0 && _idleWaiters.isNotEmpty) {
         final waiters = List<Completer<void>>.of(_idleWaiters);

@@ -9,6 +9,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/reader/reader_aloud_controller.dart';
+import 'core/advanced_feature_access.dart';
 
 part 'reader_aloud_profiles.dart';
 part 'reader_aloud_providers.dart';
@@ -777,6 +778,7 @@ class ReaderAloudService extends ChangeNotifier
            previewPlayerFactory ?? AudioplayersReaderAloudBytesPlayer.new {
     systemEngine.addListener(_relayEngineChange);
     _bytesPlayer.addListener(_relayEngineChange);
+    AdvancedFeatureAccess.accessChanges.addListener(_handleAccessChanged);
     unawaited(initialize());
   }
 
@@ -789,6 +791,7 @@ class ReaderAloudService extends ChangeNotifier
   final ReaderAloudBytesPlayer Function() _previewPlayerFactory;
   ReaderAloudBytesPlayer? _previewPlayer;
   int _previewGeneration = 0;
+  CancelToken? _previewRequestToken;
   List<ReaderAloudCloudProfile> _profiles = [];
   String _activeProfileId =
       PreferencesReaderAloudCloudSettingsStore.legacyProfileId;
@@ -926,7 +929,9 @@ class ReaderAloudService extends ChangeNotifier
     String? apiKey,
     bool useSavedKey = true,
   }) async {
+    AdvancedFeatureAccess.requireReaderFeatures();
     final generation = ++_previewGeneration;
+    _previewRequestToken?.cancel('Voice preview changed');
     await _previewPlayer?.stop();
     await initialize();
     var key = apiKey?.trim();
@@ -937,18 +942,36 @@ class ReaderAloudService extends ChangeNotifier
           : await _settingsStore.readApiKey();
     }
     if (_disposed || generation != _previewGeneration) return;
+    AdvancedFeatureAccess.requireReaderFeatures();
     if (key == null || key.isEmpty) {
       throw const ReaderAloudCloudException(
         'missing_api_key',
         '请先填写此语音服务的 API Key',
       );
     }
-    final audio = await _cloudClient.synthesize(
-      settings: settings,
-      apiKey: key,
-      text: text,
-      speed: (systemEngine.speechRate * 2).clamp(0.25, 2.0),
-    );
+    final token = CancelToken();
+    _previewRequestToken = token;
+    final client = _cloudClient;
+    final Uint8List audio;
+    try {
+      final speed = (systemEngine.speechRate * 2).clamp(0.25, 2.0);
+      audio = client is ReaderAloudCancellableCloudClient
+          ? await client.synthesizeCancellable(
+              settings: settings,
+              apiKey: key,
+              text: text,
+              speed: speed,
+              cancelToken: token,
+            )
+          : await client.synthesize(
+              settings: settings,
+              apiKey: key,
+              text: text,
+              speed: speed,
+            );
+    } finally {
+      if (identical(_previewRequestToken, token)) _previewRequestToken = null;
+    }
     if (_disposed || generation != _previewGeneration) return;
     final player = _previewPlayer ??= _previewPlayerFactory();
     await player.play(
@@ -960,6 +983,8 @@ class ReaderAloudService extends ChangeNotifier
 
   Future<void> stopPreview() async {
     ++_previewGeneration;
+    _previewRequestToken?.cancel('Voice preview stopped');
+    _previewRequestToken = null;
     await _previewPlayer?.stop();
   }
 
@@ -977,20 +1002,24 @@ class ReaderAloudService extends ChangeNotifier
   Completer<void>? _cloudRequestSlotChanged;
   final Set<CancelToken> _cloudRequestTokens = {};
 
-  ReaderAloudEngineType get engineType => _engineType;
+  ReaderAloudEngineType get engineType =>
+      _engineType == ReaderAloudEngineType.cloud &&
+          !AdvancedFeatureAccess.readerFeaturesUnlocked
+      ? ReaderAloudEngineType.system
+      : _engineType;
   ReaderAloudEngineType get activeEngineType => _activeEngineType;
   ReaderAloudCloudSettings get cloudSettings => _cloudSettings;
   bool get hasCloudApiKey => _hasCloudApiKey;
   String? get cloudError => _cloudError;
-  bool get usesCloud => _engineType == ReaderAloudEngineType.cloud;
+  bool get usesCloud => engineType == ReaderAloudEngineType.cloud;
   @override
   bool get supportsContinuousText =>
-      _engineType == ReaderAloudEngineType.system &&
+      engineType == ReaderAloudEngineType.system &&
       systemEngine is ReaderAloudContinuousEngine &&
       (systemEngine as ReaderAloudContinuousEngine).supportsContinuousText;
   @override
   bool get supportsQueuedText =>
-      _engineType == ReaderAloudEngineType.cloud ||
+      engineType == ReaderAloudEngineType.cloud ||
       (systemEngine is ReaderAloudQueuedEngine &&
           (systemEngine as ReaderAloudQueuedEngine).supportsQueuedText);
 
@@ -1063,9 +1092,15 @@ class ReaderAloudService extends ChangeNotifier
   }
 
   Future<void> setEngineType(ReaderAloudEngineType value) async {
+    if (value == ReaderAloudEngineType.cloud) {
+      AdvancedFeatureAccess.requireReaderFeatures();
+    }
     await initialize();
     if (_engineType == value) return;
     await stop();
+    if (value == ReaderAloudEngineType.cloud) {
+      AdvancedFeatureAccess.requireReaderFeatures();
+    }
     _engineType = value;
     _activeEngineType = value;
     _cloudError = null;
@@ -1101,7 +1136,7 @@ class ReaderAloudService extends ChangeNotifier
   Future<void> speak(String text) async {
     await initialize();
     final operation = _nextCloudOperation();
-    if (_engineType == ReaderAloudEngineType.system) {
+    if (engineType == ReaderAloudEngineType.system) {
       _activeEngineType = ReaderAloudEngineType.system;
       await systemEngine.speak(text);
       return;
@@ -1163,11 +1198,11 @@ class ReaderAloudService extends ChangeNotifier
     required ValueChanged<int> onTextStarted,
   }) async {
     await initialize();
-    if (_engineType == ReaderAloudEngineType.cloud) {
+    if (engineType == ReaderAloudEngineType.cloud) {
       await _speakCloudQueued(texts, onTextStarted: onTextStarted);
       return;
     }
-    if (_engineType != ReaderAloudEngineType.system ||
+    if (engineType != ReaderAloudEngineType.system ||
         systemEngine is! ReaderAloudQueuedEngine ||
         !(systemEngine as ReaderAloudQueuedEngine).supportsQueuedText) {
       throw UnsupportedError('queued_tts_unavailable');
@@ -1346,7 +1381,7 @@ class ReaderAloudService extends ChangeNotifier
     await Future.wait<void>([systemEngine.stop(), _bytesPlayer.stop()]);
     if (!_isCurrentOperation(operation)) return;
     _currentCloudText = '';
-    _activeEngineType = _engineType;
+    _activeEngineType = engineType;
     _notifySafe();
   }
 
@@ -1363,6 +1398,16 @@ class ReaderAloudService extends ChangeNotifier
   };
 
   void _relayEngineChange() => _notifySafe();
+
+  void _handleAccessChanged() {
+    if (!AdvancedFeatureAccess.readerFeaturesUnlocked) {
+      // Cancel pending cloud work even if it has not reached playback yet.
+      _nextCloudOperation();
+      unawaited(stopPreview());
+      if (_activeEngineType == ReaderAloudEngineType.cloud) unawaited(stop());
+    }
+    _notifySafe();
+  }
 
   int _nextCloudOperation() {
     final operation = ++_operationGeneration;
@@ -1381,6 +1426,7 @@ class ReaderAloudService extends ChangeNotifier
     required String text,
     required double speed,
   }) async {
+    AdvancedFeatureAccess.requireReaderFeatures();
     final client = _cloudClient;
     if (client is! ReaderAloudCancellableCloudClient) {
       return client.synthesize(
@@ -1420,10 +1466,12 @@ class ReaderAloudService extends ChangeNotifier
     if (_disposed) return;
     _disposed = true;
     _nextCloudOperation();
+    AdvancedFeatureAccess.accessChanges.removeListener(_handleAccessChanged);
     systemEngine.removeListener(_relayEngineChange);
     _bytesPlayer.removeListener(_relayEngineChange);
     _bytesPlayer.dispose();
     ++_previewGeneration;
+    _previewRequestToken?.cancel('Voice preview disposed');
     _previewPlayer?.dispose();
     super.dispose();
   }

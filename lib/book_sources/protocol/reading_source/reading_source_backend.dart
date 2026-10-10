@@ -757,7 +757,7 @@ class ReadingSourceBackend
   Future<void> _ensureEnabled() async {
     if (!await _additionalProtocolsEnabled()) {
       throw const BookSourceProtocolException(
-        'This source is unavailable for the current account or settings.',
+        'Other source protocols are disabled in settings.',
       );
     }
   }

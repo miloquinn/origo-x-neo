@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'floating_subpage_scaffold.dart';
+import 'glass_surface.dart';
 
 /// Purchase-specific button sizing; colors and brightness belong to the app.
 class PurchasePageTheme extends StatelessWidget {
@@ -59,7 +60,6 @@ class PurchasePageScaffold extends StatelessWidget {
   Widget build(BuildContext context) => FloatingSubpageScaffold(
     title: title,
     actions: actions,
-    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
     body: Material(
       type: MaterialType.transparency,
       child: LayoutBuilder(
@@ -92,16 +92,10 @@ class PurchasePageScaffold extends StatelessWidget {
                   child: _bounded(body),
                 ),
               ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  border: Border(
-                    top: BorderSide(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withValues(alpha: 0.45),
-                    ),
-                  ),
+              GlassSurface(
+                role: GlassSurfaceRole.floating,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Padding(
                   key: const ValueKey('purchase-fixed-footer'),
@@ -150,7 +144,6 @@ class PurchaseDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => FloatingSubpageScaffold(
     title: title,
-    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
     body: Material(
       type: MaterialType.transparency,
       child: SingleChildScrollView(

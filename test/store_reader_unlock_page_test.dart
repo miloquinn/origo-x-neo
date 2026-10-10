@@ -183,7 +183,10 @@ void main() {
     expect(account.hasAccountReaderUpgradeEligibility, isFalse);
     expect(find.byKey(const ValueKey('premium-store-price')), findsOneWidget);
     expect(find.text(r'$18.99'), findsOneWidget);
-    expect(find.text('包含 Origo 开卷的永久使用权，以及更多书源格式兼容能力。'), findsWidgets);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(PremiumMembershipPage)),
+    );
+    expect(find.text(l10n.premiumIncludesReaderAccess), findsWidgets);
     expect(find.text('开卷 + 探元 · 一次购买跨平台使用'), findsOneWidget);
   });
 
@@ -253,9 +256,9 @@ void main() {
 
       expect(
         find.byKey(const ValueKey('store-reader-free-access')),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.textContaining('基础阅读目前免费开放'), findsOneWidget);
+      expect(find.textContaining('基础阅读目前免费开放'), findsNothing);
       expect(find.byKey(const ValueKey('store-trial-status')), findsNothing);
       expect(find.byKey(const ValueKey('store-start-trial')), findsNothing);
       expect(
@@ -266,10 +269,13 @@ void main() {
         find.byKey(const ValueKey('store-reader-restore')),
         findsOneWidget,
       );
-      expect(find.text('登录后购买永久阅读权益'), findsOneWidget);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(StoreReaderUnlockPage)),
+      );
+      expect(find.text(l10n.storeReaderSignInAction), findsOneWidget);
 
       await _openReaderDetails(tester, const ValueKey('store-reader-details'));
-      expect(find.textContaining('基础阅读目前免费开放'), findsWidgets);
+      expect(find.textContaining('基础阅读目前免费开放'), findsNothing);
       expect(find.textContaining('完整本地阅读体验，一次购买长期使用'), findsNothing);
       Navigator.of(
         tester.element(find.byKey(const ValueKey('store-reader-details-page'))),
@@ -308,6 +314,27 @@ void main() {
     expect(account.trialCalls, 1);
   });
 
+  testWidgets('direct channel uses account redemption without store actions', (
+    tester,
+  ) async {
+    AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+    final account = _UnlockAccount(authenticated: true);
+    addTearDown(account.dispose);
+    await _pumpPage(tester, account);
+
+    expect(find.byKey(const ValueKey('store-reader-restore')), findsNothing);
+    expect(find.byKey(const ValueKey('store-start-trial')), findsNothing);
+    expect(find.text('我有兑换码'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('store-reader-purchase')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('account-redemption-code')),
+      findsOneWidget,
+    );
+    expect(account.purchaseCalls, 0);
+    expect(account.restoreCalls, 0);
+  });
+
   testWidgets(
     'phone keeps Basic purchase trial and restore visible without scrolling',
     (tester) async {
@@ -337,34 +364,29 @@ void main() {
           .state<ScrollableState>(find.byType(Scrollable).first)
           .position;
       expect(position.maxScrollExtent, 0);
-      for (final label in ['阅读与排版', '听书与 AI', '记录与备份']) {
-        expect(find.text(label), findsOneWidget);
+      for (final key in [
+        'store-reader-feature-ai',
+        'store-reader-feature-cloud-tts',
+        'store-reader-feature-comics',
+        'store-reader-feature-fonts',
+      ]) {
+        expect(find.byKey(ValueKey(key)), findsOneWidget);
       }
-      await tester.tap(find.byKey(const ValueKey('basic-feature-tab-1')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('basic-artwork-1')), findsOneWidget);
-      expect(find.text('换一种方式，走进一本书。'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('basic-feature-tab-2')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('basic-artwork-2')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('basic-feature-tab-0')));
-      await tester.pumpAndSettle();
+      expect(find.text('AI 阅读助手'), findsOneWidget);
+      expect(find.text('云端 TTS'), findsOneWidget);
+      expect(find.text('漫画阅读'), findsOneWidget);
+      expect(find.text('自定义字体'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('store-reader-service-cost-note')),
+        findsOneWidget,
+      );
       await _openReaderDetails(tester, const ValueKey('store-reader-benefits'));
       expect(
         find.byKey(const ValueKey('store-reader-benefits-page')),
         findsOneWidget,
       );
       expect(find.textContaining('第三方服务费用'), findsOneWidget);
-      for (final label in [
-        '多格式阅读',
-        '主题与字体',
-        '朗读与听书',
-        '云端 TTS',
-        'AI 阅读助手',
-        '书库与备份',
-        '笔记与阅读记录',
-        '开放书源',
-      ]) {
+      for (final label in ['AI 阅读助手', '云端 TTS', '漫画阅读', '自定义字体']) {
         expect(find.text(label), findsOneWidget);
       }
       expect(account.purchaseCalls, 0);
@@ -533,7 +555,7 @@ void main() {
           );
           final content = premium
               ? find.byKey(const ValueKey('premium-membership-card'))
-              : find.byType(PurchaseArtwork).first;
+              : find.byKey(const ValueKey('store-reader-core-benefits'));
           final actual = Theme.of(tester.element(content));
           expect(actual.colorScheme, scheme);
           expect(actual.brightness, scheme.brightness);
@@ -642,23 +664,6 @@ void main() {
             basicKey,
             '$screenshotDirectory/basic-phone-${dark ? "dark" : "light"}.png',
           );
-          if (!dark) {
-            for (final scene in [1, 2]) {
-              await tester.tap(
-                find.byKey(ValueKey('basic-feature-tab-$scene')),
-              );
-              await tester.pumpAndSettle();
-              await _precacheBrandIcon(
-                tester,
-                find.byType(StoreReaderUnlockPage),
-              );
-              await _capture(
-                tester,
-                basicKey,
-                '$screenshotDirectory/basic-scene-$scene.png',
-              );
-            }
-          }
           final premiumKey = GlobalKey();
           await _pumpWidgetPage(
             tester,
@@ -870,6 +875,20 @@ class _UnlockAccount extends MemberAccountController {
   bool get hasPermanentReaderAccess => permanent || premium;
 
   @override
+  bool get hasAccountReaderFeatureAccess =>
+      permanent || premium || hasActiveReaderTrial;
+
+  @override
+  bool get hasPermanentAccountReaderFeatureAccess => permanent || premium;
+
+  @override
+  bool get readerFeaturesForDisplay => hasAccountReaderFeatureAccess;
+
+  @override
+  bool get permanentReaderFeaturesForDisplay =>
+      hasPermanentAccountReaderFeatureAccess;
+
+  @override
   bool get hasActiveReaderTrial =>
       trialExpiresAt?.isAfter(DateTime.now()) == true;
 
@@ -947,6 +966,9 @@ class _UnlockAccount extends MemberAccountController {
           entitlements: const [],
         )
       : null;
+
+  @override
+  MemberMembership? get membershipForDisplay => membership;
 
   @override
   MemberMembershipConfig get membershipConfig => const MemberMembershipConfig(

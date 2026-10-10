@@ -79,6 +79,45 @@ reaching 800 lines, importing compatibility barrels or root rule/script
 shims internally, or keeping cache/network-policy files on the old
 `services/` paths.
 
+## Entitlement and import quota
+
+ORSP is the baseline protocol and has no source-count quota. Accounts without
+the 探元 entitlement may add at most two sources from all other protocols
+combined; 开卷 unlocks reader features but keeps this same source quota. 探元
+removes the quota. `AdvancedFeatureAccess.update` publishes reader and premium
+access as one runtime snapshot, while `premiumAccessChanges` remains as a
+compatibility projection for older listeners. The local compatibility switch
+only decides whether imported non-ORSP sources may run; it does not grant or
+revoke membership.
+
+`BookSourceRegistry` is the single quota boundary for manual, file, URL,
+subscription and sync additions. Its process-wide mutation queue counts and
+writes atomically, so concurrent imports cannot exceed the limit. Re-importing
+the same canonical source identity and editing, deleting or running an existing
+source remain allowed. Existing installations above the quota keep every saved
+source; they cannot add another until they fall below the limit. Batch imports
+accept selected sources in input order and report `quotaRejected` separately
+from origin conflicts.
+
+Backup restore uses `runWithValidatedReplacement` before it creates the restore
+journal, moves files or starts its database transaction. The preflight compares
+canonical identities with the current local registry: existing identities may
+be updated, while new non-ORSP identities consume the slots left in the final
+replacement after removed local identities release theirs. A rejection leaves
+the local registry, library and backup archive untouched. Once that preflight
+has written a restore journal, interrupted recovery only re-enters the same
+serialized mutation boundary: an uncommitted operation must restore its saved
+`before` state even when that state is a grandfathered registry above the
+current quota. Future protocols added to `BookSourceProtocolKind` must be
+classified at this boundary; currently every non-ORSP kind shares the same
+quota.
+
+Regression entry points are `test/advanced_feature_access_test.dart`,
+`test/book_source_registry_quota_test.dart`,
+`test/book_source_add_controller_test.dart`,
+`test/reading_source_premium_access_test.dart` and the restore quota case in
+`test/webdav_backup_test.dart`.
+
 ## Reading-source compatibility contracts
 
 Regression fixtures cover the reading-source compatibility contracts around

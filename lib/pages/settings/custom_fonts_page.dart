@@ -12,6 +12,7 @@ import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/app_menu.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/side_toast.dart';
+import 'package:xxread/widgets/store_reader_access_gate.dart';
 
 enum _CustomFontAction { app, reader, both, rename, delete }
 
@@ -82,6 +83,8 @@ class CustomFontsPage extends StatelessWidget {
     BuildContext context,
     AppSettingsNotifier settings,
   ) async {
+    if (!await ensureAccountReaderFeatureAccess(context)) return;
+    if (!context.mounted) return;
     final l10n = context.l10n;
     try {
       final result = await settings.importCustomFont();
@@ -109,6 +112,12 @@ class CustomFontsPage extends StatelessWidget {
     FontOption font,
     _CustomFontAction action,
   ) async {
+    if (action == _CustomFontAction.app ||
+        action == _CustomFontAction.reader ||
+        action == _CustomFontAction.both) {
+      if (!await ensureAccountReaderFeatureAccess(context)) return;
+      if (!context.mounted) return;
+    }
     switch (action) {
       case _CustomFontAction.app:
         await settings.setAppFontId(font.id);

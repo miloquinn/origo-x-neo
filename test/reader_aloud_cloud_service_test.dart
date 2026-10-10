@@ -6,11 +6,93 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/services/reader_aloud_service.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
+import 'package:xxread/services/account/account_api_client.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: false);
+  });
+  tearDown(
+    () => AdvancedFeatureAccess.update(
+      readerUnlocked: false,
+      premiumUnlocked: false,
+    ),
+  );
+
+  test(
+    'ordinary users keep saved cloud configuration but use system speech',
+    () async {
+      AdvancedFeatureAccess.update(
+        readerUnlocked: false,
+        premiumUnlocked: false,
+      );
+      final store = _FakeSettingsStore()..type = ReaderAloudEngineType.cloud;
+      final system = _FakeSystemEngine();
+      final client = _FakeCloudClient();
+      final service = ReaderAloudService(
+        systemEngine: system,
+        settingsStore: store,
+        cloudClient: client,
+        bytesPlayer: _FakeBytesPlayer(),
+      );
+      addTearDown(service.dispose);
+      await service.initialize();
+      expect(service.engineType, ReaderAloudEngineType.system);
+      await service.speak('free system speech');
+      expect(system.spoken, ['free system speech']);
+      expect(client.calls, 0);
+      expect(store.type, ReaderAloudEngineType.cloud);
+      await expectLater(
+        service.setEngineType(ReaderAloudEngineType.cloud),
+        throwsA(isA<MemberAccountException>()),
+      );
+      await expectLater(
+        service.previewCloudVoice(
+          settings: store.settings,
+          text: 'preview',
+          apiKey: 'test-key',
+        ),
+        throwsA(isA<MemberAccountException>()),
+      );
+      expect(client.calls, 0);
+      AdvancedFeatureAccess.update(
+        readerUnlocked: true,
+        premiumUnlocked: false,
+      );
+      expect(service.engineType, ReaderAloudEngineType.cloud);
+    },
+  );
+
+  test(
+    'revoked access prevents late synthesis from starting playback',
+    () async {
+      final client = _QueuedCloudClient();
+      final player = _QueuedBytesPlayer();
+      final service = ReaderAloudService(
+        systemEngine: _FakeSystemEngine(),
+        settingsStore: _FakeSettingsStore()..type = ReaderAloudEngineType.cloud,
+        cloudClient: client,
+        bytesPlayer: player,
+      );
+      addTearDown(service.dispose);
+      await service.initialize();
+      final playback = service.speak('pending sentence');
+      await _flushQueue();
+      expect(client.texts, ['pending sentence']);
+      AdvancedFeatureAccess.update(
+        readerUnlocked: false,
+        premiumUnlocked: false,
+      );
+      client.complete(0);
+      await playback;
+      expect(player.audio, isEmpty);
+      expect(service.engineType, ReaderAloudEngineType.system);
+    },
+  );
 
   test(
     'late stop completion cannot clear the replacement sentence progress',
@@ -265,7 +347,13 @@ void main() {
     },
   );
 
-  for (final action in ['stop', 'pause', 'new queue', 'dispose']) {
+  for (final action in [
+    'stop',
+    'pause',
+    'new queue',
+    'dispose',
+    'access revoked',
+  ]) {
     test(
       '$action cancels real cloud response streams without stale fallback',
       () async {
@@ -297,6 +385,11 @@ void main() {
         if (action == 'dispose') {
           service.dispose();
           player.complete();
+        } else if (action == 'access revoked') {
+          AdvancedFeatureAccess.update(
+            readerUnlocked: false,
+            premiumUnlocked: false,
+          );
         } else if (action == 'pause') {
           await service.pause();
         } else if (action == 'stop') {
@@ -310,7 +403,12 @@ void main() {
         expect(adapter.cancelled, containsAll([1, 2]));
         expect(system.spoken, isEmpty);
         expect(service.cloudError, isNull);
-        if (action != 'dispose') {
+        if (action == 'access revoked') {
+          expect(service.engineType, ReaderAloudEngineType.system);
+          expect(player.audio, [
+            [0],
+          ]);
+        } else if (action != 'dispose') {
           latest ??= service.speakQueued(['latest'], onTextStarted: (_) {});
           await adapter.latestRequested.future.timeout(
             const Duration(seconds: 2),

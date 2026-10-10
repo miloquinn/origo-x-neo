@@ -4934,7 +4934,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAdditionalSourceProtocolsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enable support for additional source protocols.'**
+  /// **'Standard accounts can keep up to 2 additional-protocol sources; Explore removes this limit.'**
   String get settingsAdditionalSourceProtocolsSubtitle;
 
   /// Settings toggle that allows book sources on LAN, loopback, and other private addresses
@@ -5043,6 +5043,21 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Imported {count} sources; skipped {conflicted} whose id is already registered from a different origin'**
   String additionalSourcesImportedWithConflicts(int count, int conflicted);
+
+  /// No description provided for @additionalSourcesImportedWithQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {importedCount} sources; {quotaRejectedCount} exceeded your plan limit'**
+  String additionalSourcesImportedWithQuota(
+    int importedCount,
+    int quotaRejectedCount,
+  );
+
+  /// No description provided for @additionalSourcesQuotaReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan allows up to {limit} additional sources. Remove one or unlock Explore to add another.'**
+  String additionalSourcesQuotaReached(int limit);
 
   /// Section title grouping donation, about info and contributors
   ///
@@ -12533,7 +12548,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeReaderLegacyNotice.
   ///
   /// In en, this message translates to:
-  /// **'Your existing basic reading access is preserved. Advanced source compatibility still requires Explore.'**
+  /// **'Your existing basic reading access is preserved. Standard accounts can keep up to 2 additional-protocol sources; Explore removes this limit.'**
   String get storeReaderLegacyNotice;
 
   /// No description provided for @storePrivacyPurchaseBody.
@@ -12881,8 +12896,44 @@ abstract class AppLocalizations {
   /// No description provided for @basicServicesNote.
   ///
   /// In en, this message translates to:
-  /// **'AI and cloud TTS require your own service configuration; third-party fees are not included.'**
+  /// **'AI and cloud TTS require your own service configuration; third-party fees are not included with Origo Read.'**
   String get basicServicesNote;
+
+  /// No description provided for @basicComicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Comic reading'**
+  String get basicComicTitle;
+
+  /// No description provided for @basicComicBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Read image-based comics with a layout made for panels and long pages.'**
+  String get basicComicBody;
+
+  /// No description provided for @basicCustomFontsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom fonts'**
+  String get basicCustomFontsTitle;
+
+  /// No description provided for @basicCustomFontsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Import your own TTF or OTF fonts and use them in the reader.'**
+  String get basicCustomFontsBody;
+
+  /// No description provided for @premiumUnlimitedSourcesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited additional sources'**
+  String get premiumUnlimitedSourcesTitle;
+
+  /// No description provided for @premiumUnlimitedSourcesBenefit.
+  ///
+  /// In en, this message translates to:
+  /// **'Use additional source protocols without the standard {limit}-source limit.'**
+  String premiumUnlimitedSourcesBenefit(int limit);
 
   /// No description provided for @basicEditionTitle.
   ///
@@ -12893,7 +12944,7 @@ abstract class AppLocalizations {
   /// No description provided for @basicEditionSummary.
   ///
   /// In en, this message translates to:
-  /// **'One purchase. The complete reading experience.'**
+  /// **'AI assistant, cloud TTS, comic reading and custom fonts'**
   String get basicEditionSummary;
 
   /// No description provided for @basicEditionAccountBound.
@@ -12989,7 +13040,7 @@ abstract class AppLocalizations {
   /// No description provided for @premiumIncludesReaderAccess.
   ///
   /// In en, this message translates to:
-  /// **'Includes permanent Origo Read access plus broader source format compatibility.'**
+  /// **'Includes all Origo Read benefits: AI assistant, cloud TTS, comic reading and custom fonts.'**
   String get premiumIncludesReaderAccess;
 
   /// No description provided for @storeExploreBundlePriceCaption.

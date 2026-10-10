@@ -102,6 +102,38 @@ void main() {
     expect(find.text('reader-content'), findsOneWidget);
   });
 
+  testWidgets(
+    'account feature gate applies to direct builds and unlocks live',
+    (tester) async {
+      AppDistribution.debugOverride(channel: AppDistributionChannel.direct);
+      final account = _GateAccount();
+      addTearDown(account.dispose);
+      var builds = 0;
+      await tester.pumpWidget(
+        ChangeNotifierProvider<MemberAccountController>.value(
+          value: account,
+          child: _TestApp(
+            child: StoreReaderAccessGate(
+              requireAccountFeatureAccess: true,
+              pageBuilder: (_) {
+                builds += 1;
+                return const Text('paid-feature');
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('paid-feature'), findsNothing);
+      expect(builds, 0);
+      account.setAccess(true);
+      await tester.pumpAndSettle();
+      expect(find.text('paid-feature'), findsOneWidget);
+      expect(builds, 1);
+    },
+  );
+
   testWidgets('licensed store build refuses to create reader without account', (
     tester,
   ) async {
@@ -205,6 +237,8 @@ class _GateAccount extends MemberAccountController {
   bool get initialized => _ready;
   @override
   bool get hasReaderAccess => _access;
+  @override
+  bool get hasAccountReaderFeatureAccess => _access;
   @override
   Future<void> initialize({bool force = false}) async {
     _ready = true;

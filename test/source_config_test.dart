@@ -442,8 +442,10 @@ void main() {
   });
 
   test(
-    'verified bulk import stays enabled and respects runtime gate',
+    'verified bulk import stays enabled and respects compatibility opt-in',
     () async {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(additionalSourceProtocolsPreferenceKey, false);
       final registry = BookSourceRegistry();
       final original = ReadingSourceConfig.fromJson(
         _source(),
@@ -461,16 +463,11 @@ void main() {
       expect(await registry.loadRunnable(), isEmpty);
       expect(await registry.loadRunnableInBackground(), isEmpty);
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(additionalSourceProtocolsPreferenceKey, true);
-      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isFalse);
-      expect(await registry.loadRunnable(), isEmpty);
-      expect(await registry.loadRunnableInBackground(), isEmpty);
-      AdvancedFeatureAccess.premiumUnlocked = true;
-      addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
+      await preferences.setBool(additionalSourceProtocolsPreferenceKey, true);
+      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isTrue);
       expect(await registry.loadRunnable(), hasLength(1));
       expect(await registry.loadRunnableInBackground(), hasLength(1));
-      AdvancedFeatureAccess.premiumUnlocked = false;
+      await preferences.setBool(additionalSourceProtocolsPreferenceKey, false);
       expect(await registry.loadRunnable(), isEmpty);
       expect(await registry.loadRunnableInBackground(), isEmpty);
     },

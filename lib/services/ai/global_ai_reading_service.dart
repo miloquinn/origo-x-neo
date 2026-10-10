@@ -14,6 +14,7 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_preprocess_task_controller.dart';
 import 'package:xxread/services/ai/book_preprocess_service.dart';
 import 'package:xxread/services/books/book_text_extraction_service.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 
 class GlobalAIReadingService {
   factory GlobalAIReadingService() => _instance;
@@ -32,6 +33,7 @@ class GlobalAIReadingService {
   /// 格式受支持且尚无摘要时后台执行；失败只记日志，不打断导入。
   Future<void> scheduleImportedBookAnalysis({required legacy.Book book}) async {
     try {
+      if (!AdvancedFeatureAccess.readerFeaturesUnlocked) return;
       final prefs = await SharedPreferences.getInstance();
       if (prefs.getBool(aiPreprocessBooksPrefsKey) != true) return;
       if (!BookTextExtractionService.supports(book)) return;

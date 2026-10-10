@@ -10,6 +10,7 @@ import 'package:xxread/core/reader/reader_aloud_controller.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/settings/cloud_tts_settings_page.dart';
 import 'package:xxread/services/reader_aloud_service.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 import 'package:xxread/widgets/pill_input_surface.dart';
 import 'package:xxread/widgets/pill_dropdown.dart';
 import 'package:xxread/widgets/glass_dialog.dart';
@@ -19,7 +20,13 @@ import 'package:xxread/utils/app_themes.dart';
 import 'package:xxread/utils/ui_style.dart';
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: false);
+  });
+  tearDown(() {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+  });
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     if (Platform.environment['CLOUD_TTS_PREVIEW'] == '1') {

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/settings/font_selection_sheet.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
+import 'package:xxread/services/core/advanced_feature_access.dart';
 import 'package:xxread/services/core/online_font_service.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
 
@@ -105,7 +106,13 @@ Widget _testApp(AppSettingsNotifier settings) => MaterialApp(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    AdvancedFeatureAccess.update(readerUnlocked: true, premiumUnlocked: false);
+  });
+  tearDown(() {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+  });
 
   testWidgets('EPUB shows separate book and system font options', (
     tester,
@@ -142,6 +149,20 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('normal account cannot start custom font import', (tester) async {
+    AdvancedFeatureAccess.update(readerUnlocked: false, premiumUnlocked: false);
+    final settings = (await tester.runAsync(_loadNotifier))!;
+    addTearDown(settings.dispose);
+    await tester.pumpWidget(_testApp(settings));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('font-selection-import')));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(FontSelectionSheet), findsOneWidget);
   });
 
   testWidgets('selecting an available font applies it and closes the sheet', (

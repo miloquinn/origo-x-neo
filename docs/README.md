@@ -31,7 +31,8 @@
 | 阅读选中文字工具栏、玻璃背景与更多操作 | [选中文字工具栏](reader-selection-toolbar.md) |
 | Legado 书源段评、净化锚点、共享气泡与网页会话 | [书源段评](paragraph-reviews.md) |
 | 协议正文、官网接口、缓存与同意记录 | [协议与隐私](legal-documents.md) |
-| 会员快照、启动同步、失效与授权边界 | [会员状态缓存](account-membership-sync.md) |
+| 会员权益、快照、同步、失效与执行授权 | [会员状态缓存](account-membership-sync.md) |
+| 会员权益、玻璃开通页与商店入口 | [会员界面](purchase-ui-redesign.md) |
 | 主动反馈、性能摘要与采集边界 | [反馈与诊断](feedback-diagnostics.md) |
 | 阅读 AI、内置 Agent、数据授权与偏好记忆 | [阅读 AI 与内置 Agent](reading-ai-agent.md) |
 | 发布版本与构建号 | [版本规则](release-versioning.md) |

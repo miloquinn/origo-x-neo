@@ -76,16 +76,16 @@ void main() {
       expect(raw.length, greaterThan(256 * 1024));
       final registry = BookSourceRegistry(storage: _MemoryStorage(raw));
 
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(additionalSourceProtocolsPreferenceKey, false);
+
       expect(
         (await registry.loadRunnableInBackground()).map(_record),
         [orsp].map(_record),
       );
 
-      final preferences = await SharedPreferences.getInstance();
       await preferences.setBool(additionalSourceProtocolsPreferenceKey, true);
-      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isFalse);
-      AdvancedFeatureAccess.premiumUnlocked = true;
-      addTearDown(() => AdvancedFeatureAccess.premiumUnlocked = false);
+      expect(await AdvancedFeatureAccess.additionalProtocolsEnabled(), isTrue);
       expect(
         (await registry.loadRunnableInBackground()).map(_record),
         [reading, orsp].map(_record),

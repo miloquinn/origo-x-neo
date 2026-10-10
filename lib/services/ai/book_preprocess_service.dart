@@ -2,10 +2,12 @@
 // 技术要点：章节分块、逐块总结、合并成文、限流退避重试、GlobalAIReadingService 落盘。
 
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 
 import '../../models/book.dart';
 import '../../reader_core/ai/ai_service.dart';
 import '../books/book_text_extraction_service.dart';
+import '../core/advanced_feature_access.dart';
 import 'ai_request_coordinator.dart';
 import 'global_ai_reading_service.dart';
 
@@ -18,10 +20,35 @@ class BookPreprocessCancelled implements Exception {
 
 class BookPreprocessCancelToken {
   bool _cancelled = false;
+  final Set<CancelToken> _transportTokens = <CancelToken>{};
 
   bool get isCancelled => _cancelled;
 
-  void cancel() => _cancelled = true;
+  void cancel() {
+    if (_cancelled) return;
+    _cancelled = true;
+    final transports = List<CancelToken>.of(_transportTokens);
+    _transportTokens.clear();
+    for (final transport in transports) {
+      if (!transport.isCancelled) {
+        transport.cancel(const BookPreprocessCancelled());
+      }
+    }
+  }
+
+  CancelToken _attachTransport() {
+    final transport = CancelToken();
+    if (_cancelled) {
+      transport.cancel(const BookPreprocessCancelled());
+    } else {
+      _transportTokens.add(transport);
+    }
+    return transport;
+  }
+
+  void _detachTransport(CancelToken transport) {
+    _transportTokens.remove(transport);
+  }
 }
 
 class _BookChunk {
@@ -94,98 +121,112 @@ class BookPreprocessService {
     void Function(int done, int total)? onProgress,
     BookPreprocessCancelToken? cancelToken,
   }) async {
-    final chapters = await _extractor.extractChapters(book);
-    final chunks = _buildChunks(chapters);
-    final sampled = _sampleChunks(chunks);
-    final total = sampled.length + _mergeRequestCount(sampled.length);
-    var done = 0;
-    onProgress?.call(0, total);
-
-    final bookId = book.id?.toString() ?? '';
-    Future<String> sendRequest(String prompt, String chapterId) async {
-      _throwIfCancelled(cancelToken);
-      if (done > 0) {
-        await _cancellableDelay(_requestGap, cancelToken);
+    AdvancedFeatureAccess.requireReaderFeatures();
+    final taskCancelToken = cancelToken ?? BookPreprocessCancelToken();
+    void handleAccessChanged() {
+      if (!AdvancedFeatureAccess.readerFeaturesUnlocked) {
+        taskCancelToken.cancel();
       }
-      final answer = await _chatWithRetry(
-        history: [AIChatMessage(role: 'user', content: prompt)],
-        meta: AIRequestMeta(bookId: bookId, chapterId: chapterId),
-        cancelToken: cancelToken,
-      );
-      _throwIfCancelled(cancelToken);
-      done += 1;
-      onProgress?.call(done, total);
-      return answer.trim();
     }
 
-    final partSummaries = <_BookSummary>[];
-    for (var index = 0; index < sampled.length; index++) {
-      _throwIfCancelled(cancelToken);
-      final chunk = sampled[index];
-      final answer = await sendRequest(
-        '下面是书籍《${book.title}》的一段正文（${chunk.label}）。'
-        '请按原文顺序提炼核心内容、出场人物/概念、关键情节与因果关系。'
-        '控制在 $intermediateSummaryChars 字以内，直接输出摘要，不要客套话。'
-        '\n\n${chunk.text}',
-        chunk.label,
-      );
-      partSummaries.add(
-        _BookSummary(label: chunk.label, text: _limitSummary(answer)),
-      );
-    }
+    AdvancedFeatureAccess.accessChanges.addListener(handleAccessChanged);
+    try {
+      final chapters = await _extractor.extractChapters(book);
+      final chunks = _buildChunks(chapters);
+      final sampled = _sampleChunks(chunks);
+      final total = sampled.length + _mergeRequestCount(sampled.length);
+      var done = 0;
+      onProgress?.call(0, total);
 
-    // 多层归并：24 份摘要不会再直接进入一次最终请求，而是按 3 份一组
-    // 逐层压缩，直到最终请求最多只读取三份中间摘要。
-    var mergeLevel = 1;
-    var summaries = partSummaries;
-    while (summaries.length > mergeFanIn) {
-      final merged = <_BookSummary>[];
-      for (var start = 0; start < summaries.length; start += mergeFanIn) {
-        final end = (start + mergeFanIn).clamp(0, summaries.length);
-        final group = summaries.sublist(start, end);
-        final label = _summaryRangeLabel(group);
-        final prompt = StringBuffer()
-          ..writeln('以下是书籍《${book.title}》连续部分的摘要。')
-          ..writeln(
-            '请按原书顺序合并为一份中间摘要，保留人物/概念、关键情节、'
-            '因果、转折和章节范围，控制在 $intermediateSummaryChars 字以内。',
-          )
-          ..writeln()
-          ..writeln(_formatSummaries(group));
-        final answer = await sendRequest(
-          prompt.toString(),
-          'preprocess-merge-$mergeLevel-${merged.length + 1}',
+      final bookId = book.id?.toString() ?? '';
+      Future<String> sendRequest(String prompt, String chapterId) async {
+        _throwIfCancelled(taskCancelToken);
+        AdvancedFeatureAccess.requireReaderFeatures();
+        if (done > 0) {
+          await _cancellableDelay(_requestGap, taskCancelToken);
+        }
+        final answer = await _chatWithRetry(
+          history: [AIChatMessage(role: 'user', content: prompt)],
+          meta: AIRequestMeta(bookId: bookId, chapterId: chapterId),
+          cancelToken: taskCancelToken,
         );
-        merged.add(_BookSummary(label: label, text: _limitSummary(answer)));
+        _throwIfCancelled(taskCancelToken);
+        done += 1;
+        onProgress?.call(done, total);
+        return answer.trim();
       }
-      summaries = merged;
-      mergeLevel += 1;
-    }
 
-    _throwIfCancelled(cancelToken);
-    final omitted = chunks.length - sampled.length;
-    final mergePrompt = StringBuffer()
-      ..writeln(
-        '以下是书籍《${book.title}》（作者：${book.author}）按顺序归并后的摘要。'
-        '请把它们整理成一份结构化的 Markdown 知识库文档，包含：'
-        '一段总体梗概、主要人物或核心概念列表、按顺序的分章要点。'
-        '直接输出 Markdown 正文，以“# ${book.title}”开头。',
+      final partSummaries = <_BookSummary>[];
+      for (var index = 0; index < sampled.length; index++) {
+        _throwIfCancelled(taskCancelToken);
+        final chunk = sampled[index];
+        final answer = await sendRequest(
+          '下面是书籍《${book.title}》的一段正文（${chunk.label}）。'
+          '请按原文顺序提炼核心内容、出场人物/概念、关键情节与因果关系。'
+          '控制在 $intermediateSummaryChars 字以内，直接输出摘要，不要客套话。'
+          '\n\n${chunk.text}',
+          chunk.label,
+        );
+        partSummaries.add(
+          _BookSummary(label: chunk.label, text: _limitSummary(answer)),
+        );
+      }
+
+      // 多层归并：24 份摘要不会再直接进入一次最终请求，而是按 3 份一组
+      // 逐层压缩，直到最终请求最多只读取三份中间摘要。
+      var mergeLevel = 1;
+      var summaries = partSummaries;
+      while (summaries.length > mergeFanIn) {
+        final merged = <_BookSummary>[];
+        for (var start = 0; start < summaries.length; start += mergeFanIn) {
+          final end = (start + mergeFanIn).clamp(0, summaries.length);
+          final group = summaries.sublist(start, end);
+          final label = _summaryRangeLabel(group);
+          final prompt = StringBuffer()
+            ..writeln('以下是书籍《${book.title}》连续部分的摘要。')
+            ..writeln(
+              '请按原书顺序合并为一份中间摘要，保留人物/概念、关键情节、'
+              '因果、转折和章节范围，控制在 $intermediateSummaryChars 字以内。',
+            )
+            ..writeln()
+            ..writeln(_formatSummaries(group));
+          final answer = await sendRequest(
+            prompt.toString(),
+            'preprocess-merge-$mergeLevel-${merged.length + 1}',
+          );
+          merged.add(_BookSummary(label: label, text: _limitSummary(answer)));
+        }
+        summaries = merged;
+        mergeLevel += 1;
+      }
+
+      _throwIfCancelled(taskCancelToken);
+      final omitted = chunks.length - sampled.length;
+      final mergePrompt = StringBuffer()
+        ..writeln(
+          '以下是书籍《${book.title}》（作者：${book.author}）按顺序归并后的摘要。'
+          '请把它们整理成一份结构化的 Markdown 知识库文档，包含：'
+          '一段总体梗概、主要人物或核心概念列表、按顺序的分章要点。'
+          '直接输出 Markdown 正文，以“# ${book.title}”开头。',
+        );
+      if (omitted > 0) {
+        mergePrompt.writeln('（注意：因篇幅限制，另有 $omitted 段正文未纳入总结，请在文末注明。）');
+      }
+      mergePrompt
+        ..writeln()
+        ..writeln(_formatSummaries(summaries));
+
+      final markdown = await sendRequest(
+        mergePrompt.toString(),
+        'preprocess-merge',
       );
-    if (omitted > 0) {
-      mergePrompt.writeln('（注意：因篇幅限制，另有 $omitted 段正文未纳入总结，请在文末注明。）');
+
+      _throwIfCancelled(taskCancelToken);
+      await _knowledge.saveBookSummary(bookId: bookId, summary: markdown);
+      return markdown;
+    } finally {
+      AdvancedFeatureAccess.accessChanges.removeListener(handleAccessChanged);
     }
-    mergePrompt
-      ..writeln()
-      ..writeln(_formatSummaries(summaries));
-
-    final markdown = await sendRequest(
-      mergePrompt.toString(),
-      'preprocess-merge',
-    );
-
-    _throwIfCancelled(cancelToken);
-    await _knowledge.saveBookSummary(bookId: bookId, summary: markdown);
-    return markdown;
   }
 
   int _mergeRequestCount(int summaryCount) {
@@ -228,9 +269,19 @@ class BookPreprocessService {
       // 交互式对话优先：等对话请求结束再发，避免挤占服务商并发额度。
       await _coordinator.waitUntilInteractiveIdle();
       _throwIfCancelled(cancelToken);
+      final transportCancelToken = cancelToken?._attachTransport();
       try {
-        return await _ai.chat(history: history, pageText: '', meta: meta);
+        return await _ai.chat(
+          history: history,
+          pageText: '',
+          meta: meta,
+          cancelToken: transportCancelToken,
+        );
+      } on DioException {
+        _throwIfCancelled(cancelToken);
+        rethrow;
       } on AIServiceException catch (error) {
+        _throwIfCancelled(cancelToken);
         if (!_isRetryable(error) || attempt >= _retryDelays.length) {
           rethrow;
         }
@@ -242,6 +293,10 @@ class BookPreprocessService {
           '${delay.inSeconds}s 后第 $attempt 次重试',
         );
         await _cancellableDelay(delay, cancelToken);
+      } finally {
+        if (transportCancelToken != null) {
+          cancelToken?._detachTransport(transportCancelToken);
+        }
       }
     }
   }

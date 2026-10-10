@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/pages/account/premium_membership_page.dart';
+import 'package:xxread/pages/account/store_reader_unlock_page.dart';
 import 'package:xxread/pages/settings/settings_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/account/account.dart';
@@ -25,6 +26,10 @@ class _TieredTestAccount extends MemberAccountController {
 
   @override
   bool get hasPermanentReaderAccess => _reader;
+  @override
+  bool get hasAccountReaderFeatureAccess => _reader || _explore;
+  @override
+  bool get hasPermanentAccountReaderFeatureAccess => _reader || _explore;
 
   void setEntitlements({required bool reader, required bool explore}) {
     _reader = reader;
@@ -203,14 +208,14 @@ void main() {
         }
 
         expectSection(false);
-        expect(find.text(l10n.premiumEditorialTitle), findsOneWidget);
+        expect(find.text(l10n.storeReaderLicenseTitle), findsOneWidget);
         expect(
           find.byKey(const ValueKey('settings-reader-license')),
-          findsNothing,
+          findsOneWidget,
         );
         expect(
           find.byKey(const ValueKey('settings-membership-entry')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.byKey(const ValueKey('settings-membership-offer')),
@@ -229,6 +234,13 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.text(l10n.bookSourceManagementTitle), findsOneWidget);
+        expect(
+          find.text(l10n.settingsAdditionalSourceProtocolsTitle),
+          findsOneWidget,
+        );
+        await appSettings.setAdditionalSourceProtocolsEnabled(false);
+        await appSettings.setAdditionalSourceProtocolsEnabled(true);
+        expect(appSettings.additionalSourceProtocolsEnabled, isTrue);
         account.setEntitlements(reader: true, explore: true);
         await tester.pump();
         expectSection(true);
@@ -236,8 +248,16 @@ void main() {
         expect(appSettings.privateBookSourceNetworkEnabled, isTrue);
         account.setEntitlements(reader: false, explore: false);
         await tester.pump();
-        expectSection(false);
-        expect(appSettings.additionalSourceProtocolsEnabled, isFalse);
+        expect(find.text(l10n.settingsSectionAdvancedFeatures), findsOneWidget);
+        expect(
+          find.text(l10n.settingsAdditionalSourceProtocolsTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.settingsPrivateBookSourceNetworkTitle),
+          findsNothing,
+        );
+        expect(appSettings.additionalSourceProtocolsEnabled, isTrue);
         await tester.pageBack();
         await tester.pumpAndSettle();
         account.setEntitlements(reader: true, explore: true);
@@ -307,17 +327,9 @@ void main() {
         await tester.pumpAndSettle();
         account.setEntitlements(reader: false, explore: false);
         await tester.pump();
-        await tester.tap(
-          find.byKey(const ValueKey('settings-membership-entry')),
-        );
+        await tester.tap(find.byKey(const ValueKey('settings-reader-license')));
         await tester.pumpAndSettle();
-        expect(find.byType(PremiumMembershipPage), findsOneWidget);
-        expect(
-          tester
-              .widget<PremiumMembershipPage>(find.byType(PremiumMembershipPage))
-              .focusBilling,
-          isTrue,
-        );
+        expect(find.byType(StoreReaderUnlockPage), findsOneWidget);
         await tester.pageBack();
         await tester.pumpAndSettle();
         await tester.tap(

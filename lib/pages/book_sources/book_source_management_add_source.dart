@@ -44,18 +44,34 @@ extension _BookSourceManagementAddSource on _BookSourceManagementPageState {
     }
     if (!mounted || result == null) return;
     _controller.replaceSources(result.sources);
-    showSideToast(context, switch (result.analysis.kind) {
+    final quotaLimited = result.quotaRejectedCount > 0;
+    final message = switch (result.analysis.kind) {
       BookSourceImportKind.orsp =>
         '${context.l10n.bookSourcesAdded}: ${result.analysis.sources.single.name}',
-      BookSourceImportKind.additional when result.conflictedCount > 0 =>
-        context.l10n.additionalSourcesImportedWithConflicts(
-          result.importedCount,
-          result.conflictedCount,
-        ),
-      BookSourceImportKind.additional => context.l10n.additionalSourcesImported(
-        result.importedCount,
-      ),
-    }, kind: SideToastKind.success);
+      BookSourceImportKind.additional => [
+        if (quotaLimited && result.importedCount == 0)
+          context.l10n.additionalSourcesQuotaReached(
+            BookSourceRegistry.standardAdditionalProtocolLimit,
+          )
+        else if (quotaLimited)
+          context.l10n.additionalSourcesImportedWithQuota(
+            result.importedCount,
+            result.quotaRejectedCount,
+          )
+        else if (result.conflictedCount == 0)
+          context.l10n.additionalSourcesImported(result.importedCount),
+        if (result.conflictedCount > 0)
+          context.l10n.additionalSourcesImportedWithConflicts(
+            result.importedCount,
+            result.conflictedCount,
+          ),
+      ].join('\n'),
+    };
+    showSideToast(
+      context,
+      message,
+      kind: quotaLimited ? SideToastKind.warning : SideToastKind.success,
+    );
   }
 
   bool _additionalProtocolsEnabled() {

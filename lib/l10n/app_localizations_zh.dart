@@ -2652,7 +2652,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsAdditionalSourceProtocolsTitle => '更多书源协议';
 
   @override
-  String get settingsAdditionalSourceProtocolsSubtitle => '开启后，可以支持更多的书源协议。';
+  String get settingsAdditionalSourceProtocolsSubtitle =>
+      '普通账号最多保留 2 个其他协议书源，探元不限量。';
 
   @override
   String get settingsPrivateBookSourceNetworkTitle => '允许内网书源';
@@ -2720,6 +2721,19 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String additionalSourcesImportedWithConflicts(int count, int conflicted) {
     return '已导入 $count 个书源，另有 $conflicted 个因 ID 与已有来源不同而跳过';
+  }
+
+  @override
+  String additionalSourcesImportedWithQuota(
+    int importedCount,
+    int quotaRejectedCount,
+  ) {
+    return '已导入 $importedCount 个书源，另有 $quotaRejectedCount 个超出当前权益限额';
+  }
+
+  @override
+  String additionalSourcesQuotaReached(int limit) {
+    return '当前权益最多添加 $limit 个其他协议书源。可删除一个，或开通探元继续添加。';
   }
 
   @override
@@ -6809,7 +6823,8 @@ class AppLocalizationsZh extends AppLocalizations {
       '可通过 Google Play 申请退款。退款或撤销经验证后，仅移除该笔购买对应的授权，其他独立权益继续有效。';
 
   @override
-  String get storeReaderLegacyNotice => '已为你保留原有基础阅读资格。高级书源兼容仍需要探元。';
+  String get storeReaderLegacyNotice =>
+      '已为你保留原有基础阅读资格。普通账号最多保留 2 个其他协议书源，探元不限量。';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -6991,13 +7006,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get basicSyncBody => '管理本地书库，通过 WebDAV 备份和恢复书籍、阅读记录与设置。';
 
   @override
-  String get basicServicesNote => 'AI 与云端 TTS 需自行配置服务；第三方服务费用不包含在基础版价格内。';
+  String get basicServicesNote => 'AI 与云端 TTS 需自行配置服务；第三方服务费用不包含在开卷价格内。';
+
+  @override
+  String get basicComicTitle => '漫画阅读';
+
+  @override
+  String get basicComicBody => '阅读图片漫画，适配分镜与长图页面。';
+
+  @override
+  String get basicCustomFontsTitle => '自定义字体';
+
+  @override
+  String get basicCustomFontsBody => '导入自己的 TTF 或 OTF 字体，并在阅读器中使用。';
+
+  @override
+  String get premiumUnlimitedSourcesTitle => '其他协议书源不限量';
+
+  @override
+  String premiumUnlimitedSourcesBenefit(int limit) {
+    return '不受普通账号最多 $limit 个其他协议书源的限制。';
+  }
 
   @override
   String get basicEditionTitle => 'Origo 开卷';
 
   @override
-  String get basicEditionSummary => '一次购买，完整阅读体验';
+  String get basicEditionSummary => 'AI 阅读助手、云端 TTS、漫画阅读与自定义字体';
 
   @override
   String get basicEditionAccountBound => '绑定 Origo 账号 · 跨平台通用';
@@ -7050,7 +7085,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storeBetaAccessAvailable => '测试期间已开放全部功能';
 
   @override
-  String get premiumIncludesReaderAccess => '包含 Origo 开卷的永久使用权，以及更多书源格式兼容能力。';
+  String get premiumIncludesReaderAccess =>
+      '包含开卷全部权益：AI 阅读助手、云端 TTS、漫画阅读与自定义字体。';
 
   @override
   String get storeExploreBundlePriceCaption => '开卷 + 探元 · 一次购买跨平台使用';
@@ -10386,7 +10422,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsAdditionalSourceProtocolsTitle => '更多書源協議';
 
   @override
-  String get settingsAdditionalSourceProtocolsSubtitle => '開啟後，可以支援更多的書源協議。';
+  String get settingsAdditionalSourceProtocolsSubtitle =>
+      '一般帳號最多保留 2 個其他協議書源，探元不限量。';
 
   @override
   String get settingsPrivateBookSourceNetworkTitle => '允許內網書源';
@@ -10454,6 +10491,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String additionalSourcesImportedWithConflicts(int count, int conflicted) {
     return '已匯入 $count 個書源，另有 $conflicted 個因 ID 與現有來源不同而跳過';
+  }
+
+  @override
+  String additionalSourcesImportedWithQuota(
+    int importedCount,
+    int quotaRejectedCount,
+  ) {
+    return '已匯入 $importedCount 個書源，另有 $quotaRejectedCount 個超出目前權益限額';
+  }
+
+  @override
+  String additionalSourcesQuotaReached(int limit) {
+    return '目前權益最多新增 $limit 個其他協議書源。可刪除一個，或開通探元繼續新增。';
   }
 
   @override
@@ -14544,7 +14594,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '可透過 Google Play 申請退款。退款經驗證後，僅移除該筆購買對應的授權，其他獨立權益繼續有效。';
 
   @override
-  String get storeReaderLegacyNotice => '已為你保留原有基礎閱讀資格。進階書源相容仍需要探元。';
+  String get storeReaderLegacyNotice =>
+      '已為你保留原有基礎閱讀資格。一般帳號最多保留 2 個其他協議書源，探元不限量。';
 
   @override
   String get storePrivacyPurchaseBody =>
@@ -14726,13 +14777,33 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get basicSyncBody => '管理本機書庫，透過 WebDAV 備份和恢復書籍、閱讀記錄與設定。';
 
   @override
-  String get basicServicesNote => 'AI 與雲端 TTS 需自行設定服務；第三方服務費用不包含在基礎版價格內。';
+  String get basicServicesNote => 'AI 與雲端 TTS 需自行設定服務；第三方服務費用不包含在開卷價格內。';
+
+  @override
+  String get basicComicTitle => '漫畫閱讀';
+
+  @override
+  String get basicComicBody => '閱讀圖片漫畫，適配分鏡與長圖頁面。';
+
+  @override
+  String get basicCustomFontsTitle => '自訂字型';
+
+  @override
+  String get basicCustomFontsBody => '匯入自己的 TTF 或 OTF 字型，並在閱讀器中使用。';
+
+  @override
+  String get premiumUnlimitedSourcesTitle => '其他協議書源不限量';
+
+  @override
+  String premiumUnlimitedSourcesBenefit(int limit) {
+    return '不受一般帳號最多 $limit 個其他協議書源的限制。';
+  }
 
   @override
   String get basicEditionTitle => 'Origo 開卷';
 
   @override
-  String get basicEditionSummary => '一次購買，完整閱讀體驗';
+  String get basicEditionSummary => 'AI 閱讀助手、雲端 TTS、漫畫閱讀與自訂字型';
 
   @override
   String get basicEditionAccountBound => '綁定 Origo 帳號 · 跨平台通用';
@@ -14785,7 +14856,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get storeBetaAccessAvailable => '測試期間已開放全部功能';
 
   @override
-  String get premiumIncludesReaderAccess => '包含 Origo 開卷的永久使用權，以及更多書源格式相容能力。';
+  String get premiumIncludesReaderAccess =>
+      '包含開卷全部權益：AI 閱讀助手、雲端 TTS、漫畫閱讀與自訂字型。';
 
   @override
   String get storeExploreBundlePriceCaption => '開卷 + 探元 · 一次購買跨平台使用';

@@ -4,6 +4,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../models/book.dart';
+import '../core/advanced_feature_access.dart';
 import 'book_preprocess_service.dart';
 
 enum AiPreprocessTaskState { queued, running, completed, failed, cancelled }
@@ -33,7 +34,9 @@ class AiPreprocessTask {
 
 /// 全局 AI 预处理队列：任务按加入顺序串行执行，避免并发打爆 AI 接口。
 class AiPreprocessTaskController extends ChangeNotifier {
-  AiPreprocessTaskController._();
+  AiPreprocessTaskController._() {
+    AdvancedFeatureAccess.accessChanges.addListener(_handleAccessChanged);
+  }
 
   static final AiPreprocessTaskController _instance =
       AiPreprocessTaskController._();
@@ -49,6 +52,7 @@ class AiPreprocessTaskController extends ChangeNotifier {
 
   /// 入队；同一本书已有排队/执行中的任务时返回 false。
   bool enqueue(Book book) {
+    AdvancedFeatureAccess.requireReaderFeatures();
     final id = book.id?.toString() ?? '';
     if (id.isEmpty) return false;
     final duplicated = _tasks.any((task) => task.id == id && task.isActive);
@@ -57,6 +61,20 @@ class AiPreprocessTaskController extends ChangeNotifier {
     notifyListeners();
     _pump();
     return true;
+  }
+
+  void _handleAccessChanged() {
+    if (AdvancedFeatureAccess.readerFeaturesUnlocked) return;
+    var changed = false;
+    for (final task in _tasks) {
+      if (!task.isActive) continue;
+      task.cancelToken.cancel();
+      if (task.state == AiPreprocessTaskState.queued) {
+        task.state = AiPreprocessTaskState.cancelled;
+      }
+      changed = true;
+    }
+    if (changed) notifyListeners();
   }
 
   void cancelTask(String id) {
