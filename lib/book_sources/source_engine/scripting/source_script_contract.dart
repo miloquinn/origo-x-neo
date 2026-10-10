@@ -5,6 +5,18 @@ import '../source_login_session.dart';
 
 import 'package:xxread/book_sources/source_engine/source_config.dart';
 
+typedef SourceScriptInteractionEvaluator =
+    Future<String> Function(
+      String script, {
+      void Function()? cancellationCheck,
+    });
+
+typedef SourceScriptTransaction =
+    Future<T> Function<T>(
+      Future<T> Function() action, {
+      void Function()? cancellationCheck,
+    });
+
 class SourceScriptContext {
   const SourceScriptContext({
     required this.source,
@@ -34,6 +46,7 @@ class SourceScriptContext {
     this.loginHeaderWriter,
     this.messageWriter,
     this.interactionHandler,
+    this.transaction,
     this.htmlBridge = false,
     this.cancellationCheck,
   });
@@ -77,6 +90,7 @@ class SourceScriptContext {
     SourceScriptInteractionRequest request,
   )?
   interactionHandler;
+  final SourceScriptTransaction? transaction;
   final bool htmlBridge;
   final void Function()? cancellationCheck;
 
@@ -121,12 +135,15 @@ class SourceScriptContext {
     loginInfoWriter: loginInfoWriter,
     loginHeaderWriter: loginHeaderWriter,
     interactionHandler: interactionHandler,
+    transaction: transaction,
     htmlBridge: htmlBridge ?? this.htmlBridge,
     cancellationCheck: cancellationCheck ?? this.cancellationCheck,
   );
 }
 
 enum SourceScriptInteractionKind { browser, browserAwait, verificationCode }
+
+enum SourceScriptInteractionPresentation { standard, reading }
 
 class SourceScriptInteractionRequest {
   const SourceScriptInteractionRequest({
@@ -135,10 +152,14 @@ class SourceScriptInteractionRequest {
     required this.url,
     this.title = '',
     this.html,
+    this.preloadJs,
+    this.config,
+    this.presentation = SourceScriptInteractionPresentation.standard,
     this.refetchAfterSuccess = false,
     this.headers = const {},
     this.imageBytes,
     this.browserSession = const SourceBrowserSession(),
+    this.evaluateScript,
   });
 
   final String signature;
@@ -146,25 +167,39 @@ class SourceScriptInteractionRequest {
   final String url;
   final String title;
   final String? html;
+  final String? preloadJs;
+  final String? config;
+  final SourceScriptInteractionPresentation presentation;
   final bool refetchAfterSuccess;
   final Map<String, String> headers;
   final Uint8List? imageBytes;
   final SourceBrowserSession browserSession;
+  final SourceScriptInteractionEvaluator? evaluateScript;
 
   SourceScriptInteractionRequest copyWith({
+    String? url,
+    String? html,
+    String? preloadJs,
+    String? config,
+    SourceScriptInteractionPresentation? presentation,
     Map<String, String>? headers,
     Uint8List? imageBytes,
     SourceBrowserSession? browserSession,
+    SourceScriptInteractionEvaluator? evaluateScript,
   }) => SourceScriptInteractionRequest(
     signature: signature,
     kind: kind,
-    url: url,
+    url: url ?? this.url,
     title: title,
-    html: html,
+    html: html ?? this.html,
+    preloadJs: preloadJs ?? this.preloadJs,
+    config: config ?? this.config,
+    presentation: presentation ?? this.presentation,
     refetchAfterSuccess: refetchAfterSuccess,
     headers: headers ?? this.headers,
     imageBytes: imageBytes ?? this.imageBytes,
     browserSession: browserSession ?? this.browserSession,
+    evaluateScript: evaluateScript ?? this.evaluateScript,
   );
 }
 

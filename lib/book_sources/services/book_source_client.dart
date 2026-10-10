@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import '../models/registered_book_source.dart';
 import '../protocol/book_source_protocol.dart';
 import '../protocol/orsp/orsp_book_source_backend.dart';
+import '../protocol/reading_source/reading_source_backend.dart';
 import '../source_engine/source_login_ui.dart';
+import '../source_engine/scripting/source_script_contract.dart';
 import 'book_download_cancellation.dart';
 import '../caching/book_source_chapter_cache.dart';
 import '../caching/book_source_discovery_cache.dart';
@@ -15,9 +17,18 @@ import '../networking/book_source_network_policy.dart';
 import 'book_source_client_resources.dart';
 import 'book_source_gateway.dart';
 
-export 'book_source_gateway.dart' show BookSourceGateway, DiscoveredBookSource;
+export 'book_source_gateway.dart'
+    show
+        BookSourceGateway,
+        BookSourceChapterActionGateway,
+        BookSourceChapterRefreshGateway,
+        DiscoveredBookSource;
 
-class BookSourceClient implements BookSourceGateway {
+class BookSourceClient
+    implements
+        BookSourceGateway,
+        BookSourceChapterActionGateway,
+        BookSourceChapterRefreshGateway {
   BookSourceClient({
     Dio? dio,
     Dio? systemDio,
@@ -84,6 +95,44 @@ class BookSourceClient implements BookSourceGateway {
   Future<void> clearSourceLogin(RegisteredBookSource source) async {
     await _resources.readingBackend.clearSourceLogin(source);
     await _discoveryCache.invalidateSource(source);
+  }
+
+  @override
+  Future<String> executeChapterAction(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    required String script,
+    required String result,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+  }) {
+    if (source.sourceProtocol != BookSourceProtocolKind.readingSource) {
+      throw const BookSourceProtocolException(
+        'Chapter actions are supported only by compatible reading sources.',
+      );
+    }
+    final backend = _resources.readingBackend;
+    if (backend is! ReadingSourceChapterActionBackendPort) {
+      throw const BookSourceProtocolException(
+        'This compatible reading source backend does not support chapter actions.',
+      );
+    }
+    return (backend as ReadingSourceChapterActionBackendPort)
+        .executeChapterAction(
+          source,
+          bookId: bookId,
+          chapterId: chapterId,
+          script: script,
+          result: result,
+          sourceVariables: sourceVariables,
+          cancellation: cancellation,
+          interactionHandler: interactionHandler,
+        );
   }
 
   static void ensureSafeTarget(Uri uri) {
@@ -317,6 +366,35 @@ class BookSourceClient implements BookSourceGateway {
       chapterId: chapterId,
       cancellation: cancellation,
     );
+  }
+
+  @override
+  Future<BookSourceChapterContent> refreshChapterContent(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) {
+    if (source.sourceProtocol != BookSourceProtocolKind.readingSource) {
+      throw const BookSourceProtocolException(
+        'Chapter refresh is supported only by compatible reading sources.',
+      );
+    }
+    final backend = _resources.readingBackend;
+    if (backend is! ReadingSourceChapterRefreshBackendPort) {
+      throw const BookSourceProtocolException(
+        'This compatible reading source backend does not support chapter refresh.',
+      );
+    }
+    return (backend as ReadingSourceChapterRefreshBackendPort)
+        .refreshChapterContent(
+          source,
+          bookId: bookId,
+          chapterId: chapterId,
+          sourceVariables: sourceVariables,
+          cancellation: cancellation,
+        );
   }
 
   @override

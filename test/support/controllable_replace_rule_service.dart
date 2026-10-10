@@ -28,6 +28,7 @@ class ControllableReplaceRuleService extends ReplaceRuleService {
     bool eligibleByDefault = true,
     bool title = false,
     bool preserveNonEmpty = false,
+    List<List<ReplaceRuleTextRange>>? ranges,
   }) async {
     final result = await super.applyBatchAsync(
       inputs,
@@ -38,6 +39,7 @@ class ControllableReplaceRuleService extends ReplaceRuleService {
       eligibleByDefault: eligibleByDefault,
       title: title,
       preserveNonEmpty: preserveNonEmpty,
+      ranges: ranges,
     );
     if (title && delayNextTitle) {
       delayNextTitle = false;

@@ -157,6 +157,30 @@ class BookSourceChapterCache {
     return _loadContent(key, requestScope, loader, generation);
   }
 
+  /// Loads one chapter from its source without consulting memory or disk.
+  ///
+  /// The previous cached value remains usable if [loader] fails. A refresh
+  /// supersedes any older load for the same chapter so a late response cannot
+  /// replace the newly refreshed value.
+  Future<BookSourceChapterContent> refresh({
+    required String sourceId,
+    String sourceRevision = '',
+    required String bookId,
+    required String chapterId,
+    Object requestScope = #explicitChapterRefresh,
+    required Future<BookSourceChapterContent> Function() loader,
+  }) {
+    final key = _key(sourceId, sourceRevision, bookId, chapterId);
+    return _loadContent(
+      key,
+      requestScope,
+      loader,
+      _writeGeneration,
+      isRefresh: true,
+      replacePending: true,
+    );
+  }
+
   /// Returns a previously loaded chapter catalog without waiting for the
   /// source. Once the cached catalog is old enough, a refresh is started in
   /// the background so the next open sees additions without delaying this
@@ -321,11 +345,12 @@ class BookSourceChapterCache {
     Future<BookSourceChapterContent> Function() loader,
     int generation, {
     bool isRefresh = false,
+    bool replacePending = false,
   }) async {
     if (generation != _writeGeneration) return loader();
     final flightKey = (key, requestScope);
     final pending = _inFlight[flightKey];
-    if (pending != null) return pending.future;
+    if (pending != null && !replacePending) return pending.future;
     final loadToken = Object();
     _latestContentLoads[key] = loadToken;
     final future = _fetchAndStoreContent(key, loader, generation, loadToken);

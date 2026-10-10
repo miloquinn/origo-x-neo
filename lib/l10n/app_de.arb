@@ -2320,5 +2320,8 @@
   "themeMarketInUse": "Aktiv",
   "themeMarketDownloadAndApply": "Laden und anwenden",
   "accountDeleteBlockedThemeCreator": "Lösche zuerst deine veröffentlichten oder zur Prüfung eingereichten Designs auf der Website, bevor du dein Konto löschst.",
-  "accountDeleteManageThemes": "Meine Designs verwalten"
+  "accountDeleteManageThemes": "Meine Designs verwalten",
+  "readerParagraphReviews": "Absatzkommentare",
+  "readerParagraphReviewOpen": "Absatzkommentare ansehen",
+  "readerParagraphReviewFailed": "Absatzkommentare konnten nicht geladen werden. Du kannst weiterlesen."
 }

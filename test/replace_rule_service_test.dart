@@ -689,6 +689,77 @@ void main() {
       expect(title.values.single, 'meaningful chapter');
     },
   );
+
+  test('maps ranges through line trim and sequential mixed rules', () async {
+    await service.load();
+    await service.saveAll(const [
+      ReplaceRule(
+        id: 'literal',
+        name: 'literal',
+        pattern: 'one',
+        replacement: '1',
+        isRegex: false,
+        order: 0,
+      ),
+      ReplaceRule(
+        id: 'regex',
+        name: 'regex',
+        pattern: r'1\ntwo',
+        replacement: 'joined',
+        order: 1,
+      ),
+    ]);
+
+    final result = await service.applyBatchAsync(
+      const ['  😀one  \r\n  two  '],
+      bookTitle: 'Book',
+      ranges: const [
+        [
+          ReplaceRuleTextRange(id: 'one', startOffset: 2, endOffset: 7),
+          ReplaceRuleTextRange(id: 'two', startOffset: 13, endOffset: 16),
+        ],
+      ],
+    );
+
+    expect(result.values.single, '😀joined');
+    expect(
+      result.mappedRanges.single.map(
+        (range) => (range.id, range.startOffset, range.endOffset),
+      ),
+      [('one', 0, 8), ('two', 2, 8)],
+    );
+  });
+
+  test(
+    'disabled purification preserves original text and ranges exactly',
+    () async {
+      await service.load();
+      await service.saveAll(const [
+        ReplaceRule(
+          id: 'trim',
+          name: 'trim',
+          pattern: 'text',
+          replacement: '',
+          isRegex: false,
+        ),
+      ]);
+      await service.setBookEnabled('disabled-book', false);
+      const ranges = [
+        [ReplaceRuleTextRange(id: 'action', startOffset: 2, endOffset: 6)],
+      ];
+
+      final result = await service.applyBatchAsync(
+        const ['  text  '],
+        bookTitle: 'Book',
+        bookId: 'disabled-book',
+        ranges: ranges,
+      );
+
+      expect(result.values, const ['  text  ']);
+      expect(result.mappedRanges.single.single.startOffset, 2);
+      expect(result.mappedRanges.single.single.endOffset, 6);
+    },
+  );
 }
 
 class _TrackingReplaceRuleExecutor extends ReplaceRuleExecutor {

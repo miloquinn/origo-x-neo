@@ -1,6 +1,7 @@
 import '../models/registered_book_source.dart';
 import '../protocol/book_source_protocol.dart';
 import '../source_engine/source_login_ui.dart';
+import '../source_engine/scripting/source_script_contract.dart';
 import 'book_download_cancellation.dart';
 
 class DiscoveredBookSource {
@@ -102,4 +103,30 @@ abstract interface class BookSourceGateway {
   Future<void> invalidateResponseCaches(Iterable<RegisteredBookSource> sources);
 
   Future<void> invalidateDiscoveryResponseCache(String input);
+}
+
+abstract interface class BookSourceChapterActionGateway {
+  Future<String> executeChapterAction(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    required String script,
+    required String result,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+  });
+}
+
+abstract interface class BookSourceChapterRefreshGateway {
+  Future<BookSourceChapterContent> refreshChapterContent(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  });
 }

@@ -31,8 +31,10 @@ ReplaceRuleExecutionBatch _batch({
   required List<String> values,
   required List<ReplaceRuleExecutionRule> rules,
   ReplaceRuleTarget target = ReplaceRuleTarget.content,
+  List<List<ReplaceRuleTextRange>>? ranges,
 }) => ReplaceRuleExecutionBatch(
   values: values,
+  ranges: ranges,
   rules: rules,
   rulesSignature: signature,
   bookTitle: 'Book',
@@ -290,4 +292,95 @@ void main() {
     expect(results[0].values, ['1']);
     expect(results[1].values, ['2']);
   });
+
+  test('maps UTF-16 ranges through regex merges without text lookup', () async {
+    final executor = ReplaceRuleExecutor();
+    addTearDown(executor.dispose);
+    const input = '😀alpha\nbeta\nbeta';
+    final result = await executor.applyBatch(
+      _batch(
+        signature: 'mapped-merge',
+        values: const [input],
+        ranges: const [
+          [
+            ReplaceRuleTextRange(id: 'alpha', startOffset: 0, endOffset: 7),
+            ReplaceRuleTextRange(id: 'first', startOffset: 8, endOffset: 12),
+            ReplaceRuleTextRange(id: 'second', startOffset: 13, endOffset: 17),
+          ],
+        ],
+        rules: [
+          _rule(id: 'merge', pattern: r'alpha\nbeta', replacement: 'joined'),
+        ],
+      ),
+    );
+
+    expect(result.values.single, '😀joined\nbeta');
+    expect(
+      result.mappedRanges.single.map(
+        (range) => (range.id, range.startOffset, range.endOffset),
+      ),
+      [('alpha', 0, 8), ('first', 2, 8), ('second', 9, 13)],
+    );
+  });
+
+  test('drops only the deleted duplicate paragraph range', () async {
+    final executor = ReplaceRuleExecutor();
+    addTearDown(executor.dispose);
+    const input = 'keep\ndelete\nsame\nsame';
+    final result = await executor.applyBatch(
+      _batch(
+        signature: 'mapped-delete',
+        values: const [input],
+        ranges: const [
+          [
+            ReplaceRuleTextRange(id: 'deleted', startOffset: 5, endOffset: 11),
+            ReplaceRuleTextRange(id: 'same-1', startOffset: 12, endOffset: 16),
+            ReplaceRuleTextRange(id: 'same-2', startOffset: 17, endOffset: 21),
+          ],
+        ],
+        rules: [_rule(id: 'delete', pattern: r'delete\n')],
+      ),
+    );
+
+    expect(result.values.single, 'keep\nsame\nsame');
+    expect(
+      result.mappedRanges.single.map(
+        (range) => (range.id, range.startOffset, range.endOffset),
+      ),
+      [('same-1', 5, 9), ('same-2', 10, 14)],
+    );
+  });
+
+  test(
+    'keeps one exact action range when a regex splits its paragraph',
+    () async {
+      final executor = ReplaceRuleExecutor();
+      addTearDown(executor.dispose);
+      final result = await executor.applyBatch(
+        _batch(
+          signature: 'mapped-split',
+          values: const ['prefix middle suffix'],
+          ranges: const [
+            [
+              ReplaceRuleTextRange(
+                id: 'paragraph',
+                startOffset: 0,
+                endOffset: 20,
+              ),
+            ],
+          ],
+          rules: [
+            _rule(id: 'split', pattern: 'middle', replacement: 'left\nright'),
+          ],
+        ),
+      );
+
+      expect(result.values.single, 'prefix left\nright suffix');
+      expect(result.mappedRanges.single.single.startOffset, 0);
+      expect(
+        result.mappedRanges.single.single.endOffset,
+        result.values.single.length,
+      );
+    },
+  );
 }

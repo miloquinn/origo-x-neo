@@ -3580,5 +3580,8 @@
   "themeMarketInUse": "使用中",
   "themeMarketDownloadAndApply": "ダウンロードして適用",
   "accountDeleteBlockedThemeCreator": "アカウントを削除する前に、公式サイトのテーマ作成ページで公開済みまたは審査中のテーマを削除してください。",
-  "accountDeleteManageThemes": "自分のテーマを管理"
+  "accountDeleteManageThemes": "自分のテーマを管理",
+  "readerParagraphReviews": "段落コメント",
+  "readerParagraphReviewOpen": "段落コメントを表示",
+  "readerParagraphReviewFailed": "コメントを読み込めませんでした。本文は引き続き読めます。"
 }

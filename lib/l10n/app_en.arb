@@ -7273,5 +7273,8 @@
   "themeMarketInUse": "In use",
   "themeMarketDownloadAndApply": "Download and apply",
   "accountDeleteBlockedThemeCreator": "Delete your published or pending-review themes on the website before deleting your account.",
-  "accountDeleteManageThemes": "Manage my themes"
+  "accountDeleteManageThemes": "Manage my themes",
+  "readerParagraphReviews": "Paragraph comments",
+  "readerParagraphReviewOpen": "View paragraph comments",
+  "readerParagraphReviewFailed": "Paragraph comments could not be loaded. You can keep reading."
 }

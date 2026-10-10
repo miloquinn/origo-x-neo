@@ -179,6 +179,42 @@ void main() {
     expect(downloaded.content, 'cached body');
     expect(runtime.contentLoads, 1);
   });
+
+  test('explicit chapter refresh fetches and stores fresh content', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'reading-source-explicit-refresh-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final runtime = _CachingRuntime();
+    final backend = ReadingSourceBackend(
+      () => runtime,
+      chapterCache: BookSourceChapterCache(cacheDirectory: directory),
+      additionalProtocolsEnabled: () async => true,
+    );
+    final source = _readingSource();
+
+    final cached = await backend.getChapterContent(
+      source,
+      bookId: 'book',
+      chapterId: 'chapter',
+    );
+    runtime.content = 'fresh body';
+    final refreshed = await backend.refreshChapterContent(
+      source,
+      bookId: 'book',
+      chapterId: 'chapter',
+    );
+    final stored = await backend.getChapterContent(
+      source,
+      bookId: 'book',
+      chapterId: 'chapter',
+    );
+
+    expect(cached.content, 'cached body');
+    expect(refreshed.content, 'fresh body');
+    expect(stored.content, 'fresh body');
+    expect(runtime.contentLoads, 2);
+  });
 }
 
 RegisteredBookSource _readingSource() => RegisteredBookSource(
@@ -204,6 +240,7 @@ class _CachingRuntime extends SourceRuntime {
   int catalogLoads = 0;
   int contentLoads = 0;
   int loginCalls = 0;
+  String content = 'cached body';
 
   @override
   Future<List<BookSourceChapter>> getChapters(
@@ -226,11 +263,11 @@ class _CachingRuntime extends SourceRuntime {
     BookDownloadCancellation? cancellation,
   }) async {
     contentLoads++;
-    return const BookSourceChapterContent(
+    return BookSourceChapterContent(
       bookId: 'book',
       chapterId: 'chapter',
       title: 'Chapter',
-      content: 'cached body',
+      content: content,
       contentType: 'text/plain',
     );
   }

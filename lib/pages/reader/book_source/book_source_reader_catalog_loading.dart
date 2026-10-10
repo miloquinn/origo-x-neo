@@ -131,6 +131,7 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
     Map<String, String> rawTitlesById,
   ) {
     ++_catalogGeneration;
+    _paragraphActionCancellation?.cancel();
     _chapters = chapters;
     _rawChapterTitlesById = Map<String, String>.unmodifiable(rawTitlesById);
     _navigationChapters = _navigationFor(chapters);
@@ -138,6 +139,7 @@ extension _BookSourceReaderCatalogLoading on _BookSourceReaderPageState {
     _content = null;
     _prefetchedContent.clear();
     _readableChapterText.clear();
+    _paragraphActions.clear();
     _continuousContentLoads.clear();
     _persistedOnlinePagination.clear();
     _pagedLayouts.clear();

@@ -187,6 +187,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
             title: _sourceChapterTitle(_chapterIndex),
           );
     final visibleText = _readableChapterText[_chapterIndex];
+    final visibleActions = _paragraphActions[_chapterIndex];
     final visibleOffset = _currentTextOffset;
     final visibleProgress = _currentReadingProgress;
     _updateReaderState(() {
@@ -199,6 +200,9 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
         _prefetchedContent[visibleIndex] = visibleContent;
         if (visibleText != null) {
           _readableChapterText[visibleIndex] = visibleText;
+          if (visibleActions != null) {
+            _paragraphActions[visibleIndex] = visibleActions;
+          }
         }
         _restoreTextOffset = visibleOffset;
         _restorePageProgress = visibleProgress;
@@ -383,20 +387,30 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
     future = contentFuture
         .then((content) async {
           if (!isCurrent()) return content;
-          final readable = isImageOnlyBookSourceChapter(content)
-              ? ''
-              : await readableBookSourceChapterTextAsync(
+          final projection = isImageOnlyBookSourceChapter(content)
+              ? const BookSourceChapterProjection(text: '')
+              : await readableBookSourceChapterProjectionAsync(
                   content,
                   fallbackTitle: chapterTitle,
                 );
           if (!isCurrent()) return content;
           final replacement = await _replaceRules.applyBatchAsync(
-            <String>[readable],
+            <String>[projection.text],
             bookTitle: widget.book.title,
             sourceName: widget.source.name,
             sourceUrl: _replaceRuleSourceUrl,
             bookId: _replaceRuleBookId,
             eligibleByDefault: _replaceRulesEligibleByDefault,
+            ranges: [
+              [
+                for (final action in projection.actions)
+                  ReplaceRuleTextRange(
+                    id: action.id,
+                    startOffset: action.startOffset,
+                    endOffset: action.endOffset,
+                  ),
+              ],
+            ],
           );
           if (!isCurrent()) return content;
           final replacedText = replacement.values.single;
@@ -409,9 +423,27 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
             );
           }
           _readableChapterText[index] = replacedText;
+          final originalActions = {
+            for (final action in projection.actions) action.id: action,
+          };
+          _paragraphActions[index] = List.unmodifiable([
+            for (final range in replacement.mappedRanges.single)
+              if (originalActions[range.id] case final action?)
+                if (range.endOffset > range.startOffset &&
+                    replacedText
+                        .substring(range.startOffset, range.endOffset)
+                        .trim()
+                        .isNotEmpty)
+                  action.copyWith(
+                    startOffset: range.startOffset,
+                    endOffset: range.endOffset,
+                  ),
+          ]);
           while (_readableChapterText.length >
               _bookSourceReadableChapterTextLimit) {
-            _readableChapterText.remove(_readableChapterText.keys.first);
+            final evicted = _readableChapterText.keys.first;
+            _readableChapterText.remove(evicted);
+            _paragraphActions.remove(evicted);
           }
           await _loadOnlinePagination(index);
           if (!isCurrent()) return content;
@@ -464,6 +496,7 @@ extension _BookSourceReaderChapterLoading on _BookSourceReaderPageState {
 
     _prefetchedContent.removeWhere((index, _) => !retain(index));
     _readableChapterText.removeWhere((index, _) => !retain(index));
+    _paragraphActions.removeWhere((index, _) => !retain(index));
     _pagedLayouts.removeWhere((index, _) => !retain(index));
     _verticalLayouts.removeWhere((index, _) => !retain(index));
     _pagedLayoutWarms.removeWhere((index, _) => !retain(index));

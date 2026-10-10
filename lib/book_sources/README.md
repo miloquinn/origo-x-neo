@@ -6,6 +6,8 @@ maintained in [Reading cache](../../docs/reading-cache.md). Dated plans and
 diagnoses are historical evidence, not instructions to repeat completed work.
 Shelf update counts, unknown-count markers and loaded-catalog confirmation are
 maintained in [Library source updates](../../docs/library-source-updates.md).
+Legado paragraph actions, purification anchors, embedded browser sessions and
+compatibility limits are maintained in [Paragraph reviews](../../docs/paragraph-reviews.md).
 
 The book-source feature follows a one-way dependency flow:
 

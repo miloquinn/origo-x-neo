@@ -20,6 +20,7 @@ import 'package:xxread/widgets/reader_chapter_title_page.dart';
 import 'package:xxread/widgets/reader_selection_toolbar.dart';
 import 'package:xxread/widgets/reader_text_page_content.dart';
 import 'package:xxread/widgets/reader_tap_observer.dart';
+import 'reader_paragraph_action_layer.dart';
 
 typedef ReaderTextAnnotationSaveCallback =
     Future<void> Function(
@@ -58,6 +59,8 @@ class ReaderAnnotatedTextPage extends StatefulWidget {
     this.onPurifySelection,
     this.onPlayFromOffset,
     this.fillAvailableSpace = true,
+    this.paragraphActions = const [],
+    this.paragraphActionGutter = 0,
   });
 
   final ReaderTextPage page;
@@ -86,6 +89,8 @@ class ReaderAnnotatedTextPage extends StatefulWidget {
   onPurifySelection;
   final bool fillAvailableSpace;
   final ValueChanged<int>? onPlayFromOffset;
+  final List<ReaderParagraphAction> paragraphActions;
+  final double paragraphActionGutter;
 
   @override
   State<ReaderAnnotatedTextPage> createState() =>
@@ -375,22 +380,29 @@ class _ReaderAnnotatedTextPageState extends State<ReaderAnnotatedTextPage> {
         ),
       ),
     );
-    if (widget.page.showsInlineChapterTitle) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ReaderInlineChapterTitle(
-            title: widget.chapterTitle,
-            bodyStyle: widget.bodyStyle,
-          ),
-          const SizedBox(height: ReaderInlineChapterTitle.spacingAfter),
-          if (widget.fillAvailableSpace) Expanded(child: body) else body,
-        ],
-      );
-    }
-    return widget.fillAvailableSpace
+    final content = widget.page.showsInlineChapterTitle
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ReaderInlineChapterTitle(
+                title: widget.chapterTitle,
+                bodyStyle: widget.bodyStyle,
+              ),
+              const SizedBox(height: ReaderInlineChapterTitle.spacingAfter),
+              if (widget.fillAvailableSpace) Expanded(child: body) else body,
+            ],
+          )
+        : widget.fillAvailableSpace
         ? Stack(fit: StackFit.expand, children: [body])
         : body;
+    return ReaderParagraphActionLayer(
+      textKey: _textKey,
+      page: widget.page,
+      palette: widget.palette,
+      actions: widget.paragraphActions,
+      gutterWidth: widget.paragraphActionGutter,
+      child: content,
+    );
   }
 }
 

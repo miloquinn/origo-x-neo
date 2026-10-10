@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -11,6 +12,8 @@ import 'source_login_session.dart';
 import 'source_login_ui.dart';
 import 'scripting/source_script_contract.dart';
 import 'source_transport.dart';
+
+part 'source_runtime_session_transaction.dart';
 
 abstract interface class SourceRuntimeSessionPort {
   Future<void> ensure(ReadingSourceConfig source);
@@ -62,10 +65,35 @@ abstract interface class SourceRuntimeScriptContextPort {
     Map<String, Object?> chapter,
     bool includeSourceHeaders,
     BookDownloadCancellation? cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+    SourceScriptInteractionPresentation interactionPresentation =
+        SourceScriptInteractionPresentation.standard,
   });
 }
 
-class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
+abstract interface class SourceRuntimeGuardedSessionPort {
+  Future<void> flushIfCurrent(
+    ReadingSourceConfig source, {
+    required int expectedGeneration,
+  });
+}
+
+abstract interface class SourceRuntimeTransactionalSessionPort {
+  Future<T> transaction<T>(
+    ReadingSourceConfig source, {
+    required Future<T> Function() action,
+    void Function()? cancellationCheck,
+  });
+}
+
+class SourceRuntimeSessionManager
+    implements
+        SourceRuntimeSessionPort,
+        SourceRuntimeGuardedSessionPort,
+        SourceRuntimeTransactionalSessionPort {
   SourceRuntimeSessionManager(this._store, this._cookieTransport);
 
   final SourceLoginSessionStore _store;
@@ -91,6 +119,20 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
   @override
   int generation(ReadingSourceConfig source) =>
       _revisions[source.stableId] ?? 0;
+
+  @override
+  Future<T> transaction<T>(
+    ReadingSourceConfig source, {
+    required Future<T> Function() action,
+    void Function()? cancellationCheck,
+  }) async {
+    return _runSourceSessionTransaction(
+      this,
+      source,
+      action: action,
+      cancellationCheck: cancellationCheck,
+    );
+  }
 
   @override
   Future<void> ensure(ReadingSourceConfig source) async {
@@ -142,6 +184,8 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
       scriptCache: previous.scriptCache,
       browserSession: previous.browserSession,
     );
+    _markTransactionField(source.stableId, _SourceSessionField.loginInfo);
+    _markTransactionField(source.stableId, _SourceSessionField.loginHeaders);
     _sessions[source.stableId] = session;
     await _persist(
       source.stableId,
@@ -153,6 +197,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
   void updateInfo(ReadingSourceConfig source, Map<String, String> loginInfo) {
     final previous = current(source);
     if (_sameStringMap(previous.loginInfo, loginInfo)) return;
+    _markTransactionField(source.stableId, _SourceSessionField.loginInfo);
     _sessions[source.stableId] = SourceLoginSession(
       loginInfo: Map.unmodifiable(loginInfo),
       loginHeaders: previous.loginHeaders,
@@ -175,6 +220,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
         previous.rawLoginHeader == rawLoginHeader) {
       return;
     }
+    _markTransactionField(source.stableId, _SourceSessionField.loginHeaders);
     _sessions[source.stableId] = SourceLoginSession(
       loginInfo: previous.loginInfo,
       loginHeaders: Map.unmodifiable(loginHeaders),
@@ -195,6 +241,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
   void updateVariable(ReadingSourceConfig source, String value) {
     final previous = current(source);
     if (previous.sourceVariable == value) return;
+    _markTransactionField(source.stableId, _SourceSessionField.sourceVariable);
     _sessions[source.stableId] = SourceLoginSession(
       loginInfo: previous.loginInfo,
       loginHeaders: previous.loginHeaders,
@@ -213,6 +260,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
   ) {
     final previous = current(source);
     if (_sameScriptCache(previous.scriptCache, value)) return;
+    _markTransactionField(source.stableId, _SourceSessionField.scriptCache);
     _sessions[source.stableId] = SourceLoginSession(
       loginInfo: previous.loginInfo,
       loginHeaders: previous.loginHeaders,
@@ -231,6 +279,10 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
     if (browser != null &&
         jsonEncode(browser.toJson()) !=
             jsonEncode(previous.browserSession.toJson())) {
+      _markTransactionField(
+        source.stableId,
+        _SourceSessionField.browserSession,
+      );
       _sessions[source.stableId] = SourceLoginSession(
         loginInfo: previous.loginInfo,
         loginHeaders: previous.loginHeaders,
@@ -261,6 +313,54 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
   }
 
   @override
+  Future<void> flushIfCurrent(
+    ReadingSourceConfig source, {
+    required int expectedGeneration,
+  }) async {
+    if (generation(source) != expectedGeneration) {
+      throw const SourceBrowserCancelled();
+    }
+    final id = source.stableId;
+    final previous = current(source);
+    final browser = _browserTransport?.browserSession(id);
+    if (browser != null &&
+        jsonEncode(browser.toJson()) !=
+            jsonEncode(previous.browserSession.toJson())) {
+      if (generation(source) != expectedGeneration) {
+        throw const SourceBrowserCancelled();
+      }
+      _markTransactionField(id, _SourceSessionField.browserSession);
+      _sessions[id] = SourceLoginSession(
+        loginInfo: previous.loginInfo,
+        loginHeaders: previous.loginHeaders,
+        rawLoginHeader: previous.rawLoginHeader,
+        sourceVariable: previous.sourceVariable,
+        scriptCache: previous.scriptCache,
+        browserSession: browser,
+      );
+      _dirty.add(id);
+    }
+    if (!_dirty.remove(id)) return;
+    try {
+      final snapshot = current(source);
+      await _persist(id, () {
+        if (generation(source) != expectedGeneration) {
+          throw const SourceBrowserCancelled();
+        }
+        return _store.write(id, snapshot);
+      });
+      if (generation(source) != expectedGeneration) {
+        throw const SourceBrowserCancelled();
+      }
+    } on MissingPluginException {
+      return;
+    } on Object {
+      if (generation(source) == expectedGeneration) _dirty.add(id);
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> clear(ReadingSourceConfig source) async {
     final id = source.stableId;
     _revisions[id] = (_revisions[id] ?? 0) + 1;
@@ -280,11 +380,13 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
 
   @override
   void setCookies(ReadingSourceConfig source, Uri uri, String cookie) {
+    _markTransactionField(source.stableId, _SourceSessionField.browserSession);
     _cookieTransport?.setScriptCookies(source.stableId, uri, cookie);
   }
 
   @override
   void removeCookies(ReadingSourceConfig source, Uri uri) {
+    _markTransactionField(source.stableId, _SourceSessionField.browserSession);
     _cookieTransport?.removeScriptCookies(source.stableId, uri);
   }
 
@@ -314,8 +416,24 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
     if ((_revisions[source.stableId] ?? 0) != revision) {
       throw const SourceBrowserCancelled();
     }
-    _sessions[source.stableId] = next;
+    _markTransactionField(source.stableId, _SourceSessionField.browserSession);
+    final latest = current(source);
+    final merged = SourceLoginSession(
+      loginInfo: latest.loginInfo,
+      loginHeaders: latest.loginHeaders,
+      rawLoginHeader: latest.rawLoginHeader,
+      sourceVariable: latest.sourceVariable,
+      scriptCache: latest.scriptCache,
+      browserSession: session,
+    );
+    _sessions[source.stableId] = merged;
     _browserTransport?.restoreBrowserSession(source.stableId, session);
+    // This final queued commit establishes the successful browser save after
+    // any rollback or same-source write that raced with the first store write.
+    await _persist(
+      source.stableId,
+      () => _store.write(source.stableId, merged),
+    );
   }
 
   @override
@@ -358,6 +476,7 @@ class SourceRuntimeSessionManager implements SourceRuntimeSessionPort {
         (_browserTransport?.browserSession(source.stableId) ??
                 previous.browserSession)
             .copyWith(localStorage: initial == null ? storage : merged);
+    _markTransactionField(source.stableId, _SourceSessionField.browserSession);
     _sessions[source.stableId] = SourceLoginSession(
       loginInfo: previous.loginInfo,
       loginHeaders: previous.loginHeaders,

@@ -81,7 +81,9 @@ extension _BookSourceReaderReplacement on _BookSourceReaderPageState {
     );
     if (_content != null) retainedContent[_chapterIndex] = _content!;
     _continuousContentLoads.clear();
+    _paragraphActionCancellation?.cancel();
     _readableChapterText.clear();
+    _paragraphActions.clear();
     _effectiveReplaceRuleIdsByChapter.clear();
     _persistedOnlinePagination.clear();
     _pagedLayouts.clear();

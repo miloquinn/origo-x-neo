@@ -8109,4 +8109,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountDeleteManageThemes => 'Manage my themes';
+
+  @override
+  String get readerParagraphReviews => 'Paragraph comments';
+
+  @override
+  String get readerParagraphReviewOpen => 'View paragraph comments';
+
+  @override
+  String get readerParagraphReviewFailed =>
+      'Paragraph comments could not be loaded. You can keep reading.';
 }

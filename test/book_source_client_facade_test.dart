@@ -7,6 +7,7 @@ import 'package:xxread/book_sources/protocol/orsp/orsp_book_source_backend.dart'
 import 'package:xxread/book_sources/protocol/reading_source/reading_source_backend.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/services/book_source_client_resources.dart';
+import 'package:xxread/book_sources/source_engine/source_script_contract.dart';
 
 void main() {
   test(
@@ -49,6 +50,84 @@ void main() {
 
     expect(client.contentCalls, 1);
   });
+
+  test(
+    'chapter actions use the optional compatible-source capability',
+    () async {
+      final reading = _RecordingChapterActionBackend();
+      final client = BookSourceClient.withResources(
+        BookSourceClientResources.create(
+          dio: Dio(),
+          orspBackend: _RecordingOrspBackend(),
+          readingBackend: reading,
+        ),
+      );
+
+      final value = await client.executeChapterAction(
+        _source(reading: true),
+        bookId: 'book',
+        chapterId: 'chapter',
+        script: 'result',
+        result: 'paragraph',
+      );
+
+      expect(value, 'paragraph');
+      expect(reading.actionCalls, 1);
+      expect(
+        () => client.executeChapterAction(
+          _source(),
+          bookId: 'book',
+          chapterId: 'chapter',
+          script: 'result',
+          result: 'paragraph',
+        ),
+        throwsA(
+          isA<BookSourceProtocolException>().having(
+            (error) => error.message,
+            'message',
+            contains('only by compatible reading sources'),
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'chapter refresh uses the optional compatible-source capability',
+    () async {
+      final reading = _RecordingChapterRefreshBackend();
+      final client = BookSourceClient.withResources(
+        BookSourceClientResources.create(
+          dio: Dio(),
+          orspBackend: _RecordingOrspBackend(),
+          readingBackend: reading,
+        ),
+      );
+
+      final content = await client.refreshChapterContent(
+        _source(reading: true),
+        bookId: 'book',
+        chapterId: 'chapter',
+      );
+
+      expect(content.content, 'fresh body');
+      expect(reading.refreshCalls, 1);
+      expect(
+        () => client.refreshChapterContent(
+          _source(),
+          bookId: 'book',
+          chapterId: 'chapter',
+        ),
+        throwsA(
+          isA<BookSourceProtocolException>().having(
+            (error) => error.message,
+            'message',
+            contains('only by compatible reading sources'),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 RegisteredBookSource _source({bool reading = false}) => RegisteredBookSource(
@@ -129,6 +208,52 @@ class _RecordingReadingBackend implements ReadingSourceBackendPort {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _RecordingChapterActionBackend extends _RecordingReadingBackend
+    implements ReadingSourceChapterActionBackendPort {
+  int actionCalls = 0;
+
+  @override
+  Future<String> executeChapterAction(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    required String script,
+    required String result,
+    Map<String, String> sourceVariables = const {},
+    cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+  }) async {
+    actionCalls++;
+    return result;
+  }
+}
+
+class _RecordingChapterRefreshBackend extends _RecordingReadingBackend
+    implements ReadingSourceChapterRefreshBackendPort {
+  int refreshCalls = 0;
+
+  @override
+  Future<BookSourceChapterContent> refreshChapterContent(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    cancellation,
+  }) async {
+    refreshCalls++;
+    return BookSourceChapterContent(
+      bookId: bookId,
+      chapterId: chapterId,
+      title: 'Chapter',
+      content: 'fresh body',
+      contentType: 'text/plain',
+    );
+  }
 }
 
 class _OverridingClient extends BookSourceClient {

@@ -473,10 +473,21 @@ class ReplaceRuleService extends ChangeNotifier {
     bool eligibleByDefault = true,
     bool title = false,
     bool preserveNonEmpty = false,
+    List<List<ReplaceRuleTextRange>>? ranges,
   }) async {
+    if (ranges != null && ranges.length != inputs.length) {
+      throw ArgumentError.value(
+        ranges.length,
+        'ranges',
+        'Must contain one range list for each input.',
+      );
+    }
     await load();
     if (!isEnabledForBook(bookId ?? '', eligibleByDefault: eligibleByDefault)) {
-      return ReplaceRuleExecutionResult(values: List<String>.from(inputs));
+      return ReplaceRuleExecutionResult(
+        values: List<String>.from(inputs),
+        mappedRanges: _copyReplaceRuleRanges(ranges),
+      );
     }
     final signature = rulesSignature;
     final allExecutionRules = enabledRules
@@ -490,11 +501,30 @@ class ReplaceRuleService extends ChangeNotifier {
         )
         .toList(growable: false);
     if (executionRules.isEmpty || inputs.isEmpty) {
-      return ReplaceRuleExecutionResult(values: List<String>.from(inputs));
+      return ReplaceRuleExecutionResult(
+        values: List<String>.from(inputs),
+        mappedRanges: _copyReplaceRuleRanges(ranges),
+      );
     }
-    final normalizedInputs = title
-        ? inputs
-        : inputs.map(_normalizeReplaceRuleContent).toList(growable: false);
+    final normalizedInputs = <String>[];
+    final normalizedRanges = ranges == null
+        ? null
+        : <List<ReplaceRuleTextRange>>[];
+    for (var index = 0; index < inputs.length; index++) {
+      if (title) {
+        normalizedInputs.add(inputs[index]);
+        normalizedRanges?.add(List<ReplaceRuleTextRange>.from(ranges![index]));
+      } else if (ranges == null) {
+        normalizedInputs.add(_normalizeReplaceRuleContent(inputs[index]));
+      } else {
+        final normalized = normalizeReplaceRuleContentWithRanges(
+          inputs[index],
+          ranges[index],
+        );
+        normalizedInputs.add(normalized.text);
+        normalizedRanges!.add(normalized.ranges);
+      }
+    }
     // Literal-only pipelines have deterministic linear behavior and are
     // cheaper to execute directly than to copy chapter/catalog strings through
     // an isolate. Every regex pipeline still uses the killable worker below.
@@ -502,16 +532,30 @@ class ReplaceRuleService extends ChangeNotifier {
       final prepared = executionRules.map(PreparedReplaceRule.new).toList();
       final outputLimit = replaceRuleOutputCharacterLimit(normalizedInputs);
       final values = <String>[];
+      final mappedRanges = normalizedRanges == null
+          ? null
+          : <List<ReplaceRuleTextRange>>[];
       final diagnostics = <ReplaceRuleDiagnostic>[];
       var degraded = false;
       final effectiveRuleIds = <String>{};
-      for (final input in normalizedInputs) {
+      for (
+        var inputIndex = 0;
+        inputIndex < normalizedInputs.length;
+        inputIndex++
+      ) {
+        final input = normalizedInputs[inputIndex];
         var output = input;
+        var outputRanges = normalizedRanges == null
+            ? const <ReplaceRuleTextRange>[]
+            : normalizedRanges[inputIndex];
         final inputEffectiveRuleIds = <String>{};
         var rolledBack = false;
         for (final rule in prepared) {
           final before = output;
-          final candidate = rule.apply(output);
+          final mapped = normalizedRanges == null
+              ? null
+              : rule.applyWithRanges(output, outputRanges);
+          final candidate = mapped?.text ?? rule.apply(output);
           if (title && before.trim().isNotEmpty && candidate.trim().isEmpty) {
             diagnostics.add(
               ReplaceRuleDiagnostic(
@@ -525,10 +569,14 @@ class ReplaceRuleService extends ChangeNotifier {
             degraded = true;
           } else {
             output = candidate;
+            if (mapped != null) outputRanges = mapped.ranges;
             if (output != before) inputEffectiveRuleIds.add(rule.source.id);
           }
           if (output.length > outputLimit) {
             output = input;
+            outputRanges = normalizedRanges == null
+                ? const <ReplaceRuleTextRange>[]
+                : normalizedRanges[inputIndex];
             diagnostics.add(
               ReplaceRuleDiagnostic(
                 kind: ReplaceRuleDiagnosticKind.outputLimit,
@@ -548,6 +596,9 @@ class ReplaceRuleService extends ChangeNotifier {
             input.trim().isNotEmpty &&
             output.trim().isEmpty) {
           output = input;
+          outputRanges = normalizedRanges == null
+              ? const <ReplaceRuleTextRange>[]
+              : normalizedRanges[inputIndex];
           diagnostics.add(
             ReplaceRuleDiagnostic(
               kind: ReplaceRuleDiagnosticKind.emptyOutput,
@@ -561,9 +612,11 @@ class ReplaceRuleService extends ChangeNotifier {
         }
         if (!rolledBack) effectiveRuleIds.addAll(inputEffectiveRuleIds);
         values.add(output);
+        mappedRanges?.add(outputRanges);
       }
       return ReplaceRuleExecutionResult(
         values: values,
+        mappedRanges: mappedRanges ?? const <List<ReplaceRuleTextRange>>[],
         diagnostics: diagnostics,
         effectiveRuleIds: effectiveRuleIds.toList(growable: false),
         degraded: degraded,
@@ -574,10 +627,17 @@ class ReplaceRuleService extends ChangeNotifier {
     final skippedRuleIds = <String>{};
     var executedDegraded = false;
     final effectiveRuleIds = <String>{};
-    for (final batchInputs in _replaceRuleInputBatches(normalizedInputs)) {
+    final executedRanges = normalizedRanges == null
+        ? null
+        : <List<ReplaceRuleTextRange>>[];
+    for (final batch in _replaceRuleInputBatches(
+      normalizedInputs,
+      normalizedRanges,
+    )) {
       final batchResult = await _executor.applyBatch(
         ReplaceRuleExecutionBatch(
-          values: batchInputs,
+          values: batch.values,
+          ranges: batch.ranges,
           rules: allExecutionRules,
           rulesSignature: signature,
           bookTitle: bookTitle,
@@ -587,6 +647,7 @@ class ReplaceRuleService extends ChangeNotifier {
         ),
       );
       executedValues.addAll(batchResult.values);
+      executedRanges?.addAll(batchResult.mappedRanges);
       executedDiagnostics.addAll(batchResult.diagnostics);
       skippedRuleIds.addAll(batchResult.skippedRuleIds);
       effectiveRuleIds.addAll(batchResult.effectiveRuleIds);
@@ -594,6 +655,7 @@ class ReplaceRuleService extends ChangeNotifier {
     }
     final result = ReplaceRuleExecutionResult(
       values: executedValues,
+      mappedRanges: executedRanges ?? const <List<ReplaceRuleTextRange>>[],
       diagnostics: executedDiagnostics,
       skippedRuleIds: skippedRuleIds.toList(growable: false),
       effectiveRuleIds: effectiveRuleIds.toList(growable: false),
@@ -602,6 +664,9 @@ class ReplaceRuleService extends ChangeNotifier {
     await _disableTimedOutRules(result.diagnostics);
     if (!preserveNonEmpty) return result;
     final values = <String>[];
+    final mappedRanges = normalizedRanges == null
+        ? null
+        : <List<ReplaceRuleTextRange>>[];
     final diagnostics = <ReplaceRuleDiagnostic>[...result.diagnostics];
     var degraded = result.degraded;
     for (var index = 0; index < normalizedInputs.length; index++) {
@@ -609,6 +674,7 @@ class ReplaceRuleService extends ChangeNotifier {
       final cleaned = result.values[index];
       if (original.trim().isNotEmpty && cleaned.trim().isEmpty) {
         values.add(original);
+        mappedRanges?.add(normalizedRanges![index]);
         diagnostics.add(
           ReplaceRuleDiagnostic(
             kind: ReplaceRuleDiagnosticKind.emptyOutput,
@@ -620,10 +686,12 @@ class ReplaceRuleService extends ChangeNotifier {
         degraded = true;
       } else {
         values.add(cleaned);
+        mappedRanges?.add(result.mappedRanges[index]);
       }
     }
     return ReplaceRuleExecutionResult(
       values: values,
+      mappedRanges: mappedRanges ?? const <List<ReplaceRuleTextRange>>[],
       diagnostics: diagnostics,
       skippedRuleIds: result.skippedRuleIds,
       effectiveRuleIds: result.effectiveRuleIds,
@@ -631,21 +699,29 @@ class ReplaceRuleService extends ChangeNotifier {
     );
   }
 
-  Iterable<List<String>> _replaceRuleInputBatches(List<String> inputs) sync* {
+  Iterable<({List<String> values, List<List<ReplaceRuleTextRange>>? ranges})>
+  _replaceRuleInputBatches(
+    List<String> inputs,
+    List<List<ReplaceRuleTextRange>>? ranges,
+  ) sync* {
     const maximumBatchCharacters = 512 * 1024;
     var batch = <String>[];
+    var batchRanges = ranges == null ? null : <List<ReplaceRuleTextRange>>[];
     var characters = 0;
-    for (final input in inputs) {
+    for (var inputIndex = 0; inputIndex < inputs.length; inputIndex++) {
+      final input = inputs[inputIndex];
       if (batch.isNotEmpty &&
           characters + input.length > maximumBatchCharacters) {
-        yield batch;
+        yield (values: batch, ranges: batchRanges);
         batch = <String>[];
+        batchRanges = ranges == null ? null : <List<ReplaceRuleTextRange>>[];
         characters = 0;
       }
       batch.add(input);
+      batchRanges?.add(ranges![inputIndex]);
       characters += input.length;
     }
-    if (batch.isNotEmpty) yield batch;
+    if (batch.isNotEmpty) yield (values: batch, ranges: batchRanges);
   }
 
   Future<String> applyAsync(
@@ -760,6 +836,15 @@ class ReplaceRuleService extends ChangeNotifier {
 
   static String _normalizeReplaceRuleContent(String input) =>
       input.split(RegExp(r'\r?\n')).map((line) => line.trim()).join('\n');
+
+  static List<List<ReplaceRuleTextRange>> _copyReplaceRuleRanges(
+    List<List<ReplaceRuleTextRange>>? ranges,
+  ) => ranges == null
+      ? const <List<ReplaceRuleTextRange>>[]
+      : <List<ReplaceRuleTextRange>>[
+          for (final inputRanges in ranges)
+            List<ReplaceRuleTextRange>.from(inputRanges),
+        ];
 
   static List<ReplaceRule> decodeImport(String text) {
     final decoded = jsonDecode(text.replaceFirst('\ufeff', '').trim());

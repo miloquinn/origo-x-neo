@@ -2320,5 +2320,8 @@
   "themeMarketInUse": "Используется",
   "themeMarketDownloadAndApply": "Скачать и применить",
   "accountDeleteBlockedThemeCreator": "Перед удалением аккаунта удалите на сайте опубликованные и ожидающие проверки темы.",
-  "accountDeleteManageThemes": "Управление моими темами"
+  "accountDeleteManageThemes": "Управление моими темами",
+  "readerParagraphReviews": "Комментарии к абзацу",
+  "readerParagraphReviewOpen": "Посмотреть комментарии",
+  "readerParagraphReviewFailed": "Не удалось загрузить комментарии. Можно продолжить чтение."
 }

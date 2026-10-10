@@ -141,7 +141,36 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
             'This source requires an interactive verification screen.',
           );
         }
-        final result = await handler(pending.request);
+        final interactionZone = Zone.current;
+        final result = await handler(
+          pending.request.copyWith(
+            evaluateScript: (nestedScript, {cancellationCheck}) =>
+                interactionZone.run(() async {
+                  void checkCancellation() {
+                    context.cancellationCheck?.call();
+                    cancellationCheck?.call();
+                  }
+
+                  Future<String> evaluate() async {
+                    checkCancellation();
+                    final value = await evaluateAsync(
+                      nestedScript,
+                      context.copyWith(cancellationCheck: checkCancellation),
+                    );
+                    checkCancellation();
+                    return _stringValue(value);
+                  }
+
+                  final transaction = context.transaction;
+                  return transaction == null
+                      ? evaluate()
+                      : transaction(
+                          evaluate,
+                          cancellationCheck: checkCancellation,
+                        );
+                }),
+          ),
+        );
         if (result.cancelled) {
           throw const BookSourceProtocolException(
             'Reading source verification was cancelled.',
@@ -414,6 +443,13 @@ class QuickJsSourceScriptEvaluator implements SourceScriptEvaluator {
     _runtime.dispose();
   }
 }
+
+String _stringValue(Object? value) => switch (value) {
+  null => '',
+  String text => text,
+  Map _ || List _ => jsonEncode(value),
+  _ => '$value',
+};
 
 class _SourceEvaluationScope {
   bool active = true;

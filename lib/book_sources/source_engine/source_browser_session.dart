@@ -102,6 +102,29 @@ class SourceBrowserResult {
   final String body;
   final Uri finalUri;
   final SourceBrowserSession session;
+
+  factory SourceBrowserResult.fromPlatformMap(Object? value) {
+    if (value is! Map) {
+      throw const BookSourceProtocolException(
+        'The website returned an invalid session.',
+      );
+    }
+    final uri = Uri.tryParse('${value['finalUrl'] ?? ''}');
+    if (!isSourceBrowserUri(uri) ||
+        value['session'] is! Map ||
+        value['body'] is! String) {
+      throw const BookSourceProtocolException(
+        'The website returned an invalid session.',
+      );
+    }
+    return SourceBrowserResult(
+      body: value['body'] as String,
+      finalUri: uri!,
+      session: SourceBrowserSession.fromJson(
+        value['session'],
+      ).copyWith(active: true),
+    );
+  }
 }
 
 class SourceBrowserSessionClient {
@@ -212,21 +235,7 @@ class SourceBrowserSessionClient {
     }
     try {
       final raw = await channel.invokeMapMethod<String, dynamic>(method, args);
-      final uri = Uri.tryParse('${raw?['finalUrl'] ?? ''}');
-      if (!isSourceBrowserUri(uri) ||
-          raw?['session'] is! Map ||
-          raw?['body'] is! String) {
-        throw const BookSourceProtocolException(
-          'The website returned an invalid session.',
-        );
-      }
-      return SourceBrowserResult(
-        body: raw!['body'] as String,
-        finalUri: uri!,
-        session: SourceBrowserSession.fromJson(
-          raw['session'],
-        ).copyWith(active: true),
-      );
+      return SourceBrowserResult.fromPlatformMap(raw);
     } on PlatformException catch (error) {
       if (error.code == 'cancelled') throw const SourceBrowserCancelled();
       throw BookSourceProtocolException(

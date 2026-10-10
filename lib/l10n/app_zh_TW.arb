@@ -3691,5 +3691,8 @@
   "themeMarketInUse": "使用中",
   "themeMarketDownloadAndApply": "下載並套用",
   "accountDeleteBlockedThemeCreator": "請先前往官網主題製作頁刪除已發佈或待審核的主題，再回來註銷帳號。",
-  "accountDeleteManageThemes": "管理我的主題"
+  "accountDeleteManageThemes": "管理我的主題",
+  "readerParagraphReviews": "段評",
+  "readerParagraphReviewOpen": "查看段評",
+  "readerParagraphReviewFailed": "段評暫時無法載入，仍可繼續閱讀正文。"
 }

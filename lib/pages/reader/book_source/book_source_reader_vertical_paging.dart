@@ -87,7 +87,11 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
   ) {
     _checkOnlinePaginationEpoch();
     final chrome = _verticalChrome;
-    final width = readerTextContentWidth(viewport.width, _horizontalMargin);
+    final width = math.max(
+      1.0,
+      readerTextContentWidth(viewport.width, _horizontalMargin) -
+          _paragraphActionGutterFor(chapterIndex),
+    );
     final height = _verticalPageExtentFor(viewport);
     const textScaler = readerBodyTextScaler;
     final locale = Localizations.maybeLocaleOf(context);
@@ -477,6 +481,20 @@ extension _BookSourceReaderVerticalPaging on _BookSourceReaderPageState {
         onSearchSelection: (selection) =>
             _showFullTextSearch(initialQuery: selection.selectedText),
         onPurifySelection: _purifySelection,
+        paragraphActions: [
+          for (final action
+              in _paragraphActions[chapterIndex] ??
+                  const <BookSourceParagraphAction>[])
+            ReaderParagraphAction(
+              id: action.id,
+              endOffset: action.endOffset,
+              label: context.l10n.readerParagraphReviewOpen,
+              excerpt: action.paragraphText,
+              onPressed: () =>
+                  unawaited(_openParagraphAction(chapterIndex, action)),
+            ),
+        ],
+        paragraphActionGutter: _paragraphActionGutterFor(chapterIndex),
         fillAvailableSpace: fillAvailableSpace,
         onInteractionChanged: (active) {
           if (!mounted || _annotationInteractionActive == active) return;

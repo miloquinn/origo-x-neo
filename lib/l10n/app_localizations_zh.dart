@@ -7649,6 +7649,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountDeleteManageThemes => '管理我的主题';
+
+  @override
+  String get readerParagraphReviews => '段评';
+
+  @override
+  String get readerParagraphReviewOpen => '查看段评';
+
+  @override
+  String get readerParagraphReviewFailed => '段评暂时无法加载，正文仍可继续阅读。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -15297,4 +15306,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get accountDeleteManageThemes => '管理我的主題';
+
+  @override
+  String get readerParagraphReviews => '段評';
+
+  @override
+  String get readerParagraphReviewOpen => '查看段評';
+
+  @override
+  String get readerParagraphReviewFailed => '段評暫時無法載入，仍可繼續閱讀正文。';
 }

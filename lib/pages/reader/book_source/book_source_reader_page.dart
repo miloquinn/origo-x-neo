@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:xxread/book_sources/models/registered_book_source.dart';
+import 'package:xxread/book_sources/models/book_source_paragraph_action.dart';
 import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/book_sources/services/book_source_client.dart';
 import 'package:xxread/book_sources/services/book_source_change_service.dart';
@@ -29,6 +30,11 @@ import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/book_sources/services/source_book_update_service.dart';
 import 'package:xxread/book_sources/services/book_source_text_paginator.dart';
 import 'package:xxread/book_sources/source_engine/source_config.dart';
+import 'package:xxread/book_sources/source_engine/source_runtime_login.dart';
+import 'package:xxread/book_sources/source_engine/source_interaction_coordinator.dart';
+import 'package:xxread/book_sources/source_engine/source_browser_script_request.dart';
+import 'package:xxread/book_sources/source_engine/source_browser_session.dart';
+import 'package:xxread/book_sources/source_engine/scripting/source_script_contract.dart';
 import 'package:xxread/core/reader/canonical_locator.dart';
 import 'package:xxread/pages/reader/reader_replacement_anchor.dart';
 import 'package:xxread/core/reader/platform_reader_aloud_media_session.dart';
@@ -70,6 +76,7 @@ import 'package:xxread/services/tts_service.dart';
 import 'package:xxread/services/reader_aloud_service.dart';
 import 'package:xxread/services/reader_aloud_session.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
+import 'package:xxread/services/reader/replace_rule_execution.dart';
 import 'package:xxread/utils/book_open_transition.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
 import 'package:xxread/utils/glass_config.dart';
@@ -80,6 +87,8 @@ import 'package:xxread/utils/system_ui_helper.dart';
 import 'package:xxread/widgets/reader_progress_footer.dart';
 import 'package:xxread/widgets/reader_ai_panel.dart';
 import 'package:xxread/widgets/reader_annotated_text_page.dart';
+import 'package:xxread/widgets/reader_paragraph_action_layer.dart';
+import 'package:xxread/widgets/reader_paragraph_review_sheet.dart';
 import 'package:xxread/widgets/reader_aloud_panel.dart';
 import 'package:xxread/widgets/reader_auto_page_turn_controls.dart';
 import 'package:xxread/widgets/reader_auto_scroll_surface.dart';
@@ -119,6 +128,7 @@ part 'book_source_reader_settings.dart';
 part 'book_source_reader_aloud_actions.dart';
 part 'book_source_reader_auto_page_turning.dart';
 part 'book_source_reader_shell.dart';
+part 'book_source_reader_paragraph_actions.dart';
 
 const double _bookSourceSpreadGutter = 24;
 const int _bookSourceReadableChapterTextLimit = 8;
@@ -193,7 +203,11 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
       identical(cancellation, _readerRequestCancellation) &&
       !cancellation.isCancelled;
 
-  void _cancelReaderRequests() => _readerRequestCancellation.cancel();
+  void _cancelReaderRequests() {
+    _readerRequestCancellation.cancel();
+    _paragraphActionCancellation?.cancel();
+  }
+
   late final SourceCoverCache _remoteImageCache =
       widget.remoteImageCache ?? SourceCoverCache.imagePageInstance;
   late final PaginationCacheDao _paginationCacheDao =
@@ -298,6 +312,8 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
   final Map<int, Set<String>> _effectiveReplaceRuleIdsByChapter = {};
   final Map<int, BookSourceChapterContent> _prefetchedContent = {};
   final Map<int, String> _readableChapterText = {};
+  final Map<int, List<BookSourceParagraphAction>> _paragraphActions = {};
+  BookDownloadCancellation? _paragraphActionCancellation;
   final Map<int, Future<BookSourceChapterContent>> _continuousContentLoads = {};
   final Map<int, _BookSourcePagedLayout> _pagedLayouts = {};
   final Map<int, Future<_BookSourcePagedLayout?>> _pagedLayoutWarms = {};
@@ -428,6 +444,16 @@ class _BookSourceReaderPageState extends State<BookSourceReaderPage>
         ? _leafStatusController.value.revision
         : 0,
     _annotationRevision,
+    Object.hashAll([
+      for (final entry in _paragraphActions.entries)
+        Object.hash(
+          entry.key,
+          Object.hashAll([
+            for (final action in entry.value)
+              Object.hash(action.id, action.startOffset, action.endOffset),
+          ]),
+        ),
+    ]),
     _chapterProgressStyle,
     _chapterProgressStyle == ReaderChapterProgressStyle.hidden
         ? 0

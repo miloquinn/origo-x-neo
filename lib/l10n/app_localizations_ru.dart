@@ -8174,4 +8174,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get accountDeleteManageThemes => 'Управление моими темами';
+
+  @override
+  String get readerParagraphReviews => 'Комментарии к абзацу';
+
+  @override
+  String get readerParagraphReviewOpen => 'Посмотреть комментарии';
+
+  @override
+  String get readerParagraphReviewFailed =>
+      'Не удалось загрузить комментарии. Можно продолжить чтение.';
 }

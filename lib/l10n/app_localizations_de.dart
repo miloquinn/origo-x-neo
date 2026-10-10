@@ -8228,4 +8228,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get accountDeleteManageThemes => 'Meine Designs verwalten';
+
+  @override
+  String get readerParagraphReviews => 'Absatzkommentare';
+
+  @override
+  String get readerParagraphReviewOpen => 'Absatzkommentare ansehen';
+
+  @override
+  String get readerParagraphReviewFailed =>
+      'Absatzkommentare konnten nicht geladen werden. Du kannst weiterlesen.';
 }

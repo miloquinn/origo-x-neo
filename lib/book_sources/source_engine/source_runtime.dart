@@ -11,6 +11,7 @@ import 'source_login_session.dart';
 import 'source_login_ui.dart';
 import 'rules/source_rule_engine.dart';
 import 'source_runtime_catalog.dart';
+import 'source_runtime_chapter_actions.dart';
 import 'source_runtime_dependencies.dart';
 import 'source_runtime_login.dart';
 import 'source_runtime_reading.dart';
@@ -87,6 +88,13 @@ class SourceRuntime {
       state: _state,
       sessions: _sessions,
     );
+    _chapterActions = SourceRuntimeChapterActions(
+      _requests,
+      _rules,
+      _state,
+      _sessions,
+      () => _scripts.evaluator,
+    );
   }
 
   final SourceTransport _transport;
@@ -100,6 +108,7 @@ class SourceRuntime {
   late final SourceHtmlRuntime _html;
   late final SourceRuntimeCatalog _catalog;
   late final SourceRuntimeReading _reading;
+  late final SourceRuntimeChapterActions _chapterActions;
   SourceDebugRecorder? _debugRecorder;
   bool _closed = false;
 
@@ -296,6 +305,34 @@ class SourceRuntime {
               cancellation: cancellation,
             ),
       describe: (content) => '${content.content.length} character(s)',
+    ),
+  );
+
+  Future<String> executeChapterAction(
+    RegisteredBookSource registered, {
+    required String bookId,
+    required String chapterId,
+    required String script,
+    required String result,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+  }) => _whileOpen(
+    () => _trace.stage(
+      'chapterAction',
+      () => _chapterActions.execute(
+        registered,
+        bookId: bookId,
+        chapterId: chapterId,
+        script: script,
+        result: result,
+        sourceVariables: sourceVariables,
+        cancellation: cancellation,
+        interactionHandler: interactionHandler,
+      ),
     ),
   );
 

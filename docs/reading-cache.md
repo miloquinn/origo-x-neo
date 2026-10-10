@@ -40,6 +40,18 @@ Local identities combine the book identity, actual file modification time and si
 
 Changing text invalidates its derived pagination. Changing layout preserves parsed content. The DAO uses global clear epochs and per-identity revision tokens so delayed writes cannot revive cleared entries or supersede a newer revision. Compatible v22 local pagination rows migrate into the local namespace; incompatible derived cache formats are rebuilt.
 
+Legado paragraph action metadata is reconstructed from raw chapter HTML and follows the
+reader chapter window. Purification returns exact UTF-16 range edits alongside the text;
+it never changes the cached raw source content. Action gutters participate through the
+measured viewport width in layout fingerprints, and action identity/positions also
+invalidate page-curl snapshots. See [Paragraph reviews](paragraph-reviews.md).
+
+An explicit `refreshChapterContent` request bypasses cached chapter data, preserves the
+source login and catalog, and uses the cache's latest-load token to prevent older
+responses from storing over the refreshed chapter. It does not clear whole-source
+content. Regression entries are `book_source_chapter_cache_test.dart` and
+`reading_source_chapter_cache_test.dart`.
+
 ## Default budgets
 
 Budgets are ceilings, not reserved allocations. Constructors permit smaller limits in tests or future configuration.

@@ -9,6 +9,7 @@ import '../../models/registered_book_source.dart';
 import '../../services/book_download_cancellation.dart';
 import '../../caching/book_source_chapter_cache.dart';
 import '../../source_engine/source_login_ui.dart';
+import '../../source_engine/scripting/source_script_contract.dart';
 import '../../source_engine/source_runtime.dart';
 import '../book_source_protocol.dart';
 
@@ -86,7 +87,37 @@ abstract interface class ReadingSourceBackendPort {
   });
 }
 
-class ReadingSourceBackend implements ReadingSourceBackendPort {
+abstract interface class ReadingSourceChapterActionBackendPort {
+  Future<String> executeChapterAction(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    required String script,
+    required String result,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+  });
+}
+
+abstract interface class ReadingSourceChapterRefreshBackendPort {
+  Future<BookSourceChapterContent> refreshChapterContent(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  });
+}
+
+class ReadingSourceBackend
+    implements
+        ReadingSourceBackendPort,
+        ReadingSourceChapterActionBackendPort,
+        ReadingSourceChapterRefreshBackendPort {
   ReadingSourceBackend(
     this._runtime, {
     this._chapterCache = const BookSourceChapterCache(),
@@ -149,6 +180,34 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
     } finally {
       await _bumpCacheAuthRevision(source.id);
     }
+  }
+
+  @override
+  Future<String> executeChapterAction(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    required String script,
+    required String result,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+  }) async {
+    cancellation?.throwIfCancelled();
+    await _ensureEnabled();
+    return _runtime().executeChapterAction(
+      source,
+      bookId: bookId,
+      chapterId: chapterId,
+      script: script,
+      result: result,
+      sourceVariables: sourceVariables,
+      cancellation: cancellation,
+      interactionHandler: interactionHandler,
+    );
   }
 
   @override
@@ -340,6 +399,46 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
       bookId: bookId,
       chapterId: chapterId,
       requestScope: cancellation ?? #interactiveChapterContent,
+      loader: () {
+        final runtime = _runtime();
+        return _loadRuntimeChapterContent(
+          runtime,
+          source,
+          bookId: bookId,
+          chapterId: chapterId,
+          catalogRevision: catalogIdentity.revision,
+          catalogVariables: catalogIdentity.variables,
+          sourceVariables: sourceVariables,
+          cancellation: cancellation,
+        );
+      },
+    );
+    cancellation?.throwIfCancelled();
+    return content;
+  }
+
+  @override
+  Future<BookSourceChapterContent> refreshChapterContent(
+    RegisteredBookSource source, {
+    required String bookId,
+    required String chapterId,
+    Map<String, String> sourceVariables = const {},
+    BookDownloadCancellation? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    await _ensureEnabled();
+    final sourceRevision = await _cacheRevision(source, sourceVariables);
+    final catalogIdentity = await _runtimeCatalogIdentity(
+      source,
+      sourceVariables,
+      sourceRevision: sourceRevision,
+    );
+    final content = await _chapterCache.refresh(
+      sourceId: source.id,
+      sourceRevision: sourceRevision,
+      bookId: bookId,
+      chapterId: chapterId,
+      requestScope: cancellation ?? #explicitChapterRefresh,
       loader: () {
         final runtime = _runtime();
         return _loadRuntimeChapterContent(

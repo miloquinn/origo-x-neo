@@ -379,11 +379,11 @@ $sourceScriptStateAdapters
       return __sourceNetwork('WEBVIEW', target, html, null, js).body || '';
     },
     showBrowser: (url, html, preloadJs, config) => {
-      __sourceInteraction('browser', url, '', false, html);
+      __sourceInteraction('browser', url, '', false, html, preloadJs, config);
       return '';
     },
     showReadingBrowser: (url, title) => {
-      __sourceInteraction('browser', url, title, false, null);
+      __sourceInteraction('browser', url, title, false, null, null, null);
       return '';
     },
     encodeURI: __urlEncoder.encode,
@@ -406,7 +406,7 @@ $sourceScriptStateAdapters
     ),
     startBrowser: (url, title, html) => {
       const value = __sourceInteraction(
-        'browser', url, title, false, html
+        'browser', url, title, false, html, null, null
       );
       return value.finalUrl || '';
     },
@@ -418,7 +418,7 @@ $sourceScriptStateAdapters
         shouldRefetch = false;
       }
       const value = __sourceInteraction(
-        'browserAwait', url, title, Boolean(shouldRefetch), pageHtml
+        'browserAwait', url, title, Boolean(shouldRefetch), pageHtml, null, null
       );
       return __responseObject({
         body: value.body || '',
@@ -429,7 +429,7 @@ $sourceScriptStateAdapters
       }, url);
     },
     getVerificationCode: (imageUrl) => __sourceInteraction(
-      'verificationCode', imageUrl, '', false, null
+      'verificationCode', imageUrl, '', false, null, null, null
     ).value || ''
   };
   globalThis.java.lang = __package('java.lang');
@@ -458,7 +458,7 @@ $sourceScriptStateAdapters
   __javaClasses['org.jsoup.Jsoup'] = globalThis.org.jsoup.Jsoup;
   globalThis.traditionalToSimplified = (value) => java.t2s(value);
   globalThis.simplifiedToTraditional = (value) => java.s2t(value);
-  function __sourceInteraction(kind, url, title, refetchAfterSuccess, html) {
+  function __sourceInteraction(kind, url, title, refetchAfterSuccess, html, preloadJs, config) {
     let targetUrl = String(url == null ? '' : url);
     let pageHtml = html == null ? null : String(html);
     if (!pageHtml && /^\\s*</.test(targetUrl)) {
@@ -470,7 +470,9 @@ $sourceScriptStateAdapters
       targetUrl,
       title == null ? '' : String(title),
       Boolean(refetchAfterSuccess),
-      pageHtml
+      pageHtml,
+      preloadJs == null ? null : String(preloadJs),
+      config == null ? null : String(config)
     ]);
     if (!reply || reply.cached !== true) {
       const request = reply && reply.request ? reply.request : {
@@ -479,13 +481,17 @@ $sourceScriptStateAdapters
           targetUrl,
           title == null ? '' : String(title),
           Boolean(refetchAfterSuccess),
-          pageHtml
+          pageHtml,
+          preloadJs == null ? null : String(preloadJs),
+          config == null ? null : String(config)
         ]),
         kind: kind,
         url: targetUrl,
         title: title == null ? '' : String(title),
         refetchAfterSuccess: Boolean(refetchAfterSuccess),
-        html: pageHtml
+        html: pageHtml,
+        preloadJs: preloadJs == null ? null : String(preloadJs),
+        config: config == null ? null : String(config)
       };
       throw new Error('__OPEN_READING_INTERACTION__' +
         encodeURIComponent(JSON.stringify(request)));

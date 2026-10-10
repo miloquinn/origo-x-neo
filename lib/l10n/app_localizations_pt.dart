@@ -8205,4 +8205,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountDeleteManageThemes => 'Gerenciar meus temas';
+
+  @override
+  String get readerParagraphReviews => 'Comentários do parágrafo';
+
+  @override
+  String get readerParagraphReviewOpen => 'Ver comentários';
+
+  @override
+  String get readerParagraphReviewFailed =>
+      'Não foi possível carregar os comentários. Pode continuar a ler.';
 }

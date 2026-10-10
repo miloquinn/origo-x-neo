@@ -25,7 +25,8 @@ class MainFlutterWindow: NSWindow {
     )
     sourceBrowserSessionBridge = SourceBrowserSessionBridge(
       messenger: flutterViewController.engine.binaryMessenger,
-      parentWindow: self
+      parentWindow: self,
+      registrar: flutterViewController.registrar(forPlugin: "SourceBrowserContentView")
     )
     iCloudSyncBridge = ICloudSyncBridge(
       messenger: flutterViewController.engine.binaryMessenger

@@ -7786,4 +7786,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountDeleteManageThemes => '自分のテーマを管理';
+
+  @override
+  String get readerParagraphReviews => '段落コメント';
+
+  @override
+  String get readerParagraphReviewOpen => '段落コメントを表示';
+
+  @override
+  String get readerParagraphReviewFailed => 'コメントを読み込めませんでした。本文は引き続き読めます。';
 }

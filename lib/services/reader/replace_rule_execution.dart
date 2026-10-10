@@ -97,6 +97,7 @@ class ReplaceRuleExecutionBatch {
     required this.rulesSignature,
     required this.bookTitle,
     required this.target,
+    this.ranges,
     this.sourceName,
     this.sourceUrl,
   });
@@ -108,6 +109,39 @@ class ReplaceRuleExecutionBatch {
   final String? sourceName;
   final String? sourceUrl;
   final ReplaceRuleTarget target;
+  final List<List<ReplaceRuleTextRange>>? ranges;
+}
+
+class ReplaceRuleTextRange {
+  const ReplaceRuleTextRange({
+    required this.id,
+    required this.startOffset,
+    required this.endOffset,
+  });
+
+  final String id;
+  final int startOffset;
+  final int endOffset;
+
+  Map<String, Object?> toMessage() => <String, Object?>{
+    'id': id,
+    'startOffset': startOffset,
+    'endOffset': endOffset,
+  };
+
+  factory ReplaceRuleTextRange.fromMessage(Map<Object?, Object?> value) =>
+      ReplaceRuleTextRange(
+        id: '${value['id'] ?? ''}',
+        startOffset: value['startOffset'] as int? ?? 0,
+        endOffset: value['endOffset'] as int? ?? 0,
+      );
+
+  ReplaceRuleTextRange copyWith({int? startOffset, int? endOffset}) =>
+      ReplaceRuleTextRange(
+        id: id,
+        startOffset: startOffset ?? this.startOffset,
+        endOffset: endOffset ?? this.endOffset,
+      );
 }
 
 enum ReplaceRuleDiagnosticKind {
@@ -141,6 +175,7 @@ class ReplaceRuleDiagnostic {
 class ReplaceRuleExecutionResult {
   const ReplaceRuleExecutionResult({
     required this.values,
+    this.mappedRanges = const <List<ReplaceRuleTextRange>>[],
     this.diagnostics = const <ReplaceRuleDiagnostic>[],
     this.skippedRuleIds = const <String>[],
     this.effectiveRuleIds = const <String>[],
@@ -148,6 +183,7 @@ class ReplaceRuleExecutionResult {
   });
 
   final List<String> values;
+  final List<List<ReplaceRuleTextRange>> mappedRanges;
   final List<ReplaceRuleDiagnostic> diagnostics;
   final List<String> skippedRuleIds;
   final List<String> effectiveRuleIds;

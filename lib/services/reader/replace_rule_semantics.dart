@@ -43,6 +43,138 @@ class PreparedReplaceRule {
     }
     return input.replaceAll(source.pattern, source.replacement);
   }
+
+  ReplaceRuleMappedText applyWithRanges(
+    String input,
+    List<ReplaceRuleTextRange> ranges,
+  ) {
+    final matches = source.isRegex
+        ? pattern!.allMatches(input)
+        : source.pattern.allMatches(input);
+    return applyReplaceRuleMatches(
+      input,
+      ranges,
+      matches,
+      (match) => source.isRegex
+          ? expandReplaceRuleReplacement(source.replacement, match)
+          : source.replacement,
+    );
+  }
+}
+
+class ReplaceRuleMappedText {
+  const ReplaceRuleMappedText(this.text, this.ranges);
+
+  final String text;
+  final List<ReplaceRuleTextRange> ranges;
+}
+
+ReplaceRuleMappedText normalizeReplaceRuleContentWithRanges(
+  String input,
+  List<ReplaceRuleTextRange> ranges,
+) {
+  final edits = <_ReplaceRuleTextEdit>[];
+  var lineStart = 0;
+  for (final separator in RegExp(r'\r?\n').allMatches(input)) {
+    _addTrimEdits(input, lineStart, separator.start, edits);
+    if (separator.end - separator.start == 2) {
+      edits.add(_ReplaceRuleTextEdit(separator.start, separator.start + 1, ''));
+    }
+    lineStart = separator.end;
+  }
+  _addTrimEdits(input, lineStart, input.length, edits);
+  return _applyReplaceRuleEdits(input, ranges, edits);
+}
+
+ReplaceRuleMappedText applyReplaceRuleMatches(
+  String input,
+  List<ReplaceRuleTextRange> ranges,
+  Iterable<Match> matches,
+  String Function(Match match) replacement,
+) {
+  final edits = <_ReplaceRuleTextEdit>[
+    for (final match in matches)
+      _ReplaceRuleTextEdit(match.start, match.end, replacement(match)),
+  ];
+  return _applyReplaceRuleEdits(input, ranges, edits);
+}
+
+void _addTrimEdits(
+  String input,
+  int start,
+  int end,
+  List<_ReplaceRuleTextEdit> edits,
+) {
+  final line = input.substring(start, end);
+  final leading = line.length - line.trimLeft().length;
+  final trailing = line.length - line.trimRight().length;
+  if (leading > 0) edits.add(_ReplaceRuleTextEdit(start, start + leading, ''));
+  final trailingStart = end - trailing;
+  if (trailing > 0 && trailingStart >= start + leading) {
+    edits.add(_ReplaceRuleTextEdit(trailingStart, end, ''));
+  }
+}
+
+ReplaceRuleMappedText _applyReplaceRuleEdits(
+  String input,
+  List<ReplaceRuleTextRange> ranges,
+  List<_ReplaceRuleTextEdit> edits,
+) {
+  if (edits.isEmpty) return ReplaceRuleMappedText(input, ranges);
+  final output = StringBuffer();
+  var cursor = 0;
+  for (final edit in edits) {
+    output
+      ..write(input.substring(cursor, edit.start))
+      ..write(edit.replacement);
+    cursor = edit.end;
+  }
+  output.write(input.substring(cursor));
+  final mapped = <ReplaceRuleTextRange>[];
+  for (final range in ranges) {
+    final start = _mapReplaceRuleBoundary(
+      range.startOffset,
+      edits,
+      isStart: true,
+    );
+    final end = _mapReplaceRuleBoundary(range.endOffset, edits, isStart: false);
+    if (end > start) {
+      mapped.add(range.copyWith(startOffset: start, endOffset: end));
+    }
+  }
+  return ReplaceRuleMappedText(output.toString(), mapped);
+}
+
+int _mapReplaceRuleBoundary(
+  int offset,
+  List<_ReplaceRuleTextEdit> edits, {
+  required bool isStart,
+}) {
+  var delta = 0;
+  for (final edit in edits) {
+    final replacementStart = edit.start + delta;
+    if (edit.start == edit.end && offset == edit.start) {
+      return replacementStart;
+    }
+    if (offset < edit.start || (!isStart && offset == edit.start)) {
+      return offset + delta;
+    }
+    if (offset < edit.end) {
+      return isStart
+          ? replacementStart
+          : replacementStart + edit.replacement.length;
+    }
+    delta += edit.replacement.length - (edit.end - edit.start);
+  }
+  return offset + delta;
+}
+
+class _ReplaceRuleTextEdit {
+  const _ReplaceRuleTextEdit(this.start, this.end, this.replacement);
+
+  final int start;
+  final int end;
+  final String replacement;
 }
 
 List<PreparedReplaceRule> prepareReplaceRules(

@@ -14053,6 +14053,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage my themes'**
   String get accountDeleteManageThemes;
+  /// No description provided for @readerParagraphReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Paragraph comments'**
+  String get readerParagraphReviews;
+
+  /// No description provided for @readerParagraphReviewOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'View paragraph comments'**
+  String get readerParagraphReviewOpen;
+
+  /// No description provided for @readerParagraphReviewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Paragraph comments could not be loaded. You can keep reading.'**
+  String get readerParagraphReviewFailed;
+
 }
 
 class _AppLocalizationsDelegate

@@ -10,10 +10,18 @@ final class SourceBrowserSessionBridge: NSObject {
   private var operations: [String: AppleSourceBrowserOperation] = [:]
   private var interactiveOperation: AppleSourceBrowserOperation?
 
-  init(messenger: FlutterBinaryMessenger, presenter: UIViewController?) {
+  init(
+    messenger: FlutterBinaryMessenger,
+    presenter: UIViewController?,
+    registrar: FlutterPluginRegistrar
+  ) {
     self.presenter = presenter
     channel = FlutterMethodChannel(name: Self.channelName, binaryMessenger: messenger)
     super.init()
+    registrar.register(
+      IOSSourceBrowserContentViewFactory(messenger: messenger),
+      withId: "com.niki.xxread/source_browser_content"
+    )
     channel.setMethodCallHandler { [weak self] call, result in
       DispatchQueue.main.async { self?.handle(call, result: result) }
     }
@@ -126,6 +134,238 @@ final class SourceBrowserSessionBridge: NSObject {
       }
     }
     return nil
+  }
+}
+
+private final class IOSSourceBrowserContentViewFactory: NSObject, FlutterPlatformViewFactory {
+  private let messenger: FlutterBinaryMessenger
+
+  init(messenger: FlutterBinaryMessenger) { self.messenger = messenger }
+
+  func create(
+    withFrame frame: CGRect,
+    viewIdentifier viewId: Int64,
+    arguments args: Any?
+  ) -> FlutterPlatformView {
+    IOSSourceBrowserContentView(frame: frame, viewId: viewId, args: args, messenger: messenger)
+  }
+
+  func createArgsCodec() -> (FlutterMessageCodec & NSObjectProtocol) {
+    FlutterStandardMessageCodec.sharedInstance()
+  }
+}
+
+private final class IOSSourceBrowserContentView: NSObject, FlutterPlatformView, WKNavigationDelegate, WKScriptMessageHandler {
+  private let webView: WKWebView
+  private let channel: FlutterMethodChannel
+  private let request: AppleSourceBrowserRequest?
+  private var closed = false
+
+  init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
+    let arguments = args as? [String: Any] ?? [:]
+    request = AppleSourceBrowserRequest(arguments: arguments)
+    channel = FlutterMethodChannel(
+      name: "com.niki.xxread/source_browser_content/\(viewId)",
+      binaryMessenger: messenger
+    )
+    let configuration = WKWebViewConfiguration()
+    configuration.websiteDataStore = .nonPersistent()
+    configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+    let controller = configuration.userContentController
+    if let request {
+      for origin in request.session.restorableOrigins {
+        if let source = request.session.restorationScript(for: origin) {
+          controller.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+        }
+      }
+      controller.addUserScript(WKUserScript(source: request.session.captureScript(), injectionTime: .atDocumentStart, forMainFrameOnly: false))
+      let sourceUrl = arguments["sourceUrl"] as? String ?? request.url.absoluteString
+      controller.addUserScript(WKUserScript(source: Self.bridgeScript(sourceUrl: sourceUrl), injectionTime: .atDocumentStart, forMainFrameOnly: false))
+      if let preload = arguments["preloadJs"] as? String, !preload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        controller.addUserScript(WKUserScript(source: preload, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+      }
+      if let theme = Self.themeScript(arguments) {
+        controller.addUserScript(WKUserScript(source: theme, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+      }
+    }
+    webView = WKWebView(frame: frame, configuration: configuration)
+    super.init()
+    webView.isOpaque = false
+    webView.backgroundColor = .clear
+    webView.scrollView.backgroundColor = .clear
+    webView.scrollView.contentInsetAdjustmentBehavior = .never
+    webView.navigationDelegate = self
+    controller.add(self, name: "xxreadSourceStorage")
+    controller.add(self, name: "xxreadContentBridge")
+    channel.setMethodCallHandler { [weak self] call, result in
+      DispatchQueue.main.async { self?.handle(call, result: result) }
+    }
+    guard let request else {
+      channel.invokeMethod("error", arguments: "A source ID and HTTP(S) URL are required.")
+      return
+    }
+    if let agent = request.headers.first(where: { $0.key.caseInsensitiveCompare("User-Agent") == .orderedSame })?.value {
+      webView.customUserAgent = agent
+    }
+    request.session.restoreCookies(into: configuration.websiteDataStore.httpCookieStore) { [weak self] in
+      self?.loadInitialRequest()
+    }
+  }
+
+  func view() -> UIView { webView }
+
+  private func loadInitialRequest() {
+    guard let request, !closed else { return }
+    if let html = request.html, !html.isEmpty {
+      webView.loadHTMLString(html, baseURL: request.url)
+      return
+    }
+    var urlRequest = URLRequest(url: request.url)
+    request.headers.forEach { name, value in
+      if name.caseInsensitiveCompare("User-Agent") != .orderedSame {
+        urlRequest.setValue(value, forHTTPHeaderField: name)
+      }
+    }
+    webView.load(urlRequest)
+  }
+
+  private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    switch call.method {
+    case "reload": webView.reload(); result(nil)
+    case "capture": capture(close: false, result: result)
+    case "close": capture(close: true, result: result)
+    case "completeScriptRequest":
+      completeScriptRequest(call.arguments as? [String: Any]); result(nil)
+    default: result(FlutterMethodNotImplemented)
+    }
+  }
+
+  func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+    channel.invokeMethod("loading", arguments: true)
+  }
+
+  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    channel.invokeMethod("loading", arguments: false)
+    snapshot { [weak self] value in self?.channel.invokeMethod("sessionSnapshot", arguments: value) }
+  }
+
+  func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+    channel.invokeMethod("loading", arguments: false)
+    channel.invokeMethod("error", arguments: error.localizedDescription)
+  }
+
+  func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    channel.invokeMethod("loading", arguments: false)
+    channel.invokeMethod("error", arguments: error.localizedDescription)
+  }
+
+  func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+    guard let url = action.request.url else { decisionHandler(.cancel); return }
+    let allowedInternal = Set(["about", "blob", "data", "javascript"])
+    if AppleSourceBrowserSession.isWebURL(url) || allowedInternal.contains(url.scheme?.lowercased() ?? "") {
+      if action.targetFrame == nil { webView.load(action.request); decisionHandler(.cancel) }
+      else { decisionHandler(.allow) }
+    } else {
+      decisionHandler(.cancel)
+    }
+  }
+
+  func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    if message.name == "xxreadSourceStorage",
+       let payload = message.body as? [String: Any],
+       let origin = payload["origin"] as? String,
+       let values = payload["values"] as? [String: Any] {
+      request?.session.mergeStorage(origin: origin, values: values)
+      return
+    }
+    guard message.name == "xxreadContentBridge", let payload = message.body as? [String: Any] else { return }
+    let method = payload["method"] as? String ?? ""
+    let value = payload["value"]
+    switch method {
+    case "close", "dismiss": channel.invokeMethod("closeRequested", arguments: nil)
+    case "refreshContent": channel.invokeMethod("refreshContent", arguments: String(describing: value ?? ""))
+    case "copy": channel.invokeMethod("copy", arguments: String(describing: value ?? ""))
+    case "toast", "longToast": channel.invokeMethod("toast", arguments: String(describing: value ?? ""))
+    case "request": channel.invokeMethod("scriptRequest", arguments: payload)
+    default: break
+    }
+  }
+
+  private func capture(close: Bool, result: @escaping FlutterResult) {
+    guard request != nil, !closed else {
+      result(FlutterError(code: "disposed", message: "Source browser view is closed.", details: nil)); return
+    }
+    snapshot { [weak self] value in
+      result(value)
+      if close { self?.closed = true; self?.webView.stopLoading() }
+    } onError: { error in
+      result(FlutterError(code: "capture_failed", message: error.localizedDescription, details: nil))
+    }
+  }
+
+  private func snapshot(done: @escaping ([String: Any]) -> Void, onError: ((Error) -> Void)? = nil) {
+    guard let request, !closed else { return }
+    webView.evaluateJavaScript("window.__xxreadCaptureLocalStorage && window.__xxreadCaptureLocalStorage(); document.documentElement ? document.documentElement.outerHTML : (document.body ? document.body.innerHTML : '');") { [weak self] value, error in
+      guard let self else { return }
+      if let error { onError?(error); return }
+      self.webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
+        done([
+          "body": value as? String ?? "",
+          "finalUrl": self.webView.url?.absoluteString ?? request.url.absoluteString,
+          "session": request.session.platformMap(cookies: cookies),
+        ])
+      }
+    }
+  }
+
+  private func completeScriptRequest(_ raw: [String: Any]?) {
+    guard let id = raw?["id"] as? String, !id.isEmpty else { return }
+    let script: String
+    if let error = raw?["error"] {
+      script = "window.__xxreadBridgeReject(\(Self.json(id)),\(Self.json(String(describing: error))));"
+    } else {
+      script = "window.__xxreadBridgeResolve(\(Self.json(id)),\(Self.json(raw?["value"] ?? NSNull())));"
+    }
+    webView.evaluateJavaScript(script)
+  }
+
+  deinit {
+    channel.setMethodCallHandler(nil)
+    webView.navigationDelegate = nil
+    webView.configuration.userContentController.removeScriptMessageHandler(forName: "xxreadSourceStorage")
+    webView.configuration.userContentController.removeScriptMessageHandler(forName: "xxreadContentBridge")
+  }
+
+  private static func bridgeScript(sourceUrl: String) -> String {
+    """
+    (function(){if(window.__xxreadBridgeInstalled)return;window.__xxreadBridgeInstalled=true;
+    var p=Object.create(null),n=0;function post(v){try{window.webkit.messageHandlers.xxreadContentBridge.postMessage(v);}catch(_){}}
+    function req(m,a,id){id=id||('web-'+Date.now()+'-'+(++n));return new Promise(function(r,j){p[id]={resolve:r,reject:j};post({method:'request',id:id,methodName:m,arguments:Array.prototype.slice.call(a||[])});});}
+    window.__xxreadBridgeResolve=function(id,v){if(p[id]){p[id].resolve(v);delete p[id];}};window.__xxreadBridgeReject=function(id,e){if(p[id]){p[id].reject(new Error(String(e)));delete p[id];}};
+    var j=window.java||{};j.refreshContent=function(v){post({method:'refreshContent',value:String(v==null?'':v)});};j.close=j.dismiss=j.closeBottomView=function(){post({method:'close'});};j.copy=function(v){post({method:'copy',value:String(v==null?'':v)});};j.toast=function(v){post({method:'toast',value:String(v==null?'':v)});};j.longToast=j.toast;var unsupportedMethods=['webViewGetSource','createSignHex','importScript'];function unsupported(m){return Promise.reject(new Error('Unsupported source page method: java.'+m));}function norm(m){m=String(m);if(m==='run')return'eval';if(/Await$/.test(m))return'java.'+m.replace(/Await$/,'');return m.indexOf('.')>=0?m:'java.'+m;}j.request=function(m,a,id){var n=String(m).replace(/Await$/,'').replace(/^java\\./,'');return unsupportedMethods.indexOf(n)>=0?unsupported(n):req(norm(m),a,id);};j.ajaxAwait=function(){return req('java.ajax',arguments);};j.ajax=j.ajaxAwait;window.java=j;
+    window.run=function(c){return req('eval',[String(c)]);};['ajaxAwait','connectAwait','getAwait','headAwait','postAwait','webViewAwait','decryptStrAwait','encryptBase64Await','encryptHexAwait','getStringAwait'].forEach(function(n){window[n]=function(){return j.request(n,arguments);};});['webViewGetSourceAwait','createSignHexAwait','importScriptAwait'].forEach(function(n){window[n]=function(){return unsupported(n.replace(/Await$/,''));};});
+    window.source=window.source||{bookSourceUrl:\(json(sourceUrl))};window.cache=window.cache||{get:function(k){return req('cache.get',[k]);},put:function(k,v){return req('cache.put',[k,v]);}};})();
+    """
+  }
+
+  private static func themeScript(_ args: [String: Any]) -> String? {
+    let background = (args["backgroundColor"] as? NSNumber).map { colorCSS($0.uint32Value) }
+    let text = (args["textColor"] as? NSNumber).map { colorCSS($0.uint32Value) }
+    guard background != nil || text != nil else { return nil }
+    var css = ":root{color-scheme:\((args["isDark"] as? Bool) == true ? "dark" : "light");}"
+    if let background { css += "html,body{background-color:\(background);}" }
+    if let text { css += "body{color:\(text);}" }
+    return "(function(){var s=document.getElementById('__xxreadTheme');if(!s){s=document.createElement('style');s.id='__xxreadTheme';document.head.appendChild(s);}s.textContent=\(json(css));})();"
+  }
+
+  private static func colorCSS(_ value: UInt32) -> String {
+    String(format: "#%02x%02x%02x%02x", (value >> 16) & 255, (value >> 8) & 255, value & 255, (value >> 24) & 255)
+  }
+
+  private static func json(_ value: Any) -> String {
+    guard let data = try? JSONSerialization.data(withJSONObject: value, options: .fragmentsAllowed),
+          let string = String(data: data, encoding: .utf8) else { return "null" }
+    return string.replacingOccurrences(of: "</", with: "<\\/")
   }
 }
 

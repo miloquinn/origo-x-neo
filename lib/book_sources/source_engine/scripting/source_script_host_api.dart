@@ -288,7 +288,21 @@ class SourceScriptHostApi {
     final html = arguments.length > 4 && arguments[4] != null
         ? '${arguments[4]}'
         : null;
-    final signature = jsonEncode([kind, url, title, refetch, html]);
+    final preloadJs = arguments.length > 5 && arguments[5] != null
+        ? '${arguments[5]}'
+        : null;
+    final config = arguments.length > 6 && arguments[6] != null
+        ? '${arguments[6]}'
+        : null;
+    final signature = jsonEncode([
+      kind,
+      url,
+      title,
+      refetch,
+      html,
+      preloadJs,
+      config,
+    ]);
     final cached = _interactionResponses[signature];
     if (cached != null) {
       final value = cached.toJson();
@@ -304,6 +318,8 @@ class SourceScriptHostApi {
         'title': title,
         'refetchAfterSuccess': refetch,
         'html': html,
+        'preloadJs': preloadJs,
+        'config': config,
       },
     };
   }
@@ -359,6 +375,10 @@ SourceScriptInteractionRequest? sourceScriptInteractionRequestFromError(
       url: '${decoded['url'] ?? ''}',
       title: '${decoded['title'] ?? ''}',
       html: decoded['html'] == null ? null : '${decoded['html']}',
+      preloadJs: decoded['preloadJs'] == null
+          ? null
+          : '${decoded['preloadJs']}',
+      config: decoded['config'] == null ? null : '${decoded['config']}',
       refetchAfterSuccess: decoded['refetchAfterSuccess'] == true,
     );
   } on Object {

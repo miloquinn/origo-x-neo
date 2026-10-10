@@ -56,29 +56,44 @@ class ReplaceRuleExecutor {
         .toList(growable: false);
     final outputLimit = replaceRuleOutputCharacterLimit(batch.values);
     final values = <String>[];
+    final mappedRanges = batch.ranges == null
+        ? null
+        : <List<ReplaceRuleTextRange>>[];
     final effectiveRuleIds = <String>{};
-    for (final input in batch.values) {
+    for (var inputIndex = 0; inputIndex < batch.values.length; inputIndex++) {
+      final input = batch.values[inputIndex];
       var output = input;
+      var outputRanges = batch.ranges == null
+          ? const <ReplaceRuleTextRange>[]
+          : List<ReplaceRuleTextRange>.from(batch.ranges![inputIndex]);
       final inputEffectiveRuleIds = <String>{};
       var rolledBack = false;
       for (final rule in applicable) {
         final before = output;
-        final candidate = rule.apply(before);
+        final mapped = batch.ranges == null
+            ? null
+            : rule.applyWithRanges(before, outputRanges);
+        final candidate = mapped?.text ?? rule.apply(before);
         if (batch.target == ReplaceRuleTarget.title &&
             before.trim().isNotEmpty &&
             candidate.trim().isEmpty) {
           continue;
         }
         output = candidate;
+        if (mapped != null) outputRanges = mapped.ranges;
         if (candidate != before) inputEffectiveRuleIds.add(rule.source.id);
         if (output.length > outputLimit) {
           output = input;
+          outputRanges = batch.ranges == null
+              ? const <ReplaceRuleTextRange>[]
+              : List<ReplaceRuleTextRange>.from(batch.ranges![inputIndex]);
           rolledBack = true;
           break;
         }
       }
       if (!rolledBack) effectiveRuleIds.addAll(inputEffectiveRuleIds);
       values.add(output);
+      mappedRanges?.add(outputRanges);
     }
     final diagnostics = <ReplaceRuleDiagnostic>[];
     if (skipped.isNotEmpty &&
@@ -102,6 +117,7 @@ class ReplaceRuleExecutor {
     }
     return ReplaceRuleExecutionResult(
       values: values,
+      mappedRanges: mappedRanges ?? const <List<ReplaceRuleTextRange>>[],
       diagnostics: diagnostics,
       skippedRuleIds: skipped.map((rule) => rule.id).toList(growable: false),
       effectiveRuleIds: effectiveRuleIds.toList(growable: false),

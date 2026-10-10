@@ -21,7 +21,11 @@ extension _BookSourceReaderPaginationRendering on _BookSourceReaderPageState {
         stored?.revision ?? sha256.convert(utf8.encode(text)).toString();
     final top = _readerSafeArea.contentTop;
     final bottom = _readerSafeArea.contentBottom;
-    final width = readerTextContentWidth(viewport.width, _horizontalMargin);
+    final width = math.max(
+      1.0,
+      readerTextContentWidth(viewport.width, _horizontalMargin) -
+          _paragraphActionGutterFor(chapterIndex),
+    );
     final height = readerTextContentHeight(viewport.height, top, bottom);
     const textScaler = readerBodyTextScaler;
     final locale = Localizations.maybeLocaleOf(context);
@@ -146,6 +150,7 @@ extension _BookSourceReaderPaginationRendering on _BookSourceReaderPageState {
     // the benefit of incremental pagination.
     Object validityToken() => (
       _readableChapterText[chapterIndex],
+      _paragraphActionGutterFor(chapterIndex),
       _chapters[chapterIndex].title,
       _readerFont,
       _fontSize,

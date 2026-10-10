@@ -39,14 +39,22 @@ class ReplaceRuleExecutor {
   ) {
     if (_disposed) {
       return Future<ReplaceRuleExecutionResult>.value(
-        ReplaceRuleExecutionResult(values: batch.values, degraded: true),
+        ReplaceRuleExecutionResult(
+          values: batch.values,
+          mappedRanges: _copyBatchRanges(batch.ranges),
+          degraded: true,
+        ),
       );
     }
     final completer = Completer<ReplaceRuleExecutionResult>();
     _serial = _serial.then((_) async {
       if (_disposed) {
         completer.complete(
-          ReplaceRuleExecutionResult(values: batch.values, degraded: true),
+          ReplaceRuleExecutionResult(
+            values: batch.values,
+            mappedRanges: _copyBatchRanges(batch.ranges),
+            degraded: true,
+          ),
         );
         return;
       }
@@ -71,6 +79,7 @@ class ReplaceRuleExecutor {
         final result = outcome.result!;
         return ReplaceRuleExecutionResult(
           values: result.values,
+          mappedRanges: result.mappedRanges,
           diagnostics: <ReplaceRuleDiagnostic>[
             ...diagnostics,
             ...result.diagnostics,
@@ -92,6 +101,7 @@ class ReplaceRuleExecutor {
     final fallback = _applyLiteralFallback(batch);
     return ReplaceRuleExecutionResult(
       values: fallback.values,
+      mappedRanges: fallback.mappedRanges,
       diagnostics: diagnostics,
       skippedRuleIds: <String>{
         ..._quarantinedIds(batch),
@@ -151,6 +161,9 @@ class ReplaceRuleExecutor {
           ? batch.rules.map((rule) => rule.toMessage()).toList(growable: false)
           : null,
       'values': batch.values,
+      'ranges': batch.ranges
+          ?.map((ranges) => ranges.map((range) => range.toMessage()).toList())
+          .toList(),
       'bookTitle': batch.bookTitle,
       'sourceName': batch.sourceName,
       'sourceUrl': batch.sourceUrl,
@@ -244,6 +257,7 @@ class ReplaceRuleExecutor {
         _ReplaceAttempt.success(
           ReplaceRuleExecutionResult(
             values: List<String>.from(message['values'] as List),
+            mappedRanges: _rangesFromMessage(message['ranges']),
             diagnostics: diagnostics,
             skippedRuleIds: List<String>.from(
               message['skippedRuleIds'] as List? ?? const [],
@@ -298,6 +312,7 @@ class ReplaceRuleExecutor {
     final literals = _applyLiteralFallback(batch);
     return ReplaceRuleExecutionResult(
       values: literals.values,
+      mappedRanges: literals.mappedRanges,
       diagnostics: <ReplaceRuleDiagnostic>[diagnostic],
       skippedRuleIds: <String>{
         ..._quarantinedIds(batch),
@@ -312,6 +327,7 @@ class ReplaceRuleExecutor {
     ReplaceRuleExecutionBatch batch,
   ) {
     final values = List<String>.from(batch.values);
+    final mappedRanges = _copyBatchRanges(batch.ranges);
     final skipped = <String>[];
     final applicable = batch.rules.where(
       (rule) =>
@@ -341,18 +357,26 @@ class ReplaceRuleExecutor {
       }
       for (var index = 0; index < values.length; index++) {
         final before = values[index];
-        final candidate = before.replaceAll(rule.pattern, rule.replacement);
+        final mapped = batch.ranges == null
+            ? null
+            : PreparedReplaceRule(
+                rule,
+              ).applyWithRanges(before, mappedRanges[index]);
+        final candidate =
+            mapped?.text ?? before.replaceAll(rule.pattern, rule.replacement);
         if (batch.target == ReplaceRuleTarget.title &&
             before.trim().isNotEmpty &&
             candidate.trim().isEmpty) {
           continue;
         }
         values[index] = candidate;
+        if (mapped != null) mappedRanges[index] = mapped.ranges;
         if (candidate != before) effectiveRuleIds.add(rule.id);
       }
     }
     return ReplaceRuleExecutionResult(
       values: values,
+      mappedRanges: mappedRanges,
       skippedRuleIds: skipped,
       effectiveRuleIds: effectiveRuleIds.toList(growable: false),
       degraded: true,
@@ -399,6 +423,7 @@ class ReplaceRuleExecutor {
         _ReplaceAttempt.success(
           ReplaceRuleExecutionResult(
             values: active.batch.values,
+            mappedRanges: _copyBatchRanges(active.batch.ranges),
             degraded: true,
           ),
         ),
@@ -467,6 +492,11 @@ void _replaceRuleWorkerMain(SendPort events) {
     final rules = ruleSets[signature] ?? const <ReplaceRuleExecutionRule>[];
     final originals = List<String>.from(message['values'] as List);
     final outputs = List<String>.from(originals);
+    final originalRanges = _rangesFromMessage(message['ranges']);
+    final outputRanges = <List<ReplaceRuleTextRange>>[
+      for (final ranges in originalRanges)
+        List<ReplaceRuleTextRange>.from(ranges),
+    ];
     final target = ReplaceRuleTarget.values.byName('${message['target']}');
     final title = '${message['bookTitle'] ?? ''}';
     final sourceName = message['sourceName'] as String?;
@@ -537,7 +567,10 @@ void _replaceRuleWorkerMain(SendPort events) {
       }
       for (var index = 0; index < outputs.length; index++) {
         final before = outputs[index];
-        final candidate = compiled.apply(before);
+        final mapped = originalRanges.isEmpty
+            ? null
+            : compiled.applyWithRanges(before, outputRanges[index]);
+        final candidate = mapped?.text ?? compiled.apply(before);
         if (target == ReplaceRuleTarget.title &&
             before.trim().isNotEmpty &&
             candidate.trim().isEmpty) {
@@ -552,6 +585,7 @@ void _replaceRuleWorkerMain(SendPort events) {
           continue;
         }
         outputs[index] = candidate;
+        if (mapped != null) outputRanges[index] = mapped.ranges;
         if (candidate != before) effectiveRuleIds.add(rule.id);
       }
       final outputCharacters = outputs.fold<int>(
@@ -569,6 +603,15 @@ void _replaceRuleWorkerMain(SendPort events) {
         outputs
           ..clear()
           ..addAll(originals);
+        if (originalRanges.isNotEmpty) {
+          outputRanges
+            ..clear()
+            ..addAll(
+              originalRanges.map(
+                (ranges) => List<ReplaceRuleTextRange>.from(ranges),
+              ),
+            );
+        }
         effectiveRuleIds.clear();
         degraded = true;
         break;
@@ -578,6 +621,13 @@ void _replaceRuleWorkerMain(SendPort events) {
       'type': 'result',
       'jobId': jobId,
       'values': outputs,
+      'ranges': originalRanges.isEmpty
+          ? null
+          : outputRanges
+                .map(
+                  (ranges) => ranges.map((range) => range.toMessage()).toList(),
+                )
+                .toList(),
       'diagnostics': diagnostics,
       'skippedRuleIds': skippedIds,
       'effectiveRuleIds': effectiveRuleIds.toList(growable: false),
@@ -585,3 +635,26 @@ void _replaceRuleWorkerMain(SendPort events) {
     });
   });
 }
+
+List<List<ReplaceRuleTextRange>> _copyBatchRanges(
+  List<List<ReplaceRuleTextRange>>? ranges,
+) => ranges == null
+    ? const <List<ReplaceRuleTextRange>>[]
+    : <List<ReplaceRuleTextRange>>[
+        for (final inputRanges in ranges)
+          List<ReplaceRuleTextRange>.from(inputRanges),
+      ];
+
+List<List<ReplaceRuleTextRange>> _rangesFromMessage(Object? value) =>
+    (value as List? ?? const <Object?>[])
+        .map(
+          (ranges) => (ranges as List? ?? const <Object?>[])
+              .whereType<Map>()
+              .map(
+                (range) => ReplaceRuleTextRange.fromMessage(
+                  Map<Object?, Object?>.from(range),
+                ),
+              )
+              .toList(growable: false),
+        )
+        .toList(growable: false);

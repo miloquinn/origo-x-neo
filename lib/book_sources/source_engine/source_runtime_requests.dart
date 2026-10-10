@@ -237,11 +237,18 @@ class SourceRuntimeRequests
     Map<String, Object?> chapter = const {},
     bool includeSourceHeaders = true,
     BookDownloadCancellation? cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+    SourceScriptInteractionPresentation interactionPresentation =
+        SourceScriptInteractionPresentation.standard,
   }) {
     cancellation?.throwIfCancelled();
     final loginSession = _sessions.current(source);
     final generation = _sessions.generation(source);
     void checkGeneration() {
+      cancellation?.throwIfCancelled();
       if (_sessions.generation(source) != generation) {
         throw const SourceBrowserCancelled();
       }
@@ -303,8 +310,25 @@ class SourceRuntimeRequests
         checkGeneration();
         _sessions.updateHeaders(source, value, rawLoginHeader: rawLoginHeader);
       },
-      interactionHandler: (request) =>
-          _handleScriptInteraction(source, request, cancellation: cancellation),
+      interactionHandler: (request) => _handleScriptInteraction(
+        source,
+        request,
+        cancellation: cancellation,
+        interactionHandler: interactionHandler,
+        interactionPresentation: interactionPresentation,
+      ),
+      transaction: <T>(action, {cancellationCheck}) {
+        final sessions = _sessions;
+        if (sessions is! SourceRuntimeTransactionalSessionPort) {
+          return action();
+        }
+        return (sessions as SourceRuntimeTransactionalSessionPort)
+            .transaction<T>(
+              source,
+              action: action,
+              cancellationCheck: cancellationCheck,
+            );
+      },
       cancellationCheck: cancellation?.throwIfCancelled,
     );
   }
@@ -313,23 +337,28 @@ class SourceRuntimeRequests
     ReadingSourceConfig source,
     SourceScriptInteractionRequest request, {
     BookDownloadCancellation? cancellation,
+    Future<SourceScriptInteractionResult> Function(
+      SourceScriptInteractionRequest request,
+    )?
+    interactionHandler,
+    SourceScriptInteractionPresentation interactionPresentation =
+        SourceScriptInteractionPresentation.standard,
   }) async {
     cancellation?.throwIfCancelled();
     final generation = _sessions.generation(source);
     var target = source.baseUri.resolve(request.url);
-    var interaction = request;
+    var interaction = request.copyWith(
+      url: target.toString(),
+      presentation: interactionPresentation,
+    );
     if (request.kind != SourceScriptInteractionKind.verificationCode &&
         request.url.startsWith('data:text/html')) {
       final decoded = _decodeInteractionHtml(request.url);
       if (decoded != null) {
         target = source.baseUri;
-        interaction = SourceScriptInteractionRequest(
-          signature: request.signature,
-          kind: request.kind,
+        interaction = interaction.copyWith(
           url: target.toString(),
-          title: request.title,
           html: decoded,
-          refetchAfterSuccess: request.refetchAfterSuccess,
         );
       }
     }
@@ -368,12 +397,14 @@ class SourceRuntimeRequests
     if (_sessions.generation(source) != generation) {
       throw const SourceBrowserCancelled();
     }
-    final result = await _interactionCoordinator.request(
-      sourceId: source.stableId,
-      sourceName: source.name,
-      interaction: prepared,
-      cancellation: cancellation,
-    );
+    final result = interactionHandler == null
+        ? await _interactionCoordinator.request(
+            sourceId: source.stableId,
+            sourceName: source.name,
+            interaction: prepared,
+            cancellation: cancellation,
+          )
+        : await interactionHandler(prepared);
     cancellation?.throwIfCancelled();
     if (_sessions.generation(source) != generation) {
       throw const SourceBrowserCancelled();

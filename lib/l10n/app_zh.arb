@@ -3970,5 +3970,8 @@
   "themeMarketInUse": "正在使用",
   "themeMarketDownloadAndApply": "下载并使用",
   "accountDeleteBlockedThemeCreator": "请先去官网主题制作页删除已发布或待审核的主题，再回来注销账号。",
-  "accountDeleteManageThemes": "管理我的主题"
+  "accountDeleteManageThemes": "管理我的主题",
+  "readerParagraphReviews": "段评",
+  "readerParagraphReviewOpen": "查看段评",
+  "readerParagraphReviewFailed": "段评暂时无法加载，正文仍可继续阅读。"
 }

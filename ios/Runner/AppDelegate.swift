@@ -114,11 +114,12 @@ final class AuthCallbackBridge {
   func register(with registry: FlutterPluginRegistry) {
     GeneratedPluginRegistrant.register(with: registry)
 
-    guard let messenger = registry.registrar(forPlugin: "ReaderUIBridge")?.messenger() else {
+    guard let registrar = registry.registrar(forPlugin: "ReaderUIBridge") else {
       NSLog("Reader bridge init failed: binaryMessenger unavailable")
       return
     }
 
+    let messenger = registrar.messenger()
     AuthCallbackBridge.shared.attach(messenger: messenger)
 
     let readerUIChannel = FlutterMethodChannel(
@@ -235,7 +236,8 @@ final class AuthCallbackBridge {
     if sourceBrowserSessionBridge == nil {
       sourceBrowserSessionBridge = SourceBrowserSessionBridge(
         messenger: messenger,
-        presenter: window?.rootViewController
+        presenter: window?.rootViewController,
+        registrar: registrar
       )
     }
 

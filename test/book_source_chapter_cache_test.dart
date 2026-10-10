@@ -723,6 +723,105 @@ void main() {
     },
   );
 
+  test('explicit refresh bypasses fresh cached chapter content', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'source-chapter-explicit-refresh-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final cache = BookSourceChapterCache(cacheDirectory: directory);
+
+    await cache.getOrLoad(
+      sourceId: 'refresh-source',
+      bookId: 'refresh-book',
+      chapterId: 'refresh-chapter',
+      loader: () async => const BookSourceChapterContent(
+        bookId: 'refresh-book',
+        chapterId: 'refresh-chapter',
+        title: '刷新章节',
+        content: '旧正文',
+        contentType: 'text/plain',
+      ),
+    );
+    final refreshed = await cache.refresh(
+      sourceId: 'refresh-source',
+      bookId: 'refresh-book',
+      chapterId: 'refresh-chapter',
+      loader: () async => const BookSourceChapterContent(
+        bookId: 'refresh-book',
+        chapterId: 'refresh-chapter',
+        title: '刷新章节',
+        content: '新正文',
+        contentType: 'text/plain',
+      ),
+    );
+    final cached = await cache.getOrLoad(
+      sourceId: 'refresh-source',
+      bookId: 'refresh-book',
+      chapterId: 'refresh-chapter',
+      loader: () => throw StateError('refresh should replace the cache'),
+    );
+
+    expect(refreshed.content, '新正文');
+    expect(cached.content, '新正文');
+  });
+
+  test('older in-flight load cannot overwrite an explicit refresh', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'source-chapter-refresh-race-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final oldLoadStarted = Completer<void>();
+    final finishOldLoad = Completer<void>();
+    addTearDown(() {
+      if (!finishOldLoad.isCompleted) finishOldLoad.complete();
+    });
+    final cache = BookSourceChapterCache(cacheDirectory: directory);
+
+    final oldLoad = cache.getOrLoad(
+      sourceId: 'race-source',
+      bookId: 'race-book',
+      chapterId: 'race-chapter',
+      requestScope: #sameRequest,
+      loader: () async {
+        oldLoadStarted.complete();
+        await finishOldLoad.future;
+        return const BookSourceChapterContent(
+          bookId: 'race-book',
+          chapterId: 'race-chapter',
+          title: '竞态章节',
+          content: '迟到旧正文',
+          contentType: 'text/plain',
+        );
+      },
+    );
+    await oldLoadStarted.future;
+
+    final refreshed = await cache.refresh(
+      sourceId: 'race-source',
+      bookId: 'race-book',
+      chapterId: 'race-chapter',
+      requestScope: #sameRequest,
+      loader: () async => const BookSourceChapterContent(
+        bookId: 'race-book',
+        chapterId: 'race-chapter',
+        title: '竞态章节',
+        content: '刷新正文',
+        contentType: 'text/plain',
+      ),
+    );
+    finishOldLoad.complete();
+    expect((await oldLoad).content, '迟到旧正文');
+
+    final cached = await cache.getOrLoad(
+      sourceId: 'race-source',
+      bookId: 'race-book',
+      chapterId: 'race-chapter',
+      loader: () => throw StateError('late load must not replace refresh'),
+    );
+    expect(refreshed.content, '刷新正文');
+    expect(cached.content, '刷新正文');
+  });
+
   test(
     'returns a cached catalog immediately and refreshes it in background',
     () async {

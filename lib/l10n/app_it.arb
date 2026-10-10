@@ -2320,5 +2320,8 @@
   "themeMarketInUse": "In uso",
   "themeMarketDownloadAndApply": "Scarica e applica",
   "accountDeleteBlockedThemeCreator": "Prima di eliminare l’account, elimina dal sito i temi pubblicati o in attesa di revisione.",
-  "accountDeleteManageThemes": "Gestisci i miei temi"
+  "accountDeleteManageThemes": "Gestisci i miei temi",
+  "readerParagraphReviews": "Commenti al paragrafo",
+  "readerParagraphReviewOpen": "Mostra i commenti",
+  "readerParagraphReviewFailed": "Impossibile caricare i commenti. Puoi continuare a leggere."
 }

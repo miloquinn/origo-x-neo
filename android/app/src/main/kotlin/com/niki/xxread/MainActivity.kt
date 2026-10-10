@@ -170,6 +170,7 @@ class MainActivity : FlutterActivity() {
         sourceBrowserSessionBridge = SourceBrowserSessionBridge(
             this,
             flutterEngine.dartExecutor.binaryMessenger,
+            flutterEngine.platformViewsController.registry,
         )
 
     }
