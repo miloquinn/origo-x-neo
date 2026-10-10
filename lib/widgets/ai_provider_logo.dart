@@ -31,6 +31,7 @@ class AiProviderLogo extends StatelessWidget {
     'assets/ai_providers/zhipu.png',
     'assets/ai_providers/moonshot.png',
     'assets/ai_providers/groq.png',
+    'assets/ai_providers/mimo.png',
   };
 
   final String? asset;

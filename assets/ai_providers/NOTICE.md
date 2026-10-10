@@ -6,7 +6,9 @@ commit `c385b2b8d1f9e19aa86e628d4e23c91ee1111a47`.
 
 The source glyph names match the destination file names except for
 `zhipu.png`, which uses the `zai` Z_ glyph, and `siliconflow.png`, which uses
-the `siliconcloud-color` glyph. Color variants are used when Lobe Icons
+the `siliconcloud-color` glyph. Cloud TTS also uses `doubao-color` for
+`doubao.png` and `xiaomimimo` for `mimo.png` from the same pinned commit.
+Color variants are used when Lobe Icons
 provides one; monochrome glyphs are tinted by the app theme at runtime.
 
 Lobe Icons is distributed under the MIT License:
