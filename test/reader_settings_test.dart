@@ -2,6 +2,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xxread/core/reader/reader_layout.dart';
+import 'package:xxread/core/reader/reader_margin_settings.dart';
 import 'package:xxread/core/reader/reader_settings.dart';
 
 void main() {
@@ -54,6 +55,7 @@ void main() {
     expect(settings.fontWeight, ReaderSettings.defaultFontWeight);
     expect(settings.textBrightness, ReaderSettings.defaultTextBrightness);
     expect(settings.dimTextInDarkMode, isTrue);
+    expect(settings.lineHeight, ReaderSettings.defaultLineHeight);
     expect(settings.letterSpacing, ReaderSettings.defaultLetterSpacing);
     expect(settings.textAlignment, ReaderTextAlignment.natural);
     expect(settings.chapterTitlePageEnabled, isTrue);
@@ -206,6 +208,53 @@ void main() {
     expect(restored.tabletTwoPageEnabled, isFalse);
   });
 
+  test('persists the expanded typography and layout upper bounds', () async {
+    SharedPreferences.setMockInitialValues({});
+    const store = ReaderSettingsStore();
+    final expanded = (await store.load()).copyWith(
+      fontSize: ReaderSettings.maxFontSize,
+      lineHeight: ReaderSettings.maxLineHeight,
+      letterSpacing: ReaderSettings.maxLetterSpacing,
+      horizontalMargin: ReaderMarginSettings.horizontalMax,
+      topMargin: ReaderMarginSettings.max,
+      bottomMargin: ReaderMarginSettings.max,
+      firstLineIndent: ReaderSettings.maxFirstLineIndent,
+      paragraphSpacing: ReaderSettings.maxParagraphSpacing,
+    );
+
+    await store.save(expanded);
+    final restored = await store.load();
+
+    expect(restored.fontSize, ReaderSettings.maxFontSize);
+    expect(restored.lineHeight, ReaderSettings.maxLineHeight);
+    expect(restored.letterSpacing, ReaderSettings.maxLetterSpacing);
+    expect(restored.horizontalMargin, ReaderMarginSettings.horizontalMax);
+    expect(restored.topMargin, ReaderMarginSettings.max);
+    expect(restored.bottomMargin, ReaderMarginSettings.max);
+    expect(restored.firstLineIndent, ReaderSettings.maxFirstLineIndent);
+    expect(restored.paragraphSpacing, ReaderSettings.maxParagraphSpacing);
+  });
+
+  test('preserves existing in-range values without quantizing them', () async {
+    SharedPreferences.setMockInitialValues({
+      ReaderSettingsStore.fontSizeKey: 47.5,
+      ReaderSettingsStore.lineHeightKey: 1.75,
+      ReaderSettingsStore.letterSpacingKey: 2.7,
+      ReaderSettingsStore.horizontalMarginKey: 71.5,
+      ReaderSettingsStore.topMarginKey: 79.5,
+      ReaderSettingsStore.bottomMarginKey: 79.5,
+    });
+
+    final restored = await const ReaderSettingsStore().load();
+
+    expect(restored.fontSize, 47.5);
+    expect(restored.lineHeight, 1.75);
+    expect(restored.letterSpacing, 2.7);
+    expect(restored.horizontalMargin, 71.5);
+    expect(restored.topMargin, 79.5);
+    expect(restored.bottomMargin, 79.5);
+  });
+
   test('allows a zero horizontal page margin', () async {
     SharedPreferences.setMockInitialValues({
       ReaderSettingsStore.horizontalMarginKey: 0.0,
@@ -249,16 +298,22 @@ void main() {
       fallbackPageMode: ReaderPageMode.verticalScroll,
     );
 
-    expect(restored.firstLineIndent, 4);
+    expect(restored.firstLineIndent, ReaderSettings.maxFirstLineIndent);
     expect(restored.fontWeight, ReaderSettings.maxFontWeight);
-    expect(restored.paragraphSpacing, 0);
+    expect(restored.paragraphSpacing, ReaderSettings.minParagraphSpacing);
     expect(restored.letterSpacing, ReaderSettings.maxLetterSpacing);
     expect(restored.textAlignment, ReaderTextAlignment.natural);
     expect(restored.pullBookmarkEnabled, isFalse);
     expect(restored.tapPageAnimationEnabled, isTrue);
     expect(restored.tabletTwoPageEnabled, isTrue);
-    expect(restored.copyWith(firstLineIndent: -1).firstLineIndent, 0);
-    expect(restored.copyWith(paragraphSpacing: 9).paragraphSpacing, 2);
+    expect(
+      restored.copyWith(firstLineIndent: -1).firstLineIndent,
+      ReaderSettings.minFirstLineIndent,
+    );
+    expect(
+      restored.copyWith(paragraphSpacing: 9).paragraphSpacing,
+      ReaderSettings.maxParagraphSpacing,
+    );
     expect(restored.copyWith(fontWeight: 349).fontWeight, 300);
     expect(restored.copyWith(fontWeight: 351).fontWeight, 400);
     expect(

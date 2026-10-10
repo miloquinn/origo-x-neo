@@ -1,5 +1,7 @@
 {
   "@@locale": "zh",
+  "adjustmentDecrease": "减小{label}",
+  "adjustmentIncrease": "增大{label}",
   "appTitle": "开元阅读",
   "@appTitle": {
     "description": "应用标题"

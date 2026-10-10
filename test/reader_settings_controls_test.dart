@@ -208,7 +208,7 @@ void main() {
       );
       expect(fontSizeSlider.min, ReaderSettings.minFontSize);
       expect(fontSizeSlider.max, ReaderSettings.maxFontSize);
-      expect(fontSizeSlider.divisions, 36);
+      expect(fontSizeSlider.divisions, 60);
 
       final lineHeightSlider = tester.widget<Slider>(
         find.descendant(
@@ -218,7 +218,7 @@ void main() {
       );
       expect(lineHeightSlider.min, ReaderSettings.minLineHeight);
       expect(lineHeightSlider.max, ReaderSettings.maxLineHeight);
-      expect(lineHeightSlider.divisions, 18);
+      expect(lineHeightSlider.divisions, 28);
 
       final textBrightnessFinder = find.descendant(
         of: find.byKey(const ValueKey('reader-text-brightness-slider')),
@@ -255,7 +255,10 @@ void main() {
           .widget<AnimatedDefaultTextStyle>(
             find.descendant(
               of: find.byKey(const ValueKey('reader-font-weight-control')),
-              matching: find.byType(AnimatedDefaultTextStyle),
+              matching: find.widgetWithText(
+                AnimatedDefaultTextStyle,
+                'A quiet page reads farther',
+              ),
             ),
           )
           .style;
@@ -295,8 +298,8 @@ void main() {
       final initialSpacing = tester.widget<Slider>(spacingFinder);
       expect(initialSpacing.value, 1);
       expect(initialSpacing.min, 0);
-      expect(initialSpacing.max, 2);
-      expect(initialSpacing.divisions, 2);
+      expect(initialSpacing.max, ReaderSettings.maxParagraphSpacing);
+      expect(initialSpacing.divisions, 4);
 
       final initialLetterSpacing = tester.widget<Slider>(letterSpacingFinder);
       expect(initialLetterSpacing.value, 0.3);

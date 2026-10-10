@@ -1,5 +1,7 @@
 {
   "@@locale": "it",
+  "adjustmentDecrease": "Riduci {label}",
+  "adjustmentIncrease": "Aumenta {label}",
   "appTitle": "Origo X",
   "home": "Home",
   "library": "Libreria",

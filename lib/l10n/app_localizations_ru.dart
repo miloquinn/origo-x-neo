@@ -9,6 +9,16 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String adjustmentDecrease(String label) {
+    return 'Уменьшить $label';
+  }
+
+  @override
+  String adjustmentIncrease(String label) {
+    return 'Увеличить $label';
+  }
+
+  @override
   String get appTitle => 'Origo X';
 
   @override

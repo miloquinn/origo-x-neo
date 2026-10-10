@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xxread/core/reader/native_text_paginator.dart';
+import 'package:xxread/core/reader/reader_settings.dart';
 import 'package:xxread/core/reader/reader_text_characters.dart';
 import 'package:xxread/core/reader/reader_text_layout.dart';
 import 'package:xxread/core/reader/reader_text_pagination.dart';
@@ -143,6 +144,27 @@ void main() {
     );
 
     expect(layout.text, source);
+  });
+
+  test('projects maximum paragraph spacing without source offset drift', () {
+    const source = '第一段\n第二段';
+    const sourceOffset = 11;
+    final layout = ReaderTextLayout.build(
+      source,
+      sourceOffset: sourceOffset,
+      paragraphSpacing: ReaderSettings.maxParagraphSpacing,
+    );
+
+    expect(layout.text, '第一段\n\n\n\n\n第二段');
+    final secondParagraphOffset = layout.text.lastIndexOf('第');
+    expect(
+      layout.sourceOffsetForDisplayOffset(secondParagraphOffset),
+      sourceOffset + source.indexOf('第', 1),
+    );
+    expect(
+      layout.sourceOffsetForDisplayOffset(layout.text.length),
+      sourceOffset + source.length,
+    );
   });
 
   test('EPUB normalization removes a leading parser paragraph separator', () {

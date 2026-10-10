@@ -113,6 +113,18 @@ abstract class AppLocalizations {
     Locale('zh', 'TW'),
   ];
 
+  /// Accessible label for a shared adjustment slider step button
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease {label}'**
+  String adjustmentDecrease(String label);
+
+  /// Accessible label for a shared adjustment slider step button
+  ///
+  /// In en, this message translates to:
+  /// **'Increase {label}'**
+  String adjustmentIncrease(String label);
+
   /// The title of the application
   ///
   /// In en, this message translates to:

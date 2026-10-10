@@ -11,6 +11,7 @@ import '../core/reader/reader_custom_theme.dart';
 import '../core/reader/reader_system_ui.dart';
 import '../utils/reader_themes.dart';
 import '../utils/localization_extension.dart';
+import 'glass_adjustment_slider.dart';
 import 'reader_theme_background.dart';
 import 'reader_chapter_progress_setting_tile.dart';
 
@@ -519,9 +520,11 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           label: widget.firstLineIndentLabel,
           value: _firstLineIndent.toDouble(),
           valueLabel: _firstLineIndent.toString(),
-          min: 0,
-          max: 4,
-          divisions: 4,
+          min: ReaderSettings.minFirstLineIndent.toDouble(),
+          max: ReaderSettings.maxFirstLineIndent.toDouble(),
+          divisions:
+              ReaderSettings.maxFirstLineIndent -
+              ReaderSettings.minFirstLineIndent,
           onChanged: (value) =>
               setState(() => _firstLineIndent = value.round()),
           onChangeEnd: (value) =>
@@ -532,9 +535,11 @@ class _ReaderSettingsSheetState extends State<ReaderSettingsSheet> {
           label: widget.paragraphSpacingLabel,
           value: _paragraphSpacing.toDouble(),
           valueLabel: _paragraphSpacing.toString(),
-          min: 0,
-          max: 2,
-          divisions: 2,
+          min: ReaderSettings.minParagraphSpacing.toDouble(),
+          max: ReaderSettings.maxParagraphSpacing.toDouble(),
+          divisions:
+              ReaderSettings.maxParagraphSpacing -
+              ReaderSettings.minParagraphSpacing,
           onChanged: (value) =>
               setState(() => _paragraphSpacing = value.round()),
           onChangeEnd: (value) =>
@@ -1573,8 +1578,13 @@ class ReaderFontWeightControl extends StatelessWidget {
   int get _normalizedValue => normalizeReaderFontWeight(value);
 
   String get _valueLabel {
-    final index = (_normalizedValue - ReaderSettings.minFontWeight) ~/ 100;
-    return '${valueLabels[index]} · $_normalizedValue';
+    return _labelFor(_normalizedValue.toDouble());
+  }
+
+  String _labelFor(double value) {
+    final weight = normalizeReaderFontWeight(value);
+    final index = (weight - ReaderSettings.minFontWeight) ~/ 100;
+    return '${valueLabels[index]} · $weight';
   }
 
   @override
@@ -1600,108 +1610,57 @@ class ReaderFontWeightControl extends StatelessWidget {
     return Padding(
       key: const ValueKey('reader-font-weight-control'),
       padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-              Container(
-                constraints: const BoxConstraints(minWidth: 86),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  _valueLabel,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: colors.onPrimaryContainer,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+      child: GlassAdjustmentSlider(
+        label: label,
+        value: _normalizedValue.toDouble(),
+        valueLabel: _valueLabel,
+        valueFormatter: _labelFor,
+        min: ReaderSettings.minFontWeight.toDouble(),
+        max: ReaderSettings.maxFontWeight.toDouble(),
+        divisions:
+            (ReaderSettings.maxFontWeight - ReaderSettings.minFontWeight) ~/
+            100,
+        sliderKey: const ValueKey('reader-font-weight-slider'),
+        onChanged: (next) => onChanged(normalizeReaderFontWeight(next)),
+        onChangeEnd: (next) => onChangeEnd(normalizeReaderFontWeight(next)),
+        preview: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerHighest.withValues(alpha: 0.52),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.outlineVariant),
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHighest.withValues(alpha: 0.52),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: colors.outlineVariant),
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutCubic,
+            style: previewStyle,
+            child: Text(
+              previewText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            child: AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 140),
-              curve: Curves.easeOutCubic,
-              style: previewStyle,
+          ),
+        ),
+        footer: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              size: 15,
+              color: colors.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
               child: Text(
-                previewText,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          SliderTheme(
-            data: Theme.of(context).sliderTheme.copyWith(
-              trackHeight: 4,
-              activeTrackColor: colors.primary,
-              inactiveTrackColor: colors.outlineVariant,
-              thumbColor: colors.primary,
-              overlayColor: colors.primary.withValues(alpha: 0.12),
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
-              showValueIndicator: ShowValueIndicator.never,
-            ),
-            child: Slider(
-              key: const ValueKey('reader-font-weight-slider'),
-              value: _normalizedValue.toDouble(),
-              min: ReaderSettings.minFontWeight.toDouble(),
-              max: ReaderSettings.maxFontWeight.toDouble(),
-              divisions:
-                  (ReaderSettings.maxFontWeight -
-                      ReaderSettings.minFontWeight) ~/
-                  100,
-              semanticFormatterCallback: (_) => _valueLabel,
-              onChanged: (next) => onChanged(normalizeReaderFontWeight(next)),
-              onChangeEnd: (next) =>
-                  onChangeEnd(normalizeReaderFontWeight(next)),
-            ),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 15,
-                color: colors.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  hint,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                    height: 1.35,
-                  ),
+                hint,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  height: 1.35,
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1731,65 +1690,17 @@ class ReaderSettingSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-              Container(
-                constraints: const BoxConstraints(minWidth: 44),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  valueLabel,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: colors.onPrimaryContainer,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          SliderTheme(
-            data: Theme.of(context).sliderTheme.copyWith(
-              trackHeight: 4,
-              activeTrackColor: colors.primary,
-              inactiveTrackColor: colors.outlineVariant,
-              thumbColor: colors.primary,
-              overlayColor: colors.primary.withValues(alpha: 0.12),
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
-              showValueIndicator: ShowValueIndicator.never,
-            ),
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: divisions,
-              onChanged: onChanged,
-              onChangeEnd: onChangeEnd,
-            ),
-          ),
-        ],
+      child: GlassAdjustmentSlider(
+        label: label,
+        value: value,
+        valueLabel: valueLabel,
+        min: min,
+        max: max,
+        divisions: divisions,
+        onChanged: onChanged,
+        onChangeEnd: onChangeEnd,
       ),
     );
   }

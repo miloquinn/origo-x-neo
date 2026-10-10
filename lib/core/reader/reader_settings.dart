@@ -76,7 +76,7 @@ List<FontVariation> readerFontVariationsFromValue(
 class ReaderSettings {
   static const double defaultFontSize = 19;
   static const double minFontSize = 12;
-  static const double maxFontSize = 48;
+  static const double maxFontSize = 72;
 
   /// Text brightness uses the active reader theme direction:
   /// dark: 0 is black and 100 is white; light: 0 is white and 100 is black.
@@ -88,15 +88,19 @@ class ReaderSettings {
   static const int maxFontWeight = 700;
   static const int defaultFontWeight = 400;
   static const double minLineHeight = 1.2;
-  static const double maxLineHeight = 3;
+  static const double maxLineHeight = 4;
   static const double defaultLineHeight = 1.75;
   static const double minLetterSpacing = 0;
-  static const double maxLetterSpacing = 3;
+  static const double maxLetterSpacing = 6;
   static const double defaultLetterSpacing = 0;
   static const ReaderTextAlignment defaultTextAlignment =
       ReaderTextAlignment.natural;
   static const double defaultHorizontalMargin = 18;
+  static const int minFirstLineIndent = 0;
+  static const int maxFirstLineIndent = 4;
   static const int defaultFirstLineIndent = 2;
+  static const int minParagraphSpacing = 0;
+  static const int maxParagraphSpacing = 4;
   static const int defaultParagraphSpacing = 0;
   static const String defaultThemeId = 'day';
   static const ReaderPageMode defaultPageMode = ReaderPageMode.horizontalSlide;
@@ -196,8 +200,14 @@ class ReaderSettings {
       ),
       themeId: themeId ?? this.themeId,
       pageMode: pageMode ?? this.pageMode,
-      firstLineIndent: (firstLineIndent ?? this.firstLineIndent).clamp(0, 4),
-      paragraphSpacing: (paragraphSpacing ?? this.paragraphSpacing).clamp(0, 2),
+      firstLineIndent: (firstLineIndent ?? this.firstLineIndent).clamp(
+        minFirstLineIndent,
+        maxFirstLineIndent,
+      ),
+      paragraphSpacing: (paragraphSpacing ?? this.paragraphSpacing).clamp(
+        minParagraphSpacing,
+        maxParagraphSpacing,
+      ),
       pullBookmarkEnabled: pullBookmarkEnabled ?? this.pullBookmarkEnabled,
       tapPageAnimationEnabled:
           tapPageAnimationEnabled ?? this.tapPageAnimationEnabled,
@@ -347,11 +357,17 @@ class ReaderSettingsStore {
       firstLineIndent:
           (prefs.getInt(firstLineIndentKey) ??
                   ReaderSettings.defaultFirstLineIndent)
-              .clamp(0, 4),
+              .clamp(
+                ReaderSettings.minFirstLineIndent,
+                ReaderSettings.maxFirstLineIndent,
+              ),
       paragraphSpacing:
           (prefs.getInt(paragraphSpacingKey) ??
                   ReaderSettings.defaultParagraphSpacing)
-              .clamp(0, 2),
+              .clamp(
+                ReaderSettings.minParagraphSpacing,
+                ReaderSettings.maxParagraphSpacing,
+              ),
       chapterTitlePageEnabled: prefs.getBool(chapterTitlePageKey) ?? true,
       pullBookmarkEnabled: prefs.getBool(pullBookmarkKey) ?? false,
       tapPageAnimationEnabled: prefs.getBool(tapPageAnimationKey) ?? true,

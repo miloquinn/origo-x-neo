@@ -3,6 +3,11 @@ import 'package:xxread/core/reader/reader_margin_settings.dart';
 
 void main() {
   group('ReaderMarginSettings', () {
+    test('exposes the expanded horizontal and vertical ranges', () {
+      expect(ReaderMarginSettings.horizontalMax, 96);
+      expect(ReaderMarginSettings.max, 120);
+    });
+
     test('uses close-to-screen defaults without stored values', () {
       final margins = ReaderMarginSettings.fromStored();
 

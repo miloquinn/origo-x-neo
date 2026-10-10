@@ -1,5 +1,7 @@
 {
   "@@locale": "ru",
+  "adjustmentDecrease": "Уменьшить {label}",
+  "adjustmentIncrease": "Увеличить {label}",
   "appTitle": "Origo X",
   "home": "Главная",
   "library": "Книжная полка",

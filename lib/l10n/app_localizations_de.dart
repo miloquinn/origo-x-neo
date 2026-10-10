@@ -9,6 +9,16 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
+  String adjustmentDecrease(String label) {
+    return '$label verringern';
+  }
+
+  @override
+  String adjustmentIncrease(String label) {
+    return '$label erhöhen';
+  }
+
+  @override
   String get appTitle => 'Origo X';
 
   @override

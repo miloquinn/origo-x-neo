@@ -9,6 +9,16 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String adjustmentDecrease(String label) {
+    return '减小$label';
+  }
+
+  @override
+  String adjustmentIncrease(String label) {
+    return '增大$label';
+  }
+
+  @override
   String get appTitle => '开元阅读';
 
   @override
@@ -7531,6 +7541,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appTitle => '開元閱讀';
+
+  @override
+  String adjustmentDecrease(String label) {
+    return '減小$label';
+  }
+
+  @override
+  String adjustmentIncrease(String label) {
+    return '增大$label';
+  }
 
   @override
   String get home => '首頁';

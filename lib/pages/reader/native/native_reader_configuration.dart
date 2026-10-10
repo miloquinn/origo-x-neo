@@ -335,7 +335,10 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
     double? bottomMargin,
   }) async {
     _setReaderState(() {
-      _fontSize = fontSize ?? _fontSize;
+      _fontSize = (fontSize ?? _fontSize).clamp(
+        ReaderSettings.minFontSize,
+        ReaderSettings.maxFontSize,
+      );
       _textBrightness = (textBrightness ?? _textBrightness).clamp(
         ReaderSettings.minTextBrightness,
         ReaderSettings.maxTextBrightness,
@@ -351,8 +354,14 @@ extension _NativeReaderConfiguration on _NativeReaderPageState {
         ReaderSettings.maxLetterSpacing,
       );
       _textAlignment = textAlignment ?? _textAlignment;
-      _firstLineIndent = (firstLineIndent ?? _firstLineIndent).clamp(0, 4);
-      _paragraphSpacing = (paragraphSpacing ?? _paragraphSpacing).clamp(0, 2);
+      _firstLineIndent = (firstLineIndent ?? _firstLineIndent).clamp(
+        ReaderSettings.minFirstLineIndent,
+        ReaderSettings.maxFirstLineIndent,
+      );
+      _paragraphSpacing = (paragraphSpacing ?? _paragraphSpacing).clamp(
+        ReaderSettings.minParagraphSpacing,
+        ReaderSettings.maxParagraphSpacing,
+      );
       _horizontalMargin = (horizontalMargin ?? _horizontalMargin).clamp(
         ReaderMarginSettings.horizontalMin,
         ReaderMarginSettings.horizontalMax,

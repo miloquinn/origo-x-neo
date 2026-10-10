@@ -1,5 +1,9 @@
 {
   "@@locale": "en",
+  "adjustmentDecrease": "Decrease {label}",
+  "@adjustmentDecrease": {"description": "Accessible label for a shared adjustment slider step button", "placeholders": {"label": {"type": "String"}}},
+  "adjustmentIncrease": "Increase {label}",
+  "@adjustmentIncrease": {"description": "Accessible label for a shared adjustment slider step button", "placeholders": {"label": {"type": "String"}}},
   "appTitle": "Origo X",
   "@appTitle": {
     "description": "The title of the application"

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 
+import 'reader_settings.dart';
 import 'reader_text_characters.dart';
 
 typedef ReaderSourceSpanBuilder =
@@ -37,8 +38,14 @@ class ReaderTextLayout {
     bool indentFirstParagraph = true,
     bool normalizeParagraphBreaks = false,
   }) {
-    final indent = firstLineIndent.clamp(0, 4);
-    final spacing = paragraphSpacing.clamp(0, 2);
+    final indent = firstLineIndent.clamp(
+      ReaderSettings.minFirstLineIndent,
+      ReaderSettings.maxFirstLineIndent,
+    );
+    final spacing = paragraphSpacing.clamp(
+      ReaderSettings.minParagraphSpacing,
+      ReaderSettings.maxParagraphSpacing,
+    );
     final output = StringBuffer();
     final runs = <_ReaderTextRun>[];
     final boundaries = <int>[sourceOffset];

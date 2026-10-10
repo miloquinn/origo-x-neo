@@ -1,5 +1,7 @@
 {
   "@@locale": "zh_TW",
+  "adjustmentDecrease": "減小{label}",
+  "adjustmentIncrease": "增大{label}",
   "appTitle": "開元閱讀",
   "home": "首頁",
   "library": "書架",

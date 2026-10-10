@@ -1,5 +1,7 @@
 {
   "@@locale": "ja",
+  "adjustmentDecrease": "{label}を下げる",
+  "adjustmentIncrease": "{label}を上げる",
   "appTitle": "Origo X",
   "home": "ホーム",
   "library": "本棚",
