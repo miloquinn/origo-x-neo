@@ -502,14 +502,18 @@ class SourceRuntimeLogin {
     if (body == null) return _restoreLoginFields(source, raw);
     final loginSource = '${source.raw['loginUrl'] ?? ''}';
     final loginScript = sourceScriptBody(loginSource) ?? loginSource;
-    final value = await _scripts().evaluateAsync(
-      '$loginScript\n$body',
-      _contexts.scriptContext(
-        source,
-        result: _sessions.current(source).loginInfo,
-      ),
-    );
-    return _restoreLoginFields(source, value);
+    try {
+      final value = await _scripts().evaluateAsync(
+        '$loginScript\n$body',
+        _contexts.scriptContext(
+          source,
+          result: _sessions.current(source).loginInfo,
+        ),
+      );
+      return _restoreLoginFields(source, value);
+    } finally {
+      await _sessions.flush(source);
+    }
   }
 
   List<SourceLoginField> _restoreLoginFields(
@@ -517,21 +521,32 @@ class SourceRuntimeLogin {
     Object? value,
   ) {
     final saved = _sessions.current(source).loginInfo;
-    return [
-      for (final field in parseSourceLoginFields(value))
-        SourceLoginField(
-          name: field.name,
-          type: field.type,
-          viewName: field.viewName,
-          defaultValue: field.isButton
-              ? field.defaultValue
-              : (field.chars.isEmpty || field.chars.contains(saved[field.name]))
-              ? saved[field.name] ?? field.defaultValue
-              : field.defaultValue,
-          chars: field.chars,
-          action: field.action,
-        ),
-    ];
+    List<SourceLoginField> fields;
+    try {
+      fields = parseSourceLoginFields(value);
+    } on FormatException {
+      throw const BookSourceProtocolException(
+        'This source defines an invalid login form.',
+      );
+    }
+    return fields.map((field) {
+      // Older versions trimmed names before saving. Prefer the exact script
+      // key, but retain those saved values when importing an existing form.
+      final value = saved[field.name] ?? saved[field.name.trim()];
+      return SourceLoginField(
+        name: field.name,
+        type: field.type,
+        viewName: field.viewName,
+        defaultValue: field.isButton
+            ? field.defaultValue
+            : (field.chars.isEmpty || field.chars.contains(value))
+            ? value ?? field.defaultValue
+            : field.defaultValue,
+        chars: field.chars,
+        action: field.action,
+        flexBasisPercent: field.flexBasisPercent,
+      );
+    }).toList();
   }
 
   Future<String?> login(

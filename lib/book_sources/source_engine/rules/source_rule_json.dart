@@ -99,7 +99,9 @@ bool _usesJsonPathSyntax(String path) {
       path.contains('[*]') ||
       path.contains("['") ||
       path.contains('["') ||
-      RegExp(r'\[[^\]]*[:,][^\]]*\]').hasMatch(path);
+      // HTML attribute predicates can contain colons and commas in values.
+      // Their '=' distinguishes them from JSONPath slices and index unions.
+      RegExp(r'\[[^\]=]*[:,][^\]=]*\]').hasMatch(path);
 }
 
 String normalizeLegacySourceJsonPath(String input) {

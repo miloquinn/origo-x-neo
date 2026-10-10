@@ -49,8 +49,9 @@ void main() {
                   : <File>[File(_corpusFile)])
               .where((file) => file.path.toLowerCase().endsWith('.json'))
               .where(
-                (file) =>
-                    !file.path.split(Platform.pathSeparator).contains('替换规则'),
+                (file) => !file.path
+                    .split(Platform.pathSeparator)
+                    .any((part) => part == '替换规则' || part == '04_替换规则'),
               )
               .toList(growable: false)
             ..sort((left, right) => left.path.compareTo(right.path));

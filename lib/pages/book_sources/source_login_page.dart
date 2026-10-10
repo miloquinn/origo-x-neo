@@ -56,20 +56,8 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
     try {
       final fields = await _client.loadLoginFields(widget.source);
       if (!mounted) return;
-      for (final field in fields) {
-        if (field.isInput) {
-          _controllers[field.name] = TextEditingController(
-            text: field.defaultValue ?? '',
-          );
-        } else if (field.chars.isNotEmpty) {
-          _choices[field.name] = field.defaultValue ?? field.chars.first;
-        } else if (field.type == 'toggle') {
-          _choices[field.name] = field.defaultValue ?? 'false';
-        }
-      }
-      if (!mounted) return;
       setState(() {
-        _fields = fields;
+        _applyLoadedFields(fields, initialLoad: true);
         _loading = false;
       });
     } on Object catch (error) {
@@ -93,6 +81,8 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
         for (final entry in _controllers.entries) entry.key: entry.value.text,
         ..._choices,
       }, action: button?.action);
+      if (!mounted) return;
+      await _reloadSavedFields();
       if (!mounted) return;
       if (message != null) {
         setState(() => _submitting = false);
@@ -135,9 +125,8 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
     try {
       await _client.clearSourceLogin(widget.source);
       if (!mounted) return;
-      for (final controller in _controllers.values) {
-        controller.clear();
-      }
+      await _reloadSavedFields(resetToDefaults: true);
+      if (!mounted) return;
       showSideToast(
         context,
         context.l10n.sourceLoginCleared,
@@ -148,6 +137,82 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<void> _reloadSavedFields({bool resetToDefaults = false}) async {
+    final fields = await _client.loadLoginFields(widget.source);
+    if (!mounted) return;
+    setState(
+      () => _applyLoadedFields(
+        fields,
+        initialLoad: false,
+        resetToDefaults: resetToDefaults,
+      ),
+    );
+  }
+
+  void _applyLoadedFields(
+    List<SourceLoginField> fields, {
+    required bool initialLoad,
+    bool resetToDefaults = false,
+  }) {
+    final previousFields = {for (final field in _fields) field.name: field};
+    final inputNames = {
+      for (final field in fields)
+        if (field.isInput) field.name,
+    };
+    for (final name in _controllers.keys.toList()) {
+      if (!inputNames.contains(name)) {
+        _controllers.remove(name)?.dispose();
+      }
+    }
+
+    final choiceNames = {
+      for (final field in fields)
+        if (!field.isInput &&
+            (field.chars.isNotEmpty || field.type == 'toggle'))
+          field.name,
+    };
+    _choices.removeWhere((name, _) => !choiceNames.contains(name));
+
+    for (final field in fields) {
+      final previous = previousFields[field.name];
+      if (field.isInput) {
+        final savedValue = field.defaultValue ?? '';
+        final controller = _controllers[field.name];
+        if (controller == null) {
+          _controllers[field.name] = TextEditingController(text: savedValue);
+        } else if (initialLoad ||
+            resetToDefaults ||
+            previous == null ||
+            previous.defaultValue != field.defaultValue) {
+          controller.value = TextEditingValue(
+            text: savedValue,
+            selection: TextSelection.collapsed(offset: savedValue.length),
+          );
+        }
+      } else if (field.chars.isNotEmpty) {
+        final savedValue = field.defaultValue ?? field.chars.first;
+        final currentValue = _choices[field.name];
+        if (initialLoad ||
+            resetToDefaults ||
+            previous == null ||
+            previous.defaultValue != field.defaultValue ||
+            currentValue == null ||
+            !field.chars.contains(currentValue)) {
+          _choices[field.name] = savedValue;
+        }
+      } else if (field.type == 'toggle') {
+        if (initialLoad ||
+            resetToDefaults ||
+            previous == null ||
+            previous.defaultValue != field.defaultValue ||
+            !_choices.containsKey(field.name)) {
+          _choices[field.name] = field.defaultValue ?? 'false';
+        }
+      }
+    }
+    _fields = fields;
   }
 
   String _message(Object error) {
@@ -234,7 +299,9 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
                   const SizedBox(height: 13),
                 ],
                 if (_fields.isNotEmpty &&
-                    !_fields.any((field) => field.isButton)) ...[
+                    !_fields.any(
+                      (field) => field.isButton && !field.isSectionHeading,
+                    )) ...[
                   FilledButton.icon(
                     onPressed: _submitting ? null : _login,
                     icon: _submitting
@@ -262,6 +329,11 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
   }
 
   List<Widget> _buildForm() {
+    if (_fields.any(
+      (field) => field.flexBasisPercent != null || field.isSectionHeading,
+    )) {
+      return _buildOrderedForm();
+    }
     final firstAction = _fields.indexWhere((field) => field.isButton);
     final inputs = firstAction < 0
         ? _fields
@@ -288,37 +360,10 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
               final width = singleColumn
                   ? constraints.maxWidth
                   : (constraints.maxWidth - 10) / 2;
-              return Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  for (final field in actions)
-                    SizedBox(
-                      width: width,
-                      child: FilledButton.tonal(
-                        key: ValueKey('source-login-action-${field.name}'),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed:
-                            _submitting ||
-                                (field.action?.trim().isEmpty ?? true)
-                            ? null
-                            : () => _login(field),
-                        child: Text(
-                          field.viewName ?? field.name,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
+              return _actionWrap(
+                actions,
+                constraints.maxWidth,
+                fallbackWidth: width,
               );
             },
           ),
@@ -347,16 +392,112 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
     ];
   }
 
+  List<Widget> _buildOrderedForm() {
+    final children = <Widget>[];
+    var index = 0;
+    while (index < _fields.length) {
+      final field = _fields[index];
+      if (children.isNotEmpty) children.add(const SizedBox(height: 16));
+      if (field.isSectionHeading) {
+        children.add(
+          Text(
+            _displayLabel(field),
+            key: ValueKey('source-login-heading-${field.name}'),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        );
+        index++;
+        continue;
+      }
+      if (field.isButton) {
+        final actions = <SourceLoginField>[];
+        while (index < _fields.length &&
+            _fields[index].isButton &&
+            !_fields[index].isSectionHeading) {
+          actions.add(_fields[index]);
+          index++;
+        }
+        children.add(
+          LayoutBuilder(
+            builder: (context, constraints) =>
+                _actionWrap(actions, constraints.maxWidth),
+          ),
+        );
+        continue;
+      }
+      children.add(_buildField(field));
+      index++;
+    }
+    return [
+      if (children.isNotEmpty) ...[
+        _card(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    ];
+  }
+
+  Widget _actionWrap(
+    List<SourceLoginField> actions,
+    double maxWidth, {
+    double? fallbackWidth,
+  }) {
+    const spacing = 10.0;
+    const minButtonWidth = 112.0;
+    final defaultWidth =
+        fallbackWidth ??
+        (maxWidth < minButtonWidth * 2 + spacing
+            ? maxWidth
+            : (maxWidth - spacing) / 2);
+    return Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      children: [
+        for (final field in actions)
+          SizedBox(
+            width: field.flexBasisPercent != null
+                ? (maxWidth * field.flexBasisPercent! -
+                          spacing * (1 - field.flexBasisPercent!))
+                      .clamp(
+                        maxWidth < minButtonWidth ? maxWidth : minButtonWidth,
+                        maxWidth,
+                      )
+                : defaultWidth,
+            child: FilledButton.tonal(
+              key: ValueKey('source-login-action-${field.name}'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: _submitting ? null : () => _login(field),
+              child: Text(_displayLabel(field), textAlign: TextAlign.center),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _card(Widget child) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.85),
+    return Material(
+      color: scheme.surface.withValues(alpha: 0.85),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.4)),
       ),
-      child: child,
+      child: Padding(padding: const EdgeInsets.all(16), child: child),
     );
   }
 
@@ -438,7 +579,7 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
   }
 
   Widget _buildField(SourceLoginField field) {
-    final label = field.viewName ?? field.name;
+    final label = _displayLabel(field);
     final decoration = InputDecoration(
       filled: true,
       fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -463,6 +604,9 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
     if (field.chars.isNotEmpty) {
       return labeled(
         DropdownButtonFormField<String>(
+          key: ValueKey(
+            'source-login-choice-${field.name}-${_choices[field.name]}',
+          ),
           isExpanded: true,
           initialValue: _choices[field.name],
           decoration: decoration,
@@ -497,4 +641,7 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
       ),
     );
   }
+
+  String _displayLabel(SourceLoginField field) =>
+      (field.viewName ?? field.name).trim();
 }

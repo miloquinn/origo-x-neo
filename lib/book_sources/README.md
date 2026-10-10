@@ -144,6 +144,56 @@ Do not emulate this by storing every book's variables in global source state.
 Content-page writes must also reach the next page request. Stateful scripted
 fixed pages run sequentially; plain selector-based fixed pages retain prefetch.
 
+## Declarative login forms and local payloads
+
+`source_engine/source_json.dart` decodes legacy declaration data without running
+JavaScript. Strict JSON stays on the fast path; mixed single/double quotes,
+unquoted keys, comments and trailing commas use limited lexical normalization.
+Expressions in a declaration still fail. Only explicitly marked `@js:`/`<js>`
+forms enter the existing script runtime. `source_login_ui.dart` preserves exact
+nonblank field names because button scripts access those names through `result`.
+`source_runtime_login.dart` restores old values saved under trimmed names, reports
+invalid forms without their contents, and flushes generated-form session writes.
+
+`pages/book_sources/source_login_page.dart` respects the order of forms that
+declare layout fractions or section headings. Buttons without an action are
+headings; consecutive actions wrap at narrower widths. Plain legacy forms retain
+their additional-settings section. Each action reloads persisted login values
+into the existing controllers before showing its response, so a generated Token
+is not overwritten by stale inputs on the next action. Explicit clear resets
+inputs and choices to their declaration defaults. Source scripts, not the app,
+define required values, account services and Token expiry; no source-specific
+credentials or endpoint branches are supplied.
+
+`source_request_template.dart` treats data payloads with a nonblank `type`, or
+payloads that are not absolute HTTP(S) URLs, as local hex-encoded bytes. An empty
+`type` therefore still supports book/chapter IDs. Untyped HTTP(S) wrappers retain
+their legacy network behavior. The shared options boundary skips the data URI's
+payload comma and nested/quoted JSON commas before locating trailing options;
+request parsing and wrapper decoding use the same boundary.
+`SourceResponse.scriptBaseUrl` preserves the
+original request options for subsequent rules. Reading-source cache revision 7
+includes this payload behavior; older persistent results are not reused.
+
+Regression entry points: `test/source_login_ui_test.dart`,
+`test/source_runtime_login_form_test.dart`, `test/source_login_page_test.dart`,
+`test/source_runtime_virtual_data_url_test.dart`, and the session/browser tests
+listed above. Stateful Flutter files run in independent processes. The opt-in
+`tool/source_sample_smoke_test.dart` reads external samples without modifying
+them; account-required responses and unavailable upstream services remain
+separate from offline compatibility. `tool/benchmark_real_source_import.dart`
+recursively reads organized corpora, excluding replacement-rule directories;
+its import metrics do not establish online source availability.
+
+On structured responses, a CSS attribute predicate containing `:` or `,` stays
+an unmatched HTML alternative, so mixed `CSS||JSON` metadata rules can fall back
+to the JSON field. It must not be inferred as a JSONPath slice. Explicit JSONPath
+syntax keeps its parser errors. This boundary is covered by
+`test/source_rule_format_contract_test.dart` alongside slice/filter regressions.
+
+Dated evidence for the four-source user submission and resource-directory
+migration is in [2026-10-10 validation](../../docs/reviews/2026-10-10-source-login-compatibility.md).
+
 Image extraction lives in `source_content_images.dart`; shared cover/chapter
 asset URL and request-option parsing lives in `source_remote_asset.dart`.
 Neither helper depends on runtime orchestration. `source_text_replacement.dart`

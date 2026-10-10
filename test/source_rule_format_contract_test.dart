@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
 import 'package:xxread/book_sources/source_engine/rules/source_rule_engine.dart';
 
 void main() {
@@ -45,6 +46,51 @@ void main() {
 
     expect(engine.evaluateString(document, null, 'meta:author'), 'Alice');
     expect(engine.evaluateString(document, null, 'last,name'), 'Chapter');
+  });
+
+  test('HTML metadata selectors do not abort JSON metadata alternatives', () {
+    final document = SourceRuleDocument.parse(
+      '{"author":"Alice","title":"Book"}',
+      Uri.parse('https://books.test/book'),
+    );
+    for (final selector in [
+      '[property="og:novel:author"]@content',
+      '[data-name="last,first"]@text',
+      'meta[property="og:author"]@content',
+    ]) {
+      expect(
+        engine.evaluateString(document, null, '$selector||author'),
+        'Alice',
+      );
+    }
+    final htmlDocument = html(
+      '<meta property="og:novel:author" content="Alice">',
+    );
+    expect(
+      engine.evaluateString(
+        htmlDocument,
+        null,
+        '[property="og:novel:author"]@content',
+      ),
+      'Alice',
+    );
+  });
+
+  test('JSON slices and malformed explicit paths retain their contracts', () {
+    final document = SourceRuleDocument.parse(
+      '{"data":["one","two","three"]}',
+      Uri.parse('https://books.test/book'),
+    );
+    expect(engine.evaluateList(document, null, 'data[0:2]'), ['one', 'two']);
+    expect(engine.evaluateList(document, null, 'data[0,2]'), ['one', 'three']);
+    expect(
+      () => engine.evaluateList(document, null, r'$.data['),
+      throwsA(isA<BookSourceProtocolException>()),
+    );
+    expect(
+      () => engine.evaluateList(document, null, 'data[?(@.missing ==)]'),
+      throwsA(isA<BookSourceProtocolException>()),
+    );
   });
 
   test('JSoup contains selects elements by descendant text', () {

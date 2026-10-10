@@ -107,7 +107,7 @@ class ReadingSourceBackend implements ReadingSourceBackendPort {
   // Bump when rule semantics change so persisted catalogs and content are
   // reparsed. Revision 6 prevents content parsed without its catalog/runtime
   // state from reusing a body that may have crossed a chapter boundary.
-  static const _ruleEngineRevision = 6;
+  static const _ruleEngineRevision = 7;
 
   final SourceRuntime Function() _runtime;
   final BookSourceChapterCache _chapterCache;

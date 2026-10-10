@@ -10,7 +10,7 @@ Map<String, String> requestVariables(
 };
 
 String? decodeSourceDataTarget(String value) {
-  final optionsStart = value.lastIndexOf(RegExp(r',\s*\{'));
+  final optionsStart = sourceRequestOptionsStart(value);
   final dataPart = optionsStart < 0 ? value : value.substring(0, optionsStart);
   if (!dataPart.startsWith('data:')) return null;
   final comma = dataPart.indexOf(',');

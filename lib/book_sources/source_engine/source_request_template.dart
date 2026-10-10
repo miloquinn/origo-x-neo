@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../../utils/chinese_charset_encoder.dart';
 import '../protocol/book_source_protocol.dart';
+import 'rules/source_rule_parser.dart';
 import 'source_request_expressions.dart';
 
 enum SourceRequestMethod { get, head, post }
@@ -35,9 +36,9 @@ class SourceRequestTemplate {
   final String? body;
   final String? cookieJarKey;
 
-  /// Set when [url] is a `data:` URI carrying a `type` option, mirroring the
-  /// compatible `AnalyzeUrl.getStrResponseAwait` short-circuit: the request is
-  /// never sent over the network. The payload is decoded locally and
+  /// Set for local `data:` payloads: an explicit nonblank `type`, or bytes that
+  /// do not wrap an absolute HTTP(S) URL. These never reach the network.
+  /// The payload is decoded locally and
   /// hex-encoded (matching `HexUtil.encodeHexStr`) so rule scripts that
   /// expect this convention (commonly paired with `java.hexDecodeToString`)
   /// see the protocol-compatible byte representation.
@@ -60,7 +61,7 @@ class SourceRequestTemplate {
 
     var urlText = input;
     var options = const <String, dynamic>{};
-    final optionsStart = _requestOptionsStart(input);
+    final optionsStart = sourceRequestOptionsStart(input);
     if (optionsStart >= 0) {
       final candidate = input.substring(optionsStart + 1).trim();
       try {
@@ -235,7 +236,7 @@ class SourceRequestTemplate {
 }
 
 String resolveSourceRequestUrl(Uri baseUri, String value) {
-  final optionsStart = _requestOptionsStart(value);
+  final optionsStart = sourceRequestOptionsStart(value);
   final urlText = (optionsStart < 0 ? value : value.substring(0, optionsStart))
       .trim();
   final resolved = urlText.startsWith('data:')
@@ -385,13 +386,10 @@ bool _isHex(int byte) =>
 final _encodedForm = RegExp(r'^(?:[a-zA-Z0-9*._+\-]|%[0-9a-fA-F]{2})*$');
 
 /// Decodes a `data:` request target into the protocol-compatible hex string
-/// that rule scripts expect, or returns null when [value] is not a `data:` URI
-/// carrying a non-blank `type` option (the compatibility signal used to treat
-/// the whole request as local bytes instead of a network fetch).
+/// that rule scripts expect. Only untyped HTTP(S) URL wrappers use the legacy
+/// network path; IDs and arbitrary bytes stay local even with an empty type.
 String? _dataUriSyntheticBody(String value, Map<String, dynamic> options) {
   if (!value.startsWith('data:')) return null;
-  final type = options['type'];
-  if (type == null || '$type'.trim().isEmpty) return null;
   final comma = value.indexOf(',');
   if (comma < 0) return null;
   final metadata = value.substring(5, comma).toLowerCase();
@@ -405,6 +403,16 @@ String? _dataUriSyntheticBody(String value, Map<String, dynamic> options) {
             ),
           )
         : utf8.encode(Uri.decodeComponent(payload));
+    if ('${options['type'] ?? ''}'.trim().isEmpty) {
+      final target = Uri.tryParse(
+        utf8.decode(bytes, allowMalformed: true).trim(),
+      );
+      if (target != null &&
+          target.hasAuthority &&
+          (target.scheme == 'http' || target.scheme == 'https')) {
+        return null;
+      }
+    }
     final hex = StringBuffer();
     for (final byte in bytes) {
       hex.write(byte.toRadixString(16).padLeft(2, '0'));
@@ -415,10 +423,22 @@ String? _dataUriSyntheticBody(String value, Map<String, dynamic> options) {
   }
 }
 
-// The first delimiter starts the options object. Later `,{` sequences may
-// belong to nested body arrays or quoted values and must not split the URL.
-int _requestOptionsStart(String value) =>
-    _requestOptionsDelimiter.firstMatch(value)?.start ?? -1;
+/// Finds the trailing request options without consuming a data URI's required
+/// payload delimiter or commas inside a JSON payload or options object.
+int sourceRequestOptionsStart(String value) {
+  if (!value.startsWith('data:')) {
+    return _requestOptionsDelimiter.firstMatch(value)?.start ?? -1;
+  }
+  final payloadStart = value.indexOf(',') + 1;
+  if (payloadStart == 0) return -1;
+  final parts = splitSourceRuleTopLevel(value.substring(payloadStart), ',');
+  var delimiter = payloadStart + parts.first.length;
+  for (final part in parts.skip(1)) {
+    if (part.trimLeft().startsWith('{')) return delimiter;
+    delimiter += part.length + 1;
+  }
+  return -1;
+}
 
 bool _isJsonBody(String? body) {
   if (body == null) return false;
