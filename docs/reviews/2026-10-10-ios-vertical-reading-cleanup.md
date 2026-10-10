@@ -116,10 +116,12 @@ offline CI suite.
 ## Delivery boundary
 
 The six reader product files are finalized and their hashes are published in
-`build/device-ios/coordination.json`. The concurrently active reader-adjustment
-chat owns one combined latest-checkout build/install; this reader chat will
-independently verify those six hashes and the installed application identity.
-This record's follow-up delivery receipt will be added once available.
+`build/device-ios/coordination.json`. Its intermediate reader-adjustment build
+`261010004` was cancelled before installation because shared theme/AI work was
+still changing. The theme chat now owns one final combined latest-checkout
+build/install; this reader chat independently verifies those six hashes and
+the installed application identity. This record's follow-up delivery receipt
+will be added once available.
 
 The current SloanePro identity was verified as iPhone 16 Pro,
 UDID `00008140-001979421E93001C`. iPhone Mirroring reported the phone in use and
