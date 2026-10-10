@@ -133,7 +133,10 @@ Future<void> _showArtworkThemes(WidgetTester tester) async {
 }
 
 Finder _galleryScrollable() => find.descendant(
-  of: find.byType(SingleChildScrollView),
+  of: find.descendant(
+    of: find.byType(AppThemePage),
+    matching: find.byType(SingleChildScrollView),
+  ),
   matching: find.byType(Scrollable),
 );
 

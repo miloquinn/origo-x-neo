@@ -15,6 +15,7 @@ import '../../utils/ui_style.dart';
 import '../../widgets/app_skin_icon.dart';
 import '../../widgets/app_theme_preview.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/side_toast.dart';
 import 'theme_market_page.dart';
 
 enum AppThemeCategory { color, artwork }
@@ -42,7 +43,7 @@ class _AppThemePageState extends State<AppThemePage> {
   }) async {
     final version = (_applyVersions[category] ?? 0) + 1;
     _applyVersions[category] = version;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    hideSideToast();
     try {
       await change();
     } catch (error, stackTrace) {
@@ -56,18 +57,16 @@ class _AppThemePageState extends State<AppThemePage> {
         return;
       }
       final l10n = context.l10n;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.settingsThemeSaveFailed),
-          action: SnackBarAction(
-            label: l10n.settingsThemeRetry,
-            onPressed: () {
-              if (_applyVersions[category] == version && isCurrent()) {
-                _apply(change, category: category, isCurrent: isCurrent);
-              }
-            },
-          ),
-        ),
+      showSideToast(
+        context,
+        l10n.settingsThemeSaveFailed,
+        kind: SideToastKind.error,
+        actionLabel: l10n.settingsThemeRetry,
+        onAction: () {
+          if (_applyVersions[category] == version && isCurrent()) {
+            _apply(change, category: category, isCurrent: isCurrent);
+          }
+        },
       );
     }
   }

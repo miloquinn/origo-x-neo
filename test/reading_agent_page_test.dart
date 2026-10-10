@@ -17,6 +17,7 @@ import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 import 'package:xxread/services/ai/reading_agent_data_source.dart';
 import 'package:xxread/services/ai/reading_agent_memory_store.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues(const {}));
@@ -91,6 +92,20 @@ void main() {
         'author': '马伯庸',
         'value': 'not_interested',
       });
+      final feedback = find.text('已记录推荐反馈');
+      expect(feedback, findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      final toast = find.ancestor(
+        of: feedback,
+        matching: find.byType(GlassSurface),
+      );
+      expect(toast, findsOneWidget);
+      expect(
+        tester.getRect(toast).bottom,
+        lessThan(
+          tester.getRect(find.byKey(const ValueKey('ai-page-input'))).top,
+        ),
+      );
     },
   );
 

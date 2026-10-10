@@ -14,6 +14,7 @@ import '../../utils/localization_extension.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
 import '../../widgets/glass_buttons.dart';
 import '../../widgets/glass_surface.dart';
+import '../../widgets/side_toast.dart';
 
 typedef ThemeMarketLoader = Future<List<ThemeMarketItem>> Function();
 typedef ThemeMarketDownloader =
@@ -189,7 +190,10 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
       if (widget.installAction case final install?) {
         await install(item, bytes);
         if (mounted) {
-          _showMessage(context.l10n.themeMarketInstalledMessage(item.name));
+          _showMessage(
+            context.l10n.themeMarketInstalledMessage(item.name),
+            kind: SideToastKind.success,
+          );
         }
         return;
       }
@@ -218,6 +222,7 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
         preserveOlderSelection
             ? context.l10n.themeMarketUpdateInstalledMessage(item.name)
             : context.l10n.themeMarketInstalledAndAppliedMessage(item.name),
+        kind: SideToastKind.success,
       );
     } catch (error) {
       if (mounted) {
@@ -225,7 +230,7 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
           _readableError(error),
         );
         setState(() => _actionError = message);
-        _showMessage(message);
+        _showMessage(message, kind: SideToastKind.error);
       }
     } finally {
       if (mounted) setState(() => _busyKey = null);
@@ -243,7 +248,10 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
       await (widget.applyAction ??
           context.read<ThemeNotifier>().applyInstalledTheme)(package);
       if (mounted) {
-        _showMessage(context.l10n.themeMarketAppliedMessage(package.name));
+        _showMessage(
+          context.l10n.themeMarketAppliedMessage(package.name),
+          kind: SideToastKind.success,
+        );
       }
     } catch (error) {
       if (mounted) {
@@ -251,7 +259,7 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
           _readableError(error),
         );
         setState(() => _actionError = message);
-        _showMessage(message);
+        _showMessage(message, kind: SideToastKind.error);
       }
     } finally {
       if (mounted) setState(() => _busyKey = null);
@@ -288,7 +296,10 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
       await (widget.removeAction ??
           context.read<ThemeNotifier>().removeInstalledTheme)(package);
       if (mounted) {
-        _showMessage(context.l10n.themeMarketRemovedMessage(package.name));
+        _showMessage(
+          context.l10n.themeMarketRemovedMessage(package.name),
+          kind: SideToastKind.success,
+        );
       }
     } catch (error) {
       if (mounted) {
@@ -296,7 +307,7 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
           _readableError(error),
         );
         setState(() => _actionError = message);
-        _showMessage(message);
+        _showMessage(message, kind: SideToastKind.error);
       }
     } finally {
       if (mounted) setState(() => _busyKey = null);
@@ -314,14 +325,15 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
             (value) =>
                 launchUrl(value, mode: LaunchMode.externalApplication))(uri);
     if (mounted && !opened) {
-      _showMessage(context.l10n.themeMarketCreatorOpenFailed);
+      _showMessage(
+        context.l10n.themeMarketCreatorOpenFailed,
+        kind: SideToastKind.error,
+      );
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {SideToastKind kind = SideToastKind.info}) {
+    showSideToast(context, message, kind: kind);
   }
 
   String _readableError(Object error) => error

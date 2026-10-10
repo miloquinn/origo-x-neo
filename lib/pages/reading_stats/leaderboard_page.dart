@@ -7,6 +7,7 @@ import '../../services/account/member_account_controller.dart';
 import '../../services/reading/reading_cloud_controller.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
 import '../../widgets/account_avatar_image.dart';
+import '../../widgets/side_toast.dart';
 import '../account/account_page.dart';
 
 String readingCopy(BuildContext context, String zh, String en) =>
@@ -77,15 +78,13 @@ class _ReadingLeaderboardPageState extends State<ReadingLeaderboardPage> {
         await cloud.claimGuest();
       } catch (_) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                _copy(
-                  '合并失败，原始数据仍保留在本机',
-                  'Import failed. Local records are preserved.',
-                ),
-              ),
+          showSideToast(
+            context,
+            _copy(
+              '合并失败，原始数据仍保留在本机',
+              'Import failed. Local records are preserved.',
             ),
+            kind: SideToastKind.error,
           );
         }
       }

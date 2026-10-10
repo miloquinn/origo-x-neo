@@ -35,6 +35,7 @@ import 'package:xxread/widgets/release_notes_markdown.dart';
 import 'package:xxread/widgets/pill_input_surface.dart';
 import 'package:xxread/widgets/measured_size.dart';
 import 'package:xxread/widgets/glass_bottom_sheet.dart';
+import 'package:xxread/widgets/side_toast.dart';
 
 class _AiChatEntry {
   _AiChatEntry({
@@ -744,16 +745,14 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
       );
       if (!mounted) return;
       if (book == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              readingAgentText(
-                context,
-                '该书暂不可用，请检查书源或让 AI 重新搜索',
-                'This book is unavailable. Check the source or ask the Agent to search again.',
-              ),
-            ),
+        showSideToast(
+          context,
+          readingAgentText(
+            context,
+            '该书暂不可用，请检查书源或让 AI 重新搜索',
+            'This book is unavailable. Check the source or ask the Agent to search again.',
           ),
+          kind: SideToastKind.warning,
         );
         return;
       }
@@ -777,12 +776,10 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
     try {
       await _agentMemory.saveMemory(text: text, origin: 'agent_suggestion');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            readingAgentText(context, '已保存阅读偏好', 'Reading preference saved'),
-          ),
-        ),
+      showSideToast(
+        context,
+        readingAgentText(context, '已保存阅读偏好', 'Reading preference saved'),
+        kind: SideToastKind.success,
       );
     } catch (_) {
       if (mounted) {
@@ -808,16 +805,10 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
         interested: interested,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            readingAgentText(
-              context,
-              '已记录推荐反馈',
-              'Recommendation feedback saved',
-            ),
-          ),
-        ),
+      showSideToast(
+        context,
+        readingAgentText(context, '已记录推荐反馈', 'Recommendation feedback saved'),
+        kind: SideToastKind.success,
       );
     } catch (_) {
       if (mounted) {

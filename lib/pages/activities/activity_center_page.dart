@@ -10,6 +10,7 @@ import '../../services/activities/activity_browser.dart';
 import '../../services/core/app_distribution.dart';
 import '../../utils/localization_extension.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/side_toast.dart';
 import '../account/account_page.dart';
 
 class ActivityCenterPage extends StatefulWidget {
@@ -93,8 +94,10 @@ class _ActivityCenterPageState extends State<ActivityCenterPage>
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.activityCenterOpenError)),
+        showSideToast(
+          context,
+          context.l10n.activityCenterOpenError,
+          kind: SideToastKind.error,
         );
       }
     } finally {

@@ -1,13 +1,15 @@
-// 文件说明：侧边提示组件，提供全局浮层式提示反馈。
+// 文件说明：统一瞬时反馈，提供适配三种材质的顶部悬浮提示。
 // 技术要点：Flutter UI、渲染层。
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'glass_surface.dart';
-import '../utils/ui_style.dart';
 
-OverlayEntry? _activeSideToastEntry;
+VoidCallback? _hideActiveSideToast;
+
+/// Dismiss feedback immediately, including any action from an obsolete operation.
+void hideSideToast() => _hideActiveSideToast?.call();
 
 enum SideToastKind { info, success, warning, error }
 
@@ -25,40 +27,60 @@ void showSideToast(
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return;
 
-  _activeSideToastEntry?.remove();
-  _activeSideToastEntry = null;
-
+  hideSideToast();
+  final themes = InheritedTheme.capture(from: context, to: overlay.context);
+  var removed = false;
   late OverlayEntry entry;
+  void remove() {
+    if (removed) return;
+    removed = true;
+    if (identical(_hideActiveSideToast, remove)) {
+      _hideActiveSideToast = null;
+    }
+    entry.remove();
+    entry.dispose();
+  }
+
   entry = OverlayEntry(
-    builder: (context) => _SideToast(
-      message: message,
-      backgroundColor: backgroundColor,
-      textColor: textColor,
-      duration: duration == null || duration <= Duration.zero
-          ? _defaultDuration(kind)
-          : duration,
-      icon: icon,
-      kind: kind,
-      actionLabel: actionLabel,
-      onAction: onAction,
-      onDismissed: () {
-        if (identical(_activeSideToastEntry, entry)) {
-          _activeSideToastEntry = null;
-        }
-        entry.remove();
-      },
+    builder: (context) => themes.wrap(
+      _SideToast(
+        message: message,
+        backgroundColor: backgroundColor,
+        textColor: textColor,
+        duration: duration == null || duration <= Duration.zero
+            ? _defaultDuration(
+                kind,
+                message,
+                hasAction: actionLabel != null && onAction != null,
+              )
+            : duration,
+        icon: icon,
+        kind: kind,
+        actionLabel: actionLabel,
+        onAction: onAction,
+        onDismissed: remove,
+      ),
     ),
   );
-  _activeSideToastEntry = entry;
+  _hideActiveSideToast = remove;
   overlay.insert(entry);
 }
 
-Duration _defaultDuration(SideToastKind kind) => switch (kind) {
-  SideToastKind.info ||
-  SideToastKind.success => const Duration(milliseconds: 2200),
-  SideToastKind.warning => const Duration(milliseconds: 2800),
-  SideToastKind.error => const Duration(milliseconds: 3400),
-};
+Duration _defaultDuration(
+  SideToastKind kind,
+  String message, {
+  required bool hasAction,
+}) {
+  final minimum = switch (kind) {
+    SideToastKind.info || SideToastKind.success => 2200,
+    SideToastKind.warning => 2800,
+    SideToastKind.error => 3400,
+  };
+  final readingTime = (message.runes.length * 60 + 1000).clamp(minimum, 8000);
+  return Duration(
+    milliseconds: hasAction && readingTime < 5000 ? 5000 : readingTime,
+  );
+}
 
 class _SideToast extends StatefulWidget {
   final String message;
@@ -106,7 +128,7 @@ class _SideToastState extends State<_SideToast>
       reverseDuration: const Duration(milliseconds: 140),
     );
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(1.15, 0),
+      begin: const Offset(0, -0.18),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _fadeAnimation = CurvedAnimation(
@@ -128,7 +150,9 @@ class _SideToastState extends State<_SideToast>
       _controller.reverseDuration = Duration.zero;
     }
     _controller.forward();
-    if (widget.duration > Duration.zero) {
+    final needsAction = widget.actionLabel != null && widget.onAction != null;
+    if (!((MediaQuery.maybeOf(context)?.accessibleNavigation ?? false) &&
+        needsAction)) {
       _autoDismissTimer = Timer(widget.duration, _dismissWithAnimation);
     }
   }
@@ -140,7 +164,7 @@ class _SideToastState extends State<_SideToast>
     if (mounted) {
       await _controller.reverse();
     }
-    widget.onDismissed();
+    if (mounted) widget.onDismissed();
   }
 
   void _dismissAfterSwipe() {
@@ -151,8 +175,9 @@ class _SideToastState extends State<_SideToast>
   }
 
   void _runAction() {
+    if (_dismissed) return;
+    unawaited(_dismissWithAnimation());
     widget.onAction?.call();
-    _dismissWithAnimation();
   }
 
   @override
@@ -165,13 +190,15 @@ class _SideToastState extends State<_SideToast>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isMaterial3Style =
-        Theme.of(
-          context,
-        ).extension<UiStyleThemeExtension>()?.isMaterial3Style ??
-        false;
     final mediaQuery = MediaQuery.of(context);
     final compact = mediaQuery.size.width < 700;
+    final horizontalInset = compact ? 16.0 : 24.0;
+    final availableWidth =
+        mediaQuery.size.width -
+        mediaQuery.padding.horizontal -
+        horizontalInset * 2;
+    final stackAction =
+        availableWidth < 360 || mediaQuery.textScaler.scale(14) > 18;
     final background = widget.backgroundColor ?? scheme.surfaceContainerHigh;
     final foreground = widget.textColor ?? scheme.onSurface;
     final accent = switch (widget.kind) {
@@ -188,90 +215,108 @@ class _SideToastState extends State<_SideToast>
           SideToastKind.warning => Icons.warning_amber_rounded,
           SideToastKind.error => Icons.error_outline_rounded,
         };
+    final hasAction = widget.actionLabel != null && widget.onAction != null;
+    final action = hasAction
+        ? TextButton(
+            onPressed: _runAction,
+            style: TextButton.styleFrom(
+              foregroundColor: accent,
+              minimumSize: const Size(48, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            child: Text(widget.actionLabel!),
+          )
+        : null;
+    final message = Text(
+      widget.message,
+      style: TextStyle(
+        color: foreground,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        height: 1.4,
+      ),
+    );
     final toastCard = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 26,
-            height: 26,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: isMaterial3Style ? 0.13 : 0.15),
-              borderRadius: BorderRadius.circular(8),
+              color: accent.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 16, color: accent),
+            child: Icon(icon, size: 18, color: accent),
           ),
-          const SizedBox(width: 9),
+          const SizedBox(width: 10),
           Flexible(
-            child: Text(
-              widget.message,
-              style: TextStyle(
-                color: foreground,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: stackAction && hasAction
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [message, const SizedBox(height: 4), action!],
+                    )
+                  : message,
             ),
           ),
-          if (widget.actionLabel != null && widget.onAction != null) ...[
-            const SizedBox(width: 8),
-            TextButton(
-              onPressed: _runAction,
-              style: TextButton.styleFrom(
-                foregroundColor: accent,
-                minimumSize: const Size(0, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(widget.actionLabel!),
-            ),
-          ],
+          if (!stackAction && hasAction) ...[const SizedBox(width: 8), action!],
         ],
       ),
+    );
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(20),
     );
 
     return Positioned(
       top: mediaQuery.padding.top + (compact ? 8 : 16),
-      left: compact ? 12 : null,
-      right: compact ? 12 : 24,
+      left: compact ? mediaQuery.padding.left + horizontalInset : null,
+      right: mediaQuery.padding.right + horizontalInset,
       child: Semantics(
         container: true,
         liveRegion: true,
-        label: widget.message,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: compact ? mediaQuery.size.width - 24 : 420,
-            ),
-            child: Dismissible(
-              key: _dismissibleKey,
-              direction: DismissDirection.horizontal,
-              resizeDuration: null,
-              onDismissed: (_) => _dismissAfterSwipe(),
-              child: AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) => GlassSurface(
-                  role: GlassSurfaceRole.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+        onDismiss: () => unawaited(_dismissWithAnimation()),
+        child: Align(
+          alignment: compact ? Alignment.topCenter : Alignment.topRight,
+          widthFactor: 1,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: availableWidth.clamp(0, 440),
+                maxHeight:
+                    (mediaQuery.size.height -
+                            mediaQuery.padding.vertical -
+                            mediaQuery.viewInsets.bottom -
+                            32)
+                        .clamp(0, double.infinity),
+              ),
+              child: Dismissible(
+                key: _dismissibleKey,
+                direction: DismissDirection.horizontal,
+                resizeDuration: null,
+                onDismissed: (_) => _dismissAfterSwipe(),
+                child: AnimatedBuilder(
+                  animation: _fadeAnimation,
+                  builder: (context, child) => GlassSurface(
+                    role: GlassSurfaceRole.floating,
+                    shape: shape,
+                    color: background,
+                    visibility: _fadeAnimation.value,
+                    child: child!,
                   ),
-                  color: background,
-                  visibility: _fadeAnimation.value,
-                  child: child!,
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: toastCard,
+                  child: Material(
+                    color: Colors.transparent,
+                    shape: shape,
+                    clipBehavior: Clip.antiAlias,
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SingleChildScrollView(child: toastCard),
+                    ),
                   ),
                 ),
               ),
