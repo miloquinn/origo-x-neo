@@ -7,6 +7,7 @@ class MainFlutterWindow: NSWindow {
 
   private var appDistributionBridge: AppDistributionBridge?
   private var sourceBrowserSessionBridge: SourceBrowserSessionBridge?
+  private var iCloudSyncBridge: ICloudSyncBridge?
   private var desktopWindowChannel: FlutterMethodChannel?
   private var closeRequestPending = false
   private var allowClose = false
@@ -25,6 +26,9 @@ class MainFlutterWindow: NSWindow {
     sourceBrowserSessionBridge = SourceBrowserSessionBridge(
       messenger: flutterViewController.engine.binaryMessenger,
       parentWindow: self
+    )
+    iCloudSyncBridge = ICloudSyncBridge(
+      messenger: flutterViewController.engine.binaryMessenger
     )
     desktopWindowChannel = FlutterMethodChannel(
       name: Self.desktopWindowChannelName,

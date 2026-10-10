@@ -53,6 +53,9 @@ import 'services/core/display_refresh_rate_controller.dart';
 import 'services/core/desktop_window_service.dart';
 import 'services/library/download_task_controller.dart';
 import 'services/backup/webdav_backup_controller.dart';
+import 'services/icloud/icloud_sync_controller.dart';
+import 'services/icloud/icloud_sync_navigation_observer.dart';
+import 'services/library/library_event_bus_service.dart';
 import 'utils/app_themes.dart';
 import 'utils/book_open_transition.dart';
 import 'services/tts_service.dart';
@@ -185,6 +188,9 @@ void main(List<String> arguments) async {
           provider.ChangeNotifierProvider(
             create: (_) => WebDavBackupController(),
           ),
+          provider.ChangeNotifierProvider(
+            create: (_) => ICloudSyncController(networkAllowed: false),
+          ),
         ],
         child: StoreReaderEntitlementListener(
           child: XxReadApp(
@@ -246,6 +252,7 @@ class XxReadApp extends StatefulWidget {
 class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final _legalNavigationObserver = LegalAgreementNavigationObserver();
+  final _iCloudNavigationObserver = ICloudSyncNavigationObserver();
   bool? _hasAcceptedAgreement;
   bool _requiresUpdatedAgreement = false;
   bool _isBootstrapped = false;
@@ -296,6 +303,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _iCloudNavigationObserver.onReady = null;
     WidgetsBinding.instance.removeObserver(this);
     DesktopWindowService.dispose();
     _notificationTapSubscription?.cancel();
@@ -425,6 +433,10 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    provider.Provider.of<ICloudSyncController?>(
+      context,
+      listen: false,
+    )?.setForeground(state == AppLifecycleState.resumed);
     if (state == AppLifecycleState.resumed && mounted) {
       unawaited(_resumeAuthorizedServices());
     }
@@ -460,6 +472,10 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     );
     diagnostics.setNetworkAllowed(true);
     cloud.setNetworkAllowed(true);
+    provider.Provider.of<ICloudSyncController?>(
+      context,
+      listen: false,
+    )?.setNetworkAllowed(true);
     await diagnostics.initialize();
     if (!mounted || _hasAcceptedAgreement != true) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -589,6 +605,54 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     }
 
     if (!mounted) return;
+    final iCloud = provider.Provider.of<ICloudSyncController?>(
+      context,
+      listen: false,
+    );
+    if (iCloud != null) {
+      iCloud.canApply = () =>
+          mounted &&
+          _isBootstrapped &&
+          _hasAcceptedAgreement == true &&
+          _iCloudNavigationObserver.canApply &&
+          !provider.Provider.of<DownloadTaskController>(
+            context,
+            listen: false,
+          ).hasActiveTasks &&
+          !provider.Provider.of<BookSourceMaintenanceCoordinator>(
+            context,
+            listen: false,
+          ).state.isRunning &&
+          !provider.Provider.of<WebDavBackupController>(
+            context,
+            listen: false,
+          ).busy &&
+          !provider.Provider.of<ReaderAloudSession>(
+            context,
+            listen: false,
+          ).isActive;
+      iCloud.onDataChanged = () async {
+        if (!mounted) return;
+        LibraryEventBus().notifyLibraryChanged();
+        await provider.Provider.of<AppSettingsNotifier>(
+          context,
+          listen: false,
+        ).reloadFromPreferences();
+        if (!mounted) return;
+        await provider.Provider.of<ThemeNotifier>(
+          context,
+          listen: false,
+        ).reloadFromPreferences();
+      };
+      _iCloudNavigationObserver.onReady = () => unawaited(iCloud.synchronize());
+      try {
+        await iCloud.initialize();
+      } catch (error) {
+        debugPrint('iCloud 初始化失败，保留本地阅读: $error');
+      }
+    }
+
+    if (!mounted) return;
     setState(() {
       _isBootstrapped = true;
       _bootstrapError = null;
@@ -644,6 +708,10 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
       context,
       listen: false,
     ).setNetworkAllowed(false);
+    provider.Provider.of<ICloudSyncController?>(
+      context,
+      listen: false,
+    )?.setNetworkAllowed(false);
     provider.Provider.of<DiagnosticsController>(
       context,
       listen: false,
@@ -800,7 +868,10 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
               // 避免与阅读页面的全屏模式冲突
               return MaterialApp(
                 navigatorKey: _navigatorKey,
-                navigatorObservers: [_legalNavigationObserver],
+                navigatorObservers: [
+                  _legalNavigationObserver,
+                  _iCloudNavigationObserver,
+                ],
                 onGenerateTitle: (context) => context.l10n.appTitle,
                 debugShowCheckedModeBanner: false,
                 // 🚀 启用高性能渲染，支持120Hz高刷新率

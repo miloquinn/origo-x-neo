@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:xxread/l10n/app_localizations.dart';
@@ -535,6 +536,7 @@ class _PreviewAiService implements ConfigurableAIService {
     required List<AIChatMessage> history,
     required String pageText,
     required AIRequestMeta meta,
+    CancelToken? cancelToken,
   }) async => '本地预览回答';
 
   @override

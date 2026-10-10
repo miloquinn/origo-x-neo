@@ -101,6 +101,7 @@ final class AuthCallbackBridge {
   private var readerAloudMediaBridge: ReaderAloudMediaBridge?
   private var applePurchaseSupportBridge: ApplePurchaseSupportBridge?
   private var sourceBrowserSessionBridge: SourceBrowserSessionBridge?
+  private var iCloudSyncBridge: ICloudSyncBridge?
 
   override func application(
     _ application: UIApplication,
@@ -221,6 +222,9 @@ final class AuthCallbackBridge {
     }
 
     storageBridge = StorageBridge(messenger: messenger)
+    if iCloudSyncBridge == nil {
+      iCloudSyncBridge = ICloudSyncBridge(messenger: messenger)
+    }
     incomingBookBridge = IncomingBookBridge(messenger: messenger)
     if readerAloudMediaBridge == nil {
       readerAloudMediaBridge = ReaderAloudMediaBridge(messenger: messenger)

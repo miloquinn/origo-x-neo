@@ -72,7 +72,9 @@ class ThemeNotifier extends ChangeNotifier {
     _loadTheme();
   }
 
-  void _loadTheme() async {
+  Future<void> reloadFromPreferences() => _loadTheme();
+
+  Future<void> _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
     try {
       final saved = prefs.getString(_packageSelectionPrefKey);

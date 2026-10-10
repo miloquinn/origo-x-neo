@@ -181,6 +181,23 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
+  for (final platform in TargetPlatform.values) {
+    testWidgets('iCloud entry is platform gated on $platform', (tester) async {
+      debugDefaultTargetPlatformOverride = platform;
+      await _pumpSettingsPage(tester, locale: const Locale('zh'));
+      await _openSettingsCategory(tester, SettingsCategory.dataSync);
+      expect(
+        find.byKey(const ValueKey('settings-icloud-sync')),
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS
+            ? findsOneWidget
+            : findsNothing,
+      );
+      expect(find.text('WebDAV 备份'), findsOneWidget);
+      await _disposeSettingsPage(tester);
+      debugDefaultTargetPlatformOverride = null;
+    });
+  }
+
   testWidgets('desktop reading settings default window close to the library', (
     tester,
   ) async {

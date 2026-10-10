@@ -36,12 +36,14 @@ import 'package:xxread/pages/settings/floating_navigation_settings_page.dart';
 import 'package:xxread/pages/settings/library_layout_settings_page.dart';
 import 'package:xxread/pages/settings/replace_rules_page.dart';
 import 'package:xxread/pages/settings/backup/webdav_backup_page.dart';
+import 'package:xxread/pages/settings/sync/icloud_sync_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/services/core/app_build_info.dart';
 import 'package:xxread/services/core/core_services.dart';
 import 'package:xxread/services/reader/replace_rule_service.dart';
 import 'package:xxread/pages/settings/backup/backup_copy.dart';
 import 'package:xxread/services/backup/webdav_backup_controller.dart';
+import 'package:xxread/services/library/library_event_bus_service.dart';
 import 'package:xxread/utils/font_catalog_helper.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/layout_helper.dart';
@@ -107,6 +109,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  StreamSubscription<void>? _libraryChanges;
   final ScrollController _scrollController = ScrollController();
   late final AppCacheManager _cacheManager;
   late final SettingsPagePreferencesStore _preferencesStore;
@@ -151,6 +154,11 @@ class _SettingsPageState extends State<SettingsPage> {
       unawaited(_loadAiSettings());
     }
     _attachSettingsController(widget.controller);
+    _libraryChanges = LibraryEventBus().stream.listen((_) {
+      if (mounted && widget.category == SettingsCategory.preferences) {
+        unawaited(_loadPreferences());
+      }
+    });
   }
 
   @override
@@ -185,6 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
+    _libraryChanges?.cancel();
     widget.controller?.removeListener(_handleSupportRevealRequest);
     _scrollController.dispose();
     super.dispose();

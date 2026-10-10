@@ -184,6 +184,25 @@ extension _SettingsLayoutPart on _SettingsPageState {
       title: l10n.settingsDataSyncTitle,
       icon: Icons.cloud_sync_outlined,
       children: [
+        if (ICloudSyncPage.isSupported)
+          KeyedSubtree(
+            key: const ValueKey('settings-icloud-sync'),
+            child: _buildActionSetting(
+              title: iCloudCopy(context, 'iCloud 同步', 'iCloud sync'),
+              subtitle: iCloudCopy(
+                context,
+                '在 Apple 设备间自动接续阅读',
+                'Continue reading across Apple devices',
+              ),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  settings: const RouteSettings(name: ICloudSyncPage.routeName),
+                  builder: (_) => const ICloudSyncPage(),
+                ),
+              ),
+              icon: Icons.cloud_sync_outlined,
+            ),
+          ),
         _buildActionSetting(
           title: BackupCopy.of(context).title,
           subtitle: BackupCopy.of(context).summary,

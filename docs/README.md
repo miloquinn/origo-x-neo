@@ -17,6 +17,7 @@
 | 朗读展示、书籍字体、跳读与连续播放 | [听书维护](tts-jump-reading-design.md) |
 | 书籍格式能力 | [格式支持](book-format-support.md) |
 | 备份与恢复 | [WebDAV 备份](webdav-backup.md) |
+| Apple 设备自动同步、正文传输与冲突选择 | [iCloud 同步](icloud-sync.md) |
 | 应用配色、素材主题、社区市场与玻璃隔离 | [应用主题与主题市场](app-skins.md) |
 | 共用玻璃背景、材质角色与外观设置继承 | [共用玻璃材质](glass-material.md) |
 | 统一瞬时提示、状态反馈与三种材质 | [统一瞬时提示](shared-feedback.md) |

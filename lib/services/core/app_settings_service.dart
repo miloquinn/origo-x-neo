@@ -342,6 +342,8 @@ class AppSettingsNotifier extends ChangeNotifier {
     }
   }
 
+  Future<void> reloadFromPreferences() => _loadSettings();
+
   Future<void> _loadSettings() async {
     await _customFontService.initialize();
     await _onlineFontService.initialize();
