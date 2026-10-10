@@ -86,8 +86,15 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
           destinations: _navigationItems
               .map(
                 (item) => NavigationRailDestination(
-                  icon: Icon(item.icon),
-                  selectedIcon: Icon(item.selectedIcon),
+                  icon: AppSkinIcon(
+                    slot: item.skinSlot,
+                    fallback: Icon(item.icon),
+                  ),
+                  selectedIcon: AppSkinIcon(
+                    slot: item.skinSlot,
+                    selected: true,
+                    fallback: Icon(item.selectedIcon),
+                  ),
                   label: Text(item.label),
                 ),
               )

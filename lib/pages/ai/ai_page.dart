@@ -526,9 +526,7 @@ class _AiPageState extends State<AiPage> {
           );
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: PageStyleHelper.backgroundGradient(context),
-      ),
+      decoration: PageStyleHelper.backgroundDecoration(context),
       child: SafeArea(
         top: useRailNavigation,
         bottom: false,

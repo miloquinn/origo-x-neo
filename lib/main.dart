@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:xxread/models/app_skin.dart';
+import 'package:xxread/utils/app_skin_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -809,6 +811,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
                   themeNotifier.uiStyle,
                   themeNotifier.glassStyle,
                   themeNotifier.liquidGlassOpacity,
+                  themeNotifier.currentSkin,
                 ),
                 darkTheme: _buildDarkTheme(
                   themeNotifier.currentAppTheme,
@@ -816,6 +819,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
                   themeNotifier.uiStyle,
                   themeNotifier.glassStyle,
                   themeNotifier.liquidGlassOpacity,
+                  themeNotifier.currentSkin,
                 ),
                 themeMode: themeNotifier.themeMode,
                 locale: locale,
@@ -982,6 +986,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     AppUiStyle uiStyle,
     GlassStyle glassStyle,
     double liquidGlassOpacity,
+    AppSkin skin,
   ) {
     return _buildThemeData(
       colorScheme: appTheme.lightColorScheme,
@@ -990,6 +995,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
       uiStyle: uiStyle,
       glassStyle: glassStyle,
       liquidGlassOpacity: liquidGlassOpacity,
+      skin: skin,
     );
   }
 
@@ -999,6 +1005,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     AppUiStyle uiStyle,
     GlassStyle glassStyle,
     double liquidGlassOpacity,
+    AppSkin skin,
   ) {
     return _buildThemeData(
       colorScheme: appTheme.darkColorScheme,
@@ -1007,6 +1014,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
       uiStyle: uiStyle,
       glassStyle: glassStyle,
       liquidGlassOpacity: liquidGlassOpacity,
+      skin: skin,
     );
   }
 
@@ -1017,6 +1025,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
     required AppUiStyle uiStyle,
     required GlassStyle glassStyle,
     required double liquidGlassOpacity,
+    required AppSkin skin,
   }) {
     final isDark = brightness == Brightness.dark;
     final isMaterial3Style = uiStyle == AppUiStyle.material3;
@@ -1064,6 +1073,7 @@ class _XxReadAppState extends State<XxReadApp> with WidgetsBindingObserver {
         thickness: 0.7,
       ),
       extensions: <ThemeExtension<dynamic>>[
+        AppSkinTheme(skin: skin),
         UiStyleThemeExtension(
           style: uiStyle,
           glassStyle: glassStyle,

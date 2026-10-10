@@ -98,9 +98,7 @@ extension _LibraryPageChrome on _LibraryPageState {
       ),
     );
     return Container(
-      decoration: BoxDecoration(
-        gradient: PageStyleHelper.backgroundGradient(context),
-      ),
+      decoration: PageStyleHelper.backgroundDecoration(context),
       child: useRailNavigation
           ? SafeArea(
               bottom: false,

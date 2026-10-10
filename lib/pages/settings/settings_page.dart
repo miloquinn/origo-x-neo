@@ -383,9 +383,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ? 28.0
         : 16.0;
     return Container(
-      decoration: BoxDecoration(
-        gradient: PageStyleHelper.backgroundGradient(context),
-      ),
+      decoration: PageStyleHelper.backgroundDecoration(context),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final availableWidth = (constraints.maxWidth - horizontalPadding * 2)

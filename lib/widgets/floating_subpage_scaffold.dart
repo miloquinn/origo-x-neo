@@ -99,9 +99,7 @@ class FloatingSubpageScaffold extends StatelessWidget {
             key: const ValueKey('floating-subpage-content-surface'),
             decoration:
                 decoration ??
-                BoxDecoration(
-                  gradient: PageStyleHelper.backgroundGradient(context),
-                ),
+                PageStyleHelper.backgroundDecoration(context),
             child: Stack(
               children: [
                 SafeArea(

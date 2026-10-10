@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_skin_icon.dart';
 
 import 'pill_input_surface.dart';
 
@@ -170,7 +171,9 @@ class _PillSearchFieldState extends State<PillSearchField> {
             minWidth: 48,
             minHeight: 48,
           ),
-          prefixIcon: Icon(widget.leadingIcon, size: 20, color: muted),
+          prefixIcon: AppSkinIcon.adapt(
+            Icon(widget.leadingIcon, size: 20, color: muted),
+          ),
           suffixIconConstraints: const BoxConstraints(minHeight: 48),
           suffixIcon: widget.trailing == null && !clearVisible
               ? null

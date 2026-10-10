@@ -2,6 +2,7 @@
 // 技术要点：Flutter UI。
 
 import 'package:flutter/material.dart';
+import 'package:xxread/models/app_skin.dart';
 import 'package:xxread/models/home_navigation_destination.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
 
@@ -19,4 +20,13 @@ class HomeNavigationItem extends FloatingPillNavigationItem {
     required super.label,
     required this.page,
   });
+
+  @override
+  AppSkinIconSlot get skinSlot => switch (destination) {
+    HomeNavigationDestination.home => AppSkinIconSlot.home,
+    HomeNavigationDestination.library => AppSkinIconSlot.library,
+    HomeNavigationDestination.discover => AppSkinIconSlot.discover,
+    HomeNavigationDestination.ai => AppSkinIconSlot.ai,
+    HomeNavigationDestination.settings => AppSkinIconSlot.profile,
+  };
 }

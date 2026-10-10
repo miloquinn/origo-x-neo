@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:xxread/models/home_navigation_destination.dart';
+import 'package:xxread/models/app_skin.dart';
+import 'package:xxread/utils/app_skin_theme.dart';
 import 'package:xxread/utils/page_style_helper.dart';
 
 /// 通用背景包装器：给普通页面加统一首页背景。
@@ -13,6 +15,13 @@ class HomeGenericPageWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Primary pages own their backgrounds; keep the legacy wrapper only for
+    // the original skin, so skin artwork is sampled and painted once per page.
+    if (AppSkinTheme.of(
+      context,
+    ).skin.artwork.containsKey(AppSkinArtworkSlot.pageBackground)) {
+      return child;
+    }
     return Container(
       decoration: BoxDecoration(
         gradient: PageStyleHelper.backgroundGradient(context),

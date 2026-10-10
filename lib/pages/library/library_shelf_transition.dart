@@ -237,9 +237,7 @@ class LibraryShelfTransitionState extends State<LibraryShelfTransition>
                 widget.opening ? 0.68 : 0.42,
                 curve: Curves.easeOut,
               ).transform(t);
-        final background = BoxDecoration(
-          gradient: PageStyleHelper.backgroundGradient(context),
-        );
+        final background = PageStyleHelper.backgroundDecoration(context);
         final scale = _reduceMotion || !_hasOrigin || !moving
             ? 1.0
             : widget.opening

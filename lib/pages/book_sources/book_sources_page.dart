@@ -559,13 +559,16 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
     );
 
     final page = Container(
-      decoration: BoxDecoration(
-        color: listLayout
-            ? PageStyleHelper.palette(context).backgroundStart
-            : null,
-        gradient: listLayout
-            ? null
-            : PageStyleHelper.backgroundGradient(context),
+      decoration: PageStyleHelper.backgroundDecoration(
+        context,
+        fallback: BoxDecoration(
+          color: listLayout
+              ? PageStyleHelper.palette(context).backgroundStart
+              : null,
+          gradient: listLayout
+              ? null
+              : PageStyleHelper.backgroundGradient(context),
+        ),
       ),
       child: SafeArea(
         top: useRailNavigation,

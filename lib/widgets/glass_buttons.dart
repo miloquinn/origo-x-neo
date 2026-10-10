@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'elastic_press.dart';
 import 'glass_control_surface.dart';
+import 'app_skin_icon.dart';
 
 /// Native icon interaction with shared spring motion and glass materials.
 /// Role adapters own their dimensions and palette; layout stays at rest.
@@ -52,7 +53,7 @@ class GlassIconButton extends StatelessWidget {
       child: IconButton(
         tooltip: tooltip,
         onPressed: onPressed,
-        icon: icon,
+        icon: AppSkinIcon.adapt(icon),
         style: IconButton.styleFrom(
           foregroundColor: foregroundColor,
           disabledForegroundColor: foregroundColor?.withValues(alpha: 0.58),

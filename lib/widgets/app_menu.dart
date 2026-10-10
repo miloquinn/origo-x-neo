@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'app_skin_icon.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
@@ -75,7 +76,9 @@ class _AppPopupMenuButtonState<T> extends State<AppPopupMenuButton<T>> {
         anchorIcon: widget.child == null
             ? IconTheme.merge(
                 data: IconThemeData(size: widget.iconSize),
-                child: widget.icon ?? const Icon(Icons.more_vert_rounded),
+                child: AppSkinIcon.adapt(
+                  widget.icon ?? const Icon(Icons.more_vert_rounded),
+                ),
               )
             : null,
       );
@@ -101,7 +104,9 @@ class _AppPopupMenuButtonState<T> extends State<AppPopupMenuButton<T>> {
       padding: widget.padding,
       constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       iconSize: widget.iconSize,
-      icon: widget.icon ?? const Icon(Icons.more_vert_rounded),
+      icon: AppSkinIcon.adapt(
+        widget.icon ?? const Icon(Icons.more_vert_rounded),
+      ),
     );
     final trigger = widget.child != null
         ? Tooltip(
@@ -120,7 +125,9 @@ class _AppPopupMenuButtonState<T> extends State<AppPopupMenuButton<T>> {
           )
         : widget.buttonStyle == AppMenuButtonStyle.circular
         ? GlassIconButton(
-            icon: widget.icon ?? const Icon(Icons.more_vert_rounded),
+            icon: AppSkinIcon.adapt(
+              widget.icon ?? const Icon(Icons.more_vert_rounded),
+            ),
             iconSize: widget.iconSize,
             padding: widget.padding,
             tooltip: tooltip,

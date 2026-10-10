@@ -155,13 +155,12 @@ void main() {
       tester.widget<Text>(find.text('Cache management')).style?.fontSize,
       22,
     );
-    final glassSurface = tester.widget<Container>(
-      find.byKey(const ValueKey('glass-top-bar-surface')),
-    );
-    expect((glassSurface.decoration! as BoxDecoration).border, isNull);
+    // The shared gradient is the header's only background/filter owner.
+    final headerSurface = find.byKey(const ValueKey('glass-top-bar-surface'));
+    expect(tester.widget(headerSurface), isA<SizedBox>());
     expect(
-      (glassSurface.decoration! as BoxDecoration).color,
-      Colors.transparent,
+      find.descendant(of: headerSurface, matching: find.byType(BackdropFilter)),
+      findsNothing,
     );
     expect(find.byKey(const ValueKey('floating-subpage-back')), findsOneWidget);
     final backAction = find.descendant(

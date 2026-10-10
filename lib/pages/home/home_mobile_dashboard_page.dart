@@ -26,6 +26,7 @@ import 'package:xxread/utils/layout_helper.dart';
 import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/utils/page_transitions.dart';
 import 'package:xxread/utils/reader_themes.dart';
+import 'package:xxread/utils/page_style_helper.dart';
 import 'package:xxread/widgets/generated_book_cover.dart';
 import 'package:xxread/widgets/side_toast.dart';
 
@@ -392,12 +393,15 @@ class _HomeMobileDashboardPageState extends State<HomeMobileDashboardPage>
         : double.infinity;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [palette.backgroundStart, palette.backgroundEnd],
-          stops: const [0, 0.58],
+      decoration: PageStyleHelper.backgroundDecoration(
+        context,
+        fallback: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [palette.backgroundStart, palette.backgroundEnd],
+            stops: const [0, 0.58],
+          ),
         ),
       ),
       child: _isInitialLoading

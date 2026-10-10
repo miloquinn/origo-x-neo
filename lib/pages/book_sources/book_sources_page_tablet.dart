@@ -35,9 +35,7 @@ extension _BookSourcesPageTablet on _BookSourcesPageState {
         .where((source) => source.id == _state.selectedSourceId)
         .firstOrNull;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: PageStyleHelper.backgroundGradient(context),
-      ),
+      decoration: PageStyleHelper.backgroundDecoration(context),
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

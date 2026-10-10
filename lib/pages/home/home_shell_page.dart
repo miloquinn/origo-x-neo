@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, listEquals;
 import 'package:flutter/material.dart';
+import 'package:xxread/widgets/app_skin_icon.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:xxread/book_sources/services/book_source_registry.dart';

@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'ui_style.dart';
+import '../models/app_skin.dart';
+import 'app_skin_theme.dart';
 
 class PageVisualPalette {
   final Color backgroundStart;
@@ -29,6 +31,35 @@ class PageVisualPalette {
 }
 
 class PageStyleHelper {
+  /// Only the background owner calls this. Its original gradient/color remains
+  /// underneath the skin image, including when a bundled asset fails to load.
+  static BoxDecoration backgroundDecoration(
+    BuildContext context, {
+    BoxDecoration? fallback,
+  }) {
+    final original =
+        fallback ?? BoxDecoration(gradient: backgroundGradient(context));
+    if (MediaQuery.maybeOf(context)?.highContrast ?? false) return original;
+    final asset = AppSkinTheme.of(
+      context,
+    ).skin.artwork[AppSkinArtworkSlot.pageBackground];
+    if (asset == null) return original;
+    return original.copyWith(
+      image: DecorationImage(
+        image: AssetImage(asset.pathFor(Theme.of(context).brightness)),
+        fit: BoxFit.cover,
+        onError: (error, stackTrace) => FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stackTrace,
+            library: 'app skin',
+            context: ErrorDescription('loading skin background ${asset.asset}'),
+          ),
+        ),
+      ),
+    );
+  }
+
   static PageVisualPalette palette(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../home_mobile_chrome.dart';
 import 'package:xxread/widgets/floating_pill_navigation_item.dart';
+import 'package:xxread/widgets/app_skin_icon.dart';
 import 'package:xxread/widgets/glass_surface.dart';
 
 import 'home_navigation_item.dart';
@@ -255,12 +256,16 @@ class _FloatingPillNavigationButtonState
                                   : Axis.horizontal,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  widget.isSelected
-                                      ? widget.item.selectedIcon
-                                      : widget.item.icon,
-                                  size: 23,
-                                  color: iconColor,
+                                AppSkinIcon(
+                                  slot: widget.item.skinSlot,
+                                  selected: widget.isSelected,
+                                  fallback: Icon(
+                                    widget.isSelected
+                                        ? widget.item.selectedIcon
+                                        : widget.item.icon,
+                                    size: 23,
+                                    color: iconColor,
+                                  ),
                                 ),
                                 if (widget.showLabel) ...[
                                   SizedBox(
@@ -301,10 +306,13 @@ class _FloatingPillNavigationButtonState
                                         'home-nav-unselected-${widget.item.label}',
                                       ),
                                       opacity: 1 - selection,
-                                      child: Icon(
-                                        widget.item.icon,
-                                        color: iconColor,
-                                        size: renderedIconSize,
+                                      child: AppSkinIcon(
+                                        slot: widget.item.skinSlot,
+                                        fallback: Icon(
+                                          widget.item.icon,
+                                          color: iconColor,
+                                          size: renderedIconSize,
+                                        ),
                                       ),
                                     ),
                                     Opacity(
@@ -312,10 +320,14 @@ class _FloatingPillNavigationButtonState
                                         'home-nav-selected-${widget.item.label}',
                                       ),
                                       opacity: selection,
-                                      child: Icon(
-                                        widget.item.selectedIcon,
-                                        color: iconColor,
-                                        size: renderedIconSize,
+                                      child: AppSkinIcon(
+                                        slot: widget.item.skinSlot,
+                                        selected: true,
+                                        fallback: Icon(
+                                          widget.item.selectedIcon,
+                                          color: iconColor,
+                                          size: renderedIconSize,
+                                        ),
                                       ),
                                     ),
                                   ],

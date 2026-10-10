@@ -4,7 +4,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:xxread/models/app_skin.dart';
 import 'package:xxread/utils/app_themes.dart';
+import 'package:xxread/utils/app_skin_theme.dart';
 import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/ui_style.dart';
 
@@ -14,6 +16,7 @@ class ThemeNotifier extends ChangeNotifier {
   static const String _glassStylePrefKey = 'glass_style_mode';
   static const String _liquidGlassOpacityPrefKey = 'liquid_glass_opacity';
   static const String _accentColorPrefKey = 'appAccentColorV2';
+  static const String _skinPrefKey = 'appSkinIdV1';
 
   // 仅用于从旧版“双层主题 + 强调色”设置迁移。
   static const String _appThemePrefKey = 'appTheme';
@@ -30,6 +33,9 @@ class ThemeNotifier extends ChangeNotifier {
   AppUiStyle _uiStyle = AppUiStyle.glass;
   GlassStyle _glassStyle = defaultGlassStyle;
   double _liquidGlassOpacity = defaultLiquidGlassOpacity;
+  final AppSkinCatalog _skinCatalog;
+  AppSkin _currentSkin = AppSkin.original;
+  Future<void> _skinPersistenceTail = Future.value();
 
   ThemeMode get themeMode => _themeMode;
   bool get isInitialized => _isInitialized;
@@ -40,8 +46,12 @@ class ThemeNotifier extends ChangeNotifier {
   double get liquidGlassOpacity => _liquidGlassOpacity;
   bool get isGlassEffectsEnabled => _uiStyle == AppUiStyle.glass;
   bool get shouldDisableGlassEffects => _uiStyle == AppUiStyle.material3;
+  AppSkin get currentSkin => _currentSkin;
+  List<AppSkin> get availableSkins => _skinCatalog.skins;
+  AppSkinTheme get skinTheme => AppSkinTheme(skin: _currentSkin);
 
-  ThemeNotifier() {
+  ThemeNotifier({AppSkinCatalog? skinCatalog})
+    : _skinCatalog = skinCatalog ?? AppSkinCatalog.builtIn {
     _loadTheme();
   }
 
@@ -58,6 +68,13 @@ class ThemeNotifier extends ChangeNotifier {
     );
     await prefs.remove('disable_glass_effects');
     final storedAccentColor = prefs.getInt(_accentColorPrefKey);
+    final storedSkinId = prefs.getString(_skinPrefKey);
+    _currentSkin = _skinCatalog.resolve(storedSkinId);
+    if (storedSkinId != null &&
+        (storedSkinId != _currentSkin.id ||
+            _currentSkin.id == AppSkin.originalId)) {
+      await prefs.remove(_skinPrefKey);
+    }
 
     _syncGlassEffectState();
     if (prefs.getBool('enableAnimations') != true) {
@@ -105,6 +122,39 @@ class ThemeNotifier extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_accentColorPrefKey, color.toARGB32());
     await _removeLegacyThemePreferences(prefs);
+  }
+
+  Future<void> setSkin(String id) async {
+    final skin = _skinCatalog.find(id);
+    if (skin == null) {
+      throw ArgumentError.value(id, 'id', 'is not present in the skin catalog');
+    }
+    if (_currentSkin.id != skin.id) {
+      _currentSkin = skin;
+      notifyListeners();
+    }
+
+    final operation = _skinPersistenceTail.then((_) => _persistSkin(skin));
+    // Callers receive their own write failure, while the recovered tail keeps
+    // later requests schedulable after a plugin error or false result.
+    _skinPersistenceTail = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    await operation;
+  }
+
+  Future<void> _persistSkin(AppSkin skin) async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool didPersist;
+    if (skin.id == AppSkin.originalId) {
+      didPersist = await prefs.remove(_skinPrefKey);
+    } else {
+      didPersist = await prefs.setString(_skinPrefKey, skin.id);
+    }
+    if (!didPersist) {
+      throw StateError('Failed to persist app skin ${skin.id}.');
+    }
   }
 
   Color _migrateLegacyAccentColor(SharedPreferences prefs) {
