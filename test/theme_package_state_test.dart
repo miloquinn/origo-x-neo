@@ -121,6 +121,56 @@ void main() {
       expect(prefs.getString('appThemePackageSelectionV1'), isNull);
     },
   );
+
+  test(
+    'combines independent package layers and restores both exact references',
+    () async {
+      final canonical = await _installCanonicalTemplate(store);
+      final paletteOnly = await _installVariant(
+        store,
+        id: 'palette-only',
+        includePalette: true,
+        includeSkin: false,
+      );
+      final skinOnly = await _installVariant(
+        store,
+        id: 'skin-only',
+        includePalette: false,
+        includeSkin: true,
+      );
+      final notifier = await _notifier(store);
+
+      await notifier.applyInstalledTheme(canonical);
+      expect(notifier.currentSkinPackage?.id, canonical.id);
+      expect(notifier.currentColorPackage?.id, canonical.id);
+
+      await notifier.applyInstalledTheme(paletteOnly);
+      expect(notifier.currentSkinPackage?.id, canonical.id);
+      expect(notifier.currentColorPackage?.id, paletteOnly.id);
+      expect(notifier.currentSkin.icons.length, AppSkinIconSlot.values.length);
+
+      final paletteTheme = notifier.currentAppTheme;
+      await notifier.applyInstalledTheme(skinOnly);
+      expect(notifier.currentSkinPackage?.id, skinOnly.id);
+      expect(notifier.currentColorPackage?.id, paletteOnly.id);
+      expect(notifier.currentAppTheme, same(paletteTheme));
+
+      final prefs = await SharedPreferences.getInstance();
+      final saved =
+          jsonDecode(prefs.getString('appThemePackageSelectionV1')!)
+              as Map<String, dynamic>;
+      expect(saved['skin'], {'id': 'skin-only', 'version': 1});
+      expect(saved['palette'], {'id': 'palette-only', 'version': 1});
+
+      notifier.dispose();
+      final restored = await _notifier(store);
+      addTearDown(restored.dispose);
+      expect(restored.currentSkinPackage?.id, 'skin-only');
+      expect(restored.currentColorPackage?.id, 'palette-only');
+      expect(restored.currentSkin.icons, isNotEmpty);
+      expect(restored.currentAppTheme.seedColor, paletteTheme.seedColor);
+    },
+  );
 }
 
 Future<ThemeNotifier> _notifier(ThemePackageStore store) async {
@@ -173,5 +223,63 @@ Future<ThemePackage> _install(ThemePackageStore store, int version) async {
     expectedSha256: sha256.convert(bytes).toString(),
     expectedId: 'test-garden',
     expectedVersion: version,
+  );
+}
+
+Future<ThemePackage> _installCanonicalTemplate(ThemePackageStore store) async {
+  final bytes = await File('test/fixtures/theme-template-v1.zip').readAsBytes();
+  return store.install(
+    bytes,
+    expectedSha256:
+        '8d47127b561065318f01b5e2f548556dac8c41c6712ccec6f365e1da8a187867',
+    expectedId: 'coastal-studio-template',
+    expectedVersion: 1,
+  );
+}
+
+Future<ThemePackage> _installVariant(
+  ThemePackageStore store, {
+  required String id,
+  required bool includePalette,
+  required bool includeSkin,
+}) async {
+  final png = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  );
+  final manifest = <String, Object?>{
+    'schemaVersion': 1,
+    'id': id,
+    'version': 1,
+    'name': id,
+    'description': '',
+    'author': 'Maker',
+    'license': 'CC0',
+    'preview': 'assets/preview.png',
+    if (includePalette)
+      'palette': {
+        'primary': '#345678',
+        'secondary': '#BC9070',
+        'tertiary': '#9070BC',
+      },
+    if (includeSkin)
+      'icons': {
+        'back': {
+          'normal': {'asset': 'assets/icon.png'},
+        },
+      },
+  };
+  final encoded = utf8.encode(jsonEncode(manifest));
+  final archive = Archive()
+    ..addFile(ArchiveFile('manifest.json', encoded.length, encoded))
+    ..addFile(ArchiveFile('assets/preview.png', png.length, png));
+  if (includeSkin) {
+    archive.addFile(ArchiveFile('assets/icon.png', png.length, png));
+  }
+  final bytes = Uint8List.fromList(ZipEncoder().encode(archive)!);
+  return store.install(
+    bytes,
+    expectedSha256: sha256.convert(bytes).toString(),
+    expectedId: id,
+    expectedVersion: 1,
   );
 }

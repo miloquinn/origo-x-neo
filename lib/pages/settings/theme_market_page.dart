@@ -51,6 +51,43 @@ class ThemeMarketPage extends StatefulWidget {
   final InstalledThemeAction? removeAction;
   final InstalledThemeLoader? installedLoader;
 
+  @visibleForTesting
+  static bool shouldPreserveActiveVersion({
+    required Iterable<ThemePackage?> activePackages,
+    required String incomingId,
+    required int incomingVersion,
+  }) => activePackages.whereType<ThemePackage>().any(
+    (active) => active.id == incomingId && active.version != incomingVersion,
+  );
+
+  @visibleForTesting
+  static bool usesAnyLayer({
+    required ThemePackage package,
+    required ThemePackage? currentSkinPackage,
+    required ThemePackage? currentColorPackage,
+  }) =>
+      (_hasSkin(package) && _samePackage(currentSkinPackage, package)) ||
+      (package.palette != null && _samePackage(currentColorPackage, package));
+
+  @visibleForTesting
+  static bool isFullyApplied({
+    required ThemePackage package,
+    required ThemePackage? currentSkinPackage,
+    required ThemePackage? currentColorPackage,
+  }) {
+    final hasSkin = _hasSkin(package);
+    final hasPalette = package.palette != null;
+    if (!hasSkin && !hasPalette) return false;
+    return (!hasSkin || _samePackage(currentSkinPackage, package)) &&
+        (!hasPalette || _samePackage(currentColorPackage, package));
+  }
+
+  static bool _hasSkin(ThemePackage package) =>
+      package.skin.icons.isNotEmpty || package.skin.artwork.isNotEmpty;
+
+  static bool _samePackage(ThemePackage? active, ThemePackage candidate) =>
+      active?.id == candidate.id && active?.version == candidate.version;
+
   @override
   State<ThemeMarketPage> createState() => _ThemeMarketPageState();
 }
@@ -157,9 +194,15 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
         return;
       }
       final notifier = context.read<ThemeNotifier>();
-      final previous = notifier.currentSkinPackage;
       final preserveOlderSelection =
-          previous?.id == item.id && previous?.version != item.version;
+          ThemeMarketPage.shouldPreserveActiveVersion(
+            activePackages: [
+              notifier.currentSkinPackage,
+              notifier.currentColorPackage,
+            ],
+            incomingId: item.id,
+            incomingVersion: item.version,
+          );
       final package = await notifier.packageStore.install(
         bytes,
         expectedSha256: item.sha256,
@@ -291,14 +334,17 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
     final l10n = context.l10n;
     final notifier = context.watch<ThemeNotifier>();
     final installed = notifier.installedThemes.toList();
-    final selectedPackage = notifier.currentSkinPackage;
-    if (selectedPackage != null &&
-        !installed.any(
-          (package) =>
-              package.id == selectedPackage.id &&
-              package.version == selectedPackage.version,
-        )) {
-      installed.insert(0, selectedPackage);
+    for (final selectedPackage in <ThemePackage>[
+      ?notifier.currentSkinPackage,
+      ?notifier.currentColorPackage,
+    ]) {
+      if (!installed.any(
+        (package) =>
+            package.id == selectedPackage.id &&
+            package.version == selectedPackage.version,
+      )) {
+        installed.insert(0, selectedPackage);
+      }
     }
     return FloatingSubpageScaffold(
       title: l10n.settingsThemeMarketTitle,
@@ -347,30 +393,35 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
                       ),
                       const SizedBox(height: 12),
                       _responsiveCards(
-                        installed
-                            .map(
-                              (package) => _InstalledThemeCard(
-                                key: ValueKey(
-                                  'installed-${package.id}-${package.version}',
-                                ),
-                                package: package,
-                                selected:
-                                    notifier.currentSkinPackage?.id ==
-                                        package.id &&
-                                    notifier.currentSkinPackage?.version ==
-                                        package.version,
-                                busy: _busyKey != null,
-                                applying:
-                                    _busyKey ==
-                                    'apply-${package.id}-${package.version}',
-                                removing:
-                                    _busyKey ==
-                                    'remove-${package.id}-${package.version}',
-                                onApply: () => _apply(package),
-                                onRemove: () => _remove(package),
-                              ),
-                            )
-                            .toList(),
+                        installed.map((package) {
+                          final active = ThemeMarketPage.usesAnyLayer(
+                            package: package,
+                            currentSkinPackage: notifier.currentSkinPackage,
+                            currentColorPackage: notifier.currentColorPackage,
+                          );
+                          final fullyApplied = ThemeMarketPage.isFullyApplied(
+                            package: package,
+                            currentSkinPackage: notifier.currentSkinPackage,
+                            currentColorPackage: notifier.currentColorPackage,
+                          );
+                          return _InstalledThemeCard(
+                            key: ValueKey(
+                              'installed-${package.id}-${package.version}',
+                            ),
+                            package: package,
+                            active: active,
+                            selected: fullyApplied,
+                            busy: _busyKey != null,
+                            applying:
+                                _busyKey ==
+                                'apply-${package.id}-${package.version}',
+                            removing:
+                                _busyKey ==
+                                'remove-${package.id}-${package.version}',
+                            onApply: () => _apply(package),
+                            onRemove: () => _remove(package),
+                          );
+                        }).toList(),
                       ),
                     ],
                     const SizedBox(height: 28),
@@ -492,15 +543,31 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
     }
     return _responsiveCards(
       _remote.map((item) {
-        final installed = notifier.installedThemes
-            .where(
-              (package) =>
-                  package.id == item.id && package.version == item.version,
-            )
-            .firstOrNull;
-        final selected =
-            notifier.currentSkinPackage?.id == item.id &&
-            notifier.currentSkinPackage?.version == item.version;
+        final installed =
+            <ThemePackage>[
+                  ...notifier.installedThemes,
+                  ?notifier.currentSkinPackage,
+                  ?notifier.currentColorPackage,
+                ]
+                .where(
+                  (package) =>
+                      package.id == item.id && package.version == item.version,
+                )
+                .firstOrNull;
+        final active =
+            installed != null &&
+            ThemeMarketPage.usesAnyLayer(
+              package: installed,
+              currentSkinPackage: notifier.currentSkinPackage,
+              currentColorPackage: notifier.currentColorPackage,
+            );
+        final fullyApplied =
+            installed != null &&
+            ThemeMarketPage.isFullyApplied(
+              package: installed,
+              currentSkinPackage: notifier.currentSkinPackage,
+              currentColorPackage: notifier.currentColorPackage,
+            );
         return _MarketThemeCard(
           key: ValueKey('market-${item.id}-${item.version}'),
           item: item,
@@ -508,7 +575,8 @@ class _ThemeMarketPageState extends State<ThemeMarketPage> {
               (widget.previewUriBuilder ??
               context.read<MemberAccountController>().themePreviewUri)(item),
           installed: installed != null,
-          selected: selected,
+          active: active,
+          selected: fullyApplied,
           busy: _busyKey != null,
           downloading: _busyKey == 'download-${item.id}-${item.version}',
           onAction: installed == null
@@ -544,6 +612,7 @@ class _MarketThemeCard extends StatelessWidget {
     required this.item,
     required this.previewUri,
     required this.installed,
+    required this.active,
     required this.selected,
     required this.busy,
     required this.downloading,
@@ -553,6 +622,7 @@ class _MarketThemeCard extends StatelessWidget {
   final ThemeMarketItem item;
   final Uri previewUri;
   final bool installed;
+  final bool active;
   final bool selected;
   final bool busy;
   final bool downloading;
@@ -561,7 +631,16 @@ class _MarketThemeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GlassSurface(
     role: GlassSurfaceRole.panel,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(24),
+      side: active
+          ? BorderSide(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.55),
+            )
+          : BorderSide.none,
+    ),
     child: Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -640,6 +719,7 @@ class _InstalledThemeCard extends StatelessWidget {
   const _InstalledThemeCard({
     super.key,
     required this.package,
+    required this.active,
     required this.selected,
     required this.busy,
     required this.applying,
@@ -649,6 +729,7 @@ class _InstalledThemeCard extends StatelessWidget {
   });
 
   final ThemePackage package;
+  final bool active;
   final bool selected;
   final bool busy;
   final bool applying;
@@ -659,7 +740,16 @@ class _InstalledThemeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GlassSurface(
     role: GlassSurfaceRole.panel,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(22),
+      side: active
+          ? BorderSide(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.55),
+            )
+          : BorderSide.none,
+    ),
     child: Padding(
       padding: const EdgeInsets.all(16),
       child: Row(

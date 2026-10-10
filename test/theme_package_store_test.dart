@@ -281,7 +281,7 @@ void main() {
   );
 
   test(
-    'corrupted installed files are skipped instead of becoming active',
+    'corrupted installed files can be replaced by the verified same version',
     () async {
       final bytes = _packageZip();
       final package = await store.install(
@@ -303,6 +303,42 @@ void main() {
         ),
         isNull,
       );
+
+      final invalidReplacement = _packageZip(
+        extraManifest: {'code': 'forbidden'},
+      );
+      await expectLater(
+        store.install(
+          invalidReplacement,
+          expectedSha256: sha256.convert(invalidReplacement).toString(),
+          expectedId: 'paper-garden',
+          expectedVersion: 1,
+        ),
+        throwsA(isA<ThemePackageStoreException>()),
+      );
+      expect(
+        await File(
+          path.join(package.rootDirectory, 'assets', 'icon.png'),
+        ).readAsBytes(),
+        [1, 2, 3],
+      );
+
+      final recovered = await store.install(
+        bytes,
+        expectedSha256: sha256.convert(bytes).toString(),
+        expectedId: 'paper-garden',
+        expectedVersion: 1,
+      );
+      expect(recovered.version, 1);
+      expect((await store.loadInstalled()).single.version, 1);
+      expect(
+        await File(
+          path.join(recovered.rootDirectory, 'assets', 'icon.png'),
+        ).readAsBytes(),
+        _png,
+      );
+      final staging = Directory(path.join(sandbox.path, '.staging'));
+      expect(await staging.list().toList(), isEmpty);
     },
   );
 

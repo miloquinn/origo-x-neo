@@ -167,8 +167,11 @@ class ThemePackageStore {
       path.join(root.path, '.staging', _randomIdentifier()),
     );
     ThemePackage? parsed;
+    Directory? installationTarget;
     Directory? publishedTarget;
+    Directory? quarantinedTarget;
     var stagingCreated = false;
+    var completed = false;
     try {
       parsed = _parseManifest(manifestBytes, staging.path);
       if (parsed.id != expectedId || parsed.version != expectedVersion) {
@@ -182,15 +185,29 @@ class ThemePackageStore {
       final target = Directory(
         path.join(root.path, parsed.id, '${parsed.version}'),
       );
-      if (await target.exists()) {
-        throw const ThemePackageStoreException(
-          'This immutable theme version is already installed.',
-        );
-      }
+      installationTarget = target;
       final stagingParent = await _ensureChildDirectory(root, '.staging');
       final idParent = await _ensureChildDirectory(root, parsed.id);
       await _assertSafeDirectory(root, stagingParent);
       await _assertSafeDirectory(root, idParent);
+      final initialTargetType = await FileSystemEntity.type(
+        target.path,
+        followLinks: false,
+      );
+      final recoverCorruptVersion =
+          initialTargetType == FileSystemEntityType.directory;
+      if (recoverCorruptVersion) {
+        await _assertSafeDirectory(root, target);
+        if (await _loadVersion(root, target) != null) {
+          throw const ThemePackageStoreException(
+            'This immutable theme version is already installed.',
+          );
+        }
+      } else if (initialTargetType != FileSystemEntityType.notFound) {
+        throw const ThemePackageStoreException(
+          'The immutable theme version path is not a safe directory.',
+        );
+      }
       await staging.create(recursive: false);
       stagingCreated = true;
       final hashes = <String, String>{};
@@ -212,8 +229,34 @@ class ThemePackageStore {
       ).writeAsString(jsonEncode(receipt), flush: true);
       await _assertSafeDirectory(root, staging.parent);
       await _assertSafeDirectory(root, target.parent);
-      if (await FileSystemEntity.type(target.path, followLinks: false) !=
-          FileSystemEntityType.notFound) {
+      final publishTargetType = await FileSystemEntity.type(
+        target.path,
+        followLinks: false,
+      );
+      if (recoverCorruptVersion) {
+        if (publishTargetType != FileSystemEntityType.directory) {
+          throw const ThemePackageStoreException(
+            'The corrupt theme version changed during recovery.',
+          );
+        }
+        await _assertSafeDirectory(root, target);
+        if (await _loadVersion(root, target) != null) {
+          throw const ThemePackageStoreException(
+            'This immutable theme version is already installed.',
+          );
+        }
+        final quarantine = Directory(
+          path.join(stagingParent.path, 'quarantine-${_randomIdentifier()}'),
+        );
+        if (await FileSystemEntity.type(quarantine.path, followLinks: false) !=
+            FileSystemEntityType.notFound) {
+          throw const ThemePackageStoreException(
+            'Could not allocate a corrupt theme quarantine directory.',
+          );
+        }
+        await target.rename(quarantine.path);
+        quarantinedTarget = quarantine;
+      } else if (publishTargetType != FileSystemEntityType.notFound) {
         throw const ThemePackageStoreException(
           'This immutable theme version is already installed.',
         );
@@ -234,14 +277,28 @@ class ThemePackageStore {
           'Installed theme failed its integrity check.',
         );
       }
+      completed = true;
       return installed;
     } catch (_) {
       final target = publishedTarget;
       if (target != null &&
           await _isSafeDirectory(root, target.parent) &&
+          await _isSafeDirectory(root, target) &&
           await FileSystemEntity.type(target.path, followLinks: false) ==
               FileSystemEntityType.directory) {
         await target.delete(recursive: true);
+      }
+      final quarantine = quarantinedTarget;
+      final original = installationTarget;
+      if (quarantine != null &&
+          original != null &&
+          await _isSafeDirectory(root, quarantine.parent) &&
+          await _isSafeDirectory(root, quarantine) &&
+          await _isSafeDirectory(root, original.parent) &&
+          await FileSystemEntity.type(original.path, followLinks: false) ==
+              FileSystemEntityType.notFound) {
+        await quarantine.rename(original.path);
+        quarantinedTarget = null;
       }
       rethrow;
     } finally {
@@ -250,6 +307,15 @@ class ThemePackageStore {
           await FileSystemEntity.type(staging.path, followLinks: false) ==
               FileSystemEntityType.directory) {
         await staging.delete(recursive: true);
+      }
+      final quarantine = quarantinedTarget;
+      if (completed &&
+          quarantine != null &&
+          await _isSafeDirectory(root, quarantine.parent) &&
+          await _isSafeDirectory(root, quarantine) &&
+          await FileSystemEntity.type(quarantine.path, followLinks: false) ==
+              FileSystemEntityType.directory) {
+        await quarantine.delete(recursive: true);
       }
     }
   }

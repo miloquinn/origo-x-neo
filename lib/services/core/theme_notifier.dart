@@ -290,8 +290,12 @@ class ThemeNotifier extends ChangeNotifier {
       allowVersionFallback: false,
     );
     if (installed == null) throw StateError('Theme is not installed');
-    _skinPackage = installed;
-    _currentSkin = installed.skin;
+    final hasSkin =
+        installed.skin.icons.isNotEmpty || installed.skin.artwork.isNotEmpty;
+    if (hasSkin) {
+      _skinPackage = installed;
+      _currentSkin = installed.skin;
+    }
     if (installed.palette case final palette?) {
       _colorPackage = installed;
       _currentColorPreset = null;
@@ -302,7 +306,7 @@ class ThemeNotifier extends ChangeNotifier {
     final skin = _currentSkin;
     final color = _accentColor;
     await _queueAppearancePersistence(() async {
-      await _persistSkin(skin);
+      if (hasSkin) await _persistSkin(skin);
       if (installed.palette != null) await _persistCustomAccent(color);
     });
   }

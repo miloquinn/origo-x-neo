@@ -70,9 +70,9 @@ AppSkin(
 
 `lib/models/theme_package.dart` 只解析纯数据 `manifest.json`。ZIP 只允许根目录清单/授权/README 和 `assets/` 下静态 PNG、JPEG、WebP；不允许脚本、字体、动画、网络 URL 或无关文件。限制为压缩 10 MiB、展开 20 MiB、96 个条目、清单 64 KiB、合计 2400 万解码像素；图标必须带透明通道、为不超过 512×512 的正方形，预览最大 1600×1600，背景最大 2048×2048。服务端重新编码图片与 ZIP，客户端仍独立校验。
 
-`ThemePackageStore` 检查市场的 ID、精确版本、长度和 SHA-256，再读取 ZIP、解码图片并写入随机 staging。目录 rename 发布不可变版本，收据记录每个文件的哈希。重新加载核对文件集合、哈希与祖先链接边界；损坏包跳过，保存的版本失效时回退默认外观，不会自动启用新版。
+`ThemePackageStore` 检查市场的 ID、精确版本、长度和 SHA-256，再读取 ZIP、解码图片并写入随机 staging。目录 rename 发布不可变版本，收据记录每个文件的哈希。重新加载核对文件集合、哈希与祖先链接边界；损坏包跳过，保存的版本失效时回退默认外观，不会自动启用新版。重新下载同版本时，完整有效版本仍拒绝覆盖；只有新包全部验证通过且原目录确认损坏、安全时，才把原目录原子移到随机隔离目录并发布新目录。发布失败恢复原目录，成功后清理隔离目录。
 
-`appThemePackageSelectionV1` 分别记录素材与配色的 ID/精确版本。安装新版不会替换仍在使用的旧版；市场同时显示最新版和当前旧版。删除未选中的新版不会清除旧版选择。启动只读取两项保存引用，进入市场后才按需扫描全部本地版本。
+`appThemePackageSelectionV1` 分别记录素材与配色的 ID/精确版本。纯配色包只替换配色层，纯素材包只替换素材层，组合包替换两层；未提供的层保留原来的精确引用。安装新版不会替换任一层仍在使用的旧版；市场同时显示最新版和当前素材、配色旧版。删除未选中的新版不会清除旧版选择。启动只读取两项保存引用，进入市场后才按需扫描全部本地版本。
 
 `appSkinImageProvider` 为公共渲染器统一提供 AssetImage/FileImage。市场、预览、流式下载及创作入口服从全局联网授权；撤回授权会清除远端展示并让在途请求失效，已安装主题仍可离线切换和删除。Web 构建不支持本地包安装。
 
@@ -92,7 +92,7 @@ AppSkin(
 - `test/app_color_preset_state_test.dart`：默认/旧色迁移、失效 ID、顺序保存、失败重试和偏好隔离。
 - `test/app_theme_page_test.dart`：选择、真实素材、失败重试/快速选择竞态、选中语义、点击区域、大字体/长文案/平板与无障碍策略。
 - `test/settings_theme_entry_test.dart`：设置摘要入口和自由色盘移除。
-- `test/theme_package_model_test.dart`、`theme_package_store_test.dart`、`theme_package_state_test.dart`：v1 解析、恶意包边界、完整官网模板安装、Windows 路径、链接、精确版本与偏好隔离。
+- `test/theme_package_model_test.dart`、`theme_package_store_test.dart`、`theme_package_state_test.dart`：v1 解析、恶意包边界、完整官网模板安装、Windows 路径、链接、精确版本、损坏重装、独立两层组合与重启恢复。
 - `test/theme_market_api_test.dart`、`theme_market_page_test.dart`：官方 URL、联网撤回、流式长度、远程/本地市场操作和布局。
 - `test/app_skin_assets_test.dart`：实际随包素材解码及许可证注册。
 - `test/app_skin_test.dart`：目录、路径、不可变集合、明暗/选中解析及主题插值。

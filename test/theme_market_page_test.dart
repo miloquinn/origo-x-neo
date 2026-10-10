@@ -209,6 +209,107 @@ void main() {
     );
   });
 
+  testWidgets('shows independent skin and palette packages as active', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final skinBytes = _packageZip(id: 'skin-layer');
+      final skin = await store.install(
+        skinBytes,
+        expectedSha256: sha256.convert(skinBytes).toString(),
+        expectedId: 'skin-layer',
+        expectedVersion: 1,
+      );
+      final paletteBytes = _packageZip(
+        id: 'palette-layer',
+        includePalette: true,
+        includeSkin: false,
+      );
+      final palette = await store.install(
+        paletteBytes,
+        expectedSha256: sha256.convert(paletteBytes).toString(),
+        expectedId: 'palette-layer',
+        expectedVersion: 1,
+      );
+      await notifier.reloadInstalledThemes();
+      await notifier.applyInstalledTheme(skin);
+      await notifier.applyInstalledTheme(palette);
+    });
+
+    await _pumpPage(
+      tester,
+      notifier: notifier,
+      loader: () async => const [],
+      downloader: (_) => throw UnimplementedError(),
+    );
+    for (final id in ['skin-layer', 'palette-layer']) {
+      final card = find.byKey(ValueKey('installed-$id-1'));
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byIcon(Icons.check_circle_rounded),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(ValueKey('apply-$id-1')), findsNothing);
+    }
+  });
+
+  testWidgets(
+    'reapplies a full package after a palette-only package overrides its color',
+    (tester) async {
+      await _expectPartialFullPackageCanBeReapplied(
+        tester,
+        notifier: notifier,
+        store: store,
+        overridePalette: true,
+      );
+    },
+  );
+
+  testWidgets(
+    'reapplies a full package after a skin-only package overrides its artwork',
+    (tester) async {
+      await _expectPartialFullPackageCanBeReapplied(
+        tester,
+        notifier: notifier,
+        store: store,
+        overridePalette: false,
+      );
+    },
+  );
+
+  test('update guard includes an active older palette package', () async {
+    final firstBytes = _packageZip(
+      version: 1,
+      includePalette: true,
+      includeSkin: false,
+    );
+    final first = await store.install(
+      firstBytes,
+      expectedSha256: sha256.convert(firstBytes).toString(),
+      expectedId: 'paper-garden',
+      expectedVersion: 1,
+    );
+    await notifier.reloadInstalledThemes();
+    await notifier.applyInstalledTheme(first);
+
+    expect(notifier.currentSkinPackage, isNull);
+    expect(notifier.currentColorPackage?.version, 1);
+    expect(
+      ThemeMarketPage.shouldPreserveActiveVersion(
+        activePackages: [
+          notifier.currentSkinPackage,
+          notifier.currentColorPackage,
+        ],
+        incomingId: 'paper-garden',
+        incomingVersion: 2,
+      ),
+      isTrue,
+    );
+  });
+
   testWidgets(
     'keeps the public market offline when network consent is absent',
     (tester) async {
@@ -377,9 +478,13 @@ Future<void> _waitUntil(bool Function() condition) async {
   throw StateError('Timed out waiting for notifier initialization.');
 }
 
-ThemeMarketItem _item(Uint8List bytes) => ThemeMarketItem.fromJson({
-  'id': 'paper-garden',
-  'version': 1,
+ThemeMarketItem _item(
+  Uint8List bytes, {
+  String id = 'paper-garden',
+  int version = 1,
+}) => ThemeMarketItem.fromJson({
+  'id': id,
+  'version': version,
   'name': 'Paper Garden',
   'description': 'A calm paper garden.',
   'author': 'Theme Maker',
@@ -388,26 +493,152 @@ ThemeMarketItem _item(Uint8List bytes) => ThemeMarketItem.fromJson({
   'size': bytes.length,
 });
 
-Uint8List _packageZip({int version = 1}) {
+Future<void> _expectPartialFullPackageCanBeReapplied(
+  WidgetTester tester, {
+  required ThemeNotifier notifier,
+  required ThemePackageStore store,
+  required bool overridePalette,
+}) async {
+  const fullId = 'full-layer';
+  late ThemePackage fullPackage;
+  await tester.runAsync(() async {
+    final fullBytes = _packageZip(id: fullId, includePalette: true);
+    fullPackage = await store.install(
+      fullBytes,
+      expectedSha256: sha256.convert(fullBytes).toString(),
+      expectedId: fullId,
+      expectedVersion: 1,
+    );
+    await notifier.reloadInstalledThemes();
+    await notifier.applyInstalledTheme(fullPackage);
+
+    final overrideId = overridePalette ? 'palette-layer' : 'skin-layer';
+    final overrideBytes = _packageZip(
+      id: overrideId,
+      includePalette: overridePalette,
+      includeSkin: !overridePalette,
+    );
+    final overridePackage = await store.install(
+      overrideBytes,
+      expectedSha256: sha256.convert(overrideBytes).toString(),
+      expectedId: overrideId,
+      expectedVersion: 1,
+    );
+    await notifier.reloadInstalledThemes();
+    await notifier.applyInstalledTheme(overridePackage);
+
+    final updateBytes = _packageZip(
+      id: fullId,
+      version: 2,
+      includePalette: true,
+    );
+    await store.install(
+      updateBytes,
+      expectedSha256: sha256.convert(updateBytes).toString(),
+      expectedId: fullId,
+      expectedVersion: 2,
+    );
+    await notifier.reloadInstalledThemes();
+  });
+
+  expect(
+    ThemeMarketPage.usesAnyLayer(
+      package: fullPackage,
+      currentSkinPackage: notifier.currentSkinPackage,
+      currentColorPackage: notifier.currentColorPackage,
+    ),
+    isTrue,
+  );
+  expect(
+    ThemeMarketPage.isFullyApplied(
+      package: fullPackage,
+      currentSkinPackage: notifier.currentSkinPackage,
+      currentColorPackage: notifier.currentColorPackage,
+    ),
+    isFalse,
+  );
+
+  final applied = <ThemePackage>[];
+  final fullBytes = _packageZip(id: fullId, includePalette: true);
+  await _pumpPage(
+    tester,
+    notifier: notifier,
+    loader: () async => [_item(fullBytes, id: fullId)],
+    downloader: (_) => throw UnimplementedError(),
+    applyAction: (package) async => applied.add(package),
+  );
+
+  final localApply = find.byKey(const ValueKey('apply-full-layer-1'));
+  expect(localApply, findsOneWidget);
+  await tester.ensureVisible(localApply);
+  await tester.tap(localApply);
+  await tester.pump(const Duration(milliseconds: 200));
+  expect(applied.map((package) => (package.id, package.version)), [
+    (fullId, 1),
+  ]);
+
+  final remoteApply = find.byKey(const ValueKey('download-full-layer-1'));
+  await tester.ensureVisible(remoteApply);
+  await tester.pump();
+  expect(tester.widget<FilledButton>(remoteApply).onPressed, isNotNull);
+  await tester.tap(remoteApply);
+  await tester.pump(const Duration(milliseconds: 200));
+  expect(applied.map((package) => (package.id, package.version)), [
+    (fullId, 1),
+    (fullId, 1),
+  ]);
+
+  await tester.runAsync(() => notifier.applyInstalledTheme(fullPackage));
+  expect(
+    (notifier.currentSkinPackage?.id, notifier.currentSkinPackage?.version),
+    (fullId, 1),
+  );
+  expect(
+    (notifier.currentColorPackage?.id, notifier.currentColorPackage?.version),
+    (fullId, 1),
+  );
+  expect(
+    ThemeMarketPage.isFullyApplied(
+      package: fullPackage,
+      currentSkinPackage: notifier.currentSkinPackage,
+      currentColorPackage: notifier.currentColorPackage,
+    ),
+    isTrue,
+  );
+}
+
+Uint8List _packageZip({
+  String id = 'paper-garden',
+  int version = 1,
+  bool includePalette = false,
+  bool includeSkin = true,
+}) {
   final manifest = <String, Object?>{
     'schemaVersion': 1,
-    'id': 'paper-garden',
+    'id': id,
     'version': version,
     'name': 'Paper Garden',
     'description': 'A calm paper garden.',
     'author': 'Theme Maker',
     'license': 'CC BY 4.0',
     'preview': 'assets/preview.png',
-    'icons': {
-      'home': {
-        'normal': {'asset': 'assets/icon.png'},
+    if (includePalette)
+      'palette': {
+        'primary': '#123456',
+        'secondary': '#BC9070',
+        'tertiary': '#9070BC',
       },
-    },
+    if (includeSkin)
+      'icons': {
+        'home': {
+          'normal': {'asset': 'assets/icon.png'},
+        },
+      },
   };
   final files = <String, Uint8List>{
     'manifest.json': Uint8List.fromList(utf8.encode(jsonEncode(manifest))),
     'assets/preview.png': _png,
-    'assets/icon.png': _png,
+    if (includeSkin) 'assets/icon.png': _png,
   };
   final archive = Archive();
   for (final entry in files.entries) {

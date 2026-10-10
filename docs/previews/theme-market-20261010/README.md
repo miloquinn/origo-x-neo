@@ -2,7 +2,7 @@
 
 这组截图由 `tool/preview_theme_gallery.dart` 在已启动的 iPhone 18 Pro Max 模拟器上运行真实 Flutter iOS 应用后，通过页面内部 `RepaintBoundary` 输出。它覆盖主题配色、浅色与深色贴图、平板布局、2 倍大字和偏好设置入口。
 
-本次预览使用模拟器 `B747AC4A-A940-4BBC-A2BB-DE72F5EDE816`、Flutter 3.44.7、源码提交 `aaaee8651ad7334b90d98c728528def9784510a6`。构建使用独立 DerivedData：`build/theme-market/native-preview/xcode-derived-20261010`。完整构建日志、应用和截图哈希保存在被忽略的 `build/theme-market/native-preview/`。
+本次预览使用模拟器 `B747AC4A-A940-4BBC-A2BB-DE72F5EDE816`、Flutter 3.44.7，当时的基底提交为 `aaaee8651ad7334b90d98c728528def9784510a6`，并包含当时工作区内的新主题素材与页面修改。构建使用独立 DerivedData：`build/theme-market/native-preview/xcode-derived-20261010`。完整构建日志、应用和截图哈希保存在被忽略的 `build/theme-market/native-preview/`；最终真机版本另用合并源码指纹记录。
 
 ## 预览
 
