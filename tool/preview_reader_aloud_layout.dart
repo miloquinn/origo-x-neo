@@ -212,14 +212,22 @@ void main() {
           const Offset(0, -180),
         );
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
+        await capture('phone-collapse-000');
+        for (var elapsed = 80; elapsed <= 320; elapsed += 80) {
+          await tester.pump(const Duration(milliseconds: 80));
+          await capture('phone-collapse-${elapsed.toString().padLeft(3, '0')}');
+        }
         expect(find.byKey(const ValueKey('reader-aloud-more')), findsNothing);
         await capture('phone-focused');
         await tester.tap(
           find.byKey(const ValueKey('reader-aloud-toggle-controls')),
         );
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await capture('phone-expand-000');
+        for (var elapsed = 80; elapsed <= 320; elapsed += 80) {
+          await tester.pump(const Duration(milliseconds: 80));
+          await capture('phone-expand-${elapsed.toString().padLeft(3, '0')}');
+        }
         await tester.tap(find.text('封面'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));

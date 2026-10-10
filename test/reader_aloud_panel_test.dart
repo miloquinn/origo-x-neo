@@ -549,6 +549,126 @@ void main() {
     },
   );
 
+  testWidgets('controls fade and slide through collapse and expansion frames', (
+    tester,
+  ) async {
+    final fixture = await _openPlayer(
+      tester,
+      size: const Size(390, 844),
+      holdSystemSpeech: true,
+    );
+    addTearDown(fixture.dispose);
+    final play = find.byKey(const ValueKey('reader-aloud-play-pause'));
+    final more = find.byKey(const ValueKey('reader-aloud-more'));
+    final fade = find.byKey(const ValueKey('reader-aloud-shortcuts-opacity'));
+    final slide = find.byKey(const ValueKey('reader-aloud-shortcuts-slide'));
+    final expandedHeight = tester
+        .getSize(find.byKey(const ValueKey('reader-aloud-controls-expanded')))
+        .height;
+    final expandedPlayHeight = tester.getSize(play).height;
+    await tester.tap(
+      find.byKey(const ValueKey('reader-aloud-toggle-controls')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(tester.widget<Opacity>(fade).opacity, inExclusiveRange(0, 1));
+    expect(
+      tester.widget<Transform>(slide).transform.getTranslation().y,
+      inExclusiveRange(0, 16),
+    );
+    final collapsingHeight = tester
+        .getSize(find.byKey(const ValueKey('reader-aloud-controls-collapsed')))
+        .height;
+    expect(collapsingHeight, lessThan(expandedHeight));
+    expect(more, findsOneWidget);
+    expect(more.hitTestable(), findsNothing);
+    expect(play.hitTestable(), findsOneWidget);
+    expect(tester.getSize(play).height, lessThan(expandedPlayHeight));
+    await tester.pump(const Duration(milliseconds: 240));
+    final collapsedHeight = tester
+        .getSize(find.byKey(const ValueKey('reader-aloud-controls-collapsed')))
+        .height;
+    final collapsedPlayHeight = tester.getSize(play).height;
+    expect(collapsingHeight, greaterThan(collapsedHeight));
+    expect(more, findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('reader-aloud-toggle-controls')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(tester.widget<Opacity>(fade).opacity, inExclusiveRange(0, 1));
+    expect(
+      tester.widget<Transform>(slide).transform.getTranslation().y,
+      inExclusiveRange(0, 16),
+    );
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('reader-aloud-controls-expanded')))
+          .height,
+      inExclusiveRange(collapsedHeight, expandedHeight),
+    );
+    expect(
+      tester.getSize(play).height,
+      inExclusiveRange(collapsedPlayHeight, expandedPlayHeight),
+    );
+    expect(play.hitTestable(), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 240));
+    expect(tester.widget<Opacity>(fade).opacity, 1);
+    expect(tester.widget<Transform>(slide).transform.getTranslation().y, 0);
+    expect(more.hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await fixture.controller.stop();
+    await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('control animation reverses from its current frame', (
+    tester,
+  ) async {
+    final fixture = await _openPlayer(
+      tester,
+      size: const Size(390, 844),
+      holdSystemSpeech: true,
+    );
+    addTearDown(fixture.dispose);
+    final toggle = find.byKey(const ValueKey('reader-aloud-toggle-controls'));
+    final play = find.byKey(const ValueKey('reader-aloud-play-pause'));
+    final fade = find.byKey(const ValueKey('reader-aloud-shortcuts-opacity'));
+    final segment = fixture.controller.currentSegment;
+    final state = fixture.controller.state;
+    await tester.tap(toggle);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 320));
+    await tester.tap(toggle);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    final expandingOpacity = tester.widget<Opacity>(fade).opacity;
+    expect(expandingOpacity, inExclusiveRange(0, 1));
+    expect(toggle.hitTestable(), findsOneWidget);
+    expect(find.byTooltip('收起控制'), findsOneWidget);
+    expect(find.byTooltip('展开控制'), findsNothing);
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(
+      tester.widget<Opacity>(fade).opacity,
+      closeTo(expandingOpacity, 0.001),
+    );
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(tester.widget<Opacity>(fade).opacity, lessThan(expandingOpacity));
+    expect(play.hitTestable(), findsOneWidget);
+    expect(toggle, findsOneWidget);
+    expect(find.byTooltip('展开控制'), findsOneWidget);
+    expect(find.byTooltip('收起控制'), findsNothing);
+    expect(fixture.controller.currentSegment, same(segment));
+    expect(fixture.controller.state, state);
+    await tester.pump(const Duration(milliseconds: 240));
+    expect(find.byKey(const ValueKey('reader-aloud-more')), findsNothing);
+    expect(tester.takeException(), isNull);
+    await fixture.controller.stop();
+    await tester.pump(const Duration(seconds: 3));
+  });
+
   testWidgets(
     'reduced motion collapses and reveals controls without a transition',
     (tester) async {
@@ -742,7 +862,7 @@ void main() {
           expect(bounds.top, greaterThanOrEqualTo(safeBounds.top));
           expect(bounds.right, lessThanOrEqualTo(safeBounds.right));
           expect(bounds.bottom, lessThanOrEqualTo(safeBounds.bottom));
-          expect(bounds.height, greaterThanOrEqualTo(44));
+          expect(bounds.height, greaterThanOrEqualTo(44), reason: key);
         }
         expect(
           find.byKey(const ValueKey('reader-aloud-wide-layout')),
@@ -1491,6 +1611,7 @@ Future<_PlayerFixture> _openPlayer(
 
   await tester.pumpWidget(
     MaterialApp(
+      theme: ReaderThemes.day.toThemeData(),
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

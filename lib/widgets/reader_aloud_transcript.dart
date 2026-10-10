@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -6,6 +7,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../core/reader/reader_aloud_controller.dart';
 import '../utils/reader_themes.dart';
+import 'glass_buttons.dart';
 
 class ReaderAloudTranscript extends StatefulWidget {
   const ReaderAloudTranscript({
@@ -157,6 +159,29 @@ class _ReaderAloudTranscriptState extends State<ReaderAloudTranscript> {
         widget.controller.isPreparing &&
         widget.controller.state != ReaderAloudPlaybackState.paused &&
         _followsPlayback;
+    final returnLabel = _copy(
+      context,
+      '回到正在朗读',
+      'Back to reading',
+      '読み上げ位置に戻る',
+    );
+    final returnLabelStyle =
+        (Theme.of(context).textTheme.labelLarge ??
+                const TextStyle(fontSize: 14))
+            .copyWith(color: widget.palette.text, fontWeight: FontWeight.w600);
+    final returnLabelPainter = TextPainter(
+      text: TextSpan(text: returnLabel, style: returnLabelStyle),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final returnLabelHeight = returnLabelPainter.height;
+    returnLabelPainter.dispose();
+    final returnButtonHeight = math.max(
+      44.0,
+      math.max(18.0, returnLabelHeight) + 14,
+    );
+    final returnButtonAvoidanceHeight = 12.0 + returnButtonHeight + 8.0;
     return Stack(
       key: const ValueKey('reader-aloud-transcript'),
       children: [
@@ -265,25 +290,55 @@ class _ReaderAloudTranscriptState extends State<ReaderAloudTranscript> {
                       ),
                     ),
                     if (!_followsPlayback)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                        child: FilledButton.tonalIcon(
-                          key: const ValueKey('reader-aloud-return-to-reading'),
-                          onPressed: _resumeFollowing,
-                          icon: const Icon(Icons.my_location_rounded, size: 18),
-                          label: Text(
-                            _copy(
-                              context,
-                              '回到正在朗读',
-                              'Back to reading',
-                              '読み上げ位置に戻る',
-                            ),
-                          ),
-                        ),
+                      SizedBox(
+                        key: const ValueKey('reader-aloud-return-avoidance'),
+                        height: returnButtonAvoidanceHeight,
                       ),
                   ],
                 ),
         ),
+        if (!_followsPlayback)
+          PositionedDirectional(
+            start: 12,
+            end: 12,
+            bottom: 12,
+            child: Align(
+              alignment: AlignmentDirectional.bottomEnd,
+              child: GlassTextButton(
+                key: const ValueKey('reader-aloud-return-to-reading'),
+                onPressed: _resumeFollowing,
+                tooltip: returnLabel,
+                minimumHeight: returnButtonHeight,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 7,
+                ),
+                color: widget.palette.controlBar.withValues(alpha: 0.88),
+                foregroundColor: widget.palette.text,
+                outlineColor: widget.palette.border.withValues(alpha: 0.72),
+                highlighted: true,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.my_location_rounded,
+                      size: 18,
+                      color: widget.palette.accent,
+                    ),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Text(
+                        returnLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: returnLabelStyle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         if (showPreparing)
           Positioned(
             top: 10,

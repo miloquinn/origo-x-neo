@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -365,23 +366,10 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
                                             ),
                                     ),
                                     const SizedBox(height: 8),
-                                    if (MediaQuery.disableAnimationsOf(context))
-                                      _playbackControls(
-                                        compact: compact,
-                                        collapsed: _controlsCollapsed,
-                                      )
-                                    else
-                                      AnimatedSize(
-                                        duration: const Duration(
-                                          milliseconds: 240,
-                                        ),
-                                        curve: Curves.easeOutCubic,
-                                        alignment: Alignment.bottomCenter,
-                                        child: _playbackControls(
-                                          compact: compact,
-                                          collapsed: _controlsCollapsed,
-                                        ),
-                                      ),
+                                    _playbackControls(
+                                      compact: compact,
+                                      collapsed: _controlsCollapsed,
+                                    ),
                                   ],
                                 ),
                         ),
@@ -651,6 +639,28 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
     bool collapsed = false,
   }) {
     if (widget.compactControls) return _menuPlaybackControls(compact: compact);
+    return TweenAnimationBuilder<double>(
+      key: const ValueKey('reader-aloud-controls-motion'),
+      tween: Tween(begin: 1, end: collapsed ? 0 : 1),
+      duration: wide || MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 320),
+      curve: Curves.easeInOutCubic,
+      builder: (context, reveal, _) => _playbackControlsContents(
+        compact: compact,
+        wide: wide,
+        collapsed: collapsed,
+        reveal: reveal,
+      ),
+    );
+  }
+
+  Widget _playbackControlsContents({
+    required bool compact,
+    required bool wide,
+    required bool collapsed,
+    required double reveal,
+  }) {
     final controller = widget.controller;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -663,127 +673,220 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
         ),
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (!collapsed) ...[
-            if (!compact)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${(controller.currentChapter?.index ?? 0) + 1} / ${controller.source.chapterCount}',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: widget.palette.secondaryText,
+          if (reveal > 0)
+            _revealControls(
+              name: 'reader-aloud-progress',
+              reveal: reveal,
+              hidden: collapsed,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!compact)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${(controller.currentChapter?.index ?? 0) + 1} / ${controller.source.chapterCount}',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(color: widget.palette.secondaryText),
+                          ),
+                          Text(
+                            '${(controller.chapterProgress * 100).round()}%',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: widget.palette.secondaryText,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      '${(controller.chapterProgress * 100).round()}%',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: widget.palette.secondaryText,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            LinearProgressIndicator(
-              value: controller.chapterProgress,
-              minHeight: 3,
-              borderRadius: BorderRadius.circular(99),
-              color: widget.palette.accent,
-              backgroundColor: widget.palette.border.withValues(alpha: 0.42),
-            ),
-            const SizedBox(height: 8),
-          ],
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (collapsed)
-                Expanded(
-                  child: Text(
-                    controller.currentChapter?.title ?? context.l10n.ttsReading,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: widget.palette.secondaryText,
+                  LinearProgressIndicator(
+                    value: controller.chapterProgress,
+                    minHeight: 3,
+                    borderRadius: BorderRadius.circular(99),
+                    color: widget.palette.accent,
+                    backgroundColor: widget.palette.border.withValues(
+                      alpha: 0.42,
                     ),
                   ),
-                ),
-              _transportButton(
-                icon: Icons.fast_rewind_rounded,
-                tooltip: context.l10n.ttsPreviousSentence,
-                onPressed: () => unawaited(controller.previous()),
+                  const SizedBox(height: 8),
+                ],
               ),
-              if (!collapsed) const SizedBox(width: 20),
-              _playPauseButton(compact: compact || collapsed),
-              if (!collapsed) const SizedBox(width: 20),
-              _transportButton(
-                icon: Icons.fast_forward_rounded,
-                tooltip: context.l10n.ttsNextSentence,
-                onPressed: () => unawaited(controller.next()),
-              ),
-              if (collapsed)
-                _roundButton(
-                  key: const ValueKey('reader-aloud-toggle-controls'),
-                  icon: Icons.expand_less_rounded,
-                  tooltip: _copy('展开控制', 'Show controls', '操作を表示'),
-                  onPressed: () => _setControlsCollapsed(false),
-                ),
-            ],
+            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final collapsedFraction = 1 - reveal;
+              const buttonExtent = 48.0;
+              final sideExtent = wide ? 0.0 : buttonExtent;
+              final playExtent = compact ? 58.0 : 58 + 12 * reveal;
+              final gap =
+                  math.min(
+                    20.0,
+                    math.max(
+                      0.0,
+                      (constraints.maxWidth -
+                              2 * buttonExtent -
+                              2 * sideExtent -
+                              playExtent) /
+                          2,
+                    ),
+                  ) *
+                  reveal;
+              final collapsedLabelWidth = math.max(
+                0.0,
+                constraints.maxWidth - 2 * buttonExtent - sideExtent - 58,
+              );
+              final labelWidth = wide
+                  ? 0.0
+                  : sideExtent * reveal +
+                        collapsedLabelWidth * collapsedFraction;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: labelWidth,
+                    child: collapsedFraction == 0
+                        ? null
+                        : Opacity(
+                            opacity: collapsedFraction,
+                            child: Text(
+                              controller.currentChapter?.title ??
+                                  context.l10n.ttsReading,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: widget.palette.secondaryText,
+                                  ),
+                            ),
+                          ),
+                  ),
+                  SizedBox.square(
+                    dimension: buttonExtent,
+                    child: _transportButton(
+                      icon: Icons.fast_rewind_rounded,
+                      tooltip: context.l10n.ttsPreviousSentence,
+                      onPressed: () => unawaited(controller.previous()),
+                    ),
+                  ),
+                  SizedBox(width: gap),
+                  SizedBox.square(
+                    dimension: playExtent,
+                    child: _playPauseButton(compact: compact, reveal: reveal),
+                  ),
+                  SizedBox(width: gap),
+                  SizedBox.square(
+                    dimension: buttonExtent,
+                    child: _transportButton(
+                      icon: Icons.fast_forward_rounded,
+                      tooltip: context.l10n.ttsNextSentence,
+                      onPressed: () => unawaited(controller.next()),
+                    ),
+                  ),
+                  if (!wide)
+                    SizedBox.square(
+                      dimension: buttonExtent,
+                      child: _roundButton(
+                        key: const ValueKey('reader-aloud-toggle-controls'),
+                        icon: Icons.expand_less_rounded,
+                        rotation: math.pi * reveal,
+                        tooltip: collapsed
+                            ? _copy('展开控制', 'Show controls', '操作を表示')
+                            : _copy('收起控制', 'Hide controls', '操作を隠す'),
+                        onPressed: () => _setControlsCollapsed(!collapsed),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
-          if (!collapsed) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: _shortcut(
-                    key: const ValueKey('reader-aloud-chapters'),
-                    icon: Icons.format_list_bulleted_rounded,
-                    label: _copy('目录', 'Chapters', '目次'),
-                    onPressed: _showChapters,
+          if (reveal > 0)
+            _revealControls(
+              name: 'reader-aloud-shortcuts',
+              reveal: reveal,
+              hidden: collapsed,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _shortcut(
+                          key: const ValueKey('reader-aloud-chapters'),
+                          icon: Icons.format_list_bulleted_rounded,
+                          label: _copy('目录', 'Chapters', '目次'),
+                          onPressed: _showChapters,
+                        ),
+                      ),
+                      Expanded(
+                        child: _shortcut(
+                          key: const ValueKey('reader-aloud-speed'),
+                          icon: Icons.speed_rounded,
+                          label:
+                              '${(widget.ttsService.speechRate * 2).toStringAsFixed(1)}×',
+                          onPressed: _showSettings,
+                        ),
+                      ),
+                      Expanded(
+                        child: _shortcut(
+                          key: const ValueKey('reader-aloud-timer'),
+                          icon: controller.sleepDuration == null
+                              ? Icons.timer_outlined
+                              : Icons.timer_rounded,
+                          label: _copy('定时', 'Timer', 'タイマー'),
+                          onPressed: _showSettings,
+                        ),
+                      ),
+                      Expanded(
+                        child: _shortcut(
+                          key: const ValueKey('reader-aloud-more'),
+                          icon: Icons.more_horiz_rounded,
+                          label: _copy('更多', 'More', 'その他'),
+                          onPressed: _showMoreControls,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Expanded(
-                  child: _shortcut(
-                    key: const ValueKey('reader-aloud-speed'),
-                    icon: Icons.speed_rounded,
-                    label:
-                        '${(widget.ttsService.speechRate * 2).toStringAsFixed(1)}×',
-                    onPressed: _showSettings,
-                  ),
-                ),
-                Expanded(
-                  child: _shortcut(
-                    key: const ValueKey('reader-aloud-timer'),
-                    icon: controller.sleepDuration == null
-                        ? Icons.timer_outlined
-                        : Icons.timer_rounded,
-                    label: _copy('定时', 'Timer', 'タイマー'),
-                    onPressed: _showSettings,
-                  ),
-                ),
-                Expanded(
-                  child: _shortcut(
-                    key: const ValueKey('reader-aloud-more'),
-                    icon: Icons.more_horiz_rounded,
-                    label: _copy('更多', 'More', 'その他'),
-                    onPressed: _showMoreControls,
-                  ),
-                ),
-                if (!wide)
-                  _roundButton(
-                    key: const ValueKey('reader-aloud-toggle-controls'),
-                    icon: Icons.expand_more_rounded,
-                    tooltip: _copy('收起控制', 'Hide controls', '操作を隠す'),
-                    onPressed: () => _setControlsCollapsed(true),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ],
         ],
       ),
     );
   }
+
+  Widget _revealControls({
+    required String name,
+    required double reveal,
+    required bool hidden,
+    required Widget child,
+  }) => ClipRect(
+    child: Align(
+      alignment: Alignment.topCenter,
+      heightFactor: reveal,
+      child: IgnorePointer(
+        ignoring: hidden,
+        child: ExcludeSemantics(
+          excluding: hidden,
+          child: Opacity(
+            key: ValueKey('$name-opacity'),
+            opacity: reveal,
+            child: Transform.translate(
+              key: ValueKey('$name-slide'),
+              offset: Offset(0, 16 * (1 - reveal)),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
   Widget _shortcut({
     required Key key,
@@ -797,6 +900,7 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
       onPressed: onPressed,
       style: TextButton.styleFrom(
         minimumSize: const Size(44, 48),
+        visualDensity: VisualDensity.standard,
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
         foregroundColor: widget.palette.secondaryText,
       ),
@@ -811,10 +915,12 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
     ),
   );
 
-  Widget _playPauseButton({required bool compact}) {
+  Widget _playPauseButton({required bool compact, double reveal = 1}) {
     final controller = widget.controller;
     final playing = controller.state == ReaderAloudPlaybackState.playing;
     final loading = controller.state == ReaderAloudPlaybackState.loading;
+    final iconSize = compact ? 30.0 : 30 + 4 * reveal;
+    final padding = compact ? 14.0 : 14 + 4 * reveal;
     return IconButton.filled(
       key: const ValueKey('reader-aloud-play-pause'),
       tooltip: playing ? context.l10n.pause : context.l10n.play,
@@ -827,15 +933,15 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
                   ? controller.resume()
                   : controller.start(),
             ),
-      iconSize: compact ? 30 : 34,
-      padding: EdgeInsets.all(compact ? 14 : 18),
+      iconSize: iconSize,
+      padding: EdgeInsets.all(padding),
       style: IconButton.styleFrom(
         backgroundColor: widget.palette.accent,
         foregroundColor: widget.palette.onAccent,
       ),
       icon: loading
           ? SizedBox.square(
-              dimension: compact ? 30 : 34,
+              dimension: iconSize,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
                 color: widget.palette.onAccent,
@@ -1062,21 +1168,25 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
         Expanded(
           child: Semantics(
             label: context.l10n.ttsVolume,
-            child: Slider(
-              key: const ValueKey('reader-aloud-volume'),
-              value: volume,
-              activeColor: palette.accent,
-              inactiveColor: palette.border.withValues(alpha: 0.42),
-              label: '${(volume * 100).round()}%',
-              semanticFormatterCallback: (value) => '${(value * 100).round()}%',
-              onChanged: (value) {
-                setState(() => _pendingVolume = value);
-                onPreviewChanged?.call();
-              },
-              onChangeEnd: (value) => unawaited(
-                _commitVolume(
-                  value,
-                ).whenComplete(() => onPreviewChanged?.call()),
+            child: SizedBox(
+              height: 48,
+              child: Slider(
+                key: const ValueKey('reader-aloud-volume'),
+                value: volume,
+                activeColor: palette.accent,
+                inactiveColor: palette.border.withValues(alpha: 0.42),
+                label: '${(volume * 100).round()}%',
+                semanticFormatterCallback: (value) =>
+                    '${(value * 100).round()}%',
+                onChanged: (value) {
+                  setState(() => _pendingVolume = value);
+                  onPreviewChanged?.call();
+                },
+                onChangeEnd: (value) => unawaited(
+                  _commitVolume(
+                    value,
+                  ).whenComplete(() => onPreviewChanged?.call()),
+                ),
               ),
             ),
           ),
@@ -1108,6 +1218,7 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
         foregroundColor: widget.palette.secondaryText,
         side: BorderSide(color: widget.palette.border),
         minimumSize: const Size(0, 44),
+        visualDensity: VisualDensity.standard,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
     ),
@@ -1129,14 +1240,19 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
   Widget _roundButton({
     Key? key,
     required IconData icon,
+    double? rotation,
     required String tooltip,
     required VoidCallback onPressed,
   }) => IconButton.filledTonal(
     key: key,
     onPressed: onPressed,
     tooltip: tooltip,
-    icon: Icon(icon),
+    icon: rotation == null
+        ? Icon(icon)
+        : Transform.rotate(angle: rotation, child: Icon(icon)),
     style: IconButton.styleFrom(
+      minimumSize: const Size(44, 44),
+      visualDensity: VisualDensity.standard,
       backgroundColor: widget.palette.controlFill,
       foregroundColor: widget.palette.text,
     ),
