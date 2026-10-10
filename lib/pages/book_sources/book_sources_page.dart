@@ -404,6 +404,7 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
       searchLabel: context.l10n.search,
       noResultsLabel: context.l10n.bookSourcesNoResults,
       transparentBackground: _sourceLayout || size.width < 720,
+      inlineSearch: _sourceLayout,
     );
     final SourcedBookCategory? selected;
     if (_sourceLayout) {
@@ -729,7 +730,7 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
         ? 'error'
         : 'content';
     return (
-      _state.listLayout,
+      _layoutController.layout.value,
       _state.section,
       _state.selectedSourceId,
       _state.favoritesOnly,

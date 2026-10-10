@@ -9,6 +9,7 @@ class BookSourceCategoryPicker extends StatefulWidget {
   final String searchLabel;
   final String noResultsLabel;
   final bool transparentBackground;
+  final bool inlineSearch;
 
   const BookSourceCategoryPicker({
     super.key,
@@ -18,6 +19,7 @@ class BookSourceCategoryPicker extends StatefulWidget {
     required this.searchLabel,
     required this.noResultsLabel,
     this.transparentBackground = false,
+    this.inlineSearch = false,
   });
 
   @override
@@ -27,11 +29,13 @@ class BookSourceCategoryPicker extends StatefulWidget {
 
 class _BookSourceCategoryPickerState extends State<BookSourceCategoryPicker> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _query = '';
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -62,40 +66,60 @@ class _BookSourceCategoryPickerState extends State<BookSourceCategoryPicker> {
       color: widget.transparentBackground ? Colors.transparent : scheme.surface,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 8, 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.title,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+          if (widget.inlineSearch)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: LayoutBuilder(
+                builder: (context, constraints) => Row(
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth * .3,
+                      ),
+                      child: Text(
+                        widget.title,
+                        key: const Key('bookSourceCategoryPickerTitle'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: _searchField(scheme)),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 8, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
+                  IconButton(
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: PillSearchField(
-              textFieldKey: const Key('bookSourceCategorySearchField'),
-              controller: _searchController,
-              hintText: widget.searchLabel,
-              onChanged: (value) => setState(() => _query = value),
-              onClear: () {
-                _searchController.clear();
-                setState(() => _query = '');
-              },
-              fillColor: scheme.surfaceContainerLow,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: _searchField(scheme),
             ),
-          ),
+          ],
           const Divider(height: 1),
           Expanded(
             child: entries.isEmpty
@@ -105,83 +129,112 @@ class _BookSourceCategoryPickerState extends State<BookSourceCategoryPicker> {
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   )
-                : ListView.builder(
-                    key: const Key('bookSourceCategoryLazyList'),
-                    itemCount: entries.length,
-                    itemBuilder: (context, index) {
-                      final entry = entries[index];
-                      final category = entry.category;
-                      if (category == null) {
+                : Scrollbar(
+                    key: const Key('bookSourceCategoryScrollbar'),
+                    controller: _scrollController,
+                    thumbVisibility: widget.inlineSearch,
+                    interactive: true,
+                    scrollbarOrientation: ScrollbarOrientation.right,
+                    child: ListView.builder(
+                      key: const Key('bookSourceCategoryLazyList'),
+                      controller: _scrollController,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: widget.inlineSearch
+                          ? EdgeInsets.only(
+                              bottom: 12 + MediaQuery.paddingOf(context).bottom,
+                            )
+                          : null,
+                      itemCount: entries.length,
+                      itemBuilder: (context, index) {
+                        final entry = entries[index];
+                        final category = entry.category;
+                        if (category == null) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+                            child: Text(
+                              entry.header!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    color: scheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          );
+                        }
+                        final selected = category == widget.selectedCategory;
                         return Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
-                          child: Text(
-                            entry.header!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(
-                                  color: scheme.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 3,
                           ),
-                        );
-                      }
-                      final selected = category == widget.selectedCategory;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 3,
-                        ),
-                        child: AnimatedContainer(
-                          duration: MediaQuery.disableAnimationsOf(context)
-                              ? Duration.zero
-                              : const Duration(milliseconds: 180),
-                          curve: Curves.easeOutCubic,
-                          decoration: ShapeDecoration(
-                            color: selected
-                                ? scheme.primaryContainer
-                                : Colors.transparent,
-                            shape: const StadiumBorder(),
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            shape: const StadiumBorder(),
-                            clipBehavior: Clip.antiAlias,
-                            child: ListTile(
-                              key: Key(
-                                'bookSourceCategory-${category.source.id}-${category.id}',
-                              ),
-                              selected: selected,
-                              selectedColor: scheme.onPrimaryContainer,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 2,
-                              ),
-                              minTileHeight: 48,
+                          child: AnimatedContainer(
+                            duration: MediaQuery.disableAnimationsOf(context)
+                                ? Duration.zero
+                                : const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            decoration: ShapeDecoration(
+                              color: selected
+                                  ? scheme.primaryContainer
+                                  : Colors.transparent,
                               shape: const StadiumBorder(),
-                              title: Text(
-                                category.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              shape: const StadiumBorder(),
+                              clipBehavior: Clip.antiAlias,
+                              child: ListTile(
+                                key: Key(
+                                  'bookSourceCategory-${category.source.id}-${category.id}',
+                                ),
+                                selected: selected,
+                                selectedColor: scheme.onPrimaryContainer,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 2,
+                                ),
+                                minTileHeight: 48,
+                                shape: const StadiumBorder(),
+                                title: Text(
+                                  category.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: selected
+                                    ? Icon(
+                                        Icons.check_rounded,
+                                        color: scheme.onPrimaryContainer,
+                                      )
+                                    : null,
+                                onTap: () =>
+                                    Navigator.of(context).pop(category),
                               ),
-                              trailing: selected
-                                  ? Icon(
-                                      Icons.check_rounded,
-                                      color: scheme.onPrimaryContainer,
-                                    )
-                                  : null,
-                              onTap: () => Navigator.of(context).pop(category),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
           ),
         ],
       ),
     );
   }
+
+  Widget _searchField(ColorScheme scheme) => PillSearchField(
+    textFieldKey: const Key('bookSourceCategorySearchField'),
+    controller: _searchController,
+    hintText: widget.searchLabel,
+    blurBackground: !widget.transparentBackground,
+    onChanged: (value) => setState(() => _query = value),
+    onClear: () {
+      _searchController.clear();
+      setState(() => _query = '');
+    },
+    fillColor: scheme.surfaceContainerLow,
+  );
 }
 
 class _PickerEntry {

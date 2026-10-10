@@ -48,11 +48,19 @@ void main() {
     (tester) async {
       final layout = BookSourcesPageController();
       addTearDown(layout.dispose);
-      await _openPage(tester, count: 2, layout: layout);
+      await _openPage(tester, count: 2, layout: layout, bookCount: 15);
       expect(
         find.byKey(const Key('bookSourceDiscoverySourceSelector')),
         findsOneWidget,
       );
+      final scrollController = tester
+          .widget<CustomScrollView>(
+            find.byKey(const Key('bookSourceDiscoverScrollView')),
+          )
+          .controller!;
+      scrollController.jumpTo(600);
+      await tester.pumpAndSettle();
+      expect(scrollController.offset, greaterThan(0));
       await layout.toggleLayout();
       await tester.pumpAndSettle();
       expect(
@@ -67,6 +75,7 @@ void main() {
         find.byKey(const Key('bookSourceOrganizationAll')),
         findsOneWidget,
       );
+      expect(scrollController.offset, 0);
       await layout.toggleLayout();
       await tester.pumpAndSettle();
       expect(
@@ -83,6 +92,82 @@ void main() {
         find.byKey(const Key('bookSourceListLayoutDirectory')),
         findsNothing,
       );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'section tabs follow the selected source protocol across layouts',
+    (tester) async {
+      final layout = BookSourcesPageController();
+      addTearDown(layout.dispose);
+      final client = await _openPage(
+        tester,
+        count: 2,
+        layout: layout,
+        readingSourceIndices: const {1},
+        capabilities: const {'discover', 'categories', 'browse'},
+      );
+      final sectionTrack = find.byKey(
+        const Key('bookSourceSectionTrackSurface'),
+      );
+      expect(sectionTrack, findsOneWidget);
+      for (final label in ['推荐', '分类', '最新']) {
+        expect(
+          find.descendant(of: sectionTrack, matching: find.text(label)),
+          findsOneWidget,
+        );
+      }
+
+      await tester.tap(
+        find.byKey(const Key('bookSourceDiscoverySourceSelector')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('bookSourceDiscoveryPick-source-001')),
+      );
+      await tester.pumpAndSettle();
+      expect(sectionTrack, findsNothing);
+      expect(
+        find.byKey(const Key('bookSourceDiscoveryChannels')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('bookSourceCategoryPickerButton')),
+        findsOneWidget,
+      );
+      expect(find.text('源001 / 分类000'), findsOneWidget);
+      expect(client.categorySources, ['source-000', 'source-001']);
+
+      await layout.toggleLayout();
+      await tester.pumpAndSettle();
+      expect(sectionTrack, findsNothing);
+      await layout.toggleLayout();
+      await tester.pumpAndSettle();
+      await layout.toggleLayout();
+      await tester.pumpAndSettle();
+      expect(sectionTrack, findsOneWidget);
+      await tester.tap(
+        find.byKey(const Key('bookSourceDiscoverySourceSelector')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('bookSourceDiscoveryPick-source-001')),
+      );
+      await tester.pumpAndSettle();
+      expect(sectionTrack, findsNothing);
+      await tester.tap(
+        find.byKey(const Key('bookSourceDiscoverySourceSelector')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('bookSourceDiscoveryPick-source-000')),
+      );
+      await tester.pumpAndSettle();
+      expect(sectionTrack, findsOneWidget);
+      expect(find.text('源000 / 分类000'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
@@ -107,6 +192,11 @@ void main() {
       await tester.pumpAndSettle();
       final sourceList = find.byKey(const Key('bookSourceDiscoverySourceList'));
       _expectEdge(tester, sourceList);
+      _expectPickerChrome(
+        tester,
+        sourceList,
+        'bookSourceDiscoverySourceScrollbar',
+      );
       expect(
         find.byKey(const Key('bookSourceDiscoveryPick-source-079')),
         findsNothing,
@@ -133,6 +223,8 @@ void main() {
       await tester.pumpAndSettle();
       final categoryList = find.byKey(const Key('bookSourceCategoryLazyList'));
       _expectEdge(tester, categoryList);
+      _expectPickerChrome(tester, categoryList, 'bookSourceCategoryScrollbar');
+      _expectInlineCategoryHeader(tester);
       final scrollable = find.descendant(
         of: categoryList,
         matching: find.byType(Scrollable),
@@ -210,6 +302,34 @@ void main() {
       await tester.tap(find.byKey(GlassBottomSheetSurface.dragHandleKey));
       await tester.pumpAndSettle();
       expect(find.text('源001 / 分类000'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('bookSourceCategoryPickerButton')));
+      await tester.pumpAndSettle();
+      _expectInlineCategoryHeader(tester);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 290);
+      tester.view.padding = const FakeViewPadding(top: 47);
+      await tester.enterText(
+        find.byKey(const Key('bookSourceCategorySearchField')),
+        '059',
+      );
+      await tester.pumpAndSettle();
+      _expectInlineCategoryHeader(tester);
+      await tester.tap(
+        find.byKey(const Key('bookSourceCategory-source-001-category-059')),
+      );
+      await tester.pumpAndSettle();
+      tester.view.viewInsets = FakeViewPadding.zero;
+      tester.view.padding = const FakeViewPadding(top: 47, bottom: 34);
+      await tester.pumpAndSettle();
+      expect(client.browsed.last, ('source-001', 'category-059'));
+      await tester.tap(find.byKey(const Key('bookSourceCategoryPickerButton')));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(GlassBottomSheetSurface.dragHandleKey),
+        const Offset(0, 400),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(GlassBottomSheetSurface), findsNothing);
+      expect(client.browsed.last, ('source-001', 'category-059'));
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
@@ -250,12 +370,45 @@ void _expectEdge(WidgetTester tester, Finder list) {
   expect(panel.height, closeTo(tester.view.physicalSize.height * .55, 1));
 }
 
+void _expectPickerChrome(
+  WidgetTester tester,
+  Finder list,
+  String scrollbarKey,
+) {
+  final context = tester.element(find.byType(GlassBottomSheetSurface));
+  expect(
+    find.byTooltip(MaterialLocalizations.of(context).closeButtonTooltip),
+    findsNothing,
+  );
+  expect(find.byKey(GlassBottomSheetSurface.dragHandleKey), findsOneWidget);
+  final scrollbar = tester.widget<Scrollbar>(find.byKey(Key(scrollbarKey)));
+  expect(scrollbar.thumbVisibility, isTrue);
+  expect(scrollbar.scrollbarOrientation, ScrollbarOrientation.right);
+  expect(scrollbar.controller, tester.widget<ListView>(list).controller);
+}
+
+void _expectInlineCategoryHeader(WidgetTester tester) {
+  final title = tester.getRect(
+    find.byKey(const Key('bookSourceCategoryPickerTitle')),
+  );
+  final search = tester.getRect(
+    find.byKey(const Key('bookSourceCategorySearchField')),
+  );
+  expect(search.left, greaterThan(title.right));
+  expect(search.center.dy, closeTo(title.center.dy, 1));
+  expect(search.width, greaterThan(120));
+  expect(search.right, closeTo(_panelRect(tester).right - 16, 1));
+}
+
 Future<_Client> _openPage(
   WidgetTester tester, {
   required int count,
   double width = 390,
   double textScale = 1,
   BookSourcesPageController? layout,
+  int bookCount = 1,
+  Set<int> readingSourceIndices = const {},
+  Set<String> capabilities = const {'categories', 'browse'},
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, 844);
@@ -272,7 +425,13 @@ Future<_Client> _openPage(
       apiBaseUrl: Uri.parse('https://example.org/api/$index/'),
       protocolVersion: '1.0',
       languages: const ['zh-CN'],
-      capabilities: const {'categories', 'browse'},
+      capabilities: capabilities,
+      sourceProtocol: readingSourceIndices.contains(index)
+          ? BookSourceProtocolKind.readingSource
+          : BookSourceProtocolKind.orsp,
+      sourceConfig: readingSourceIndices.contains(index)
+          ? {'exploreUrl': '全部::https://example.org/$index/books'}
+          : null,
       enabled: true,
       addedAt: DateTime.utc(2026, 10, 10),
     ),
@@ -283,7 +442,7 @@ Future<_Client> _openPage(
       sources.map((source) => source.toJson()).toList(),
     ),
   });
-  final client = _Client();
+  final client = _Client(bookCount);
   addTearDown(client.close);
   await tester.pumpWidget(
     MaterialApp(
@@ -310,6 +469,8 @@ Future<_Client> _openPage(
 }
 
 class _Client extends BookSourceClient {
+  _Client(this.bookCount);
+  final int bookCount;
   final categorySources = <String>[];
   final browsed = <(String, String?)>[];
 
@@ -339,15 +500,17 @@ class _Client extends BookSourceClient {
   }) async {
     browsed.add((source.id, category));
     return BookSourceSearchPage(
-      items: [
-        BookSourceBook(
-          id: '$category-book',
-          title: '${source.name} / 分类${category?.split('-').last}',
+      items: List.generate(
+        bookCount,
+        (index) => BookSourceBook(
+          id: '$category-book-$index',
+          title:
+              '${source.name} / 分类${category?.split('-').last}${index == 0 ? '' : ' #$index'}',
           author: '测试作者',
           description: '验证书源与分类的选择结果',
           categories: const [],
         ),
-      ],
+      ),
       page: page,
       pageSize: pageSize,
       hasMore: false,

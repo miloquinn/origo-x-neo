@@ -1,0 +1,1005 @@
+{
+  "platform": "ios",
+  "nativeRenderer": "iOS Impeller shader-filter path",
+  "capturePixelRatio": 2,
+  "shaderFilterSupported": true,
+  "shaderReady": true,
+  "outputDirectory": "/Users/xiaoyuan/Library/Developer/CoreSimulator/Devices/6ECD0D15-DC02-4695-8512-FCC2F1423AF4/data/Containers/Data/Application/95353261-FD37-4651-99F2-0948946050BB/tmp/discovery-source-layout-preview",
+  "kind": "production BookSourcesPage source layout and shared glass bottom sheets",
+  "dataBoundary": "in-memory custom BookSourceRegistry, BookSourceClient and shelf stub",
+  "readingSourceExploreCatalog": {
+    "valid": true,
+    "entries": [
+      "古典文学",
+      "现代文学"
+    ]
+  },
+  "scenes": [
+    "main-liquid-light",
+    "main-liquid-dark",
+    "main-narrow-320x740-text-1.6",
+    "main-legado-categories-only",
+    "source-menu-liquid-light",
+    "source-menu-search-filtered",
+    "category-menu-liquid-light",
+    "category-menu-list-end",
+    "source-menu-narrow-320x740-text-1.6-keyboard-inset",
+    "category-menu-narrow-320x740-text-1.6-keyboard-inset"
+  ],
+  "geometry": {
+    "main-liquid-light": {
+      "kind": "main",
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "brightness": "light",
+      "textScale": 1.0,
+      "keyboardInset": 0.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 256.0,
+        "height": 48.0,
+        "right": 273.0,
+        "bottom": 161.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 244.0,
+        "width": 358.0,
+        "height": 48.0,
+        "right": 374.0,
+        "bottom": 292.0
+      },
+      "categoryPickerButton": {
+        "left": 282.21198654174805,
+        "top": 246.0,
+        "width": 91.78801345825195,
+        "height": 44.0,
+        "right": 374.0,
+        "bottom": 290.0
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 170.0,
+        "width": 358.0,
+        "height": 54.0,
+        "right": 374.0,
+        "bottom": 224.0
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": false,
+      "sourceSearch": null,
+      "sourceList": null,
+      "sourceScrollbar": null,
+      "categorySearch": null,
+      "categoryTitle": null,
+      "categoryList": null,
+      "categoryScrollbar": null,
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": null,
+      "sheetPanelToBottom": null,
+      "panelCount": 0,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 11,
+        "shaderReady": true
+      }
+    },
+    "main-liquid-dark": {
+      "kind": "main",
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "brightness": "dark",
+      "textScale": 1.0,
+      "keyboardInset": 0.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 256.0,
+        "height": 48.0,
+        "right": 273.0,
+        "bottom": 161.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 244.0,
+        "width": 358.0,
+        "height": 48.0,
+        "right": 374.0,
+        "bottom": 292.0
+      },
+      "categoryPickerButton": {
+        "left": 282.21198654174805,
+        "top": 246.0,
+        "width": 91.78801345825195,
+        "height": 44.0,
+        "right": 374.0,
+        "bottom": 290.0
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 170.0,
+        "width": 358.0,
+        "height": 54.0,
+        "right": 374.0,
+        "bottom": 224.0
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": false,
+      "sourceSearch": null,
+      "sourceList": null,
+      "sourceScrollbar": null,
+      "categorySearch": null,
+      "categoryTitle": null,
+      "categoryList": null,
+      "categoryScrollbar": null,
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": null,
+      "sheetPanelToBottom": null,
+      "panelCount": 0,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 11,
+        "shaderReady": true
+      }
+    },
+    "main-narrow-320x740-text-1.6": {
+      "kind": "main",
+      "logicalSize": {
+        "width": 320.0,
+        "height": 740.0
+      },
+      "brightness": "light",
+      "textScale": 1.6,
+      "keyboardInset": 0.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 186.0,
+        "height": 56.0,
+        "right": 203.0,
+        "bottom": 169.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 256.24,
+        "width": 288.0,
+        "height": 52.24000000000001,
+        "right": 304.0,
+        "bottom": 308.48
+      },
+      "categoryPickerButton": {
+        "left": 195.0592155456543,
+        "top": 256.24,
+        "width": 108.9407844543457,
+        "height": 52.24000000000001,
+        "right": 304.0,
+        "bottom": 308.48
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 178.0,
+        "width": 288.0,
+        "height": 58.24000000000001,
+        "right": 304.0,
+        "bottom": 236.24
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": false,
+      "sourceSearch": null,
+      "sourceList": null,
+      "sourceScrollbar": null,
+      "categorySearch": null,
+      "categoryTitle": null,
+      "categoryList": null,
+      "categoryScrollbar": null,
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 320.0,
+        "height": 740.0,
+        "right": 320.0,
+        "bottom": 740.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": null,
+      "sheetPanelToBottom": null,
+      "panelCount": 0,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 7,
+        "shaderReady": true
+      }
+    },
+    "main-legado-categories-only": {
+      "kind": "legado-main",
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "brightness": "light",
+      "textScale": 1.0,
+      "keyboardInset": 0.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 256.0,
+        "height": 48.0,
+        "right": 273.0,
+        "bottom": 161.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 182.0,
+        "width": 358.0,
+        "height": 48.0,
+        "right": 374.0,
+        "bottom": 230.0
+      },
+      "categoryPickerButton": {
+        "left": 282.21198654174805,
+        "top": 184.0,
+        "width": 91.78801345825195,
+        "height": 44.0,
+        "right": 374.0,
+        "bottom": 228.0
+      },
+      "sectionTrack": null,
+      "sectionTrackPresent": false,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": true,
+      "sourceSearch": null,
+      "sourceList": null,
+      "sourceScrollbar": null,
+      "categorySearch": null,
+      "categoryTitle": null,
+      "categoryList": null,
+      "categoryScrollbar": null,
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": null,
+      "sheetPanelToBottom": null,
+      "panelCount": 0,
+      "visibleSourceNames": [],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 10,
+        "shaderReady": true
+      }
+    },
+    "source-menu-liquid-light": {
+      "kind": "source-menu",
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "brightness": "light",
+      "textScale": 1.0,
+      "keyboardInset": 0.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 256.0,
+        "height": 48.0,
+        "right": 273.0,
+        "bottom": 161.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 244.0,
+        "width": 358.0,
+        "height": 48.0,
+        "right": 374.0,
+        "bottom": 292.0
+      },
+      "categoryPickerButton": {
+        "left": 282.21198654174805,
+        "top": 246.0,
+        "width": 91.78801345825195,
+        "height": 44.0,
+        "right": 374.0,
+        "bottom": 290.0
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 170.0,
+        "width": 358.0,
+        "height": 54.0,
+        "right": 374.0,
+        "bottom": 224.0
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": true,
+      "sourceSearch": {
+        "left": 80.92401123046875,
+        "top": 419.79999999999995,
+        "width": 285.07598876953125,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 471.79999999999995
+      },
+      "sourceList": {
+        "left": 8.0,
+        "top": 483.79999999999995,
+        "width": 374.0,
+        "height": 352.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "sourceScrollbar": {
+        "left": 8.0,
+        "top": 483.79999999999995,
+        "width": 374.0,
+        "height": 352.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "categorySearch": null,
+      "categoryTitle": null,
+      "categoryList": null,
+      "categoryScrollbar": null,
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": {
+        "left": 8.0,
+        "top": 371.79999999999995,
+        "width": 374.0,
+        "height": 464.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "sheetPanelToBottom": 8.0,
+      "panelCount": 1,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "山海书屋",
+        "星河书屋",
+        "古典长篇书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 12,
+        "shaderReady": true
+      }
+    },
+    "source-menu-search-filtered": {
+      "kind": "source-menu",
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "brightness": "light",
+      "textScale": 1.0,
+      "keyboardInset": 0.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 256.0,
+        "height": 48.0,
+        "right": 273.0,
+        "bottom": 161.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 244.0,
+        "width": 358.0,
+        "height": 48.0,
+        "right": 374.0,
+        "bottom": 292.0
+      },
+      "categoryPickerButton": {
+        "left": 282.21198654174805,
+        "top": 246.0,
+        "width": 91.78801345825195,
+        "height": 44.0,
+        "right": 374.0,
+        "bottom": 290.0
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 170.0,
+        "width": 358.0,
+        "height": 54.0,
+        "right": 374.0,
+        "bottom": 224.0
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": false,
+      "sourceSearch": {
+        "left": 80.92401123046875,
+        "top": 419.79999999999995,
+        "width": 285.07598876953125,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 471.79999999999995
+      },
+      "sourceList": {
+        "left": 8.0,
+        "top": 483.79999999999995,
+        "width": 374.0,
+        "height": 352.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "sourceScrollbar": {
+        "left": 8.0,
+        "top": 483.79999999999995,
+        "width": 374.0,
+        "height": 352.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "categorySearch": null,
+      "categoryTitle": null,
+      "categoryList": null,
+      "categoryScrollbar": null,
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": {
+        "left": 8.0,
+        "top": 371.79999999999995,
+        "width": 374.0,
+        "height": 464.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "sheetPanelToBottom": 8.0,
+      "panelCount": 1,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "星河书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 12,
+        "shaderReady": true
+      }
+    },
+    "category-menu-liquid-light": {
+      "kind": "category-menu",
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "brightness": "light",
+      "textScale": 1.0,
+      "keyboardInset": 0.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 256.0,
+        "height": 48.0,
+        "right": 273.0,
+        "bottom": 161.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 244.0,
+        "width": 358.0,
+        "height": 48.0,
+        "right": 374.0,
+        "bottom": 292.0
+      },
+      "categoryPickerButton": {
+        "left": 282.21198654174805,
+        "top": 246.0,
+        "width": 91.78801345825195,
+        "height": 44.0,
+        "right": 374.0,
+        "bottom": 290.0
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 170.0,
+        "width": 358.0,
+        "height": 54.0,
+        "right": 374.0,
+        "bottom": 224.0
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": false,
+      "sourceSearch": null,
+      "sourceList": null,
+      "sourceScrollbar": null,
+      "categorySearch": {
+        "left": 80.92401123046875,
+        "top": 419.79999999999995,
+        "width": 285.07598876953125,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 471.79999999999995
+      },
+      "categoryTitle": {
+        "left": 24.0,
+        "top": 431.79999999999995,
+        "width": 44.92401123046875,
+        "height": 28.0,
+        "right": 68.92401123046875,
+        "bottom": 459.79999999999995
+      },
+      "categoryList": {
+        "left": 8.0,
+        "top": 484.79999999999995,
+        "width": 374.0,
+        "height": 351.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "categoryScrollbar": {
+        "left": 8.0,
+        "top": 484.79999999999995,
+        "width": 374.0,
+        "height": 351.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": {
+        "left": 8.0,
+        "top": 371.79999999999995,
+        "width": 374.0,
+        "height": 464.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "sheetPanelToBottom": 8.0,
+      "panelCount": 1,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "山海书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 12,
+        "shaderReady": true
+      }
+    },
+    "category-menu-list-end": {
+      "kind": "category-menu",
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "brightness": "light",
+      "textScale": 1.0,
+      "keyboardInset": 0.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 256.0,
+        "height": 48.0,
+        "right": 273.0,
+        "bottom": 161.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 244.0,
+        "width": 358.0,
+        "height": 48.0,
+        "right": 374.0,
+        "bottom": 292.0
+      },
+      "categoryPickerButton": {
+        "left": 282.21198654174805,
+        "top": 246.0,
+        "width": 91.78801345825195,
+        "height": 44.0,
+        "right": 374.0,
+        "bottom": 290.0
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 170.0,
+        "width": 358.0,
+        "height": 54.0,
+        "right": 374.0,
+        "bottom": 224.0
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": false,
+      "sourceSearch": null,
+      "sourceList": null,
+      "sourceScrollbar": null,
+      "categorySearch": {
+        "left": 80.92401123046875,
+        "top": 419.79999999999995,
+        "width": 285.07598876953125,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 471.79999999999995
+      },
+      "categoryTitle": {
+        "left": 24.0,
+        "top": 431.79999999999995,
+        "width": 44.92401123046875,
+        "height": 28.0,
+        "right": 68.92401123046875,
+        "bottom": 459.79999999999995
+      },
+      "categoryList": {
+        "left": 8.0,
+        "top": 484.79999999999995,
+        "width": 374.0,
+        "height": 351.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "categoryScrollbar": {
+        "left": 8.0,
+        "top": 484.79999999999995,
+        "width": 374.0,
+        "height": 351.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": {
+        "left": 8.0,
+        "top": 371.79999999999995,
+        "width": 374.0,
+        "height": 464.20000000000005,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "sheetPanelToBottom": 8.0,
+      "panelCount": 1,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 12,
+        "shaderReady": true
+      }
+    },
+    "source-menu-narrow-320x740-text-1.6-keyboard-inset": {
+      "kind": "source-menu",
+      "logicalSize": {
+        "width": 320.0,
+        "height": 740.0
+      },
+      "brightness": "light",
+      "textScale": 1.6,
+      "keyboardInset": 264.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 186.0,
+        "height": 56.0,
+        "right": 203.0,
+        "bottom": 169.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 256.24,
+        "width": 288.0,
+        "height": 52.24000000000001,
+        "right": 304.0,
+        "bottom": 308.48
+      },
+      "categoryPickerButton": {
+        "left": 195.0592155456543,
+        "top": 256.24,
+        "width": 108.9407844543457,
+        "height": 52.24000000000001,
+        "right": 304.0,
+        "bottom": 308.48
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 178.0,
+        "width": 288.0,
+        "height": 58.24000000000001,
+        "right": 304.0,
+        "bottom": 236.24
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": true,
+      "sourceSearch": {
+        "left": 107.87838745117188,
+        "top": 109.0,
+        "width": 188.12161254882812,
+        "height": 62.0,
+        "right": 296.0,
+        "bottom": 171.0
+      },
+      "sourceList": {
+        "left": 8.0,
+        "top": 183.0,
+        "width": 304.0,
+        "height": 285.00000000000006,
+        "right": 312.0,
+        "bottom": 468.00000000000006
+      },
+      "sourceScrollbar": {
+        "left": 8.0,
+        "top": 183.0,
+        "width": 304.0,
+        "height": 285.00000000000006,
+        "right": 312.0,
+        "bottom": 468.00000000000006
+      },
+      "categorySearch": null,
+      "categoryTitle": null,
+      "categoryList": null,
+      "categoryScrollbar": null,
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 320.0,
+        "height": 740.0,
+        "right": 320.0,
+        "bottom": 740.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": {
+        "left": 8.0,
+        "top": 61.0,
+        "width": 304.0,
+        "height": 671.0,
+        "right": 312.0,
+        "bottom": 732.0
+      },
+      "sheetPanelToBottom": 8.0,
+      "panelCount": 1,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋",
+        "古典长篇书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 8,
+        "shaderReady": true
+      }
+    },
+    "category-menu-narrow-320x740-text-1.6-keyboard-inset": {
+      "kind": "category-menu",
+      "logicalSize": {
+        "width": 320.0,
+        "height": 740.0
+      },
+      "brightness": "light",
+      "textScale": 1.6,
+      "keyboardInset": 264.0,
+      "sourceSelector": {
+        "left": 17.0,
+        "top": 113.0,
+        "width": 186.0,
+        "height": 56.0,
+        "right": 203.0,
+        "bottom": 169.0
+      },
+      "categoryStrip": {
+        "left": 16.0,
+        "top": 256.24,
+        "width": 288.0,
+        "height": 52.24000000000001,
+        "right": 304.0,
+        "bottom": 308.48
+      },
+      "categoryPickerButton": {
+        "left": 195.0592155456543,
+        "top": 256.24,
+        "width": 108.9407844543457,
+        "height": 52.24000000000001,
+        "right": 304.0,
+        "bottom": 308.48
+      },
+      "sectionTrack": {
+        "left": 16.0,
+        "top": 178.0,
+        "width": 288.0,
+        "height": 58.24000000000001,
+        "right": 304.0,
+        "bottom": 236.24
+      },
+      "sectionTrackPresent": true,
+      "categoryControlsPresent": true,
+      "readingSourceLabelVisible": false,
+      "sourceSearch": null,
+      "sourceList": null,
+      "sourceScrollbar": null,
+      "categorySearch": {
+        "left": 107.87838745117188,
+        "top": 109.0,
+        "width": 188.12161254882812,
+        "height": 62.0,
+        "right": 296.0,
+        "bottom": 171.0
+      },
+      "categoryTitle": {
+        "left": 24.0,
+        "top": 117.5,
+        "width": 71.87838745117188,
+        "height": 45.0,
+        "right": 95.87838745117188,
+        "bottom": 162.5
+      },
+      "categoryList": {
+        "left": 8.0,
+        "top": 184.0,
+        "width": 304.0,
+        "height": 284.00000000000006,
+        "right": 312.0,
+        "bottom": 468.00000000000006
+      },
+      "categoryScrollbar": {
+        "left": 8.0,
+        "top": 184.0,
+        "width": 304.0,
+        "height": 284.00000000000006,
+        "right": 312.0,
+        "bottom": 468.00000000000006
+      },
+      "closeButtonCount": 0,
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 320.0,
+        "height": 740.0,
+        "right": 320.0,
+        "bottom": 740.0
+      },
+      "viewportToBottom": 0.0,
+      "sheetPanel": {
+        "left": 8.0,
+        "top": 61.0,
+        "width": 304.0,
+        "height": 671.0,
+        "right": 312.0,
+        "bottom": 732.0
+      },
+      "sheetPanelToBottom": 8.0,
+      "panelCount": 1,
+      "visibleSourceNames": [
+        "山海书屋",
+        "山海书屋",
+        "林间客 · 山海书屋",
+        "顾远舟 · 山海书屋",
+        "沈星遥 · 山海书屋",
+        "江南旧雨 · 山海书屋",
+        "山海书屋"
+      ],
+      "nativeImpeller": {
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 8,
+        "shaderReady": true
+      }
+    }
+  }
+}

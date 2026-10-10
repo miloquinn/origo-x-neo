@@ -63,11 +63,13 @@ class BookSourceDiscoverySourcePicker extends StatefulWidget {
 class _BookSourceDiscoverySourcePickerState
     extends State<BookSourceDiscoverySourcePicker> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String _query = '';
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -80,87 +82,97 @@ class _BookSourceDiscoverySourcePickerState
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 8, 10),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  context.l10n.bookSources,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: LayoutBuilder(
+            builder: (context, constraints) => Row(
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * .3,
+                  ),
+                  child: Text(
+                    context.l10n.bookSources,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
-              ),
-              IconButton(
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: PillSearchField(
-            textFieldKey: const Key('bookSourceDiscoverySourceSearch'),
-            controller: _searchController,
-            hintText: context.l10n.bookSourcesManagementSearchHint,
-            clearTooltip: context.l10n.bookSourcesClearSearch,
-            blurBackground: false,
-            onChanged: (value) => setState(() => _query = value),
-            onClear: () {
-              _searchController.clear();
-              setState(() => _query = '');
-            },
+                const SizedBox(width: 12),
+                Expanded(
+                  child: PillSearchField(
+                    textFieldKey: const Key('bookSourceDiscoverySourceSearch'),
+                    controller: _searchController,
+                    hintText: context.l10n.search,
+                    clearTooltip: context.l10n.bookSourcesClearSearch,
+                    blurBackground: false,
+                    onChanged: (value) => setState(() => _query = value),
+                    onClear: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
           child: sources.isEmpty
               ? Center(child: Text(context.l10n.bookSourcesNoMatchingSources))
-              : ListView.builder(
-                  key: const Key('bookSourceDiscoverySourceList'),
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: EdgeInsets.fromLTRB(
-                    12,
-                    0,
-                    12,
-                    12 + MediaQuery.paddingOf(context).bottom,
-                  ),
-                  itemCount: sources.length,
-                  itemBuilder: (context, index) {
-                    final source = sources[index];
-                    final selected = source.id == widget.selectedSourceId;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: GlassSurface(
-                        role: GlassSurfaceRole.selection,
-                        enabled: selected,
-                        visibility: selected ? 1 : 0,
-                        filterBackground: false,
-                        shape: const StadiumBorder(),
-                        child: ListTile(
-                          key: Key('bookSourceDiscoveryPick-${source.id}'),
-                          selected: selected,
-                          selectedColor: scheme.primary,
+              : Scrollbar(
+                  key: const Key('bookSourceDiscoverySourceScrollbar'),
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  interactive: true,
+                  scrollbarOrientation: ScrollbarOrientation.right,
+                  child: ListView.builder(
+                    key: const Key('bookSourceDiscoverySourceList'),
+                    controller: _scrollController,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      0,
+                      12,
+                      12 + MediaQuery.paddingOf(context).bottom,
+                    ),
+                    itemCount: sources.length,
+                    itemBuilder: (context, index) {
+                      final source = sources[index];
+                      final selected = source.id == widget.selectedSourceId;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: GlassSurface(
+                          role: GlassSurfaceRole.selection,
+                          enabled: selected,
+                          visibility: selected ? 1 : 0,
+                          filterBackground: false,
                           shape: const StadiumBorder(),
-                          minTileHeight: 52,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 18,
+                          child: ListTile(
+                            key: Key('bookSourceDiscoveryPick-${source.id}'),
+                            selected: selected,
+                            selectedColor: scheme.primary,
+                            shape: const StadiumBorder(),
+                            minTileHeight: 52,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                            ),
+                            title: Text(
+                              source.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: selected
+                                ? const Icon(Icons.check_rounded)
+                                : null,
+                            onTap: () => Navigator.of(context).pop(source),
                           ),
-                          title: Text(
-                            source.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: selected
-                              ? const Icon(Icons.check_rounded)
-                              : null,
-                          onTap: () => Navigator.of(context).pop(source),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
         ),
       ],
