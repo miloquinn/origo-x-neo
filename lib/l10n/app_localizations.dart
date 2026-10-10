@@ -257,6 +257,12 @@ abstract class AppLocalizations {
   /// **'List layout'**
   String get bookSourceListLayout;
 
+  /// No description provided for @bookSourceFocusedLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Source layout'**
+  String get bookSourceFocusedLayout;
+
   /// No description provided for @bookSourceChangeChannel.
   ///
   /// In en, this message translates to:

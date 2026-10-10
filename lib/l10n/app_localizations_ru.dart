@@ -95,6 +95,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get bookSourceListLayout => 'Список';
 
   @override
+  String get bookSourceFocusedLayout => 'Вид по источнику';
+
+  @override
   String get bookSourceChangeChannel => 'Изменить';
 
   @override

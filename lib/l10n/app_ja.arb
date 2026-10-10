@@ -45,6 +45,7 @@
   },
   "bookSourceStandardLayout": "標準レイアウト",
   "bookSourceListLayout": "リストレイアウト",
+  "bookSourceFocusedLayout": "ソースレイアウト",
   "bookSourceChangeChannel": "変更",
   "bookSourceChangeSourceTitle": "ソースを変更",
   "bookSourceChangeCurrentSource": "現在のソース",

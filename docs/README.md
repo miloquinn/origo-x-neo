@@ -10,6 +10,7 @@
 | 模块阅读顺序 | [代码库说明](../CODEBASE_DOCUMENTATION.md) |
 | 书源门面、运行时、所有权与兼容边界 | [书源架构](../lib/book_sources/README.md) |
 | 书源管理卡片密度、筛选栏与共享胶囊分类控件 | [书源管理布局](source-management-ui.md) |
+| 发现页三种布局、书源搜索与分类选择菜单 | [发现页布局](discovery.md) |
 | 书库更新计数、封面角标、在线确认与本地续更 | [书库更新](library-source-updates.md) |
 | 书籍与文件夹拖动、自动排序、真实最近阅读时间 | [书库整理](library-organization.md) |
 | 书籍详情、分类标签与书库信息展示 | [书籍详情](book-details.md) |

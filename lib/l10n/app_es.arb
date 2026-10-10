@@ -24,6 +24,7 @@
   "bookSourceHttpFailed": "El sitio de la fuente devolvió HTTP {status}. Puede que la dirección del canal esté obsoleta o bloqueada por el sitio.",
   "bookSourceStandardLayout": "Diseño estándar",
   "bookSourceListLayout": "Diseño de lista",
+  "bookSourceFocusedLayout": "Diseño por fuente",
   "bookSourceChangeChannel": "Cambiar",
   "bookSourceChangeSourceTitle": "Cambiar fuente",
   "bookSourceChangeCurrentSource": "Fuente actual",

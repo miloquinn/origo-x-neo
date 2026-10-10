@@ -23,6 +23,7 @@ class BookSourceRailHeader extends StatelessWidget {
   final VoidCallback onToggleLayout;
   final VoidCallback onSearch;
   final VoidCallback onManage;
+  final IconData? layoutIcon;
 
   const BookSourceRailHeader({
     super.key,
@@ -34,6 +35,7 @@ class BookSourceRailHeader extends StatelessWidget {
     required this.onToggleLayout,
     required this.onSearch,
     required this.onManage,
+    this.layoutIcon,
   });
 
   @override
@@ -57,9 +59,11 @@ class BookSourceRailHeader extends StatelessWidget {
             key: const Key('bookSourceDiscoverLayoutToggle'),
             tooltip: layoutTooltip,
             onPressed: onToggleLayout,
-            icon: standardLayout
-                ? Icons.view_list_rounded
-                : Icons.dashboard_outlined,
+            icon:
+                layoutIcon ??
+                (standardLayout
+                    ? Icons.view_list_rounded
+                    : Icons.dashboard_outlined),
           ),
           const SizedBox(width: 8),
           FloatingSubpageAction(
@@ -81,6 +85,7 @@ class BookSourceRailHeader extends StatelessWidget {
 }
 
 class BookSourceDiscoveryControls extends StatelessWidget {
+  final Widget? sourceSelector;
   final List<RegisteredBookSource> sources;
   final bool includeAllSources;
   final String? selectedSourceId;
@@ -95,6 +100,7 @@ class BookSourceDiscoveryControls extends StatelessWidget {
 
   const BookSourceDiscoveryControls({
     super.key,
+    this.sourceSelector,
     required this.sources,
     required this.includeAllSources,
     required this.selectedSourceId,
@@ -113,7 +119,9 @@ class BookSourceDiscoveryControls extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (sources.isNotEmpty)
+        if (sourceSelector != null)
+          sourceSelector!
+        else if (sources.isNotEmpty)
           _SourceScope(
             sources: sources,
             includeAll: includeAllSources,

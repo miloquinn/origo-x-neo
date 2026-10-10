@@ -43,8 +43,10 @@ class BookSourcesController extends ChangeNotifier {
   int _registryChangeRevision = 0;
   bool _started = false;
   bool _closed = false;
+  bool _sourceLayout = false;
 
   BookSourcesState get state => _state;
+  bool get sourceLayout => _sourceLayout;
 
   Future<void> load() async {
     if (_closed) return;
@@ -80,6 +82,7 @@ class BookSourcesController extends ChangeNotifier {
 
   void setListLayout(bool value) {
     if (_closed || _state.listLayout == value) return;
+    if (value) _sourceLayout = false;
     _sectionRevision++;
     _categoryRevision++;
     if (value) {
@@ -112,6 +115,37 @@ class BookSourcesController extends ChangeNotifier {
     }
   }
 
+  void setSourceLayout(bool value) {
+    if (_closed || _sourceLayout == value) return;
+    _sourceLayout = value;
+    if (!value) return;
+    _sectionRevision++;
+    _categoryRevision++;
+
+    var next = _resetCategory(
+      _state.copyWith(
+        listLayout: false,
+        favoritesOnly: false,
+        selectedGroup: null,
+        expandedListSourceId: null,
+        showListDirectory: false,
+        caches: const {},
+        loadingListChannelSources: const {},
+        listChannelErrors: const {},
+        listGroupsRevision: _state.listGroupsRevision + 1,
+      ),
+    );
+    next = _withValidSourceLayoutSelection(
+      next,
+      preferredSourceId: _state.selectedSourceId,
+      preferCategories: true,
+    );
+    _emit(next);
+    if (!_state.loadingSources) {
+      unawaited(loadSection(_state.section));
+    }
+  }
+
   Future<void> reload() async {
     if (_closed) return;
     _sourceRevision++;
@@ -121,7 +155,7 @@ class BookSourcesController extends ChangeNotifier {
       _resetCategory(
         _state.copyWith(
           loadingSources: true,
-          selectedSourceId: null,
+          selectedSourceId: _sourceLayout ? _state.selectedSourceId : null,
           caches: const {},
           expandedListSourceId: null,
           showListDirectory: true,
@@ -168,10 +202,11 @@ class BookSourcesController extends ChangeNotifier {
     if (!organizedSources.any((source) => source.id == selectedSourceId)) {
       selectedSourceId = null;
     }
-    if (!_state.listLayout &&
+    if (_sourceLayout && selectedSourceId == null) {
+      selectedSourceId = organizedSources.firstOrNull?.id;
+    } else if (!_state.listLayout &&
         organizedSources.length > largeSourceLibraryThreshold &&
-        (selectedSourceId == null ||
-            !discoveryIds.contains(selectedSourceId))) {
+        selectedSourceId == null) {
       selectedSourceId = organizedSources.firstOrNull?.id;
     }
     var next = _state.copyWith(
@@ -182,7 +217,13 @@ class BookSourcesController extends ChangeNotifier {
       loadingSources: false,
       listGroupsRevision: _state.listGroupsRevision + 1,
     );
-    if (next.availableSections.isNotEmpty &&
+    if (_sourceLayout) {
+      next = _withValidSourceLayoutSelection(
+        next,
+        preferredSourceId: selectedSourceId,
+        preferCategories: selectedSourceId != _state.selectedSourceId,
+      );
+    } else if (next.availableSections.isNotEmpty &&
         !next.availableSections.contains(next.section)) {
       next = next.copyWith(section: next.availableSections.first);
     }
@@ -191,11 +232,26 @@ class BookSourcesController extends ChangeNotifier {
   }
 
   Future<void> changeSourceScope(String? sourceId) async {
-    if (_closed || _state.selectedSourceId == sourceId) return;
+    if (_closed) return;
+    if (_sourceLayout) {
+      final visibleIds = _state.organizedDiscoverySources
+          .map((source) => source.id)
+          .toSet();
+      if (sourceId == null || !visibleIds.contains(sourceId)) {
+        sourceId = _state.organizedDiscoverySources.firstOrNull?.id;
+      }
+    }
+    if (_state.selectedSourceId == sourceId) return;
     var next = _resetCategory(
       _state.copyWith(selectedSourceId: sourceId, caches: const {}),
     );
-    if (next.availableSections.isNotEmpty &&
+    if (_sourceLayout) {
+      next = _withValidSourceLayoutSelection(
+        next,
+        preferredSourceId: sourceId,
+        preferCategories: true,
+      );
+    } else if (next.availableSections.isNotEmpty &&
         !next.availableSections.contains(next.section)) {
       next = next.copyWith(section: next.availableSections.first);
     }
@@ -340,6 +396,7 @@ class BookSourcesController extends ChangeNotifier {
 
   Future<void> selectCategory(SourcedBookCategory category) async {
     if (_closed) return;
+    if (_sourceLayout && !_isCurrentSourceLayoutCategory(category)) return;
     final revision = ++_categoryRevision;
     final supportsBrowse = category.source.capabilities.contains('browse');
     _emit(
@@ -405,6 +462,17 @@ class BookSourcesController extends ChangeNotifier {
         _state.copyWith(loadingCategoryBooks: false, categoryLoadError: error),
       );
     }
+  }
+
+  bool _isCurrentSourceLayoutCategory(SourcedBookCategory category) {
+    if (category.source.id != _state.selectedSourceId) return false;
+    final sourceIsScoped = _state
+        .scopedSourcesFor(BookSourcesSection.categories)
+        .any((source) => source.id == category.source.id);
+    if (!sourceIsScoped) return false;
+    return (_state.caches[BookSourcesSection.categories]?.categories ??
+            const [])
+        .contains(category);
   }
 
   Future<void> loadMoreCategory() async {
@@ -631,6 +699,27 @@ class BookSourcesController extends ChangeNotifier {
           .toList(growable: false);
     }
     return Map.unmodifiable(result);
+  }
+
+  BookSourcesState _withValidSourceLayoutSelection(
+    BookSourcesState state, {
+    String? preferredSourceId,
+    bool preferCategories = false,
+  }) {
+    final sources = state.organizedDiscoverySources;
+    final sourceId = sources.any((source) => source.id == preferredSourceId)
+        ? preferredSourceId
+        : sources.firstOrNull?.id;
+    var next = state.copyWith(selectedSourceId: sourceId);
+    final sections = next.availableSections;
+    if (sections.isEmpty) return next;
+    final section =
+        preferCategories && sections.contains(BookSourcesSection.categories)
+        ? BookSourcesSection.categories
+        : sections.contains(next.section)
+        ? next.section
+        : sections.first;
+    return next.copyWith(section: section);
   }
 
   Future<List<BookSourceDiscoveryShelf>> _fetchShelves({

@@ -527,12 +527,8 @@ extension _HomeShellLayoutPart on _HomeShellPageState {
             key: const Key('bookSourceDiscoverLayoutToggle'),
             valueListenable: _bookSourcesController.layout,
             builder: (context, layout, _) => _buildTopBarActionButton(
-              icon: layout == BookSourceDiscoverLayout.standard
-                  ? Icons.view_list_rounded
-                  : Icons.dashboard_outlined,
-              tooltip: layout == BookSourceDiscoverLayout.standard
-                  ? context.l10n.bookSourceListLayout
-                  : context.l10n.bookSourceStandardLayout,
+              icon: layout.next.icon,
+              tooltip: layout.next.label(context),
               onTap: () => unawaited(_bookSourcesController.toggleLayout()),
             ),
           ),

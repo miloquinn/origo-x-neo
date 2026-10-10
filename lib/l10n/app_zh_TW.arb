@@ -45,6 +45,7 @@
   },
   "bookSourceStandardLayout": "標準版面",
   "bookSourceListLayout": "清單版面",
+  "bookSourceFocusedLayout": "書源版面",
   "bookSourceChangeChannel": "更換",
   "bookSourceChangeSourceTitle": "更換來源",
   "bookSourceChangeCurrentSource": "目前來源",

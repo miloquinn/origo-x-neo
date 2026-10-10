@@ -91,6 +91,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bookSourceListLayout => '列表布局';
 
   @override
+  String get bookSourceFocusedLayout => '书源布局';
+
+  @override
   String get bookSourceChangeChannel => '更换';
 
   @override
@@ -7820,6 +7823,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get bookSourceListLayout => '清單版面';
+
+  @override
+  String get bookSourceFocusedLayout => '書源版面';
 
   @override
   String get bookSourceChangeChannel => '更換';

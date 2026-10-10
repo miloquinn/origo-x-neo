@@ -24,6 +24,7 @@
   "bookSourceHttpFailed": "Сайт источника вернул HTTP {status}. Адрес канала мог устареть или заблокирован сайтом.",
   "bookSourceStandardLayout": "Стандартный вид",
   "bookSourceListLayout": "Список",
+  "bookSourceFocusedLayout": "Вид по источнику",
   "bookSourceChangeChannel": "Изменить",
   "bookSourceChangeSourceTitle": "Смена источника",
   "bookSourceChangeCurrentSource": "Текущий источник",

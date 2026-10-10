@@ -27,6 +27,7 @@ import 'controllers/book_sources_controller.dart';
 import 'source_search_page.dart';
 import 'source_login_page.dart';
 import 'widgets/book_source_category_picker.dart';
+import 'widgets/book_source_discovery_source_picker.dart';
 import 'widgets/book_source_discovery_sections.dart';
 import 'widgets/book_source_list_directory.dart';
 import 'widgets/book_source_list_reveal.dart';
@@ -43,7 +44,25 @@ part 'book_sources_page_organization.dart';
 part 'book_sources_page_tablet.dart';
 part 'book_sources_page_content.dart';
 
-enum BookSourceDiscoverLayout { standard, list }
+enum BookSourceDiscoverLayout { standard, list, source }
+
+extension BookSourceDiscoverLayoutPresentation on BookSourceDiscoverLayout {
+  BookSourceDiscoverLayout get next =>
+      BookSourceDiscoverLayout.values[(index + 1) %
+          BookSourceDiscoverLayout.values.length];
+
+  IconData get icon => switch (this) {
+    BookSourceDiscoverLayout.standard => Icons.dashboard_outlined,
+    BookSourceDiscoverLayout.list => Icons.view_list_rounded,
+    BookSourceDiscoverLayout.source => Icons.web_asset_rounded,
+  };
+
+  String label(BuildContext context) => switch (this) {
+    BookSourceDiscoverLayout.standard => context.l10n.bookSourceStandardLayout,
+    BookSourceDiscoverLayout.list => context.l10n.bookSourceListLayout,
+    BookSourceDiscoverLayout.source => context.l10n.bookSourceFocusedLayout,
+  };
+}
 
 /// 发现页布局状态。由首页壳层持有，因此顶部按钮和页面内容始终同步。
 class BookSourcesPageController {
@@ -63,16 +82,14 @@ class BookSourcesPageController {
     final preferences = await SharedPreferences.getInstance();
     if (_disposed || revision != _revision) return;
     final stored = preferences.getString(preferenceKey);
-    layout.value = stored == BookSourceDiscoverLayout.list.name
-        ? BookSourceDiscoverLayout.list
-        : BookSourceDiscoverLayout.standard;
+    layout.value =
+        BookSourceDiscoverLayout.values
+            .where((value) => value.name == stored)
+            .firstOrNull ??
+        BookSourceDiscoverLayout.standard;
   }
 
-  Future<void> toggleLayout() => setLayout(
-    layout.value == BookSourceDiscoverLayout.standard
-        ? BookSourceDiscoverLayout.list
-        : BookSourceDiscoverLayout.standard,
-  );
+  Future<void> toggleLayout() => setLayout(layout.value.next);
 
   Future<void> setLayout(BookSourceDiscoverLayout next) async {
     if (_disposed) return;
@@ -215,7 +232,6 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
     _ownsLayoutController = widget.controller == null;
     _layoutController = widget.controller ?? BookSourcesPageController();
     _layoutController.layout.addListener(_handleLayoutChanged);
-    unawaited(_layoutController.initialize());
     _ownsClient = widget.client == null;
     _client = widget.client ?? (widget.clientFactory ?? BookSourceClient.new)();
     _ownsShelfService = widget.shelfService == null;
@@ -226,10 +242,15 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
     _registry = widget.registry ?? BookSourceRegistry();
     _controller = BookSourcesController(gateway: _client, registry: _registry)
       ..addListener(_handleControllerChanged);
-    _controller.setListLayout(
-      _layoutController.layout.value == BookSourceDiscoverLayout.list,
-    );
-    unawaited(_controller.load());
+    _applyDiscoveryLayout();
+    unawaited(_initializeDiscovery());
+  }
+
+  Future<void> _initializeDiscovery() async {
+    await _layoutController.initialize();
+    if (!mounted) return;
+    _applyDiscoveryLayout();
+    await _controller.load();
   }
 
   @override
@@ -283,8 +304,72 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
   void _handleLayoutChanged() {
     if (!mounted) return;
     _pendingScrollOffset = 0;
-    _controller.setListLayout(
-      _layoutController.layout.value == BookSourceDiscoverLayout.list,
+    _applyDiscoveryLayout();
+    setState(() {});
+  }
+
+  bool get _sourceLayout =>
+      _layoutController.layout.value == BookSourceDiscoverLayout.source;
+
+  void _applyDiscoveryLayout() {
+    _controller.setSourceLayout(_sourceLayout);
+    if (!_sourceLayout) {
+      _controller.setListLayout(
+        _layoutController.layout.value == BookSourceDiscoverLayout.list,
+      );
+    }
+  }
+
+  Future<T?> _showDiscoveryPicker<T>(Widget picker) => showGlassBottomSheet<T>(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: LayoutBuilder(
+        builder: (context, constraints) => SizedBox(
+          height: math.min(
+            MediaQuery.sizeOf(context).height * 0.55 -
+                GlassBottomSheetSurface.dragHandleExtent,
+            constraints.maxHeight,
+          ),
+          child: picker,
+        ),
+      ),
+    ),
+  );
+
+  Future<void> _openDiscoverySourcePicker() async {
+    final selected = await _showDiscoveryPicker<RegisteredBookSource>(
+      BookSourceDiscoverySourcePicker(
+        sources: _state.organizedDiscoverySources,
+        selectedSourceId: _state.selectedSourceId,
+        matchesQuery: BookSourcesPage.listSourceMatchesQuery,
+      ),
+    );
+    if (!mounted || !_sourceLayout || selected == null) return;
+    _pendingScrollOffset = 0;
+    await _controller.changeSourceScope(selected.id);
+  }
+
+  Widget _buildDiscoverySourceSelector() {
+    final source = _state.organizedDiscoverySources
+        .where((source) => source.id == _state.selectedSourceId)
+        .firstOrNull;
+    return Row(
+      children: [
+        Expanded(
+          child: BookSourceDiscoverySourceButton(
+            name: source?.name ?? context.l10n.bookSources,
+            onPressed: _state.organizedDiscoverySources.isEmpty
+                ? null
+                : () => unawaited(_openDiscoverySourcePicker()),
+          ),
+        ),
+        if (source != null) ...[
+          const SizedBox(width: 8),
+          _sourceActions(source),
+        ],
+      ],
     );
   }
 
@@ -318,10 +403,12 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
       title: context.l10n.discoverCategories,
       searchLabel: context.l10n.search,
       noResultsLabel: context.l10n.bookSourcesNoResults,
-      transparentBackground: size.width < 720,
+      transparentBackground: _sourceLayout || size.width < 720,
     );
     final SourcedBookCategory? selected;
-    if (size.width >= 720) {
+    if (_sourceLayout) {
+      selected = await _showDiscoveryPicker<SourcedBookCategory>(picker);
+    } else if (size.width >= 720) {
       selected = await showDialog<SourcedBookCategory>(
         context: context,
         builder: (context) => Dialog(
@@ -459,10 +546,8 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
                           title: context.l10n.discover,
                           standardLayout:
                               layout == BookSourceDiscoverLayout.standard,
-                          layoutTooltip:
-                              layout == BookSourceDiscoverLayout.standard
-                              ? context.l10n.bookSourceListLayout
-                              : context.l10n.bookSourceStandardLayout,
+                          layoutIcon: layout.next.icon,
+                          layoutTooltip: layout.next.label(context),
                           searchTooltip: context.l10n.bookSourcesSearch,
                           managementTooltip:
                               context.l10n.bookSourceManagementTitle,
@@ -472,7 +557,9 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
                           onManage: () => unawaited(_openSourceManagement()),
                         ),
                       ),
-                    if (!listLayout && showStandardSourceFilters) ...[
+                    if (!listLayout &&
+                        !_sourceLayout &&
+                        showStandardSourceFilters) ...[
                       _organizationFilters(),
                       const SizedBox(height: 12),
                     ],
@@ -485,6 +572,9 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
                       child: listLayout
                           ? const SizedBox(width: double.infinity)
                           : BookSourceDiscoveryControls(
+                              sourceSelector: _sourceLayout
+                                  ? _buildDiscoverySourceSelector()
+                                  : null,
                               sources: discoverySources,
                               includeAllSources:
                                   !_state.requiresScopedDiscovery,
@@ -504,7 +594,9 @@ class _BookSourcesPageState extends State<BookSourcesPage> {
                             ),
                     ),
                     if (!listLayout) const SizedBox(height: 12),
-                    if (!listLayout && _state.selectedSourceId != null)
+                    if (!listLayout &&
+                        !_sourceLayout &&
+                        _state.selectedSourceId != null)
                       for (final source in discoverySources.where(
                         (source) => source.id == _state.selectedSourceId,
                       ))

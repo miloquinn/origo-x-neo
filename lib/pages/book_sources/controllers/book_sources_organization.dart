@@ -61,7 +61,13 @@ extension _BookSourcesOrganization on BookSourcesController {
       if (selectedRemoved) {
         next = next.copyWith(selectedSourceId: null, showListDirectory: true);
       }
-      if (!next.listLayout &&
+      if (_sourceLayout) {
+        next = _withValidSourceLayoutSelection(
+          next,
+          preferredSourceId: next.selectedSourceId,
+          preferCategories: selectedRemoved,
+        );
+      } else if (!next.listLayout &&
           next.requiresScopedDiscovery &&
           next.selectedSourceId == null) {
         next = next.copyWith(
@@ -92,7 +98,12 @@ extension _BookSourcesOrganization on BookSourcesController {
         }
       }
       next = next.copyWith(caches: caches);
-      if (!next.listLayout &&
+      if (_sourceLayout) {
+        next = _withValidSourceLayoutSelection(
+          next,
+          preferredSourceId: next.selectedSourceId,
+        );
+      } else if (!next.listLayout &&
           next.availableSections.isNotEmpty &&
           !next.availableSections.contains(next.section)) {
         _categoryRevision++;
@@ -137,7 +148,9 @@ extension _BookSourcesOrganization on BookSourcesController {
         listGroupsRevision: _state.listGroupsRevision + 1,
       ),
     );
-    if (!next.listLayout && next.requiresScopedDiscovery) {
+    if (_sourceLayout) {
+      next = _withValidSourceLayoutSelection(next, preferCategories: true);
+    } else if (!next.listLayout && next.requiresScopedDiscovery) {
       next = next.copyWith(
         selectedSourceId: next.organizedDiscoverySources.first.id,
       );

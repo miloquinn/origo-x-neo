@@ -95,6 +95,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookSourceListLayout => 'List layout';
 
   @override
+  String get bookSourceFocusedLayout => 'Source layout';
+
+  @override
   String get bookSourceChangeChannel => 'Change';
 
   @override

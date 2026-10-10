@@ -24,6 +24,7 @@
   "bookSourceHttpFailed": "Le site de la source a renvoyé HTTP {status}. L'adresse du canal est peut-être obsolète ou bloquée par le site.",
   "bookSourceStandardLayout": "Disposition standard",
   "bookSourceListLayout": "Disposition en liste",
+  "bookSourceFocusedLayout": "Disposition par source",
   "bookSourceChangeChannel": "Changer",
   "bookSourceChangeSourceTitle": "Changer de source",
   "bookSourceChangeCurrentSource": "Source actuelle",

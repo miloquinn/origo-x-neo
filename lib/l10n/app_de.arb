@@ -24,6 +24,7 @@
   "bookSourceHttpFailed": "Die Quellseite hat HTTP {status} zurückgegeben. Die Kanaladresse ist möglicherweise veraltet oder wird von der Seite blockiert.",
   "bookSourceStandardLayout": "Standardlayout",
   "bookSourceListLayout": "Listenlayout",
+  "bookSourceFocusedLayout": "Quellenlayout",
   "bookSourceChangeChannel": "Wechseln",
   "bookSourceChangeSourceTitle": "Quelle wechseln",
   "bookSourceChangeCurrentSource": "Aktuelle Quelle",

@@ -59,6 +59,7 @@
   },
   "bookSourceStandardLayout": "Standard layout",
   "bookSourceListLayout": "List layout",
+  "bookSourceFocusedLayout": "Source layout",
   "bookSourceChangeChannel": "Change",
   "bookSourceChangeSourceTitle": "Change source",
   "bookSourceChangeCurrentSource": "Current source",

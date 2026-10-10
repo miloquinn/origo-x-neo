@@ -57,6 +57,7 @@
   },
   "bookSourceStandardLayout": "标准布局",
   "bookSourceListLayout": "列表布局",
+  "bookSourceFocusedLayout": "书源布局",
   "bookSourceChangeChannel": "更换",
   "bookSourceChangeSourceTitle": "换源",
   "bookSourceChangeCurrentSource": "当前来源",
