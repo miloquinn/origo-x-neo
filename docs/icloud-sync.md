@@ -47,4 +47,6 @@
 
 2026-10-10 本批已通过 107 项相关 Flutter 回归：协议与控制器 27、真实双 SQLite 数据适配器 7、页面与导航 11、实际设置入口平台矩阵 6、协议启动门禁 10、WebDAV 34、既有应用设置 12。状态型页面按独立进程验证；功能范围静态分析无问题。另通过 31 项 macOS 构建、分发与签名工具回归及 iOS/macOS SDK 原生类型检查。六种页面布局预览保存在本机 `build/icloud-sync/preview-*.png`，不作为实体 UI 验收。
 
+同日隔离产品验证：iOS Release 编译通过，最终源码 Debug 编译通过且输入摘要未变化；macOS arm64 Release 编译通过。macOS 本机 Developer ID 密码学签名校验通过，但本机安装的 iCloud profile 未包含当前签名证书，因此受限权限签名链尚未验收；未公证、未发布。该本机签名限制不等于 CI 使用的签名材料失效。iPhone 由现有唯一安装任务等待全部共享页面定稿后构建并覆盖安装，保留已有数据；隔离验证包不用于替换设备上的合并版本。
+
 真实 Apple ID 的 iPhone/Mac 双设备传输、系统存储不足、长时间后台传输及实体 UI 验收必须单独记录，模拟运输、SDK 类型检查和产品编译不能替代这些证据。macOS 签名 profile 必须实际授权 CloudDocuments 容器；仅编辑 entitlements 不证明授权已生效。
