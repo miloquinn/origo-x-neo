@@ -458,27 +458,14 @@ extension _LibraryPageCollection on _LibraryPageState {
       BookUpdateIndicator(book: book, child: _buildListCoverArt(context, book));
 
   Widget _buildListCoverArt(BuildContext context, Book book) {
-    if (!kIsWeb &&
-        book.coverImagePath != null &&
-        book.coverImagePath!.isNotEmpty) {
-      // 列表封面显示宽度固定 64，按屏幕像素密度限制解码尺寸即可
-      return Image.file(
-        File(book.coverImagePath!),
+    final reference = BookCoverReference.fromBook(book);
+    if (reference.localPath != null || reference.remoteUrl != null) {
+      return BookCoverImage(
+        reference: reference,
+        fallback: _buildListDefaultCover(context, book),
         fit: LayoutHelper.bookCoverFit,
         cacheWidth: (64 * MediaQuery.of(context).devicePixelRatio).round(),
         gaplessPlayback: true,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildListDefaultCover(context, book),
-      );
-    }
-    final sourceCover = _sourceCoverUrl(book);
-    if (sourceCover != null) {
-      return SourceCoverImage(
-        url: sourceCover,
-        headers: _sourceCoverHeaders(book),
-        fit: LayoutHelper.bookCoverFit,
-        cacheWidth: (64 * MediaQuery.of(context).devicePixelRatio).round(),
-        fallback: _buildListDefaultCover(context, book),
       );
     }
     return _buildListDefaultCover(context, book);

@@ -26,6 +26,7 @@ import 'package:xxread/utils/font_catalog_helper.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_aloud_panel.dart';
 import 'package:xxread/widgets/reader_control_chrome.dart';
+import 'package:xxread/widgets/source_cover_image.dart';
 
 import 'support/reader_cache_test_utils.dart';
 
@@ -53,6 +54,135 @@ void main() {
         );
     supportDirectory.deleteSync(recursive: true);
   });
+
+  for (final format in ['txt', 'epub']) {
+    testWidgets(
+      'native $format listening retains downloaded source cover when local image is missing',
+      (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        await tester.binding.setSurfaceSize(const Size(480, 800));
+        SharedPreferences.setMockInitialValues({
+          ReaderSettingsStore.pageModeKey: ReaderPageMode.horizontalSlide.name,
+          ReaderSettingsStore.chapterTitlePageKey: false,
+          'reader_aloud_presentation': 'player',
+        });
+        final directory = Directory.systemTemp.createTempSync(
+          'origo-x-aloud-cover-entry-',
+        );
+        final file = File(path.join(directory.path, 'downloaded.$format'));
+        if (format == 'epub') {
+          file.writeAsBytesSync(_epubFixture());
+        } else {
+          file.writeAsStringSync('第一章\n这是下载书籍的正文。第二句用来确认听书可以继续。');
+        }
+        final appSettings = AppSettingsNotifier(
+          onlineFontService: _seededOnlineFontService(
+            directory,
+            FontCatalog.newsreader,
+          ),
+        );
+        final rules = ReplaceRuleService();
+        final tts = _HeldTts();
+        final aloud = ReaderAloudService(
+          systemEngine: tts,
+          settingsStore: _SettingsStore(),
+          bytesPlayer: _SilentPlayer(),
+        );
+        final session = ReaderAloudSession();
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        const mediaChannel = MethodChannel('com.niki.xxread/reader_aloud');
+        messenger.setMockMethodCallHandler(mediaChannel, (_) async => null);
+        var cleanedUp = false;
+        Future<void> cleanup() async {
+          if (cleanedUp) return;
+          cleanedUp = true;
+          await session.stop();
+          await tester.pumpWidget(const SizedBox.shrink());
+          await drainReaderCache(tester);
+          await tester.pump();
+          session.dispose();
+          aloud.dispose();
+          tts.dispose();
+          appSettings.dispose();
+          messenger.setMockMethodCallHandler(mediaChannel, null);
+          await tester.binding.setSurfaceSize(null);
+          debugDefaultTargetPlatformOverride = null;
+          directory.deleteSync(recursive: true);
+        }
+
+        addTearDown(() async {
+          await cleanup();
+          await rules.close();
+        });
+        await _waitFor(
+          tester,
+          () => appSettings.isInitialized,
+          message: 'app settings did not initialize',
+        );
+        await tester.pumpWidget(
+          _app(
+            session: session,
+            aloud: aloud,
+            tts: tts,
+            appSettings: appSettings,
+            home: NativeReaderPage(
+              replaceRuleService: rules,
+              paginationCacheDao: MemoryPaginationCacheDao(),
+              book: Book(
+                title: 'Downloaded $format cover fixture',
+                author: '封面作者',
+                filePath: file.path,
+                format: format,
+                fileModifiedTime: file
+                    .lastModifiedSync()
+                    .millisecondsSinceEpoch,
+                coverImagePath: path.join(
+                  directory.path,
+                  'missing-local-cover.png',
+                ),
+                sourceId: 'cover-fixture-source',
+                sourceBookId: 'downloaded-$format',
+                sourceJson: jsonEncode({
+                  'apiBaseUrl': 'https://cover.test/books/',
+                }),
+                sourceBookJson: jsonEncode({
+                  'coverUrl': 'covers/book.png',
+                  'coverHeaders': {'Referer': 'https://cover.test/'},
+                }),
+              ),
+            ),
+          ),
+        );
+        await _waitFor(tester, () {
+          final chrome = find.byType(ReaderChromeOverlay);
+          return chrome.evaluate().isNotEmpty &&
+              tester.widget<ReaderChromeOverlay>(chrome).onReadAloud != null;
+        }, message: 'native read-aloud action did not become ready');
+        await _openPlayer(tester);
+        final metadata = session.controller!.bookMetadata!;
+        expect(metadata.author, '封面作者');
+        expect(metadata.localCoverPath, endsWith('missing-local-cover.png'));
+        expect(
+          metadata.remoteCoverUrl,
+          Uri.parse('https://cover.test/books/covers/book.png'),
+        );
+        expect(metadata.remoteCoverHeaders, {'Referer': 'https://cover.test/'});
+        await _waitFor(
+          tester,
+          () => find.byType(SourceCoverImage).evaluate().isNotEmpty,
+          message: 'downloaded book did not fall back to its online cover',
+        );
+        final cover = tester.widget<SourceCoverImage>(
+          find.byType(SourceCoverImage).first,
+        );
+        expect(cover.url, metadata.remoteCoverUrl);
+        expect(cover.headers, metadata.remoteCoverHeaders);
+        expect(tester.takeException(), isNull);
+        await cleanup();
+      },
+    );
+  }
 
   testWidgets(
     'native EPUB listening follows book, system, and explicit reader typography',

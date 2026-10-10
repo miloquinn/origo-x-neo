@@ -12,10 +12,14 @@ class ReaderAloudTranscript extends StatefulWidget {
     super.key,
     required this.controller,
     required this.palette,
+    this.onBrowse,
+    this.framed = true,
   });
 
   final ReaderAloudController controller;
   final ReaderThemePalette palette;
+  final VoidCallback? onBrowse;
+  final bool framed;
 
   @override
   State<ReaderAloudTranscript> createState() => _ReaderAloudTranscriptState();
@@ -72,13 +76,14 @@ class _ReaderAloudTranscriptState extends State<ReaderAloudTranscript> {
       if (!chapterChanged && !segmentChanged) return;
       _lastChapterIndex = segment.chapterIndex;
       _lastSegmentOffset = segment.startOffset;
-      if (jump || chapterChanged) {
-        _scrollController.jumpTo(index: index, alignment: 0.35);
+      final alignment = index == 0 ? 0.0 : 0.35;
+      if (jump || chapterChanged || MediaQuery.disableAnimationsOf(context)) {
+        _scrollController.jumpTo(index: index, alignment: alignment);
       } else {
         unawaited(
           _scrollController.scrollTo(
             index: index,
-            alignment: 0.35,
+            alignment: alignment,
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeOutCubic,
           ),
@@ -157,11 +162,15 @@ class _ReaderAloudTranscriptState extends State<ReaderAloudTranscript> {
       children: [
         DecoratedBox(
           decoration: BoxDecoration(
-            color: widget.palette.surface.withValues(alpha: 0.56),
+            color: widget.framed
+                ? widget.palette.surface.withValues(alpha: 0.56)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: widget.palette.border.withValues(alpha: 0.56),
-            ),
+            border: widget.framed
+                ? Border.all(
+                    color: widget.palette.border.withValues(alpha: 0.56),
+                  )
+                : null,
           ),
           child: segments.isEmpty
               ? Center(
@@ -177,9 +186,11 @@ class _ReaderAloudTranscriptState extends State<ReaderAloudTranscript> {
                     Expanded(
                       child: NotificationListener<UserScrollNotification>(
                         onNotification: (notification) {
-                          if (notification.direction != ScrollDirection.idle &&
-                              _followsPlayback) {
-                            setState(() => _followsPlayback = false);
+                          if (notification.direction != ScrollDirection.idle) {
+                            if (_followsPlayback) {
+                              setState(() => _followsPlayback = false);
+                            }
+                            widget.onBrowse?.call();
                           }
                           return false;
                         },

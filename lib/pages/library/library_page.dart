@@ -2,8 +2,6 @@
 // 技术要点：Flutter UI、文件系统、渲染层。
 
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -23,6 +21,7 @@ import 'package:xxread/book_sources/services/book_source_registry.dart';
 import 'package:xxread/book_sources/services/book_source_shelf_service.dart';
 import 'package:xxread/pages/reader/book_reader_launcher.dart';
 import 'package:xxread/models/book.dart';
+import 'package:xxread/models/book_cover_reference.dart';
 import 'package:xxread/models/shelf_folder.dart';
 import 'package:xxread/models/home_navigation_destination.dart';
 import 'package:xxread/services/library/shelf_folder_dao.dart';
@@ -50,6 +49,7 @@ import 'package:xxread/utils/system_ui_helper.dart';
 import 'package:xxread/utils/ui_style.dart';
 import 'package:xxread/widgets/app_brand_icon.dart';
 import 'package:xxread/widgets/app_menu.dart';
+import 'package:xxread/widgets/book_cover_image.dart';
 import 'package:xxread/widgets/generated_book_cover.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_dialog.dart';
@@ -58,7 +58,6 @@ import 'package:xxread/widgets/glass_surface.dart';
 import 'package:xxread/widgets/pill_search_field.dart';
 import 'package:xxread/widgets/scrolling_text.dart';
 import 'package:xxread/widgets/side_toast.dart';
-import 'package:xxread/widgets/source_cover_image.dart';
 
 import 'import_book/import_book_page.dart';
 import 'download_tasks_page.dart';

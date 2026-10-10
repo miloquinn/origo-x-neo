@@ -172,6 +172,26 @@ abstract interface class ReaderAloudSource {
   Future<void> persistPosition(ReaderAloudPosition position);
 }
 
+@immutable
+class ReaderAloudBookMetadata {
+  ReaderAloudBookMetadata({
+    this.author = '',
+    this.localCoverPath,
+    this.remoteCoverUrl,
+    Map<String, String> remoteCoverHeaders = const {},
+  }) : remoteCoverHeaders = Map.unmodifiable(remoteCoverHeaders);
+
+  final String author;
+  final String? localCoverPath;
+  final Uri? remoteCoverUrl;
+  final Map<String, String> remoteCoverHeaders;
+}
+
+/// Optional book presentation metadata for the dedicated listening surface.
+abstract interface class ReaderAloudMetadataSource {
+  ReaderAloudBookMetadata? get bookMetadata;
+}
+
 /// Optional reading typography; player controls retain the application theme.
 abstract interface class ReaderAloudTextSource {
   TextStyle? get textStyle;
@@ -179,9 +199,13 @@ abstract interface class ReaderAloudTextSource {
 }
 
 class CallbackReaderAloudSource
-    implements ReaderAloudSource, ReaderAloudTextSource {
+    implements
+        ReaderAloudSource,
+        ReaderAloudMetadataSource,
+        ReaderAloudTextSource {
   factory CallbackReaderAloudSource({
     required String bookTitle,
+    ReaderAloudBookMetadata? bookMetadata,
     required int Function() chapterCount,
     required Future<ReaderAloudPosition> Function() currentPosition,
     required Future<ReaderAloudChapter?> Function(int index) loadChapter,
@@ -199,6 +223,7 @@ class CallbackReaderAloudSource
     bool preserveDocumentFont = false,
   }) => CallbackReaderAloudSource._(
     bookTitle,
+    bookMetadata,
     chapterCount,
     currentPosition,
     loadChapter,
@@ -212,6 +237,7 @@ class CallbackReaderAloudSource
 
   const CallbackReaderAloudSource._(
     this.bookTitle,
+    this.bookMetadata,
     this._chapterCount,
     this._currentPosition,
     this._loadChapter,
@@ -225,6 +251,8 @@ class CallbackReaderAloudSource
 
   @override
   final String bookTitle;
+  @override
+  final ReaderAloudBookMetadata? bookMetadata;
   @override
   final TextStyle? textStyle;
   @override
@@ -422,6 +450,7 @@ class ReaderAloudController extends ChangeNotifier {
     // Keep the public constructor name while controlling source replacement.
     // ignore: prefer_initializing_formals
   }) : _source = source,
+       _bookMetadata = _metadataFrom(source),
        _segmenter =
            segmenter ??
            ((chapter) => ReaderAloudSegmenter.split(
@@ -437,6 +466,13 @@ class ReaderAloudController extends ChangeNotifier {
   final ReaderAloudEngine engine;
   ReaderAloudSource _source;
   ReaderAloudSource get source => _source;
+  ReaderAloudBookMetadata? _bookMetadata;
+  ReaderAloudBookMetadata? get bookMetadata => _bookMetadata;
+
+  static ReaderAloudBookMetadata? _metadataFrom(ReaderAloudSource source) =>
+      source is ReaderAloudMetadataSource
+      ? (source as ReaderAloudMetadataSource).bookMetadata
+      : null;
 
   /// Reattach the current book to a reopened reader without restarting audio.
   /// Pending reveals from the previous route must not move the new reader.
@@ -444,6 +480,7 @@ class ReaderAloudController extends ChangeNotifier {
     if (_disposed || identical(source, _source)) return;
     ++_revealSerial;
     _source = source;
+    _bookMetadata = _metadataFrom(source);
   }
 
   final ReaderAloudNotificationSink notificationSink;

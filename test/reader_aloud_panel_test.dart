@@ -13,6 +13,7 @@ import 'package:xxread/services/reader_aloud_session.dart';
 import 'package:xxread/services/tts_service.dart';
 import 'package:xxread/utils/reader_themes.dart';
 import 'package:xxread/widgets/reader_aloud_panel.dart';
+import 'package:xxread/widgets/reader_aloud_cover.dart';
 import 'package:xxread/widgets/glass_bottom_sheet.dart';
 
 void main() {
@@ -163,6 +164,7 @@ void main() {
       expect(fixture.controller.currentSegment, isNotNull);
       expect(fixture.controller.highlight, isNull);
       fixture.controller.setSleepTimer(const Duration(minutes: 10));
+      if (presentation == 'player') await _openMoreControls(tester);
       await tester.tap(find.byKey(const ValueKey('reader-aloud-stop')));
       await tester.pumpAndSettle();
       expect(fixture.controller.state, ReaderAloudPlaybackState.stopped);
@@ -282,7 +284,7 @@ void main() {
     );
     addTearDown(fixture.dispose);
 
-    await tester.tap(find.text('正文'));
+    await _ensureTranscript(tester);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(
@@ -342,12 +344,14 @@ void main() {
       );
       addTearDown(fixture.dispose);
 
-      await tester.tap(find.text('正文'));
+      await _ensureTranscript(tester);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       final initialOffset = fixture.controller.currentSegment?.startOffset;
       final transcript = find.byKey(const ValueKey('reader-aloud-transcript'));
+      final initialHeight = tester.getSize(transcript).height;
       await tester.drag(transcript, const Offset(0, -280));
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(
@@ -356,6 +360,16 @@ void main() {
       );
       expect(fixture.controller.currentSegment?.startOffset, initialOffset);
       expect(find.textContaining('第120句'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('reader-aloud-controls-collapsed')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reader-aloud-play-pause')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('reader-aloud-more')), findsNothing);
+      expect(tester.getSize(transcript).height, greaterThan(initialHeight));
 
       await tester.tap(
         find.byKey(const ValueKey('reader-aloud-return-to-reading')),
@@ -365,6 +379,20 @@ void main() {
       expect(
         find.byKey(const ValueKey('reader-aloud-return-to-reading')),
         findsNothing,
+      );
+      expect(fixture.controller.currentSegment?.startOffset, initialOffset);
+      await tester.tap(
+        find.byKey(const ValueKey('reader-aloud-toggle-controls')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.byKey(const ValueKey('reader-aloud-controls-expanded')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reader-aloud-more')).hitTestable(),
+        findsOneWidget,
       );
       expect(fixture.controller.currentSegment?.startOffset, initialOffset);
     },
@@ -381,7 +409,7 @@ void main() {
     );
     addTearDown(fixture.dispose);
 
-    await tester.tap(find.text('正文'));
+    await _ensureTranscript(tester);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -406,7 +434,7 @@ void main() {
     );
     addTearDown(fixture.dispose);
 
-    await tester.tap(find.text('正文'));
+    await _ensureTranscript(tester);
     await tester.pump();
     await fixture.controller.nextChapter();
     await tester.pump();
@@ -419,6 +447,209 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'phone defaults to small real-cover metadata and roomy transcript',
+    (tester) async {
+      final metadata = ReaderAloudBookMetadata(
+        author: '封面作者',
+        localCoverPath: '/missing/test-cover.png',
+      );
+      final fixture = await _openPlayer(
+        tester,
+        size: const Size(390, 844),
+        metadata: metadata,
+      );
+      addTearDown(fixture.dispose);
+      expect(
+        find.byKey(const ValueKey('reader-aloud-transcript')),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSize(find.byKey(const ValueKey('reader-aloud-cover'))).width,
+        lessThanOrEqualTo(56),
+      );
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('reader-aloud-transcript')))
+            .height,
+        greaterThan(390),
+      );
+      expect(
+        tester.widget<ReaderAloudCover>(find.byType(ReaderAloudCover)).metadata,
+        same(metadata),
+      );
+      expect(find.text('封面作者'), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-aloud-volume')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'cover and transcript switching preserves paused listening position and timer',
+    (tester) async {
+      final fixture = await _openPlayer(
+        tester,
+        size: const Size(390, 844),
+        holdSystemSpeech: true,
+      );
+      addTearDown(fixture.dispose);
+      await fixture.controller.pause();
+      fixture.controller.setSleepTimer(const Duration(minutes: 15));
+      final segment = fixture.controller.currentSegment;
+      await tester.tap(find.text('封面'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.byKey(const ValueKey('reader-aloud-transcript')),
+        findsNothing,
+      );
+      expect(
+        tester.getSize(find.byKey(const ValueKey('reader-aloud-cover'))).width,
+        greaterThan(160),
+      );
+      await tester.tap(find.text('正文'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.byKey(const ValueKey('reader-aloud-transcript')),
+        findsOneWidget,
+      );
+      expect(fixture.controller.currentSegment, same(segment));
+      expect(fixture.controller.state, ReaderAloudPlaybackState.paused);
+      expect(fixture.controller.sleepDuration, const Duration(minutes: 15));
+      fixture.controller.setSleepTimer(null);
+    },
+  );
+
+  testWidgets(
+    'automatic playback following does not collapse player controls',
+    (tester) async {
+      final fixture = await _openPlayer(
+        tester,
+        size: const Size(390, 844),
+        holdSystemSpeech: true,
+        chapterText: List.generate(
+          100,
+          (index) => '第${index + 1}句，这是自动跟随测试。',
+        ).join(),
+      );
+      addTearDown(fixture.dispose);
+      await fixture.controller.next();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        find.byKey(const ValueKey('reader-aloud-controls-expanded')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reader-aloud-return-to-reading')),
+        findsNothing,
+      );
+      await fixture.controller.stop();
+      await tester.pump(const Duration(seconds: 3));
+    },
+  );
+
+  testWidgets(
+    'reduced motion collapses and reveals controls without a transition',
+    (tester) async {
+      final fixture = await _openPlayer(
+        tester,
+        size: const Size(390, 844),
+        disableAnimations: true,
+      );
+      addTearDown(fixture.dispose);
+      await tester.tap(
+        find.byKey(const ValueKey('reader-aloud-toggle-controls')),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('reader-aloud-controls-collapsed')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('reader-aloud-toggle-controls')),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('reader-aloud-more')).hitTestable(),
+        findsOneWidget,
+      );
+    },
+  );
+
+  for (final locale in [
+    const Locale('zh'),
+    const Locale('en'),
+    const Locale('ja'),
+  ]) {
+    testWidgets(
+      'large-text phone keeps mode and playback usable in ${locale.languageCode}',
+      (tester) async {
+        final fixture = await _openPlayer(
+          tester,
+          size: const Size(320, 568),
+          textScale: 2.0,
+          locale: locale,
+        );
+        addTearDown(fixture.dispose);
+        expect(
+          find.byKey(const ValueKey('reader-aloud-content-mode')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('reader-aloud-play-pause')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('reader-aloud-transcript')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'first sentence starts near transcript top on opening and next chapter',
+    (tester) async {
+      final fixture = await _openPlayer(
+        tester,
+        size: const Size(1194, 834),
+        holdSystemSpeech: true,
+      );
+      addTearDown(fixture.dispose);
+      final transcript = find.byKey(const ValueKey('reader-aloud-transcript'));
+      // Preparing playback reserves room for its badge, but must never leave
+      // the first sentence one third of the viewport below the chapter title.
+      expect(
+        tester
+                .getTopLeft(
+                  find.byKey(
+                    const ValueKey('reader-aloud-transcript-segment-0-0'),
+                  ),
+                )
+                .dy -
+            tester.getTopLeft(transcript).dy,
+        inInclusiveRange(0, 64),
+      );
+      await fixture.controller.nextChapter();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        tester
+                .getTopLeft(
+                  find.byKey(
+                    const ValueKey('reader-aloud-transcript-segment-1-0'),
+                  ),
+                )
+                .dy -
+            tester.getTopLeft(transcript).dy,
+        inInclusiveRange(0, 64),
+      );
+      await fixture.controller.stop();
+      await tester.pump(const Duration(seconds: 3));
+    },
+  );
 
   testWidgets('compact controls scroll without overflow on small landscape', (
     tester,
@@ -500,9 +731,9 @@ void main() {
         for (final key in [
           'reader-aloud-play-pause',
           'reader-aloud-chapters',
-          'reader-aloud-volume',
           'reader-aloud-engine',
-          'reader-aloud-stop',
+          'reader-aloud-more',
+          'reader-aloud-timer',
         ]) {
           final control = find.byKey(ValueKey(key));
           expect(control.hitTestable(), findsOneWidget);
@@ -517,6 +748,14 @@ void main() {
           find.byKey(const ValueKey('reader-aloud-wide-layout')),
           scenario.wide ? findsOneWidget : findsNothing,
         );
+        expect(tester.takeException(), isNull);
+        await _openMoreControls(tester);
+        for (final key in ['reader-aloud-volume', 'reader-aloud-stop']) {
+          final control = find.byKey(ValueKey(key));
+          await tester.ensureVisible(control);
+          expect(control.hitTestable(), findsOneWidget);
+          expect(tester.getSize(control).height, greaterThanOrEqualTo(44));
+        }
         expect(tester.takeException(), isNull);
       },
     );
@@ -533,6 +772,7 @@ void main() {
     addTearDown(fixture.dispose);
     expect(fixture.controller.state, ReaderAloudPlaybackState.playing);
 
+    await _openMoreControls(tester);
     final sliderFinder = find.byKey(const ValueKey('reader-aloud-volume'));
     final slider = tester.widget<Slider>(sliderFinder);
     final stopsBeforeCommit = fixture.tts.stopCalls;
@@ -562,6 +802,7 @@ void main() {
     await fixture.aloud.setEngineType(ReaderAloudEngineType.cloud);
     await tester.pump();
 
+    await _openMoreControls(tester);
     final slider = tester.widget<Slider>(
       find.byKey(const ValueKey('reader-aloud-volume')),
     );
@@ -876,10 +1117,12 @@ void main() {
     expect(find.text('原文'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('reader-aloud-chapters')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('第2章'), findsOneWidget);
     await tester.tap(find.text('第2章'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('下一章第一句。'), findsOneWidget);
     await controller.stop();
   });
@@ -1214,6 +1457,8 @@ Future<_PlayerFixture> _openPlayer(
   bool holdSystemSpeech = false,
   Locale locale = const Locale('zh'),
   String? chapterText,
+  ReaderAloudBookMetadata? metadata,
+  bool disableAnimations = false,
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1229,6 +1474,7 @@ Future<_PlayerFixture> _openPlayer(
     engine: aloud,
     source: CallbackReaderAloudSource(
       bookTitle: '学习的逻辑：中学生高效学习策略体系',
+      bookMetadata: metadata,
       chapterCount: () => 2,
       currentPosition: () async =>
           const ReaderAloudPosition(chapterIndex: 0, offset: 0),
@@ -1253,6 +1499,7 @@ Future<_PlayerFixture> _openPlayer(
           padding: padding,
           viewPadding: padding,
           textScaler: TextScaler.linear(textScale),
+          disableAnimations: disableAnimations,
         ),
         child: child!,
       ),
@@ -1301,4 +1548,21 @@ Future<_PlayerFixture> _openSettingsFromPlayer(
   await tester.tap(find.byKey(const ValueKey('reader-aloud-engine')));
   await tester.pumpAndSettle();
   return fixture;
+}
+
+Future<void> _ensureTranscript(WidgetTester tester) async {
+  if (find
+      .byKey(const ValueKey('reader-aloud-transcript'))
+      .evaluate()
+      .isNotEmpty) {
+    return;
+  }
+  await tester.tap(find.text('正文'));
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
+Future<void> _openMoreControls(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('reader-aloud-more')));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }

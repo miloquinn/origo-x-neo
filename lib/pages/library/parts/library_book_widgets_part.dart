@@ -288,89 +288,49 @@ Widget _gridCoverImage(BuildContext context, Book book) {
   final scheme = theme.colorScheme;
   final isMaterial3Style =
       theme.extension<UiStyleThemeExtension>()?.isMaterial3Style ?? false;
-  if (!kIsWeb &&
-      book.coverImagePath != null &&
-      book.coverImagePath!.isNotEmpty) {
+  final reference = BookCoverReference.fromBook(book);
+  final fallback = _gridDefaultCover(context, book);
+  final cacheWidth = (240 * MediaQuery.of(context).devicePixelRatio).round();
+  if (reference.localPath != null) {
     // 有封面图片时，直接显示真实的书籍封面
     // cacheWidth 限制解码分辨率：网格封面显示宽度不会超过 ~240 逻辑像素，
     // 全分辨率解码原图会占用大量内存并在滑动切页时造成掉帧。
     // 打开动画复用同一 provider，展开时无需重新解码即可立即上屏。
-    final cacheWidth = (240 * MediaQuery.of(context).devicePixelRatio).round();
     return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: ColoredBox(
         color: scheme.surface.withValues(alpha: isMaterial3Style ? 0.2 : 0.12),
-        child: Image.file(
-          File(book.coverImagePath!),
+        child: BookCoverImage(
+          reference: reference,
+          fallback: fallback,
+          loadingPlaceholder: const SizedBox.expand(),
+          width: double.infinity,
+          height: double.infinity,
           fit: LayoutHelper.bookCoverFit,
           cacheWidth: cacheWidth,
           gaplessPlayback: true,
-          errorBuilder: (context, error, stackTrace) {
-            return _gridDefaultCover(context, book);
-          },
         ),
       ),
     );
   }
-  final sourceCover = _sourceCoverUrl(book);
-  if (sourceCover != null) {
-    return SourceCoverImage(
-      url: sourceCover,
-      headers: _sourceCoverHeaders(book),
+  if (reference.remoteUrl != null) {
+    return BookCoverImage(
+      reference: reference,
+      fallback: fallback,
       width: double.infinity,
       height: double.infinity,
       fit: LayoutHelper.bookCoverFit,
-      cacheWidth: (240 * MediaQuery.of(context).devicePixelRatio).round(),
-      fallback: _gridDefaultCover(context, book),
+      cacheWidth: cacheWidth,
     );
   }
   // 没有封面图片时，显示默认封面设计
-  return _gridDefaultCover(context, book);
+  return fallback;
 }
 
 /// 构建默认封面设计
 Widget _gridDefaultCover(BuildContext context, Book book) {
   return GeneratedBookCover(title: book.title, author: book.author);
-}
-
-Uri? _sourceCoverUrl(Book book) {
-  final raw = book.sourceBookJson;
-  if (raw == null || raw.isEmpty) return null;
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map) return null;
-    final value = decoded['coverUrl'];
-    if (value is! String || value.isEmpty) return null;
-    final parsed = Uri.tryParse(value);
-    if (parsed == null) return null;
-    if (parsed.hasAuthority) return parsed;
-    final sourceRaw = book.sourceJson;
-    if (sourceRaw == null || sourceRaw.isEmpty) return null;
-    final source = jsonDecode(sourceRaw);
-    if (source is! Map || source['apiBaseUrl'] is! String) return null;
-    final baseUri = Uri.tryParse(source['apiBaseUrl'] as String);
-    return baseUri?.resolveUri(parsed);
-  } catch (_) {
-    return null;
-  }
-}
-
-Map<String, String> _sourceCoverHeaders(Book book) {
-  final raw = book.sourceBookJson;
-  if (raw == null || raw.isEmpty) return const {};
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map) return const {};
-    final headers = decoded['coverHeaders'];
-    if (headers is! Map) return const {};
-    return {
-      for (final entry in headers.entries)
-        '${entry.key}': '${entry.value ?? ''}',
-    };
-  } catch (_) {
-    return const {};
-  }
 }
 
 /// 顶栏筛选按钮：点击时把自身在屏幕上的位置传给菜单定位。

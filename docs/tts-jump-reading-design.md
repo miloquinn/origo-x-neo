@@ -1,14 +1,27 @@
 # 听书跳读与连续播放
 
-这是听书展示、跳读与连续播放的当前维护入口。早期跳读验证见 [2026-10-03 记录](reviews/2026-10-03-tts-jump-reading-validation.md)，2026-10-09 增加阅读排版共用合同。
+这是听书展示、跳读与连续播放的当前维护入口。早期跳读验证见 [2026-10-03 记录](reviews/2026-10-03-tts-jump-reading-validation.md)，2026-10-09 增加阅读排版共用合同；封面与响应式布局见 [2026-10-10 验证](reviews/2026-10-10-aloud-layout-validation.md)。
 
 ## 交互合同
 
 - 共用 ReaderAloudController；全文位置用章节 ID 与原文字偏移，点击始终归到句首。
-- 专门听书页保留封面，支持切换正文。正文单击从句首播放，暂停时点击也播放；点击当前句重听。浏览正文不改变播放位置，暂停自动跟随，并提供回到正在朗读。
+- 专门听书页默认正文；手机顶部显示小封面、书名、作者和当前章节，保留大封面切换。平板/电脑同时显示左侧封面及控制、右侧正文。正文单击从句首播放，暂停时点击也播放；点击当前句重听。浏览正文不改变播放位置，暂停自动跟随，并提供回到正在朗读。
 - 阅读页新增「点句跳读」，默认关闭，持久化。只在当前书的听书会话启用；打开后正文短点优先跳读，滑动翻页、长按选字与批注继续工作。空白不吸附到正文。
 - 快速连续跳读只保留最新目标；等待音频有准备状态，不伪造已播放的句子进度。定时停止不因跳读重置。
 - 「手动翻页改变朗读位置」保持独立设置、默认关闭。其原有保存值不迁移。
+
+## 封面与响应式播放器
+
+- `lib/core/reader/reader_aloud_controller.dart`：可选 `ReaderAloudMetadataSource` 提供不可变 `ReaderAloudBookMetadata`。它包含作者、本地封面路径、在线 URI 与防盗链请求头，不参与声音合成。`CallbackReaderAloudSource` 携带元数据；同书 `rebindSource` 更新展示快照，保留播放位置、暂停状态和定时器。不要把封面只作为首次打开页面的临时参数。
+- `native_reader_controls.dart` 从运行时 `_activeBook` 读取封面；`BookCoverReference.fromBook` 共用书架的解析，TXT、EPUB 等本地格式优先 `coverImagePath`，下载书同时保留 `sourceBookJson.coverUrl/coverHeaders`，相对地址按 `sourceJson.apiBaseUrl` 解析。`book_source_reader_settings.dart` 使用已规范化的 `BookSourceBook.coverUrl/coverHeaders`。导入提取与封面持久化仍由现有书籍服务所有。
+- `lib/models/book_cover_reference.dart` 与 `lib/widgets/book_cover_image.dart` 是书架网格、列表和听书封面的共用合同：本地图片成功后不请求远端，本地不存在或解码失败再用 `SourceCoverImage` 的请求头、缓存与错误处理，远端也失败才回到调用方默认封面。`reader_aloud_cover.dart` 只负责元数据适配和 `GeneratedBookCover`。书架继续保留原来的裁剪、解码尺寸和占位策略；Web 不读取宿主文件系统，直接使用远端或默认封面。
+- 只接受带主机的 HTTP(S) 封面地址；协议相对地址按有效书源基地址解析，损坏元数据或不支持的协议回到默认封面。听书封面根据实际显示宽度和设备像素密度限制解码尺寸，小封面不解码整张高分辨率图片。
+- `lib/widgets/reader_aloud_panel.dart`：手机默认正文，小封面放在标题左侧；顶部只保留关闭、封面/正文与声音设置。正文占主要高度，底部保留前后句和播放暂停，目录/倍速/定时常用入口同排；音量、前后章和结束听书进入「更多」。底部控制菜单仍保留已有完整入口和滚动能力。
+- 可用宽度至少 700，或至少 500 且宽于高度，采用双栏；安全区先扣除。左侧封面下方固定主控制，右侧正文独立滚动。短横屏用小封面书籍信息吸收高度限制，不挤压主控制。内容最大宽度 1200，手机最大 560。
+- `lib/widgets/reader_aloud_transcript.dart` 的 `onBrowse` 只由用户滚动通知触发；手机自动收起扩展控制，通过底部展开按钮或控制区背景恢复。播放暂停和前后句始终可用，正文浏览不改变朗读位置。自动播放跟随不会收起控制，大屏控制保持展开。首句从正文顶部显示，之后活动句跟随到视口约三分之一处。
+- 控制区使用 240ms 尺寸动画；系统减少动态效果时直接改变布局，正文跟随改为即时定位。封面/正文切换不启动新会话，不改变语音、书籍位置或睡眠定时。
+
+回归入口：`test/book_cover_image_test.dart` 验证存储元数据解析、不可变请求头、本地成功不加载远端、本地失效回退远端；`test/reader_aloud_cover_test.dart` 验证真实本地 PNG 解码、TXT/EPUB 共用合同、在线 URI/请求头、失败回退及同书元数据刷新；`test/native_reader_aloud_typography_test.dart` 从实际 TXT/EPUB 阅读页进入听书，验证下载书的远端封面回退；`test/reader_aloud_panel_test.dart` 验证手机默认正文、封面切换保留会话、手动收起/恢复、自动跟随、减少动态效果、目录、两种入口、音量提交、多种视口安全区及中英日文 2 倍大字。`tool/preview_reader_aloud_layout.dart` 使用生产播放器和真实本地图片，渲染手机、窄屏、横屏、平板与深色大字场景；模拟渲染不代表真机触摸或音频听感验收。
 
 ## 正文排版
 
@@ -24,12 +37,11 @@ EPUB 仅“书籍内置”保留书内字体；系统与自定义选择按已有
 
 回归入口：`test/reader_aloud_typography_test.dart` 验证活动/非活动句、fallback、变量字重、混合字体和应用字体隔离；`test/native_reader_aloud_typography_test.dart` 从合成 EPUB 的真实阅读页进入播放器，验证书内/系统/自定义字体、远章节和原阅读页关闭后的快照；原有 `reader_aloud_panel_test.dart`、`reader_aloud_controller_test.dart`、`reader_font_profile_test.dart`、`native_reader_epub_chapter_transition_test.dart` 保留控制、会话与字体优先级回归。状态型 Widget 套件分进程运行。
 
-## 设置整理计划
+## 设置入口
 
-1. 先运行既有听书面板回归，保留播放暂停、停止、模式选择、语速、音色与云端设置入口。
-2. 复用既有组件，按播放方式、声音、定时组织；听书展示方式采用明确的互斥选项，行为开关说明动作方向。
-3. 常用点句跳读在简易听书控制栏可达；云端服务的 API 参数仍留在云端设置页。
-4. 验证窄屏、横屏、大字体和中英日文，不增加依赖。
+- 专门播放器的底部提供目录、倍速与定时；顶部打开完整听书设置。音量、前后章、结束听书统一放入「更多」，音量滑动预览保持本地状态，释放后才提交到当前系统或云端引擎。
+- 完整设置按播放方式、声音和定时组织；听书展示方式为互斥选项，点句跳读和翻页跟随是两个独立开关。云端 API 参数仍由云端配置页维护。
+- 简易听书控制菜单保留点句跳读和全部既有操作，可滚动；全屏播放器不复制这份设置菜单。窄屏、大字体和中英日文保持所有必要入口可达。
 
 ## 云端边界
 

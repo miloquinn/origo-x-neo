@@ -51,6 +51,7 @@ import 'package:xxread/core/reader/reader_volume_key_controller.dart';
 import 'package:xxread/core/reader/txt_chapter_parser.dart';
 import 'package:xxread/core/reader/streaming_txt_index.dart';
 import 'package:xxread/models/book.dart';
+import 'package:xxread/models/book_cover_reference.dart';
 import 'package:xxread/models/bookmark.dart';
 import 'package:xxread/models/book_note.dart';
 import 'package:xxread/pages/export/reading_data_export_dialog.dart';

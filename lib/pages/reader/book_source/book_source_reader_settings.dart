@@ -255,6 +255,11 @@ extension _BookSourceReaderSettings on _BookSourceReaderPageState {
     final bodyTextStyle = _bodyTextStyle;
     final source = CallbackReaderAloudSource(
       bookTitle: widget.book.title,
+      bookMetadata: ReaderAloudBookMetadata(
+        author: widget.book.author,
+        remoteCoverUrl: widget.book.coverUrl,
+        remoteCoverHeaders: widget.book.coverHeaders,
+      ),
       textStyle: bodyTextStyle,
       chapterCount: () => _chapters.length,
       currentPosition: () async {

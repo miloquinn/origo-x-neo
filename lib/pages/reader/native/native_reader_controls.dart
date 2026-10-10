@@ -159,8 +159,15 @@ extension _NativeReaderControls on _NativeReaderPageState {
     }
     final readerTextStyle = _readerTextStyle;
     final preserveDocumentFont = _preserveDocumentFont;
+    final cover = BookCoverReference.fromBook(_activeBook);
     final source = CallbackReaderAloudSource(
-      bookTitle: widget.book.title,
+      bookTitle: _activeBook.title,
+      bookMetadata: ReaderAloudBookMetadata(
+        author: _activeBook.author,
+        localCoverPath: cover.localPath,
+        remoteCoverUrl: cover.remoteUrl,
+        remoteCoverHeaders: cover.remoteHeaders,
+      ),
       textStyle: readerTextStyle,
       preserveDocumentFont: preserveDocumentFont,
       chapterCount: () => _loadedChapters.length,
