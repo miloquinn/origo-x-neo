@@ -106,6 +106,51 @@ void main() {
   );
 
   test(
+    'feedback remains reachable across pages without saved memories',
+    () async {
+      final memory = await _enabledMemory();
+      addTearDown(memory.dispose);
+      for (var index = 0; index < 25; index++) {
+        await memory.recordFeedback(
+          title: '书籍 $index',
+          author: '作者',
+          interested: false,
+        );
+      }
+      final feedback = <Object>[];
+      var pages = 0;
+      final ai = _FakeAgentAI(
+        script: (tools) async {
+          int? offset = 0;
+          do {
+            final page = await tools('get_preferences', {
+              'offset': offset,
+              'limit': 10,
+            });
+            expect(page['memoryTotal'], 0);
+            expect(page['feedbackTotal'], 25);
+            expect(page['memories'], isEmpty);
+            expect(page['feedback'], hasLength(pages < 2 ? 10 : 5));
+            feedback.addAll((page['feedback'] as List).cast<Object>());
+            offset = page['nextOffset'] as int?;
+            pages++;
+            expect(pages, lessThanOrEqualTo(3));
+          } while (offset != null);
+          return 'done';
+        },
+      );
+      await ReadingAgentService(
+        ai: ai,
+        data: _FakeDataSource(),
+        memory: memory,
+      ).chat(history: _question);
+
+      expect(pages, 3);
+      expect(feedback, memory.feedback);
+    },
+  );
+
+  test(
     'recommendations accept only candidates returned by current search',
     () async {
       final memory = await _enabledMemory();

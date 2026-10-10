@@ -152,19 +152,27 @@ class ReadingAgentService {
             );
           case 'get_preferences':
             final entries = memory.memories;
-            final end = (offset + limit).clamp(0, entries.length);
+            final feedback = memory.feedback;
+            final next = offset + limit;
+            final memoryEnd = next.clamp(0, entries.length);
+            final feedbackEnd = next.clamp(0, feedback.length);
             result = {
               'memories': offset >= entries.length
                   ? <Object>[]
                   : entries
-                        .sublist(offset, end)
+                        .sublist(offset, memoryEnd)
                         .map(
                           (item) => {'text': item.text, 'origin': item.origin},
                         )
                         .toList(),
-              'total': entries.length,
-              'nextOffset': end < entries.length ? end : null,
-              'feedback': memory.feedback.take(15).toList(),
+              'memoryTotal': entries.length,
+              'feedbackTotal': feedback.length,
+              'nextOffset': next < entries.length || next < feedback.length
+                  ? next
+                  : null,
+              'feedback': offset >= feedback.length
+                  ? <Object>[]
+                  : feedback.sublist(offset, feedbackEnd),
             };
           case 'present_recommendations':
             final items = args['items'];
