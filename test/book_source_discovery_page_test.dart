@@ -178,6 +178,17 @@ void main() {
       expect(client.discoverySourceIds.length, requests);
       expect(find.text('Source A picks'), findsOneWidget);
 
+      // The transient Undo toast covers the organization filters on this phone.
+      await tester.drag(
+        find.ancestor(
+          of: find.text('Undo'),
+          matching: find.byType(Dismissible),
+        ),
+        const Offset(500, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Undo'), findsNothing);
+
       await tester.tap(
         find.byKey(const ValueKey('bookSourceOrganizationMore-source-a')),
       );
@@ -267,6 +278,16 @@ void main() {
         expandedBefore,
       );
       expect(channels, findsOneWidget);
+      // Close the temporary feedback before interacting with the covered filter.
+      await tester.drag(
+        find.ancestor(
+          of: find.text('Undo'),
+          matching: find.byType(Dismissible),
+        ),
+        const Offset(500, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Undo'), findsNothing);
       await tester.tap(
         find.byKey(const Key('bookSourceOrganizationFavorites')),
       );
