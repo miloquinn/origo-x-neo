@@ -114,7 +114,12 @@ class ReaderParagraphActionLayer extends StatelessWidget {
       theme: palette.toThemeData(parentTheme: Theme.of(context)),
       builder: (context) => ListView(
         shrinkWrap: true,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          16 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           Padding(
             padding: const EdgeInsets.all(8),

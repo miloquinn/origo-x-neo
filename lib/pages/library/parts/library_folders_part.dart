@@ -301,62 +301,63 @@ extension _LibraryPageFolders on _LibraryPageState {
           final samePlace = movingFolder != null
               ? location == movingFolder.parentId
               : location == _currentFolderId;
-          return SafeArea(
-            child: SizedBox(
-              height: MediaQuery.sizeOf(context).height * 0.6,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 20, 12),
-                    child: Row(
-                      children: [
+          return SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.6,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 20, 12),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        tooltip: context.l10n.libraryBackToParent,
+                        onPressed: location == null
+                            ? null
+                            : () => updateSheet(() {
+                                location = _shelf.folder(location)?.parentId;
+                              }),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
+                      Expanded(
+                        child: Text(
+                          _shelf.folder(location)?.name ??
+                              context.l10n.libraryRootShelf,
+                          style: Theme.of(context).textTheme.titleLarge,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (location != null)
                         IconButton(
-                          tooltip: context.l10n.libraryBackToParent,
-                          onPressed: location == null
-                              ? null
-                              : () => updateSheet(() {
-                                  location = _shelf.folder(location)?.parentId;
-                                }),
-                          icon: const Icon(Icons.arrow_back_rounded),
+                          tooltip: context.l10n.libraryRootShelf,
+                          onPressed: () => updateSheet(() => location = null),
+                          icon: const Icon(Icons.home_outlined),
                         ),
-                        Expanded(
-                          child: Text(
-                            _shelf.folder(location)?.name ??
-                                context.l10n.libraryRootShelf,
-                            style: Theme.of(context).textTheme.titleLarge,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: children.length,
+                    itemBuilder: (_, index) {
+                      final folder = children[index];
+                      return ListTile(
+                        leading: const Icon(Icons.folder_outlined),
+                        title: Text(folder.name),
+                        subtitle: Text(
+                          context.l10n.libraryFolderBooks(
+                            _shelf.bookCount(folder.id),
                           ),
                         ),
-                        if (location != null)
-                          IconButton(
-                            tooltip: context.l10n.libraryRootShelf,
-                            onPressed: () => updateSheet(() => location = null),
-                            icon: const Icon(Icons.home_outlined),
-                          ),
-                      ],
-                    ),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => updateSheet(() => location = folder.id),
+                      );
+                    },
                   ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: children.length,
-                      itemBuilder: (_, index) {
-                        final folder = children[index];
-                        return ListTile(
-                          leading: const Icon(Icons.folder_outlined),
-                          title: Text(folder.name),
-                          subtitle: Text(
-                            context.l10n.libraryFolderBooks(
-                              _shelf.bookCount(folder.id),
-                            ),
-                          ),
-                          trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => updateSheet(() => location = folder.id),
-                        );
-                      },
-                    ),
-                  ),
-                  Padding(
+                ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: SizedBox(
                       width: double.infinity,
@@ -371,8 +372,8 @@ extension _LibraryPageFolders on _LibraryPageState {
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },

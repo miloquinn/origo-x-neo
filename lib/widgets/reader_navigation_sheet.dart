@@ -494,29 +494,26 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
           outlineColor: widget.palette.border,
           shadowColor: widget.palette.shadow,
           brightness: widget.palette.brightness,
-          child: SafeArea(
-            top: false,
-            child: Column(
-              children: [
-                _buildHeader(themedContext),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildCatalog(themedContext),
-                      _DeferredTab(
-                        active: _tabController.index == 1,
-                        childBuilder: () => _buildBookmarks(themedContext),
-                      ),
-                      _DeferredTab(
-                        active: _tabController.index == 2,
-                        childBuilder: () => _buildAnnotations(themedContext),
-                      ),
-                    ],
-                  ),
+          child: Column(
+            children: [
+              _buildHeader(themedContext),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildCatalog(themedContext),
+                    _DeferredTab(
+                      active: _tabController.index == 1,
+                      childBuilder: () => _buildBookmarks(themedContext),
+                    ),
+                    _DeferredTab(
+                      active: _tabController.index == 2,
+                      childBuilder: () => _buildAnnotations(themedContext),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -759,11 +756,11 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
                     controller: _chapterScrollController,
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       8,
                       _catalogTopPadding,
                       20,
-                      20,
+                      20 + MediaQuery.paddingOf(context).bottom,
                     ),
                     itemExtent: chapterExtent,
                     itemCount: chapters.length,
@@ -934,7 +931,12 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      padding: EdgeInsets.fromLTRB(
+        14,
+        14,
+        14,
+        24 + MediaQuery.paddingOf(context).bottom,
+      ),
       itemCount: widget.bookmarks.length,
       separatorBuilder: (_, _) => const SizedBox(height: 9),
       itemBuilder: (context, index) {
@@ -985,7 +987,12 @@ class _ReaderNavigationSheetState extends State<ReaderNavigationSheet>
           ),
         Expanded(
           child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+            padding: EdgeInsets.fromLTRB(
+              14,
+              12,
+              14,
+              24 + MediaQuery.paddingOf(context).bottom,
+            ),
             itemCount: annotations.length,
             separatorBuilder: (_, _) => const SizedBox(height: 9),
             itemBuilder: (context, index) =>

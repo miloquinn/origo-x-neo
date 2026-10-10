@@ -186,28 +186,29 @@ class _TxtChapterEditorPageState extends State<TxtChapterEditorPage> {
     final selected = await showGlassBottomSheet<TxtEditVersion>(
       context: context,
       showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: versions.isEmpty
-            ? Padding(
+      builder: (context) => versions.isEmpty
+          ? SafeArea(
+              top: false,
+              child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Center(child: Text(copy.noVersions)),
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: versions.length,
-                itemBuilder: (context, index) {
-                  final version = versions[index];
-                  return ListTile(
-                    leading: const Icon(Icons.history_rounded),
-                    title: Text(
-                      DateFormat.yMd().add_Hm().format(version.createdAt),
-                    ),
-                    subtitle: Text(version.contentHash.substring(0, 12)),
-                    onTap: () => Navigator.pop(context, version),
-                  );
-                },
               ),
-      ),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              itemCount: versions.length,
+              itemBuilder: (context, index) {
+                final version = versions[index];
+                return ListTile(
+                  leading: const Icon(Icons.history_rounded),
+                  title: Text(
+                    DateFormat.yMd().add_Hm().format(version.createdAt),
+                  ),
+                  subtitle: Text(version.contentHash.substring(0, 12)),
+                  onTap: () => Navigator.pop(context, version),
+                );
+              },
+            ),
     );
     if (selected == null || !mounted) return;
     final confirmed =

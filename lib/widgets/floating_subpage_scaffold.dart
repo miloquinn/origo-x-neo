@@ -29,6 +29,7 @@ class FloatingSubpageScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.floatingActionButtonLocation,
     this.bottomNavigationBar,
+    this.extendBody = false,
     this.resizeToAvoidBottomInset,
     this.headerHeight = 60,
     this.showHeader = true,
@@ -46,6 +47,7 @@ class FloatingSubpageScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
   final Widget? bottomNavigationBar;
+  final bool extendBody;
   final bool? resizeToAvoidBottomInset;
   final double headerHeight;
   final bool showHeader;
@@ -94,12 +96,12 @@ class FloatingSubpageScaffold extends StatelessWidget {
           floatingActionButton: floatingActionButton,
           floatingActionButtonLocation: floatingActionButtonLocation,
           bottomNavigationBar: bottomNavigationBar,
+          extendBody: extendBody,
           resizeToAvoidBottomInset: resizeToAvoidBottomInset,
           body: DecoratedBox(
             key: const ValueKey('floating-subpage-content-surface'),
             decoration:
-                decoration ??
-                PageStyleHelper.backgroundDecoration(context),
+                decoration ?? PageStyleHelper.backgroundDecoration(context),
             child: Stack(
               children: [
                 SafeArea(

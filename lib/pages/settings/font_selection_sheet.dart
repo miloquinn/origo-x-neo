@@ -125,6 +125,7 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
               GlassBottomSheetSurface.dragHandleExtent,
         ),
         child: SafeArea(
+          bottom: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -192,7 +193,12 @@ class _FontSelectionSheetState extends State<FontSelectionSheet> {
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    0,
+                    16,
+                    16 + MediaQuery.paddingOf(context).bottom,
+                  ),
                   children: [
                     _SectionLabel(l10n.builtInFonts),
                     ...systemOptions.map(

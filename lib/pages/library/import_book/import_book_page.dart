@@ -258,21 +258,25 @@ class _ImportBookPageState extends State<ImportBookPage> {
       builder: (sheetContext) {
         return MediaQuery(
           data: _sanitizedMediaQuery(MediaQuery.of(sheetContext)),
-          child: SafeArea(
-            top: false,
-            child: DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.78,
-              minChildSize: 0.5,
-              maxChildSize: 0.94,
-              builder: (context, scrollController) {
-                return ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
-                  children: [_buildSourcePanel(dismissContext: sheetContext)],
-                );
-              },
-            ),
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.78,
+            minChildSize: 0.5,
+            maxChildSize: 0.94,
+            builder: (context, scrollController) {
+              return ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+                children: [
+                  SafeArea(
+                    top: false,
+                    left: false,
+                    right: false,
+                    child: _buildSourcePanel(dismissContext: sheetContext),
+                  ),
+                ],
+              );
+            },
           ),
         );
       },

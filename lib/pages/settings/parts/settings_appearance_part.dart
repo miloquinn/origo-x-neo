@@ -197,7 +197,11 @@ extension _SettingsAppearancePart on _SettingsPageState {
       builder: (modalContext) => Material(
         type: MaterialType.transparency,
         child: SafeArea(
+          bottom: false,
           child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.paddingOf(modalContext).bottom,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -707,6 +711,7 @@ extension _SettingsAppearancePart on _SettingsPageState {
       builder: (context) => Material(
         type: MaterialType.transparency,
         child: SafeArea(
+          bottom: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -735,6 +740,9 @@ extension _SettingsAppearancePart on _SettingsPageState {
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
+                  padding: EdgeInsets.only(
+                    bottom: 8 + MediaQuery.paddingOf(context).bottom,
+                  ),
                   children: [
                     for (final option in options)
                       ListTile(
@@ -753,7 +761,6 @@ extension _SettingsAppearancePart on _SettingsPageState {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
             ],
           ),
         ),

@@ -423,8 +423,9 @@ class _BookPickerState extends State<_BookPicker> {
                 },
               ),
             ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
+            SafeArea(
+              top: false,
+              minimum: EdgeInsets.fromLTRB(
                 20,
                 compact ? 6 : 12,
                 20,

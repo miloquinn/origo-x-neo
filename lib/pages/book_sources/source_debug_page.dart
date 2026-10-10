@@ -119,7 +119,12 @@ class _SourceDebugPageState extends State<SourceDebugPage> {
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    20 + MediaQuery.paddingOf(context).bottom,
+                  ),
                   child: SelectableText(
                     detail,
                     style: TextStyle(

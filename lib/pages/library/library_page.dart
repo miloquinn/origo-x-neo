@@ -55,6 +55,7 @@ import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_dialog.dart';
 import 'package:xxread/widgets/glass_bottom_sheet.dart';
 import 'package:xxread/widgets/glass_surface.dart';
+import 'package:xxread/widgets/library_book_info_sheet.dart';
 import 'package:xxread/widgets/pill_search_field.dart';
 import 'package:xxread/widgets/scrolling_text.dart';
 import 'package:xxread/widgets/side_toast.dart';

@@ -62,32 +62,35 @@ class ReaderTapZoneEditorOverlay extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 620),
       builder: (sheetContext) => Theme(
         data: theme,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sheetContext.l10n.tapZoneChooseAction,
-                  style: theme.textTheme.titleLarge,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            0,
+            16,
+            20 + MediaQuery.paddingOf(sheetContext).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                sheetContext.l10n.tapZoneChooseAction,
+                style: theme.textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              for (final action in _pickerActions)
+                ListTile(
+                  key: ValueKey('tap-zone-action-${action.name}'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(actionLabel(sheetContext, action)),
+                  trailing: action == current
+                      ? AppSkinIcon.adapt(
+                          Icon(Icons.check_rounded, color: palette.accent),
+                        )
+                      : null,
+                  onTap: () => Navigator.of(sheetContext).pop(action),
                 ),
-                const SizedBox(height: 8),
-                for (final action in _pickerActions)
-                  ListTile(
-                    key: ValueKey('tap-zone-action-${action.name}'),
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(actionLabel(sheetContext, action)),
-                    trailing: action == current
-                        ? AppSkinIcon.adapt(
-                            Icon(Icons.check_rounded, color: palette.accent),
-                          )
-                        : null,
-                    onTap: () => Navigator.of(sheetContext).pop(action),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

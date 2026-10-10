@@ -616,76 +616,78 @@ class _ComicCatalogSheetState extends State<_ComicCatalogSheet> {
         outlineColor: widget.palette.border,
         shadowColor: widget.palette.shadow,
         brightness: widget.palette.brightness,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 12, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            context.l10n.readerToolbarTOC,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            context.l10n.readerNavigationPosition(
-                              widget.currentChapterIndex + 1,
-                              widget.chapters.length,
-                            ),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: widget.palette.secondaryText),
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      child: Text(
-                        MaterialLocalizations.of(context).closeButtonTooltip,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Divider(height: 1, color: widget.palette.border),
-              Expanded(
-                child: ListView.builder(
-                  controller: _chapterScrollController,
-                  itemExtent: _ComicCatalogSheet.chapterExtent,
-                  itemCount: widget.chapters.length,
-                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 20),
-                  itemBuilder: (context, index) {
-                    final selected = index == widget.currentChapterIndex;
-                    return ListTile(
-                      selected: selected,
-                      selectedColor: widget.palette.accent,
-                      title: Text(
-                        widget.chapters[index].title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: selected
-                              ? widget.palette.accent
-                              : widget.palette.text,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 12, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.readerToolbarTOC,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
-                      ),
-                      onTap: () => widget.onChapterSelected(index),
-                    );
-                  },
-                ),
+                        const SizedBox(height: 2),
+                        Text(
+                          context.l10n.readerNavigationPosition(
+                            widget.currentChapterIndex + 1,
+                            widget.chapters.length,
+                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: widget.palette.secondaryText),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    child: Text(
+                      MaterialLocalizations.of(context).closeButtonTooltip,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            Divider(height: 1, color: widget.palette.border),
+            Expanded(
+              child: ListView.builder(
+                controller: _chapterScrollController,
+                itemExtent: _ComicCatalogSheet.chapterExtent,
+                itemCount: widget.chapters.length,
+                padding: EdgeInsets.fromLTRB(
+                  8,
+                  4,
+                  8,
+                  20 + MediaQuery.paddingOf(context).bottom,
+                ),
+                itemBuilder: (context, index) {
+                  final selected = index == widget.currentChapterIndex;
+                  return ListTile(
+                    selected: selected,
+                    selectedColor: widget.palette.accent,
+                    title: Text(
+                      widget.chapters[index].title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: selected
+                            ? widget.palette.accent
+                            : widget.palette.text,
+                      ),
+                    ),
+                    onTap: () => widget.onChapterSelected(index),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

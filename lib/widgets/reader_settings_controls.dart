@@ -906,9 +906,12 @@ class ReaderTopBarStyleSheet extends StatelessWidget {
     final theme = palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        child: SafeArea(
+          top: false,
+          left: false,
+          right: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1064,9 +1067,12 @@ class ReaderPageModeSheet extends StatelessWidget {
     final theme = palette.toThemeData(parentTheme: Theme.of(context));
     return Theme(
       data: theme,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        child: SafeArea(
+          top: false,
+          left: false,
+          right: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1127,6 +1133,7 @@ class ReaderSettingsSheetFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedPadding = padding.resolve(Directionality.of(context));
     // 拖动横条必须留在滚动视图之外：放进滚动区后，下拉手势会被
     // 滚动视图消费，弹窗无法通过拖动收起。
     return Theme(
@@ -1136,22 +1143,35 @@ class ReaderSettingsSheetFrame extends StatelessWidget {
         outlineColor: palette.border,
         shadowColor: palette.shadow,
         brightness: palette.brightness,
-        child: SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight:
-                  MediaQuery.sizeOf(context).height * 0.5 -
-                  GlassBottomSheetSurface.dragHandleExtent,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: SingleChildScrollView(padding: padding, child: child),
-                ),
-              ],
-            ),
-          ),
+        extendContentIntoBottomSafeArea: true,
+        child: Builder(
+          builder: (contentContext) {
+            final media = MediaQuery.of(contentContext);
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight:
+                    media.size.height * 0.5 -
+                    GlassBottomSheetSurface.dragHandleExtent +
+                    media.padding.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: resolvedPadding,
+                      child: SafeArea(
+                        top: false,
+                        left: false,
+                        right: false,
+                        child: child,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

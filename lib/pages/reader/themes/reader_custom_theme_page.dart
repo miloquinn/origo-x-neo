@@ -684,7 +684,9 @@ class _ReaderColorPickerSheetState extends State<_ReaderColorPickerSheet> {
           18,
           12,
           18,
-          18 + MediaQuery.viewInsetsOf(context).bottom,
+          18 +
+              MediaQuery.paddingOf(context).bottom +
+              MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

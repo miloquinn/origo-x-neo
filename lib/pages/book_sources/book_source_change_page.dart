@@ -622,46 +622,42 @@ class _ChapterSelectionSheetState extends State<_ChapterSelectionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: SizedBox(
-              height: MediaQuery.sizeOf(context).height * 0.72,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: PillSearchField(
-                      controller: _queryController,
-                      hintText: context.l10n.bookSourceChangeChooseChapter,
-                      onChanged: _filter,
-                    ),
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.72,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: PillSearchField(
+                    controller: _queryController,
+                    hintText: context.l10n.bookSourceChangeChooseChapter,
+                    onChanged: _filter,
                   ),
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemExtent: 56,
-                      itemCount: _visibleIndices.length,
-                      itemBuilder: (context, index) {
-                        final chapterIndex = _visibleIndices[index];
-                        return ListTile(
-                          title: Text(
-                            '${chapterIndex + 1}. ${widget.chapters[chapterIndex].title}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onTap: () => Navigator.of(context).pop(chapterIndex),
-                        );
-                      },
-                    ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    itemExtent: 56,
+                    itemCount: _visibleIndices.length,
+                    itemBuilder: (context, index) {
+                      final chapterIndex = _visibleIndices[index];
+                      return ListTile(
+                        title: Text(
+                          '${chapterIndex + 1}. ${widget.chapters[chapterIndex].title}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => Navigator.of(context).pop(chapterIndex),
+                      );
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

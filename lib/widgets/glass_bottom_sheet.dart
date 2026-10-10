@@ -24,6 +24,9 @@ const _sheetAnimation = AnimationStyle(
 /// transparent so there is exactly one visible surface and one drag handle.
 /// Set [builderOwnsSurface] when live content owns its palette and returns a
 /// [GlassBottomSheetSurface] whose material must rebuild with that state.
+/// Content extends to the panel edge by default. Builders consume the bottom
+/// safe-area inset at the end of scrolling content or in their fixed footer.
+/// Set [extendContentIntoBottomSafeArea] to false for a protected legacy layout.
 Future<T?> showGlassBottomSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -41,6 +44,7 @@ Future<T?> showGlassBottomSheet<T>({
   bool? requestFocus,
   ThemeData? theme,
   bool builderOwnsSurface = false,
+  bool extendContentIntoBottomSafeArea = true,
 }) {
   final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
   final panelColor = backgroundColor?.a == 0 ? null : backgroundColor;
@@ -81,6 +85,7 @@ Future<T?> showGlassBottomSheet<T>({
             : null,
         showDragHandle: showDragHandle,
         useSafeArea: useSafeArea,
+        extendContentIntoBottomSafeArea: extendContentIntoBottomSafeArea,
         child: content,
       );
       if (useSafeArea) {
@@ -120,6 +125,7 @@ class GlassBottomSheetSurface extends StatelessWidget {
     this.shadowColor,
     this.brightness,
     this.margin = _sheetMargin,
+    this.extendContentIntoBottomSafeArea = false,
   });
 
   static const dragHandleKey = ValueKey<String>(
@@ -135,6 +141,12 @@ class GlassBottomSheetSurface extends StatelessWidget {
   final Brightness? brightness;
   final EdgeInsetsGeometry margin;
 
+  /// Leaves the bottom safe-area inset that remains inside [margin] in
+  /// [MediaQuery], so a scrolling child can consume it at the end of its
+  /// content while its viewport fills the rounded panel. Shared routes enable
+  /// this by default; fixed content protects its own controls or footer.
+  final bool extendContentIntoBottomSafeArea;
+
   @override
   Widget build(BuildContext context) {
     if (_GlassBottomSheetSurfaceScope.maybeOf(context) != null) return child;
@@ -143,25 +155,47 @@ class GlassBottomSheetSurface extends StatelessWidget {
     final dismiss = routeScope?.onDismiss;
     final effectiveShowDragHandle =
         routeScope?.showDragHandle ?? showDragHandle;
+    final effectiveExtendContentIntoBottomSafeArea =
+        routeScope?.extendContentIntoBottomSafeArea ??
+        extendContentIntoBottomSafeArea;
     final media = MediaQuery.of(context);
     final compact = media.size.shortestSide < _sheetCompactShortestSide;
     final resolvedMargin = margin.resolve(Directionality.of(context));
     final shape = _sheetShape(media, compact, resolvedMargin);
     Widget content = child;
     if (routeScope?.useSafeArea ?? false) {
+      final bottomContentInset = math.max(
+        0.0,
+        media.padding.bottom - resolvedMargin.bottom,
+      );
+      final bottomViewContentInset = math.max(
+        0.0,
+        media.viewPadding.bottom - resolvedMargin.bottom,
+      );
+      final removedMedia = media.removePadding(
+        removeLeft: true,
+        removeRight: true,
+        removeBottom: true,
+      );
+      final contentMedia = effectiveExtendContentIntoBottomSafeArea
+          ? removedMedia.copyWith(
+              padding: removedMedia.padding.copyWith(
+                bottom: bottomContentInset,
+              ),
+              viewPadding: removedMedia.viewPadding.copyWith(
+                bottom: bottomViewContentInset,
+              ),
+            )
+          : removedMedia;
       content = Padding(
         padding: EdgeInsets.only(
-          left: math.max(0, media.padding.left - resolvedMargin.left),
-          right: math.max(0, media.padding.right - resolvedMargin.right),
-          bottom: math.max(0, media.padding.bottom - resolvedMargin.bottom),
+          left: math.max(0.0, media.padding.left - resolvedMargin.left),
+          right: math.max(0.0, media.padding.right - resolvedMargin.right),
+          bottom: effectiveExtendContentIntoBottomSafeArea
+              ? 0.0
+              : bottomContentInset,
         ),
-        child: MediaQuery.removePadding(
-          context: context,
-          removeLeft: true,
-          removeRight: true,
-          removeBottom: true,
-          child: content,
-        ),
+        child: MediaQuery(data: contentMedia, child: content),
       );
     }
     if (effectiveShowDragHandle) {
@@ -296,12 +330,14 @@ class _GlassBottomSheetRouteScope extends InheritedWidget {
     required this.onDismiss,
     required this.showDragHandle,
     required this.useSafeArea,
+    required this.extendContentIntoBottomSafeArea,
     required super.child,
   });
 
   final VoidCallback? onDismiss;
   final bool showDragHandle;
   final bool useSafeArea;
+  final bool extendContentIntoBottomSafeArea;
 
   static _GlassBottomSheetRouteScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_GlassBottomSheetRouteScope>();
@@ -310,5 +346,7 @@ class _GlassBottomSheetRouteScope extends InheritedWidget {
   bool updateShouldNotify(_GlassBottomSheetRouteScope oldWidget) =>
       onDismiss != oldWidget.onDismiss ||
       showDragHandle != oldWidget.showDragHandle ||
-      useSafeArea != oldWidget.useSafeArea;
+      useSafeArea != oldWidget.useSafeArea ||
+      extendContentIntoBottomSafeArea !=
+          oldWidget.extendContentIntoBottomSafeArea;
 }

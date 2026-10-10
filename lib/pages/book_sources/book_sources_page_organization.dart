@@ -20,9 +20,12 @@ extension _BookSourcesPageOrganization on _BookSourcesPageState {
           animation: _controller,
           builder: (context, _) {
             final current = _currentSource(source);
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: SafeArea(
+                top: false,
+                left: false,
+                right: false,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,

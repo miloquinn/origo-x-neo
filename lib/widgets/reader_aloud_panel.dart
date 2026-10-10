@@ -185,76 +185,78 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
   @override
   Widget build(BuildContext context) {
     if (widget.compactControls) {
-      return SafeArea(
-        top: false,
-        child: AnimatedBuilder(
-          animation: Listenable.merge([
-            widget.controller,
-            widget.ttsService,
-            widget.aloudService,
-          ]),
-          builder: (context, _) => SingleChildScrollView(
-            key: const ValueKey('reader-aloud-controls-menu'),
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.controller.source.bookTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    IconButton(
-                      key: const ValueKey('reader-aloud-open-full-player'),
-                      tooltip: _copy('打开完整播放器', 'Open full player', 'プレーヤーを開く'),
-                      onPressed: () => Navigator.of(context).pop(true),
-                      icon: AppSkinIcon.adapt(
-                        const Icon(Icons.open_in_full_rounded),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).closeButtonTooltip,
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded)),
-                    ),
-                  ],
-                ),
-                Text(
-                  widget.controller.currentChapter?.title ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                SwitchListTile.adaptive(
-                  key: const ValueKey('reader-aloud-tap-to-seek-compact'),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  title: Text(
-                    _copy('点句跳读', 'Tap a sentence to listen', '文をタップして再生'),
-                  ),
-                  subtitle: Text(
-                    _copy(
-                      '在阅读页点正文时，从该句开始朗读',
-                      'On the reading page, start from the sentence you tap',
-                      '読書画面でタップした文から読み上げます',
+      return AnimatedBuilder(
+        animation: Listenable.merge([
+          widget.controller,
+          widget.ttsService,
+          widget.aloudService,
+        ]),
+        builder: (context, _) => SingleChildScrollView(
+          key: const ValueKey('reader-aloud-controls-menu'),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20 + MediaQuery.paddingOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.controller.source.bookTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-                  value: widget.aloudService.tapToSeek,
-                  onChanged: (value) =>
-                      unawaited(_setTapToSeekFromCompact(value)),
+                  IconButton(
+                    key: const ValueKey('reader-aloud-open-full-player'),
+                    tooltip: _copy('打开完整播放器', 'Open full player', 'プレーヤーを開く'),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    icon: AppSkinIcon.adapt(
+                      const Icon(Icons.open_in_full_rounded),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded)),
+                  ),
+                ],
+              ),
+              Text(
+                widget.controller.currentChapter?.title ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              SwitchListTile.adaptive(
+                key: const ValueKey('reader-aloud-tap-to-seek-compact'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(
+                  _copy('点句跳读', 'Tap a sentence to listen', '文をタップして再生'),
                 ),
-                const SizedBox(height: 12),
-                _playbackControls(compact: true),
-              ],
-            ),
+                subtitle: Text(
+                  _copy(
+                    '在阅读页点正文时，从该句开始朗读',
+                    'On the reading page, start from the sentence you tap',
+                    '読書画面でタップした文から読み上げます',
+                  ),
+                ),
+                value: widget.aloudService.tapToSeek,
+                onChanged: (value) =>
+                    unawaited(_setTapToSeekFromCompact(value)),
+              ),
+              const SizedBox(height: 12),
+              _playbackControls(compact: true),
+            ],
           ),
         ),
       );
@@ -978,7 +980,12 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
           widget.aloudService,
         ]),
         builder: (context, _) => SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20 + MediaQuery.paddingOf(context).bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1326,7 +1333,12 @@ class _ReaderAloudPlayerPageState extends State<ReaderAloudPlayerPage> {
         maxHeight: MediaQuery.sizeOf(context).height * 0.68,
       ),
       builder: (context) => ListView.builder(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        padding: EdgeInsets.fromLTRB(
+          12,
+          0,
+          12,
+          24 + MediaQuery.paddingOf(context).bottom,
+        ),
         itemCount: widget.controller.source.chapterCount,
         itemBuilder: (context, index) => FutureBuilder<ReaderAloudChapter?>(
           future: widget.controller.source.loadChapter(index),
@@ -1424,295 +1436,279 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([
-          widget.controller,
-          widget.ttsService,
-          widget.aloudService,
-        ]),
-        builder: (context, _) {
-          final controller = widget.controller;
-          final tts = widget.ttsService;
-          final aloud = widget.aloudService;
-          final errorCode = tts.lastError;
-          final speechRate = _pendingSpeechRate ?? tts.speechRate;
-          final pitch = _pendingPitch ?? tts.speechPitch;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        context.l10n.ttsPanelTitle,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: widget.palette.text,
-                          fontWeight: FontWeight.w700,
-                        ),
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        widget.controller,
+        widget.ttsService,
+        widget.aloudService,
+      ]),
+      builder: (context, _) {
+        final controller = widget.controller;
+        final tts = widget.ttsService;
+        final aloud = widget.aloudService;
+        final errorCode = tts.lastError;
+        final speechRate = _pendingSpeechRate ?? tts.speechRate;
+        final pitch = _pendingPitch ?? tts.speechPitch;
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20 + MediaQuery.paddingOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      context.l10n.ttsPanelTitle,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: widget.palette.text,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    IconButton(
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).closeButtonTooltip,
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded)),
-                      color: widget.palette.secondaryText,
+                  ),
+                  IconButton(
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: AppSkinIcon.adapt(const Icon(Icons.close_rounded)),
+                    color: widget.palette.secondaryText,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _sectionTitle(
+                context,
+                _copy(context, '播放方式', 'Playback', '再生方法'),
+              ),
+              _settingsCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            _copy(context, '听书展示', 'Listening view', '表示方法'),
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 10),
+                          SegmentedButton<ReaderAloudPresentation>(
+                            key: const ValueKey('reader-aloud-presentation'),
+                            segments: [
+                              ButtonSegment(
+                                value: ReaderAloudPresentation.player,
+                                icon: AppSkinIcon.adapt(
+                                  const Icon(
+                                    Icons.headphones_rounded,
+                                    size: 18,
+                                  ),
+                                  selected:
+                                      aloud.presentation ==
+                                      ReaderAloudPresentation.player,
+                                ),
+                                label: Text(
+                                  _copy(context, '听书页面', 'Full player', '専用画面'),
+                                ),
+                              ),
+                              ButtonSegment(
+                                value: ReaderAloudPresentation.controls,
+                                icon: AppSkinIcon.adapt(
+                                  const Icon(
+                                    Icons.chrome_reader_mode_outlined,
+                                    size: 18,
+                                  ),
+                                ),
+                                label: Text(
+                                  _copy(context, '阅读页', 'Reading page', '読書画面'),
+                                ),
+                              ),
+                            ],
+                            selected: {aloud.presentation},
+                            showSelectedIcon: false,
+                            onSelectionChanged: (selection) => unawaited(
+                              _setPresentation(context, aloud, selection.first),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            aloud.presentation == ReaderAloudPresentation.player
+                                ? _copy(
+                                    context,
+                                    '点击听书时进入完整播放器',
+                                    'Open the full player when listening',
+                                    '読み上げ時に専用画面を開きます',
+                                  )
+                                : _copy(
+                                    context,
+                                    '在阅读页上方展开简易控制',
+                                    'Show compact controls over the reading page',
+                                    '読書画面に簡易操作を表示します',
+                                  ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: widget.palette.secondaryText),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(height: 1, color: widget.palette.border),
+                    SwitchListTile.adaptive(
+                      key: const ValueKey('reader-aloud-tap-to-seek'),
+                      title: Text(
+                        _copy(
+                          context,
+                          '点句跳读',
+                          'Tap a sentence to listen',
+                          '文をタップして再生',
+                        ),
+                      ),
+                      subtitle: Text(
+                        _copy(
+                          context,
+                          '在阅读页点正文时，从该句句首开始朗读',
+                          'On the reading page, start at the beginning of the sentence you tap',
+                          '読書画面でタップした文の先頭から読み上げます',
+                        ),
+                      ),
+                      value: aloud.tapToSeek,
+                      onChanged: (value) =>
+                          unawaited(_setTapToSeek(context, aloud, value)),
+                    ),
+                    Divider(height: 1, color: widget.palette.border),
+                    SwitchListTile.adaptive(
+                      key: const ValueKey('reader-aloud-follow-page-turns'),
+                      title: Text(
+                        _copy(
+                          context,
+                          '手动翻页改变朗读位置',
+                          'Read from manually turned pages',
+                          '手動で送ったページから読み上げる',
+                        ),
+                      ),
+                      subtitle: Text(
+                        _copy(
+                          context,
+                          '开启后，手动翻页会从新页开始朗读；与正文高亮跟随无关',
+                          'Start from the new page after a manual page turn. This does not control transcript highlighting.',
+                          '手動ページ送り後は新しいページから読み上げます。本文のハイライト追従とは別の設定です。',
+                        ),
+                      ),
+                      value: aloud.followPageTurns,
+                      onChanged: (value) =>
+                          unawaited(_setFollowPageTurns(context, aloud, value)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                _sectionTitle(
-                  context,
-                  _copy(context, '播放方式', 'Playback', '再生方法'),
-                ),
-                _settingsCard(
+              ),
+              const SizedBox(height: 20),
+              _sectionTitle(context, _copy(context, '声音', 'Voice', '音声')),
+              _settingsCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              _copy(context, '听书展示', 'Listening view', '表示方法'),
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            const SizedBox(height: 10),
-                            SegmentedButton<ReaderAloudPresentation>(
-                              key: const ValueKey('reader-aloud-presentation'),
-                              segments: [
-                                ButtonSegment(
-                                  value: ReaderAloudPresentation.player,
-                                  icon: AppSkinIcon.adapt(
-                                    const Icon(
-                                      Icons.headphones_rounded,
-                                      size: 18,
-                                    ),
-                                    selected:
-                                        aloud.presentation ==
-                                        ReaderAloudPresentation.player,
-                                  ),
-                                  label: Text(
-                                    _copy(
-                                      context,
-                                      '听书页面',
-                                      'Full player',
-                                      '専用画面',
-                                    ),
-                                  ),
-                                ),
-                                ButtonSegment(
-                                  value: ReaderAloudPresentation.controls,
-                                  icon: AppSkinIcon.adapt(
-                                    const Icon(
-                                      Icons.chrome_reader_mode_outlined,
-                                      size: 18,
-                                    ),
-                                  ),
-                                  label: Text(
-                                    _copy(
-                                      context,
-                                      '阅读页',
-                                      'Reading page',
-                                      '読書画面',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              selected: {aloud.presentation},
-                              showSelectedIcon: false,
-                              onSelectionChanged: (selection) => unawaited(
-                                _setPresentation(
-                                  context,
-                                  aloud,
-                                  selection.first,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              aloud.presentation ==
-                                      ReaderAloudPresentation.player
-                                  ? _copy(
-                                      context,
-                                      '点击听书时进入完整播放器',
-                                      'Open the full player when listening',
-                                      '読み上げ時に専用画面を開きます',
-                                    )
-                                  : _copy(
-                                      context,
-                                      '在阅读页上方展开简易控制',
-                                      'Show compact controls over the reading page',
-                                      '読書画面に簡易操作を表示します',
-                                    ),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: widget.palette.secondaryText,
-                                  ),
-                            ),
-                          ],
+                      _engineSelector(context, controller, aloud),
+                      const SizedBox(height: 20),
+                      if (aloud.usesCloud)
+                        _cloudConfigurationCard(context, aloud)
+                      else
+                        _voicePicker(context, tts, controller),
+                      const SizedBox(height: 24),
+                      _slider(
+                        context,
+                        label: context.l10n.ttsSpeed,
+                        value: speechRate,
+                        min: 0.1,
+                        max: 1,
+                        // flutter_tts maps 0.5 to Android's native 1.0
+                        // (normal speed), so show the effective multiplier.
+                        valueLabel: '${(speechRate * 2).toStringAsFixed(2)}×',
+                        onChanged: (value) {
+                          setState(() => _pendingSpeechRate = value);
+                          _scheduleSpeechRateCommit(value, controller, tts);
+                        },
+                        onChangeEnd: (value) => _scheduleSpeechRateCommit(
+                          value,
+                          controller,
+                          tts,
+                          delay: Duration.zero,
                         ),
                       ),
-                      Divider(height: 1, color: widget.palette.border),
-                      SwitchListTile.adaptive(
-                        key: const ValueKey('reader-aloud-tap-to-seek'),
-                        title: Text(
-                          _copy(
-                            context,
-                            '点句跳读',
-                            'Tap a sentence to listen',
-                            '文をタップして再生',
-                          ),
-                        ),
-                        subtitle: Text(
-                          _copy(
-                            context,
-                            '在阅读页点正文时，从该句句首开始朗读',
-                            'On the reading page, start at the beginning of the sentence you tap',
-                            '読書画面でタップした文の先頭から読み上げます',
-                          ),
-                        ),
-                        value: aloud.tapToSeek,
-                        onChanged: (value) =>
-                            unawaited(_setTapToSeek(context, aloud, value)),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final rate in [0.5, 0.75, 1.0])
+                            ChoiceChip(
+                              key: ValueKey('reader-aloud-speed-$rate'),
+                              label: Text('${rate * 2}×'),
+                              selected: (speechRate - rate).abs() < 0.001,
+                              onSelected: (_) {
+                                setState(() => _pendingSpeechRate = rate);
+                                _scheduleSpeechRateCommit(
+                                  rate,
+                                  controller,
+                                  tts,
+                                  delay: Duration.zero,
+                                );
+                              },
+                            ),
+                        ],
                       ),
-                      Divider(height: 1, color: widget.palette.border),
-                      SwitchListTile.adaptive(
-                        key: const ValueKey('reader-aloud-follow-page-turns'),
-                        title: Text(
-                          _copy(
-                            context,
-                            '手动翻页改变朗读位置',
-                            'Read from manually turned pages',
-                            '手動で送ったページから読み上げる',
-                          ),
+                      if (!aloud.usesCloud) ...[
+                        const SizedBox(height: 12),
+                        _slider(
+                          context,
+                          label: context.l10n.ttsPitch,
+                          value: pitch,
+                          min: 0.5,
+                          max: 2,
+                          valueLabel: pitch.toStringAsFixed(2),
+                          onChanged: (value) =>
+                              setState(() => _pendingPitch = value),
+                          onChangeEnd: (value) =>
+                              unawaited(_commitPitch(value, controller, tts)),
                         ),
-                        subtitle: Text(
-                          _copy(
-                            context,
-                            '开启后，手动翻页会从新页开始朗读；与正文高亮跟随无关',
-                            'Start from the new page after a manual page turn. This does not control transcript highlighting.',
-                            '手動ページ送り後は新しいページから読み上げます。本文のハイライト追従とは別の設定です。',
-                          ),
-                        ),
-                        value: aloud.followPageTurns,
-                        onChanged: (value) => unawaited(
-                          _setFollowPageTurns(context, aloud, value),
-                        ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                _sectionTitle(context, _copy(context, '声音', 'Voice', '音声')),
-                _settingsCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _engineSelector(context, controller, aloud),
-                        const SizedBox(height: 20),
-                        if (aloud.usesCloud)
-                          _cloudConfigurationCard(context, aloud)
-                        else
-                          _voicePicker(context, tts, controller),
-                        const SizedBox(height: 24),
-                        _slider(
-                          context,
-                          label: context.l10n.ttsSpeed,
-                          value: speechRate,
-                          min: 0.1,
-                          max: 1,
-                          // flutter_tts maps 0.5 to Android's native 1.0
-                          // (normal speed), so show the effective multiplier.
-                          valueLabel: '${(speechRate * 2).toStringAsFixed(2)}×',
-                          onChanged: (value) {
-                            setState(() => _pendingSpeechRate = value);
-                            _scheduleSpeechRateCommit(value, controller, tts);
-                          },
-                          onChangeEnd: (value) => _scheduleSpeechRateCommit(
-                            value,
-                            controller,
-                            tts,
-                            delay: Duration.zero,
-                          ),
-                        ),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            for (final rate in [0.5, 0.75, 1.0])
-                              ChoiceChip(
-                                key: ValueKey('reader-aloud-speed-$rate'),
-                                label: Text('${rate * 2}×'),
-                                selected: (speechRate - rate).abs() < 0.001,
-                                onSelected: (_) {
-                                  setState(() => _pendingSpeechRate = rate);
-                                  _scheduleSpeechRateCommit(
-                                    rate,
-                                    controller,
-                                    tts,
-                                    delay: Duration.zero,
-                                  );
-                                },
-                              ),
-                          ],
-                        ),
-                        if (!aloud.usesCloud) ...[
-                          const SizedBox(height: 12),
-                          _slider(
-                            context,
-                            label: context.l10n.ttsPitch,
-                            value: pitch,
-                            min: 0.5,
-                            max: 2,
-                            valueLabel: pitch.toStringAsFixed(2),
-                            onChanged: (value) =>
-                                setState(() => _pendingPitch = value),
-                            onChangeEnd: (value) =>
-                                unawaited(_commitPitch(value, controller, tts)),
-                          ),
-                        ],
-                      ],
-                    ),
+              ),
+              const SizedBox(height: 20),
+              _sectionTitle(
+                context,
+                _copy(context, '定时', 'Sleep timer', 'タイマー'),
+              ),
+              _settingsCard(child: _sleepTimerCard(context, controller)),
+              if (errorCode != null ||
+                  controller.lastError != null ||
+                  aloud.cloudError != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  aloud.cloudError ??
+                      (errorCode == null
+                          ? context.l10n.ttsPlaybackFailed
+                          : translateTtsError(
+                              context,
+                              errorCode,
+                              tts.lastErrorLanguage,
+                            )),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
                   ),
                 ),
-                const SizedBox(height: 20),
-                _sectionTitle(
-                  context,
-                  _copy(context, '定时', 'Sleep timer', 'タイマー'),
-                ),
-                _settingsCard(child: _sleepTimerCard(context, controller)),
-                if (errorCode != null ||
-                    controller.lastError != null ||
-                    aloud.cloudError != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    aloud.cloudError ??
-                        (errorCode == null
-                            ? context.l10n.ttsPlaybackFailed
-                            : translateTtsError(
-                                context,
-                                errorCode,
-                                tts.lastErrorLanguage,
-                              )),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
               ],
-            ),
-          );
-        },
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -2215,7 +2211,7 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
         data: widget.palette.toThemeData(parentTheme: Theme.of(context)),
         child: StatefulBuilder(
           builder: (context, setSheetState) => Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2263,33 +2259,43 @@ class _ReaderAloudPanelState extends State<ReaderAloudPanel> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Row(
-                  children: [
-                    if (controller.sleepDuration != null) ...[
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              Navigator.of(sheetContext).pop(Duration.zero),
-                          child: Text(context.l10n.ttsTimerOff),
+                SafeArea(
+                  top: false,
+                  left: false,
+                  right: false,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 18),
+                    child: Row(
+                      children: [
+                        if (controller.sleepDuration != null) ...[
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () =>
+                                  Navigator.of(sheetContext).pop(Duration.zero),
+                              child: Text(context.l10n.ttsTimerOff),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: FilledButton.icon(
+                            key: const ValueKey(
+                              'reader-aloud-sleep-timer-confirm',
+                            ),
+                            onPressed: selected > Duration.zero
+                                ? () => Navigator.of(sheetContext).pop(selected)
+                                : null,
+                            icon: AppSkinIcon.adapt(
+                              const Icon(Icons.bedtime_rounded),
+                            ),
+                            label: Text(
+                              _copy(context, '开始计时', 'Start timer', 'タイマー開始'),
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      child: FilledButton.icon(
-                        key: const ValueKey('reader-aloud-sleep-timer-confirm'),
-                        onPressed: selected > Duration.zero
-                            ? () => Navigator.of(sheetContext).pop(selected)
-                            : null,
-                        icon: AppSkinIcon.adapt(
-                          const Icon(Icons.bedtime_rounded),
-                        ),
-                        label: Text(
-                          _copy(context, '开始计时', 'Start timer', 'タイマー開始'),
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),

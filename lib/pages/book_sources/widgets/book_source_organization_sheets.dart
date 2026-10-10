@@ -315,15 +315,18 @@ class _BookSourceGroupEditorState extends State<_BookSourceGroupEditor> {
               ),
             },
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                key: const Key('bookSourceGroupEditorCreate'),
-                onPressed: _saving || groups == null ? null : _newGroup,
-                icon: const Icon(Icons.create_new_folder_outlined),
-                label: Text(copy.newGroup),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const Key('bookSourceGroupEditorCreate'),
+                  onPressed: _saving || groups == null ? null : _newGroup,
+                  icon: const Icon(Icons.create_new_folder_outlined),
+                  label: Text(copy.newGroup),
+                ),
               ),
             ),
           ),
@@ -506,15 +509,18 @@ class _BookSourceGroupManagerState extends State<_BookSourceGroupManager> {
                     },
                   ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                key: const Key('bookSourceGroupManagerCreate'),
-                onPressed: _busy || groups == null ? null : _create,
-                icon: const Icon(Icons.create_new_folder_outlined),
-                label: Text(copy.newGroup),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('bookSourceGroupManagerCreate'),
+                  onPressed: _busy || groups == null ? null : _create,
+                  icon: const Icon(Icons.create_new_folder_outlined),
+                  label: Text(copy.newGroup),
+                ),
               ),
             ),
           ),
@@ -604,15 +610,18 @@ class _BookSourceGroupPickerState extends State<_BookSourceGroupPicker> {
                     },
                   ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                key: const Key('bookSourceGroupPickerManage'),
-                onPressed: _manage,
-                icon: const Icon(Icons.settings_outlined),
-                label: Text(copy.manageGroups),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const Key('bookSourceGroupPickerManage'),
+                  onPressed: _manage,
+                  icon: const Icon(Icons.settings_outlined),
+                  label: Text(copy.manageGroups),
+                ),
               ),
             ),
           ),

@@ -94,13 +94,19 @@ class _ExternalLoginMethods extends StatelessWidget {
                     context: context,
                     isScrollControlled: true,
                     builder: (sheetContext) => SafeArea(
+                      bottom: false,
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
                           maxHeight:
                               MediaQuery.sizeOf(sheetContext).height * .75,
                         ),
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          padding: EdgeInsets.fromLTRB(
+                            24,
+                            0,
+                            24,
+                            24 + MediaQuery.paddingOf(sheetContext).bottom,
+                          ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,

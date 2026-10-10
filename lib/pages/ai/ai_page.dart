@@ -451,6 +451,9 @@ class _AiPageState extends State<AiPage> with WidgetsBindingObserver {
       builder: (sheetContext) {
         final l10n = sheetContext.l10n;
         return ListView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.paddingOf(sheetContext).bottom,
+          ),
           children: [
             ListTile(
               leading: const Icon(Icons.block_outlined),

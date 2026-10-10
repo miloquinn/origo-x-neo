@@ -55,7 +55,9 @@ class LibraryOrganizationSheet extends StatelessWidget {
     );
     return SingleChildScrollView(
       key: const ValueKey('library-organization-sheet'),
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(
+        bottom: 16 + MediaQuery.paddingOf(context).bottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,

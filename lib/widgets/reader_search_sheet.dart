@@ -264,7 +264,12 @@ class _ReaderSearchSheetState extends State<_ReaderSearchSheet> {
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      4,
+                      20,
+                      32 + MediaQuery.paddingOf(context).bottom,
+                    ),
                     itemCount: _results.length,
                     separatorBuilder: (_, _) =>
                         Divider(color: palette.text.withValues(alpha: .1)),

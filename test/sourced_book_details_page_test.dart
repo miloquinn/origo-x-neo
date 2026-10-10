@@ -18,6 +18,7 @@ import 'package:xxread/pages/book_sources/models/sourced_book.dart';
 import 'package:xxread/pages/book_sources/sourced_book_details_page.dart';
 import 'package:xxread/pages/book_sources/widgets/sourced_book_cards.dart';
 import 'package:xxread/services/library/download_task_controller.dart';
+import 'package:xxread/widgets/glass_surface.dart';
 
 void main() {
   testWidgets(
@@ -161,6 +162,63 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'floating actions keep add failure and retry visible after scrolling',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.padding = const FakeViewPadding(bottom: 34);
+      tester.view.viewPadding = const FakeViewPadding(bottom: 34);
+      addTearDown(tester.view.reset);
+      final shelf = _Shelf(failNextAdd: true);
+      await tester.pumpWidget(
+        _harness(
+          shelf: shelf,
+          book: BookSourceBook(
+            id: 'retry-visible',
+            categories: const [],
+            title: '山海之间',
+            author: '林间客',
+            description: List.generate(
+              20,
+              (index) => '第 $index 段长简介。',
+            ).join('\n\n'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final position = tester
+          .state<ScrollableState>(
+            find.ancestor(
+              of: find.byKey(const Key('bookSourceDetailsContent')),
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position;
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('bookSourceAddToShelfButton')));
+      await tester.pumpAndSettle();
+      final retry = find.byKey(const Key('bookSourceAddRetryButton'));
+      expect(retry.hitTestable(), findsOneWidget);
+      expect(
+        tester.getRect(find.byKey(const Key('bookSourceDetailsScroll'))).bottom,
+        700,
+      );
+      expect(
+        tester.getRect(find.byKey(const Key('bookSourceReadButton'))).bottom,
+        lessThanOrEqualTo(700 - 34),
+      );
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(shelf.adds, 2);
+      expect(find.byKey(const Key('bookSourceOnShelf')), findsOneWidget);
+      expect(retry, findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('cancelled download can be dismissed without leaving details', (
     tester,
   ) async {
@@ -220,6 +278,93 @@ void main() {
     expect(title.top, lessThanOrEqualTo(cover.top + 4));
   });
 
+  testWidgets('long genres use the full width beneath book identity', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 844);
+    addTearDown(tester.view.reset);
+    const genre = '历史人物与时代洪流中的选择以及非常长的分类名称';
+    await tester.pumpWidget(
+      _harness(
+        book: const BookSourceBook(
+          id: 'long-genre',
+          title: '山海之间',
+          author: '林间客',
+          description: '',
+          categories: [genre],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final cover = tester.getRect(find.byType(SourcedBookCoverThumb));
+    final tag = tester.getRect(find.text(genre));
+    expect(tag.left, lessThanOrEqualTo(cover.left + 16));
+    expect(tag.top, greaterThanOrEqualTo(cover.bottom + 12));
+    expect(tester.widget<Text>(find.text(genre)).maxLines, 1);
+    expect(tag.right, lessThanOrEqualTo(340));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('many genres expand without obscuring detail actions', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.reset);
+    final genres = List.generate(24, (index) => '分类标签 $index');
+    await tester.pumpWidget(
+      _harness(
+        book: BookSourceBook(
+          id: 'many-genres',
+          title: '山海之间',
+          author: '林间客',
+          description: '',
+          categories: genres,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(genres.last), findsNothing);
+    final toggle = find.byKey(const ValueKey('book-details-tags-toggle'));
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.text(genres.last), findsOneWidget);
+    expect(
+      find.byKey(const Key('bookSourceReadButton')).hitTestable(),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.text(genres.last), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('display labels trim and deduplicate source metadata', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _harness(
+        book: const BookSourceBook(
+          id: 'duplicate-genres',
+          title: '山海之间',
+          author: '林间客',
+          description: '',
+          status: ' 完结 ',
+          categories: [' 文学 ', '文学', '完结', ' ', '文学'],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(' 文学 '), findsNothing);
+    expect(find.text(' 完结 '), findsNothing);
+    expect(find.text('文学'), findsOneWidget);
+    expect(find.text('完结'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final variant in [
     (name: 'mobile', size: const Size(390, 844), scale: 1.0, dark: false),
     (name: 'narrow', size: const Size(320, 640), scale: 1.0, dark: false),
@@ -258,6 +403,34 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      final viewport = find.byKey(const Key('bookSourceDetailsScroll'));
+      expect(tester.getRect(viewport).bottom, variant.size.height);
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('bookSourceReadButton')),
+          matching: find.byType(GlassSurface),
+        ),
+        findsNothing,
+        reason: 'detail actions float individually over the scrolling content',
+      );
+      final scrollable = find.ancestor(
+        of: find.byKey(const Key('bookSourceDetailsContent')),
+        matching: find.byType(Scrollable),
+      );
+      final position = tester.state<ScrollableState>(scrollable).position;
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .getRect(find.byKey(const Key('bookSourceDownloadLocalOption')))
+            .bottom,
+        lessThanOrEqualTo(
+          tester.getRect(find.byKey(const Key('bookSourceReadButton'))).top -
+              12,
+        ),
+        reason:
+            'the last detail action can scroll completely above the buttons',
+      );
       final readRect = tester.getRect(
         find.byKey(const Key('bookSourceReadButton')),
       );
@@ -293,6 +466,7 @@ void main() {
 Widget _harness({
   _Gateway? gateway,
   _Shelf? shelf,
+  BookSourceBook book = _book,
   double scale = 1,
   bool dark = false,
   Future<void> Function(BuildContext, BookSourceBook)? onRead,
@@ -317,8 +491,8 @@ Widget _harness({
       child: RepaintBoundary(key: const Key('detailsPreview'), child: child!),
     ),
     home: SourcedBookDetailsPage(
-      result: SourcedBook(source: _source, book: _book),
-      gateway: gateway ?? _Gateway(),
+      result: SourcedBook(source: _source, book: book),
+      gateway: gateway ?? _Gateway(book: book),
       shelfService: shelf ?? _Shelf(),
       onRead: onRead ?? (_, _) async {},
       onDownloadContinuesInBackground: () {},
@@ -360,8 +534,9 @@ final _shelfBook = Book(
 );
 
 class _Gateway extends BookSourceClient {
-  _Gateway({this.pending});
+  _Gateway({this.pending, this.book = _book});
   Completer<BookSourceBook>? pending;
+  final BookSourceBook book;
   int calls = 0;
   @override
   Future<BookSourceBook> getBook(
@@ -370,13 +545,14 @@ class _Gateway extends BookSourceClient {
     Map<String, String> sourceVariables = const {},
   }) async {
     calls++;
-    return pending?.future ?? _book;
+    return pending?.future ?? book;
   }
 }
 
 class _Shelf extends BookSourceShelfService {
-  _Shelf({this.pending});
+  _Shelf({this.pending, this.failNextAdd = false});
   final Completer<Book>? pending;
+  bool failNextAdd;
   bool added = false;
   int adds = 0;
   final download = Completer<Book>();
@@ -404,6 +580,10 @@ class _Shelf extends BookSourceShelfService {
     required BookSourceBook book,
   }) async {
     adds++;
+    if (failNextAdd) {
+      failNextAdd = false;
+      throw StateError('offline');
+    }
     final result = await (pending?.future ?? Future.value(_shelfBook));
     added = true;
     return result;

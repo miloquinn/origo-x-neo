@@ -431,78 +431,75 @@ Future<void> showReaderAnnotationDetails(
         outlineColor: palette.border,
         shadowColor: palette.shadow,
         brightness: palette.brightness,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            10,
+            20,
+            20 + MediaQuery.paddingOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      AppSkinIcon.adapt(
-                        Icon(
-                          Icons.mode_comment_outlined,
-                          color: palette.accent,
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Text(
-                        context.l10n.notes,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  AppSkinIcon.adapt(
+                    Icon(Icons.mode_comment_outlined, color: palette.accent),
                   ),
-                  if (quote.isNotEmpty) ...[
-                    const SizedBox(height: 14),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: palette.controlBar,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: palette.border.withValues(alpha: 0.66),
-                        ),
-                      ),
-                      child: Text(
-                        quote,
-                        maxLines: 5,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          height: 1.55,
-                          color: palette.secondaryText,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (note.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    SelectableText(
-                      note,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(height: 1.65),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                      ),
-                      child: Text(context.l10n.confirm),
+                  const SizedBox(width: 9),
+                  Text(
+                    context.l10n.notes,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
-            ),
+              if (quote.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: palette.controlBar,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: palette.border.withValues(alpha: 0.66),
+                    ),
+                  ),
+                  child: Text(
+                    quote,
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      height: 1.55,
+                      color: palette.secondaryText,
+                    ),
+                  ),
+                ),
+              ],
+              if (note.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                SelectableText(
+                  note,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(height: 1.65),
+                ),
+              ],
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  child: Text(context.l10n.confirm),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -591,146 +588,145 @@ class _ReaderAnnotationEditorSheetState
         outlineColor: widget.palette.border,
         shadowColor: widget.palette.shadow,
         brightness: widget.palette.brightness,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 10, 20, 20 + bottomInset),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.withNote
-                      ? context.l10n.readerAddAnnotation
-                      : context.l10n.highlights,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: widget.palette.controlBar,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: widget.palette.border.withValues(alpha: 0.66),
-                    ),
-                  ),
-                  child: Text(
-                    widget.selection.selectedText
-                        .replaceAll(RegExp(r'\s+'), ' ')
-                        .trim(),
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      height: 1.55,
-                      color: widget.palette.secondaryText,
-                    ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            10,
+            20,
+            20 + MediaQuery.paddingOf(context).bottom + bottomInset,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.withNote
+                    ? context.l10n.readerAddAnnotation
+                    : context.l10n.highlights,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: widget.palette.controlBar,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: widget.palette.border.withValues(alpha: 0.66),
                   ),
                 ),
-                if (!widget.withNote) ...[
-                  const SizedBox(height: 16),
-                  SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment(
-                        value: readerAnnotationTypeHighlight,
-                        icon: AppSkinIcon(
-                          slot: AppSkinIconSlot.highlight,
-                          selected: _type == readerAnnotationTypeHighlight,
-                          fallback: const Icon(Icons.auto_awesome_rounded),
-                        ),
-                        label: Text(context.l10n.noteTypeHighlight),
-                      ),
-                      ButtonSegment(
-                        value: readerAnnotationTypeUnderline,
-                        icon: AppSkinIcon.adapt(
-                          const Icon(Icons.format_underlined_rounded),
-                        ),
-                        label: Text(context.l10n.noteTypeUnderline),
-                      ),
-                    ],
-                    selected: <String>{_type},
-                    onSelectionChanged: (value) =>
-                        setState(() => _type = value.first),
+                child: Text(
+                  widget.selection.selectedText
+                      .replaceAll(RegExp(r'\s+'), ' ')
+                      .trim(),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    height: 1.55,
+                    color: widget.palette.secondaryText,
                   ),
-                ],
+                ),
+              ),
+              if (!widget.withNote) ...[
                 const SizedBox(height: 16),
-                Text(
-                  context.l10n.highlightColor,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final color in _colors)
-                      _ReaderColorChoice(
-                        color: color,
-                        selected: _colorHex == readerColorHex(color),
-                        onTap: () =>
-                            setState(() => _colorHex = readerColorHex(color)),
+                SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(
+                      value: readerAnnotationTypeHighlight,
+                      icon: AppSkinIcon(
+                        slot: AppSkinIconSlot.highlight,
+                        selected: _type == readerAnnotationTypeHighlight,
+                        fallback: const Icon(Icons.auto_awesome_rounded),
                       ),
-                  ],
-                ),
-                if (widget.withNote) ...[
-                  const SizedBox(height: 18),
-                  TextField(
-                    key: const ValueKey('reader-annotation-note-field'),
-                    controller: _noteController,
-                    autofocus: true,
-                    minLines: 3,
-                    maxLines: 7,
-                    textInputAction: TextInputAction.newline,
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      hintText: context.l10n.readerAnnotationHint,
-                      filled: true,
-                      fillColor: widget.palette.controlBar,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
+                      label: Text(context.l10n.noteTypeHighlight),
                     ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(50),
-                        ),
-                        child: Text(context.l10n.cancel),
+                    ButtonSegment(
+                      value: readerAnnotationTypeUnderline,
+                      icon: AppSkinIcon.adapt(
+                        const Icon(Icons.format_underlined_rounded),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed:
-                            widget.withNote &&
-                                _noteController.text.trim().isEmpty
-                            ? null
-                            : _submit,
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(50),
-                        ),
-                        icon: AppSkinIcon.adapt(
-                          const Icon(Icons.check_rounded),
-                        ),
-                        label: Text(context.l10n.save),
-                      ),
+                      label: Text(context.l10n.noteTypeUnderline),
                     ),
                   ],
+                  selected: <String>{_type},
+                  onSelectionChanged: (value) =>
+                      setState(() => _type = value.first),
                 ),
               ],
-            ),
+              const SizedBox(height: 16),
+              Text(
+                context.l10n.highlightColor,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  for (final color in _colors)
+                    _ReaderColorChoice(
+                      color: color,
+                      selected: _colorHex == readerColorHex(color),
+                      onTap: () =>
+                          setState(() => _colorHex = readerColorHex(color)),
+                    ),
+                ],
+              ),
+              if (widget.withNote) ...[
+                const SizedBox(height: 18),
+                TextField(
+                  key: const ValueKey('reader-annotation-note-field'),
+                  controller: _noteController,
+                  autofocus: true,
+                  minLines: 3,
+                  maxLines: 7,
+                  textInputAction: TextInputAction.newline,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: context.l10n.readerAnnotationHint,
+                    filled: true,
+                    fillColor: widget.palette.controlBar,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                      ),
+                      child: Text(context.l10n.cancel),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed:
+                          widget.withNote && _noteController.text.trim().isEmpty
+                          ? null
+                          : _submit,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                      ),
+                      icon: AppSkinIcon.adapt(const Icon(Icons.check_rounded)),
+                      label: Text(context.l10n.save),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

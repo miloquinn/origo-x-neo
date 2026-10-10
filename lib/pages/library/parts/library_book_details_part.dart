@@ -514,113 +514,25 @@ extension _LibraryPageBookDetails on _LibraryPageState {
 
   /// 显示书籍详细信息
   void _showBookInfo(Book book) {
-    showDialog(
-      context: context,
-      builder: (context) => GlassDialog(
-        title: Row(
-          children: [
-            AppSkinIcon.adapt(
-              Icon(
-                Icons.info_outline,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(context.l10n.libraryBookInfo),
-          ],
-        ),
-        content: SizedBox(
-          width: 480,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (book.hasSourceBinding || book.format.toLowerCase() == 'txt')
-                  SourceBookStatusCard(book: book),
-                _buildInfoRow(context.l10n.libraryBookTitle, book.title),
-                const SizedBox(height: 12),
-                _buildInfoRow(context.l10n.author, book.author),
-                const SizedBox(height: 12),
-                _buildInfoRow(
-                  context.l10n.libraryFormat,
-                  book.format.toUpperCase(),
-                ),
-                const SizedBox(height: 12),
-                if (book.isOnline) ...[
-                  _buildInfoRow(
-                    context.l10n.totalChapters,
-                    context.l10n.libraryChaptersCount(
-                      (book.totalPages / BookSourceShelfService.unitsPerChapter)
-                          .round(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoRow(
-                    context.l10n.currentChapter,
-                    context.l10n.libraryChaptersCount(
-                      (book.currentPage /
-                              BookSourceShelfService.unitsPerChapter)
-                          .round(),
-                    ),
-                  ),
-                ] else ...[
-                  _buildInfoRow(
-                    context.l10n.totalPages,
-                    context.l10n.libraryPagesCount(book.totalPages),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoRow(
-                    context.l10n.currentPage,
-                    context.l10n.libraryPagesCount(book.currentPage),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                _buildInfoRow(
-                  context.l10n.readingProgress,
-                  '${(book.progress * 100).toStringAsFixed(1)}%',
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.libraryClose),
-          ),
-        ],
-      ),
-    );
-  }
+    final libraryContext = context;
+    final sourceStatus =
+        book.hasSourceBinding || book.format.toLowerCase() == 'txt'
+        ? SourceBookStatusCard(book: book)
+        : null;
+    final cover = _buildListCover(libraryContext, book);
 
-  /// 构建信息行
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 70,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
+    showGlassBottomSheet<void>(
+      context: libraryContext,
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(libraryContext).height * 0.86,
+      ),
+      builder: (_) => LibraryBookInfoSheet.fromShelf(
+        book: book,
+        cover: cover,
+        shelfService: _sourceShelfService,
+        sourceStatus: sourceStatus,
+      ),
     );
   }
 }

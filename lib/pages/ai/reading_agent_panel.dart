@@ -133,10 +133,16 @@ class _ReadingAgentSettingsSheetState extends State<ReadingAgentSettingsSheet> {
         onChanged: _saving ? null : change,
       );
       return SafeArea(
+        bottom: false,
         child: SizedBox(
           height: MediaQuery.sizeOf(context).height * .85,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              24 + MediaQuery.paddingOf(context).bottom,
+            ),
             children: [
               Text(
                 readingAgentText(

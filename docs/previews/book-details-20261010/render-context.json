@@ -1,0 +1,1031 @@
+{
+  "platform": "ios",
+  "nativeRenderer": "iOS Impeller shader-filter path",
+  "simulatorViewport": {
+    "width": 440.0,
+    "height": 956.0
+  },
+  "capturePixelRatio": 2,
+  "shaderFilterSupported": true,
+  "shaderReady": true,
+  "outputDirectory": "/Users/xiaoyuan/Library/Developer/CoreSimulator/Devices/AFCD296F-CA6C-485E-A129-E7E6E057F337/data/Containers/Data/Application/4C5BC937-6790-49CE-8D5C-B18DEBA9E668/tmp/book-details-preview",
+  "scenes": [
+    "online-liquid-light",
+    "online-liquid-dark",
+    "online-frosted-light",
+    "online-solid-light",
+    "online-24-tags-collapsed",
+    "online-24-tags-expanded",
+    "online-narrow-320x740-text-1.6",
+    "online-landscape-844x390",
+    "local-info-liquid-light",
+    "local-info-liquid-dark"
+  ],
+  "kind": "native production SourcedBookDetailsPage and LibraryBookInfoSheet routes",
+  "themeContract": {
+    "provider": "ThemeNotifier",
+    "storage": "SharedPreferences",
+    "uiStyleKey": "ui_style_mode",
+    "glassStyleKey": "glass_style_mode"
+  },
+  "geometry": {
+    "online-liquid-light": {
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 40.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 152.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 176.0,
+        "top": 144.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 274.0159912109375,
+        "bottom": 174.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 292.27198791503906,
+        "height": 30.0,
+        "right": 332.27198791503906,
+        "bottom": 354.0
+      },
+      "tagDistinctRowCount": 1,
+      "tagVisibleLabels": [
+        "连载中",
+        "文学",
+        "旅行",
+        "成长",
+        "治愈"
+      ],
+      "tagToggle": null,
+      "readButton": {
+        "left": 201.0,
+        "top": 742.0,
+        "width": 165.0,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 794.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 730.0,
+        "width": 390.0,
+        "height": 80.0,
+        "right": 390.0,
+        "bottom": 810.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": null,
+      "sheetPanel": {
+        "left": 20.0,
+        "top": 124.0,
+        "width": 350.0,
+        "height": 250.0,
+        "right": 370.0,
+        "bottom": 374.0
+      },
+      "panelCount": 1,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 1,
+        "shaderReady": true,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "online-liquid-dark": {
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "dark",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 40.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 152.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 176.0,
+        "top": 144.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 274.0159912109375,
+        "bottom": 174.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 292.27198791503906,
+        "height": 30.0,
+        "right": 332.27198791503906,
+        "bottom": 354.0
+      },
+      "tagDistinctRowCount": 1,
+      "tagVisibleLabels": [
+        "连载中",
+        "文学",
+        "旅行",
+        "成长",
+        "治愈"
+      ],
+      "tagToggle": null,
+      "readButton": {
+        "left": 201.0,
+        "top": 742.0,
+        "width": 165.0,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 794.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 730.0,
+        "width": 390.0,
+        "height": 80.0,
+        "right": 390.0,
+        "bottom": 810.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": null,
+      "sheetPanel": {
+        "left": 20.0,
+        "top": 124.0,
+        "width": 350.0,
+        "height": 250.0,
+        "right": 370.0,
+        "bottom": 374.0
+      },
+      "panelCount": 1,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 1,
+        "shaderReady": true,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "online-frosted-light": {
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "frosted",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 40.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 152.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 176.0,
+        "top": 144.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 274.0159912109375,
+        "bottom": 174.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 292.27198791503906,
+        "height": 30.0,
+        "right": 332.27198791503906,
+        "bottom": 354.0
+      },
+      "tagDistinctRowCount": 1,
+      "tagVisibleLabels": [
+        "连载中",
+        "文学",
+        "旅行",
+        "成长",
+        "治愈"
+      ],
+      "tagToggle": null,
+      "readButton": {
+        "left": 201.0,
+        "top": 742.0,
+        "width": 165.0,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 794.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 730.0,
+        "width": 390.0,
+        "height": 80.0,
+        "right": 390.0,
+        "bottom": 810.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": null,
+      "sheetPanel": {
+        "left": 20.0,
+        "top": 124.0,
+        "width": 350.0,
+        "height": 250.0,
+        "right": 370.0,
+        "bottom": 374.0
+      },
+      "panelCount": 1,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 0,
+        "shaderReady": null,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "online-solid-light": {
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "light",
+      "uiStyle": "material3",
+      "glassStyle": "liquid",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 40.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 152.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 176.0,
+        "top": 144.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 274.0159912109375,
+        "bottom": 174.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 292.27198791503906,
+        "height": 30.0,
+        "right": 332.27198791503906,
+        "bottom": 354.0
+      },
+      "tagDistinctRowCount": 1,
+      "tagVisibleLabels": [
+        "连载中",
+        "文学",
+        "旅行",
+        "成长",
+        "治愈"
+      ],
+      "tagToggle": null,
+      "readButton": {
+        "left": 201.0,
+        "top": 742.0,
+        "width": 165.0,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 794.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 730.0,
+        "width": 390.0,
+        "height": 80.0,
+        "right": 390.0,
+        "bottom": 810.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": null,
+      "sheetPanel": {
+        "left": 20.0,
+        "top": 124.0,
+        "width": 350.0,
+        "height": 250.0,
+        "right": 370.0,
+        "bottom": 374.0
+      },
+      "panelCount": 1,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 0,
+        "shaderReady": null,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "online-24-tags-collapsed": {
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 40.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 152.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 176.0,
+        "top": 144.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 274.0159912109375,
+        "bottom": 174.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 277.1909942626953,
+        "height": 68.0,
+        "right": 317.1909942626953,
+        "bottom": 392.0
+      },
+      "tagDistinctRowCount": 2,
+      "tagVisibleLabels": [
+        "分类标签 1",
+        "分类标签 2",
+        "分类标签 3",
+        "分类标签 4",
+        "分类标签 5",
+        "分类标签 6"
+      ],
+      "tagToggle": {
+        "left": 40.0,
+        "top": 396.0,
+        "width": 95.92060089111328,
+        "height": 48.0,
+        "right": 135.92060089111328,
+        "bottom": 444.0
+      },
+      "readButton": {
+        "left": 201.0,
+        "top": 742.0,
+        "width": 165.0,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 794.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 730.0,
+        "width": 390.0,
+        "height": 80.0,
+        "right": 390.0,
+        "bottom": 810.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": null,
+      "sheetPanel": {
+        "left": 20.0,
+        "top": 124.0,
+        "width": 350.0,
+        "height": 340.0,
+        "right": 370.0,
+        "bottom": 464.0
+      },
+      "panelCount": 1,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 1,
+        "shaderReady": true,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "online-24-tags-expanded": {
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 40.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 152.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 176.0,
+        "top": 144.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 274.0159912109375,
+        "bottom": 174.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 300.41075134277344,
+        "height": 296.0,
+        "right": 340.41075134277344,
+        "bottom": 620.0
+      },
+      "tagDistinctRowCount": 8,
+      "tagVisibleLabels": [
+        "分类标签 1",
+        "分类标签 2",
+        "分类标签 3",
+        "分类标签 4",
+        "分类标签 5",
+        "分类标签 6",
+        "分类标签 7",
+        "分类标签 8",
+        "分类标签 9",
+        "分类标签 10",
+        "分类标签 11",
+        "分类标签 12",
+        "分类标签 13",
+        "分类标签 14",
+        "分类标签 15",
+        "分类标签 16",
+        "分类标签 17",
+        "分类标签 18",
+        "分类标签 19",
+        "分类标签 20",
+        "分类标签 21",
+        "分类标签 22",
+        "分类标签 23",
+        "分类标签 24"
+      ],
+      "tagToggle": {
+        "left": 40.0,
+        "top": 624.0,
+        "width": 62.78801345825195,
+        "height": 48.0,
+        "right": 102.78801345825195,
+        "bottom": 672.0
+      },
+      "readButton": {
+        "left": 201.0,
+        "top": 742.0,
+        "width": 165.0,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 794.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 730.0,
+        "width": 390.0,
+        "height": 80.0,
+        "right": 390.0,
+        "bottom": 810.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": null,
+      "sheetPanel": {
+        "left": 20.0,
+        "top": 124.0,
+        "width": 350.0,
+        "height": 568.0,
+        "right": 370.0,
+        "bottom": 692.0
+      },
+      "panelCount": 1,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 1,
+        "shaderReady": true,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "online-narrow-320x740-text-1.6": {
+      "logicalSize": {
+        "width": 320.0,
+        "height": 740.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "textScale": 1.6,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 104.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 216.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 156.82562255859375,
+        "height": 48.0,
+        "right": 196.82562255859375,
+        "bottom": 372.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 480.0,
+        "width": 228.7223663330078,
+        "height": 88.0,
+        "right": 268.7223663330078,
+        "bottom": 568.0
+      },
+      "tagDistinctRowCount": 2,
+      "tagVisibleLabels": [
+        "连载中",
+        "文学",
+        "旅行",
+        "成长",
+        "治愈"
+      ],
+      "tagToggle": null,
+      "readButton": {
+        "left": 166.0,
+        "top": 602.0,
+        "width": 130.0,
+        "height": 88.0,
+        "right": 296.0,
+        "bottom": 690.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 320.0,
+        "height": 740.0,
+        "right": 320.0,
+        "bottom": 740.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 590.0,
+        "width": 320.0,
+        "height": 116.0,
+        "right": 320.0,
+        "bottom": 706.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": null,
+      "sheetPanel": {
+        "left": 20.0,
+        "top": 124.0,
+        "width": 280.0,
+        "height": 464.0,
+        "right": 300.0,
+        "bottom": 588.0
+      },
+      "panelCount": 1,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 1,
+        "shaderReady": true,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "online-landscape-844x390": {
+      "logicalSize": {
+        "width": 844.0,
+        "height": 390.0
+      },
+      "hostLogicalSize": {
+        "width": 956.0,
+        "height": 440.0
+      },
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 47.0,
+        "top": 0.0,
+        "right": 47.0,
+        "bottom": 21.0
+      },
+      "cover": {
+        "left": 87.0,
+        "top": 100.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 199.0,
+        "bottom": 260.0
+      },
+      "title": {
+        "left": 223.0,
+        "top": 100.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 321.0159912109375,
+        "bottom": 130.0
+      },
+      "tags": {
+        "left": 87.0,
+        "top": 280.0,
+        "width": 292.27198791503906,
+        "height": 30.0,
+        "right": 379.27198791503906,
+        "bottom": 310.0
+      },
+      "tagDistinctRowCount": 1,
+      "tagVisibleLabels": [
+        "连载中",
+        "文学",
+        "旅行",
+        "成长",
+        "治愈"
+      ],
+      "tagToggle": null,
+      "readButton": {
+        "left": 428.0,
+        "top": 301.0,
+        "width": 345.0,
+        "height": 52.0,
+        "right": 773.0,
+        "bottom": 353.0
+      },
+      "scrollViewport": {
+        "left": 47.0,
+        "top": 0.0,
+        "width": 750.0,
+        "height": 390.0,
+        "right": 797.0,
+        "bottom": 390.0
+      },
+      "floatingActions": {
+        "left": 47.0,
+        "top": 289.0,
+        "width": 750.0,
+        "height": 80.0,
+        "right": 797.0,
+        "bottom": 369.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": null,
+      "sheetPanel": {
+        "left": 67.0,
+        "top": 80.0,
+        "width": 710.0,
+        "height": 250.0,
+        "right": 777.0,
+        "bottom": 330.0
+      },
+      "panelCount": 1,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 1,
+        "shaderReady": true,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "local-info-liquid-light": {
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "light",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 40.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 152.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 176.0,
+        "top": 144.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 274.0159912109375,
+        "bottom": 174.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 292.27198791503906,
+        "height": 30.0,
+        "right": 332.27198791503906,
+        "bottom": 354.0
+      },
+      "tagDistinctRowCount": 1,
+      "tagVisibleLabels": [
+        "连载中",
+        "文学",
+        "旅行",
+        "成长",
+        "治愈"
+      ],
+      "tagToggle": null,
+      "readButton": {
+        "left": 201.0,
+        "top": 742.0,
+        "width": 165.0,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 794.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 730.0,
+        "width": 390.0,
+        "height": 80.0,
+        "right": 390.0,
+        "bottom": 810.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": {
+        "left": 28.0,
+        "top": 174.15999999999997,
+        "width": 334.0,
+        "height": 558.84,
+        "right": 362.0,
+        "bottom": 733.0
+      },
+      "sheetPanel": {
+        "left": 8.0,
+        "top": 126.15999999999997,
+        "width": 374.0,
+        "height": 709.84,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "panelCount": 2,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 2,
+        "shaderReady": true,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    },
+    "local-info-liquid-dark": {
+      "logicalSize": {
+        "width": 390.0,
+        "height": 844.0
+      },
+      "hostLogicalSize": {
+        "width": 440.0,
+        "height": 956.0
+      },
+      "brightness": "dark",
+      "uiStyle": "glass",
+      "glassStyle": "liquid",
+      "textScale": 1.0,
+      "safeArea": {
+        "left": 0.0,
+        "top": 44.0,
+        "right": 0.0,
+        "bottom": 34.0
+      },
+      "cover": {
+        "left": 40.0,
+        "top": 144.0,
+        "width": 112.0,
+        "height": 160.0,
+        "right": 152.0,
+        "bottom": 304.0
+      },
+      "title": {
+        "left": 176.0,
+        "top": 144.0,
+        "width": 98.0159912109375,
+        "height": 30.0,
+        "right": 274.0159912109375,
+        "bottom": 174.0
+      },
+      "tags": {
+        "left": 40.0,
+        "top": 324.0,
+        "width": 292.27198791503906,
+        "height": 30.0,
+        "right": 332.27198791503906,
+        "bottom": 354.0
+      },
+      "tagDistinctRowCount": 1,
+      "tagVisibleLabels": [
+        "连载中",
+        "文学",
+        "旅行",
+        "成长",
+        "治愈"
+      ],
+      "tagToggle": null,
+      "readButton": {
+        "left": 201.0,
+        "top": 742.0,
+        "width": 165.0,
+        "height": 52.0,
+        "right": 366.0,
+        "bottom": 794.0
+      },
+      "scrollViewport": {
+        "left": 0.0,
+        "top": 0.0,
+        "width": 390.0,
+        "height": 844.0,
+        "right": 390.0,
+        "bottom": 844.0
+      },
+      "floatingActions": {
+        "left": 0.0,
+        "top": 730.0,
+        "width": 390.0,
+        "height": 80.0,
+        "right": 390.0,
+        "bottom": 810.0
+      },
+      "readButtonHasGlassAncestor": false,
+      "sheetScroll": {
+        "left": 28.0,
+        "top": 174.15999999999997,
+        "width": 334.0,
+        "height": 558.84,
+        "right": 362.0,
+        "bottom": 733.0
+      },
+      "sheetPanel": {
+        "left": 8.0,
+        "top": 126.15999999999997,
+        "width": 374.0,
+        "height": 709.84,
+        "right": 382.0,
+        "bottom": 836.0
+      },
+      "panelCount": 2,
+      "nativeImpeller": {
+        "platform": "ios",
+        "shaderFilterSupported": true,
+        "liquidBackdropRenderObjectCount": 2,
+        "shaderReady": true,
+        "evidence": "A native _RenderLiquidBackdrop exists only after the production fragment shader has loaded."
+      }
+    }
+  }
+}
