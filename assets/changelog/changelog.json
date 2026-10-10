@@ -3,6 +3,42 @@
     "entries": [
         {
             "version": "2.7.3",
+            "buildNumber": "261011001",
+            "notes": {
+                "zh": [
+                    "发现页新增书源布局，可从顶部搜索并切换书源，横向浏览分类或展开全部分类选择。",
+                    "ORSP 书源显示推荐、分类和最新入口；Legado 书源直接显示其探索分类。",
+                    "书源与分类列表统一使用 edge-to-edge 玻璃半屏菜单，保留拖动条、同行搜索和右侧滚动条。",
+                    "修复已缓存 ORSP 在线书籍再次打开仍等待目录网络的问题；已缓存正文优先显示，过期目录按需后台刷新，显式更新和缺章恢复仍会强制刷新。",
+                    "加速超长 HTML 目录首次加载，避免重复扫描父级节点；主题市场仅对明确支持的协议显示认证状态。",
+                    "文字阅读支持 Legado 段评入口；新增全书或本章进度胶囊、拖动跳转及上下章切换。",
+                    "扩大文字排版和页眉页脚调节范围，精简目录搜索，改善连续滚动定位与 iOS 切回阅读页的稳定性。",
+                    "重整听书页面和播放控件，改善封面、正文、语速、音量及定时操作。",
+                    "新增书库整理、最近阅读排序和拖动排列；书籍信息与多标签适配窄屏和大字体。",
+                    "可按需开启 iCloud 同步，在 Apple 设备间同步书籍、子书架、进度、书签笔记及部分设置，并支持冲突选择。",
+                    "手动顺序和最近阅读时间纳入 iCloud 同步及 WebDAV 备份恢复，兼容已有备份。",
+                    "新增可按需开启的阅读 Agent，仅在授权后使用阅读记录、书架和偏好进行推荐；AI 请求支持跨页面继续和随时停止。",
+                    "新增主题与外观页面及社区主题市场，统一弹层、菜单和反馈材质，改善安全区、键盘与 iPhone 浮动导航。"
+                ],
+                "en": [
+                    "Discovery adds a source-focused layout with searchable source switching, scrolling category tabs, and an all-categories picker.",
+                    "ORSP sources show Recommended, Categories, and Latest; Legado sources show their exploration categories directly.",
+                    "Source and category pickers now use edge-to-edge glass sheets with a drag handle, inline search, and a visible scrollbar.",
+                    "Cached ORSP books now reopen with saved text immediately while stale catalogs refresh in the background; explicit updates and missing-chapter recovery still force a refresh.",
+                    "Large HTML catalogs open faster without repeated parent scans, and verified theme status now requires an explicitly supported protocol.",
+                    "Text reading supports Legado paragraph reviews and adds book or chapter progress, scrubbing, and previous/next chapter controls.",
+                    "Expanded typography and header/footer controls, a simpler catalog search, and steadier continuous and iOS resume behavior improve reading.",
+                    "The redesigned read-aloud page improves cover, transcript, playback, speed, volume, and timer controls.",
+                    "Library organization adds recent and progress sorting plus drag ordering; book details and tags better support narrow screens and large text.",
+                    "Optional iCloud sync covers books, nested shelves, progress, bookmarks, notes, and selected settings across Apple devices, with conflict choices.",
+                    "Manual order and recent-reading time are included in iCloud sync and WebDAV backup and restore while preserving older backups.",
+                    "The optional Reading Agent uses reading history, shelves, and preferences only after permission; AI requests can continue across pages or be stopped.",
+                    "New appearance themes and a community theme market join unified sheet, menu, feedback, safe-area, keyboard, and iPhone navigation refinements."
+                ]
+            }
+        },
+        {
+            "version": "2.7.3",
             "buildNumber": "261010006",
             "notes": {
                 "zh": [
