@@ -85,6 +85,38 @@ void main() {
   );
 
   test(
+    'large HTML catalog retains every chapter and next-chapter boundary',
+    () async {
+      const chapterCount = 7000;
+      final state = _TrackingRuntimeState();
+      final runtime = SourceRuntime(
+        transport: _CatalogTransport(_catalogHtml(chapterCount)),
+        state: state,
+      );
+      addTearDown(runtime.close);
+
+      final chapters = await runtime.getChapters(_source, _bookId);
+
+      expect(chapters, hasLength(chapterCount));
+      expect(
+        chapters.map((chapter) => chapter.id).toSet(),
+        hasLength(chapterCount),
+      );
+      for (var index = 0; index < chapterCount; index++) {
+        final chapter = chapters[index];
+        expect(chapter.id, _chapterUrl(index + 1));
+        expect(chapter.title, 'Chapter ${index + 1}');
+        expect(chapter.order, index);
+        expect(
+          state.chapterContext(_config, _bookId, chapter.id)['nextChapterUrl'],
+          index + 1 < chapterCount ? _chapterUrl(index + 2) : '',
+        );
+      }
+      expect(state.catalogParsed, isTrue);
+    },
+  );
+
+  test(
     'final context publication yields and leaves catalog incomplete',
     () async {
       final cancellation = BookDownloadCancellation();

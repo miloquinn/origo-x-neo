@@ -1,7 +1,8 @@
 # Reading cache
 
 Current maintenance guide; online startup/cache contracts checked against code
-on 2026-10-08. Start at [the maintenance index](README.md) for related modules.
+on 2026-10-08; large HTML catalog matching checked on 2026-10-11.
+Start at [the maintenance index](README.md) for related modules.
 Update this guide with behavior changes; dated validation records prove only
 their recorded snapshot and are not another implementation specification.
 
@@ -176,6 +177,7 @@ Horizontal chapter handoff explicitly requests the frame needed to commit after 
 | Chapter window, foreground loading and prefetch | [book_source_reader_chapter_loading.dart](../lib/pages/reader/book_source/book_source_reader_chapter_loading.dart) |
 | Chapter/catalog memory, disk reads, flights and clear generation | [book_source_chapter_cache.dart](../lib/book_sources/caching/book_source_chapter_cache.dart) |
 | Reading-source cache revision and required runtime catalog state | [reading_source_backend.dart](../lib/book_sources/protocol/reading_source/reading_source_backend.dart) |
+| HTML chapter-row matching without repeated parent scans | [source_rule_html.dart](../lib/book_sources/source_engine/rules/source_rule_html.dart) |
 | Shared pagination identity, byte/entry budgets and revision guards | [pagination_cache_dao.dart](../lib/services/books/pagination_cache_dao.dart) |
 | Shared page-boundary encoding | [reader_pagination_cache_codec.dart](../lib/core/reader/reader_pagination_cache_codec.dart) |
 | Owned cache clearing and usage | [cache_management_service.dart](../lib/services/core/cache_management_service.dart) |
@@ -220,6 +222,7 @@ Horizontal chapter handoff explicitly requests the frame needed to commit after 
 | Observation | Inspect first |
 | --- | --- |
 | Every reopen fetches again | Source/login/variable revision, expiry, explicit clear and which cache root is used. Different identities are intentional misses. Never log credentials or full authenticated requests. |
+| First opening slows sharply as HTML chapter count grows | Per-row title/URL matching in `source_rule_html.dart`; separate full catalog extraction from network response time. |
 | Cached catalog opens quickly, but first uncached chapter waits | Required runtime catalog/script initialization, then source response, WebView challenge and parsing. Do not remove chapter-boundary restoration to hide the wait. |
 | Equivalent callers each read disk | Shared disk-read key and generation; cold flight joining before another disk wait. |
 | Reopen waits after OS memory pressure | Refresh marker versus cold flight; stale disk data must remain usable during background refresh. |
@@ -258,6 +261,27 @@ publish their parsed identity. This makes cancellation and input events reachabl
 even for large catalogs whose rules do not invoke asynchronous JavaScript.
 Individual synchronous selector/native operations remain atomic.
 
+HTML rule root matching queries a read-only single-element `DocumentFragment`
+view through the html package's public DOM API. It visits the current chapter
+row's subtree rather than scanning its entire parent for every title and URL.
+The view exposes the original element without reparenting it, so attributes,
+ancestors, siblings and positional selectors retain their actual DOM context.
+It holds no cached matching result; live mutations and temporary JSoup marker
+attributes remain visible. Roots without an Element parent keep the existing
+`*`/exact-tag fallback, including a Document's top-level element.
+
+Invalid CSS and evaluated unsupported CSS still become protocol errors at the
+shared selection boundary. Root matching no longer evaluates unsupported
+selector branches on unrelated siblings, so a directly matching branch in a
+selector group can succeed without that unrelated error. Chapter extraction,
+script state, full order, next-chapter boundaries and cooperative cancellation
+are unchanged; the content-cache rule revision remains 7. The adapter uses no
+internal matching API or new dependency. Tests cover html 0.15.6 and a separate
+0.15.7 compilation probe. Complex selectors may still inspect siblings as
+required by their semantics, and individual synchronous operations still do not
+yield. See the [dated large-catalog validation](reviews/2026-10-11-large-catalog-loading.md)
+for timings and physical-device limits.
+
 `SourceScriptBootstrap` caches only source-invariant shared-library preparation,
 keyed by the complete original `jsLib` content and limited to 16 LRU entries.
 Changing a library immediately uses a fresh preparation. Book/chapter data,
@@ -273,6 +297,7 @@ dynamic login/session payloads never enter its key or value.
 | Shared reads, flights, clear and memory pressure | [book_source_cache_concurrency_test.dart](../test/book_source_cache_concurrency_test.dart), [book_source_chapter_cache_test.dart](../test/book_source_chapter_cache_test.dart) |
 | Startup, shelf identity and purification gates | [online_reader_startup_test.dart](../test/online_reader_startup_test.dart); relevant named cases in [book_source_reader_page_test.dart](../test/book_source_reader_page_test.dart) |
 | Runtime chapter boundaries, source/login identity and cancellation | [reading_source_cached_catalog_boundary_test.dart](../test/reading_source_cached_catalog_boundary_test.dart), [reading_source_chapter_cache_test.dart](../test/reading_source_chapter_cache_test.dart), [orsp_catalog_request_isolation_test.dart](../test/orsp_catalog_request_isolation_test.dart) |
+| HTML row matching, DOM topology and complete 7000-chapter extraction | [source_rule_html_matching_test.dart](../test/source_rule_html_matching_test.dart), [source_rule_html_compatibility_test.dart](../test/source_rule_html_compatibility_test.dart), [source_runtime_catalog_cancellation_test.dart](../test/source_runtime_catalog_cancellation_test.dart) |
 | Pagination storage, encoding and reopen | [pagination_cache_dao_test.dart](../test/pagination_cache_dao_test.dart), [reader_pagination_cache_codec_test.dart](../test/reader_pagination_cache_codec_test.dart), [book_source_pagination_persistence_test.dart](../test/book_source_pagination_persistence_test.dart) |
 | Budgets, clearing and local resource leases | [cache_disk_budget_test.dart](../test/cache_disk_budget_test.dart), [cache_management_service_test.dart](../test/cache_management_service_test.dart) |
 

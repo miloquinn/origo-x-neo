@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:html/dom.dart';
 
 import 'package:xxread/book_sources/protocol/book_source_protocol.dart';
@@ -604,7 +606,46 @@ RegExp sourceJsoupAttributeRegExp(String source) {
 bool sourceHtmlMatches(Element element, String selector) {
   final parent = element.parent;
   if (parent != null) {
-    return parent.querySelectorAll(selector).contains(element);
+    return _SourceHtmlMatchRoot(
+      element,
+    ).querySelectorAll(selector).contains(element);
   }
   return selector == '*' || selector == element.localName;
+}
+
+// Query only this element's subtree through the public DOM API. Exposing the
+// original node without appending it preserves ancestor and sibling selectors.
+class _SourceHtmlMatchRoot extends DocumentFragment {
+  _SourceHtmlMatchRoot(Element element)
+    : _nodes = _SourceHtmlMatchNodes(element);
+
+  final NodeList _nodes;
+
+  @override
+  NodeList get nodes => _nodes;
+}
+
+class _SourceHtmlMatchNodes extends ListBase<Node> implements NodeList {
+  _SourceHtmlMatchNodes(this.element);
+
+  final Element element;
+
+  @override
+  int get length => 1;
+
+  @override
+  set length(int value) => throw UnsupportedError('Read-only matching view');
+
+  @override
+  Node operator [](int index) {
+    RangeError.checkValidIndex(index, this);
+    return element;
+  }
+
+  @override
+  void operator []=(int index, Node value) =>
+      throw UnsupportedError('Read-only matching view');
+
+  @override
+  void addLast(Node value) => throw UnsupportedError('Read-only matching view');
 }
