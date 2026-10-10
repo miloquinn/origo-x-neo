@@ -1026,9 +1026,27 @@ class _DeleteAccountPageState extends State<_DeleteAccountPage> {
                 ],
                 if (!preview.deletable)
                   _SectionCard(
-                    child: _DeleteWarningBlock(
-                      title: context.l10n.accountDeleteBlockedTitle,
-                      body: context.l10n.accountDeleteBlockedOwner,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _DeleteWarningBlock(
+                          title: context.l10n.accountDeleteBlockedTitle,
+                          body: preview.blockedReason == 'themeCreator'
+                              ? context.l10n.accountDeleteBlockedThemeCreator
+                              : context.l10n.accountDeleteBlockedOwner,
+                        ),
+                        if (preview.blockedReason == 'themeCreator') ...[
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: () => launchUrl(
+                              account.themeCreatorUri,
+                              mode: LaunchMode.externalApplication,
+                            ),
+                            icon: const Icon(Icons.open_in_new_rounded),
+                            label: Text(context.l10n.accountDeleteManageThemes),
+                          ),
+                        ],
+                      ],
                     ),
                   )
                 else if (_step == 0)

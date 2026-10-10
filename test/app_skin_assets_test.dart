@@ -13,13 +13,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('every bundled image skin has complete decodable assets', () async {
-    const navigationSlots = {
-      AppSkinIconSlot.home,
-      AppSkinIconSlot.library,
-      AppSkinIconSlot.discover,
-      AppSkinIconSlot.ai,
-      AppSkinIconSlot.profile,
-    };
     final skins = AppSkinCatalog.builtIn.skins
         .where((skin) => skin.id != AppSkin.originalId)
         .toList(growable: false);
@@ -27,7 +20,11 @@ void main() {
 
     expect(skins, hasLength(3));
     for (final skin in skins) {
-      expect(skin.icons.keys.toSet(), navigationSlots, reason: skin.id);
+      expect(
+        skin.icons.keys.toSet(),
+        AppSkinIconSlot.values.toSet(),
+        reason: skin.id,
+      );
       expect(
         skin.artwork.keys.toSet(),
         AppSkinArtworkSlot.values.toSet(),
@@ -64,7 +61,7 @@ void main() {
     final entries = await LicenseRegistry.licenses
         .where(
           (entry) =>
-              entry.packages.contains('Twemoji graphics') ||
+              entry.packages.contains('IconPark graphics') ||
               entry.packages.contains('App skin artwork'),
         )
         .toList();
@@ -74,9 +71,8 @@ void main() {
         .expand((entry) => entry.paragraphs)
         .map((paragraph) => paragraph.text)
         .join('\n');
-    expect(text, contains('Creative Commons Corporation'));
-    expect(text, contains('twitter/twemoji/tree/v14.0.2'));
-    expect(text, contains('NASA does not endorse Origo X'));
+    expect(text, contains('Apache License'));
+    expect(text, contains('bytedance/IconPark/tree/v1.4.2'));
   });
 }
 

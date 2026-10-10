@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/app_skin.dart';
 import '../../services/core/theme_notifier.dart';
 import '../../utils/app_skin_theme.dart';
+import '../../utils/app_skin_image_provider.dart';
 import '../../utils/app_theme_labels.dart';
 import '../../utils/app_themes.dart';
 import '../../utils/localization_extension.dart';
@@ -14,6 +15,7 @@ import '../../utils/ui_style.dart';
 import '../../widgets/app_skin_icon.dart';
 import '../../widgets/app_theme_preview.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import 'theme_market_page.dart';
 
 enum AppThemeCategory { color, artwork }
 
@@ -119,6 +121,17 @@ class _AppThemePageState extends State<AppThemePage> {
                       choices,
                     ],
                     const SizedBox(height: 22),
+                    OutlinedButton.icon(
+                      key: const ValueKey('open-theme-market'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ThemeMarketPage(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.storefront_outlined),
+                      label: Text(l10n.settingsThemeMarketTitle),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       l10n.settingsThemeReadPaperHint,
                       textAlign: TextAlign.center,
@@ -173,7 +186,7 @@ class _AppThemePageState extends State<AppThemePage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${appColorPresetName(l10n, notifier.currentColorPreset?.id)} · ${appSkinName(l10n, notifier.currentSkin.id)}',
+                    '${notifier.currentColorPackage?.name ?? appColorPresetName(l10n, notifier.currentColorPreset?.id)} · ${notifier.currentSkinPackage?.name ?? appSkinName(l10n, notifier.currentSkin.id)}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -371,8 +384,11 @@ class _AppThemePageState extends State<AppThemePage> {
               fit: StackFit.expand,
               children: [
                 if (asset != null)
-                  Image.asset(
-                    asset.pathFor(Theme.of(context).brightness),
+                  Image(
+                    image: appSkinImageProvider(
+                      asset,
+                      Theme.of(context).brightness,
+                    ),
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => const SizedBox.shrink(),
                   ),

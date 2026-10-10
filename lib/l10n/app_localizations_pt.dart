@@ -8068,16 +8068,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Fundo em degradê e ícones originais';
 
   @override
-  String get settingsThemeSkinTidalHint =>
-      'Fundo com ondas e ilustrações náuticas';
+  String get settingsThemeSkinTidalHint => 'Ondas e linhas coral';
 
   @override
   String get settingsThemeSkinBotanicalHint =>
-      'Fundo com íris e ilustrações botânicas';
+      'Cenário botânico e linhas suaves';
 
   @override
-  String get settingsThemeSkinCelestialHint =>
-      'Fundo com a Terra e ilustrações planetárias';
+  String get settingsThemeSkinCelestialHint => 'Órbitas e linhas em duas cores';
 
   @override
   String get settingsThemePreviewTitle => 'Leia mais um pouco';
@@ -8085,4 +8083,126 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get settingsThemePreviewBody =>
       'Guarde cada história e cada estado de espírito.';
+
+  @override
+  String get settingsThemeMarketTitle => 'Mercado de temas';
+
+  @override
+  String get themeMarketRefresh => 'Atualizar';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return 'Não foi possível carregar os temas instalados: $error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return '“$name” foi instalado';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return 'A atualização de “$name” foi instalada. Você pode ativá-la em Temas instalados.';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return '“$name” foi instalado e está ativo';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return 'Falha na instalação: $error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return '“$name” está ativo';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return 'Não foi possível aplicar o tema: $error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => 'Remover tema?';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return 'Remover “$name” deste dispositivo? Você poderá baixá-lo novamente no Mercado de temas.';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return '“$name” foi removido';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return 'Não foi possível remover o tema: $error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed =>
+      'Não foi possível abrir o criador de temas agora';
+
+  @override
+  String get themeMarketActionFailedTitle => 'A ação do tema não foi concluída';
+
+  @override
+  String get themeMarketInstalledSectionTitle => 'Instalados';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle =>
+      'Use e alterne temas mesmo sem conexão';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => 'Temas em destaque';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle =>
+      'Somente temas aprovados no site oficial aparecem aqui';
+
+  @override
+  String get themeMarketHeroTitle => 'Temas criados por todos';
+
+  @override
+  String get themeMarketHeroDescription =>
+      'Crie paletas, fundos e um conjunto completo de ícones semânticos com a especificação aberta. Envie o tema para análise no site oficial.';
+
+  @override
+  String get themeMarketCreateAction => 'Criar e enviar um tema';
+
+  @override
+  String get themeMarketNetworkDisabledTitle =>
+      'Os recursos online estão desativados';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      'Os temas instalados continuam disponíveis offline. Permita novamente o acesso à rede para explorar o mercado.';
+
+  @override
+  String get themeMarketLoadFailedTitle =>
+      'Não foi possível carregar o Mercado de temas';
+
+  @override
+  String get themeMarketEmptyTitle => 'Ainda não há temas públicos';
+
+  @override
+  String get themeMarketEmptyMessage =>
+      'Os temas dos criadores aparecerão aqui depois da análise.';
+
+  @override
+  String get themeMarketInUse => 'Em uso';
+
+  @override
+  String get themeMarketDownloadAndApply => 'Baixar e aplicar';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      'Antes de excluir sua conta, remova no site os temas publicados ou aguardando análise.';
+
+  @override
+  String get accountDeleteManageThemes => 'Gerenciar meus temas';
 }

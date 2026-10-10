@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
 import '../activities/activity.dart';
+import '../themes/theme_market_item.dart';
 import 'account_models.dart';
 import 'account_token_store.dart';
 import 'avatar_image_processor.dart';
@@ -731,6 +733,55 @@ class MemberAccountApiClient {
     } catch (_) {
       throw const MemberAccountException('服务器返回了无法识别的活动数据');
     }
+  }
+
+  Future<List<ThemeMarketItem>> approvedThemes() async {
+    final json = await _jsonRequest(
+      'GET',
+      '/api/v1/themes',
+      authenticated: false,
+    );
+    final rows = json['themes'];
+    if (rows is! List) {
+      throw const MemberAccountException('无法读取主题列表');
+    }
+    return rows
+        .map(
+          (row) =>
+              ThemeMarketItem.fromJson((row as Map).cast<String, dynamic>()),
+        )
+        .toList(growable: false);
+  }
+
+  Future<Uint8List> downloadTheme(ThemeMarketItem theme) async {
+    final generation = _captureNetworkGeneration();
+    final response = await _dio.get<ResponseBody>(
+      baseUri.resolve(theme.downloadPath).toString(),
+      options: Options(
+        responseType: ResponseType.stream,
+        followRedirects: false,
+      ),
+    );
+    _checkNetworkAllowed(generation);
+    final body = response.data;
+    if (response.statusCode != 200 || body == null) {
+      throw const MemberAccountException('主题下载失败');
+    }
+    final chunks = BytesBuilder(copy: false);
+    var length = 0;
+    await for (final bytes in body.stream) {
+      _checkNetworkAllowed(generation);
+      length += bytes.length;
+      if (length > ThemeMarketItem.maxPackageBytes || length > theme.size) {
+        throw const MemberAccountException('主题文件大小不符合预期');
+      }
+      chunks.add(bytes);
+    }
+    _checkNetworkAllowed(generation);
+    if (length != theme.size) {
+      throw const MemberAccountException('主题文件下载不完整');
+    }
+    return chunks.takeBytes();
   }
 
   Future<MemberReferralCampaign> referralCampaign() async =>

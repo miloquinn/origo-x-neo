@@ -8126,16 +8126,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Arrière-plan dégradé et icônes d’origine';
 
   @override
-  String get settingsThemeSkinTidalHint =>
-      'Arrière-plan de vagues et illustrations marines';
+  String get settingsThemeSkinTidalHint => 'Vagues et traits corail';
 
   @override
-  String get settingsThemeSkinBotanicalHint =>
-      'Arrière-plan d’iris et illustrations végétales';
+  String get settingsThemeSkinBotanicalHint => 'Décor végétal et traits doux';
 
   @override
-  String get settingsThemeSkinCelestialHint =>
-      'Arrière-plan terrestre et illustrations de planètes';
+  String get settingsThemeSkinCelestialHint => 'Orbites et traits bicolores';
 
   @override
   String get settingsThemePreviewTitle => 'Lisez encore un peu';
@@ -8143,4 +8140,126 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsThemePreviewBody =>
       'Collectionnez les histoires et toutes vos humeurs.';
+
+  @override
+  String get settingsThemeMarketTitle => 'Marché des thèmes';
+
+  @override
+  String get themeMarketRefresh => 'Actualiser';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return 'Impossible de charger les thèmes installés : $error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return '« $name » est installé';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return 'La mise à jour de « $name » est installée. Vous pouvez l’activer dans les thèmes installés.';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return '« $name » est installé et actif';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return 'Échec de l’installation : $error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return '« $name » est actif';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return 'Impossible d’appliquer le thème : $error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => 'Retirer le thème ?';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return 'Retirer « $name » de cet appareil ? Vous pourrez le télécharger à nouveau depuis le Marché des thèmes.';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return '« $name » a été retiré';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return 'Impossible de retirer le thème : $error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed =>
+      'Impossible d’ouvrir le créateur de thèmes pour le moment';
+
+  @override
+  String get themeMarketActionFailedTitle => 'Action sur le thème non terminée';
+
+  @override
+  String get themeMarketInstalledSectionTitle => 'Installés';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle =>
+      'Utilisez et changez de thème même hors ligne';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => 'Thèmes à la une';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle =>
+      'Seuls les thèmes approuvés sur le site officiel apparaissent ici';
+
+  @override
+  String get themeMarketHeroTitle => 'Des thèmes créés par tous';
+
+  @override
+  String get themeMarketHeroDescription =>
+      'Créez des palettes, des arrière-plans et un jeu complet d’icônes sémantiques avec la spécification ouverte, puis soumettez votre thème sur le site officiel.';
+
+  @override
+  String get themeMarketCreateAction => 'Créer et proposer un thème';
+
+  @override
+  String get themeMarketNetworkDisabledTitle =>
+      'Les fonctions en ligne sont désactivées';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      'Les thèmes installés restent utilisables hors ligne. Autorisez à nouveau l’accès au réseau pour parcourir le marché.';
+
+  @override
+  String get themeMarketLoadFailedTitle =>
+      'Impossible de charger le Marché des thèmes';
+
+  @override
+  String get themeMarketEmptyTitle => 'Aucun thème public pour le moment';
+
+  @override
+  String get themeMarketEmptyMessage =>
+      'Les thèmes des créateurs apparaîtront ici après validation.';
+
+  @override
+  String get themeMarketInUse => 'Utilisé';
+
+  @override
+  String get themeMarketDownloadAndApply => 'Télécharger et appliquer';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      'Avant de supprimer votre compte, supprimez sur le site vos thèmes publiés ou en attente de validation.';
+
+  @override
+  String get accountDeleteManageThemes => 'Gérer mes thèmes';
 }

@@ -16,7 +16,7 @@
 | 朗读展示、书籍字体、跳读与连续播放 | [听书维护](tts-jump-reading-design.md) |
 | 书籍格式能力 | [格式支持](book-format-support.md) |
 | 备份与恢复 | [WebDAV 备份](webdav-backup.md) |
-| 应用配色套餐、素材主题、图片槽位与玻璃隔离 | [应用配色与素材主题](app-skins.md) |
+| 应用配色、素材主题、社区市场与玻璃隔离 | [应用主题与主题市场](app-skins.md) |
 | 共用玻璃背景、材质角色与外观设置继承 | [共用玻璃材质](glass-material.md) |
 | 阅读文字、版式、调节范围与共用玻璃滑条 | [阅读调节控件](reader-adjustments.md) |
 | 共用视觉与组件规范 | [DESIGN.md](../DESIGN.md) |

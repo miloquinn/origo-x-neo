@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/app_skin.dart';
 import '../utils/app_skin_theme.dart';
+import '../utils/app_skin_image_provider.dart';
 
 /// A semantic skin slot with the original glyph as its compatibility contract.
 /// Images keep their own colors; the caller still owns size, motion and actions.
@@ -32,6 +33,27 @@ class AppSkinIcon extends StatelessWidget {
     Icons.more_vert_rounded ||
     Icons.more_horiz ||
     Icons.more_horiz_rounded => AppSkinIconSlot.more,
+    Icons.close || Icons.close_rounded || Icons.clear => AppSkinIconSlot.close,
+    Icons.arrow_forward ||
+    Icons.arrow_forward_rounded ||
+    Icons.arrow_forward_ios ||
+    Icons.chevron_right ||
+    Icons.chevron_right_rounded => AppSkinIconSlot.forward,
+    Icons.settings ||
+    Icons.settings_rounded ||
+    Icons.settings_outlined => AppSkinIconSlot.settings,
+    Icons.refresh || Icons.refresh_rounded => AppSkinIconSlot.refresh,
+    Icons.add || Icons.add_rounded => AppSkinIconSlot.add,
+    Icons.share ||
+    Icons.share_rounded ||
+    Icons.ios_share => AppSkinIconSlot.share,
+    Icons.delete ||
+    Icons.delete_rounded ||
+    Icons.delete_outline => AppSkinIconSlot.delete,
+    Icons.check ||
+    Icons.check_rounded ||
+    Icons.done ||
+    Icons.done_rounded => AppSkinIconSlot.check,
     _ => null,
   };
 
@@ -53,8 +75,8 @@ class AppSkinIcon extends StatelessWidget {
     final opacity =
         (iconTheme.opacity ?? 1) *
         (fallback.color ?? iconTheme.color ?? Colors.black).a;
-    return Image.asset(
-      asset.pathFor(Theme.of(context).brightness),
+    return Image(
+      image: appSkinImageProvider(asset, Theme.of(context).brightness),
       width: size,
       height: size,
       fit: BoxFit.contain,

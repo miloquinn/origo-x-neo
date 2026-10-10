@@ -396,7 +396,8 @@ void main() {
           AppSkinIconSlot.library,
           AppSkinIconSlot.discover,
         ])
-          if (skin.icons[slot] case final icon?) icon.normal.asset,
+          if (skin.icons[slot] case final icon?)
+            icon.resolve(slot == AppSkinIconSlot.library).asset,
       ],
     };
     final renderedPaths = find

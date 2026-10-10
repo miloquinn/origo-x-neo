@@ -8040,16 +8040,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Исходный градиентный фон и значки';
 
   @override
-  String get settingsThemeSkinTidalHint =>
-      'Фон с волнами и морские иллюстрации';
+  String get settingsThemeSkinTidalHint => 'Морские волны и коралловые линии';
 
   @override
-  String get settingsThemeSkinBotanicalHint =>
-      'Фон с ирисами и растительные иллюстрации';
+  String get settingsThemeSkinBotanicalHint => 'Растения и мягкие линии';
 
   @override
-  String get settingsThemeSkinCelestialHint =>
-      'Фон с Землёй и иллюстрации планет';
+  String get settingsThemeSkinCelestialHint => 'Орбиты и двухцветные линии';
 
   @override
   String get settingsThemePreviewTitle => 'Почитайте ещё немного';
@@ -8057,4 +8054,124 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get settingsThemePreviewBody =>
       'Сохраняйте истории и каждое настроение.';
+
+  @override
+  String get settingsThemeMarketTitle => 'Магазин тем';
+
+  @override
+  String get themeMarketRefresh => 'Обновить';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return 'Не удалось загрузить установленные темы: $error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return 'Тема «$name» установлена';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return 'Обновление темы «$name» установлено. Переключиться на него можно в разделе установленных тем.';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return 'Тема «$name» установлена и включена';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return 'Не удалось установить тему: $error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return 'Тема «$name» включена';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return 'Не удалось применить тему: $error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => 'Удалить тему?';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return 'Удалить тему «$name» с устройства? Её можно будет снова скачать в Магазине тем.';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return 'Тема «$name» удалена';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return 'Не удалось удалить тему: $error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed =>
+      'Сейчас не удаётся открыть редактор тем';
+
+  @override
+  String get themeMarketActionFailedTitle => 'Действие с темой не завершено';
+
+  @override
+  String get themeMarketInstalledSectionTitle => 'Установленные';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle =>
+      'Используйте и меняйте темы даже без подключения к сети';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => 'Избранные темы';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle =>
+      'Здесь показаны только темы, одобренные на официальном сайте';
+
+  @override
+  String get themeMarketHeroTitle => 'Темы, которые создают все';
+
+  @override
+  String get themeMarketHeroDescription =>
+      'Создавайте палитры, фоны и полный набор смысловых значков по открытой спецификации, а затем отправляйте тему на проверку через официальный сайт.';
+
+  @override
+  String get themeMarketCreateAction => 'Создать и отправить тему';
+
+  @override
+  String get themeMarketNetworkDisabledTitle => 'Сетевые функции отключены';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      'Установленные темы доступны без сети. Снова разрешите доступ к сети, чтобы открыть Магазин тем.';
+
+  @override
+  String get themeMarketLoadFailedTitle => 'Не удалось загрузить Магазин тем';
+
+  @override
+  String get themeMarketEmptyTitle => 'Публичных тем пока нет';
+
+  @override
+  String get themeMarketEmptyMessage =>
+      'Темы авторов появятся здесь после проверки.';
+
+  @override
+  String get themeMarketInUse => 'Используется';
+
+  @override
+  String get themeMarketDownloadAndApply => 'Скачать и применить';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      'Перед удалением аккаунта удалите на сайте опубликованные и ожидающие проверки темы.';
+
+  @override
+  String get accountDeleteManageThemes => 'Управление моими темами';
 }

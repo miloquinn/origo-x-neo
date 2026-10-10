@@ -8090,16 +8090,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ursprünglicher Verlaufshintergrund und Symbole';
 
   @override
-  String get settingsThemeSkinTidalHint =>
-      'Wellenhintergrund und maritime Illustrationen';
+  String get settingsThemeSkinTidalHint => 'Meereswellen und Korallenlinien';
 
   @override
-  String get settingsThemeSkinBotanicalHint =>
-      'Iris-Hintergrund und Pflanzenillustrationen';
+  String get settingsThemeSkinBotanicalHint => 'Pflanzen und sanfte Linien';
 
   @override
   String get settingsThemeSkinCelestialHint =>
-      'Erde als Hintergrund und Planetenillustrationen';
+      'Sternenbahnen und zweifarbige Linien';
 
   @override
   String get settingsThemePreviewTitle => 'Lies noch ein wenig weiter';
@@ -8107,4 +8105,127 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get settingsThemePreviewBody =>
       'Bewahre jede Geschichte und jede Stimmung.';
+
+  @override
+  String get settingsThemeMarketTitle => 'Themenmarkt';
+
+  @override
+  String get themeMarketRefresh => 'Aktualisieren';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return 'Installierte Designs konnten nicht geladen werden: $error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return '„$name“ wurde installiert';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return 'Das Update für „$name“ wurde installiert. Du kannst unter „Installiert“ dazu wechseln.';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return '„$name“ wurde installiert und aktiviert';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return 'Installation fehlgeschlagen: $error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return '„$name“ ist aktiv';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return 'Design konnte nicht angewendet werden: $error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => 'Design entfernen?';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return '„$name“ von diesem Gerät entfernen? Du kannst es später erneut aus dem Themenmarkt laden.';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return '„$name“ wurde entfernt';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return 'Design konnte nicht entfernt werden: $error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed =>
+      'Der Design-Editor kann derzeit nicht geöffnet werden';
+
+  @override
+  String get themeMarketActionFailedTitle =>
+      'Design-Aktion nicht abgeschlossen';
+
+  @override
+  String get themeMarketInstalledSectionTitle => 'Installiert';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle =>
+      'Designs auch offline verwenden und wechseln';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => 'Empfohlene Designs';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle =>
+      'Hier erscheinen nur auf der offiziellen Website geprüfte Designs';
+
+  @override
+  String get themeMarketHeroTitle => 'Designs von allen für alle';
+
+  @override
+  String get themeMarketHeroDescription =>
+      'Erstelle mit der offenen Spezifikation Farbpaletten, Hintergründe und semantische Symbole. Reiche dein Design auf der offiziellen Website zur Prüfung ein.';
+
+  @override
+  String get themeMarketCreateAction => 'Design erstellen und einreichen';
+
+  @override
+  String get themeMarketNetworkDisabledTitle =>
+      'Online-Funktionen sind deaktiviert';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      'Installierte Designs bleiben offline verfügbar. Erlaube den Netzwerkzugriff erneut, um den Themenmarkt zu öffnen.';
+
+  @override
+  String get themeMarketLoadFailedTitle =>
+      'Themenmarkt konnte nicht geladen werden';
+
+  @override
+  String get themeMarketEmptyTitle => 'Noch keine öffentlichen Designs';
+
+  @override
+  String get themeMarketEmptyMessage =>
+      'Geprüfte Designs von Kreativen erscheinen hier.';
+
+  @override
+  String get themeMarketInUse => 'Aktiv';
+
+  @override
+  String get themeMarketDownloadAndApply => 'Laden und anwenden';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      'Lösche zuerst deine veröffentlichten oder zur Prüfung eingereichten Designs auf der Website, bevor du dein Konto löschst.';
+
+  @override
+  String get accountDeleteManageThemes => 'Meine Designs verwalten';
 }

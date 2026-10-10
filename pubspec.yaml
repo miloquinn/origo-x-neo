@@ -132,7 +132,9 @@ flutter:
     - assets/purchase/ARTWORK-NOTICE.txt
     - assets/skins/
     - assets/skins/backgrounds/
-    - assets/skins/icons/twemoji/
+    - assets/skins/collections/tidal/icons/
+    - assets/skins/collections/botanical/icons/
+    - assets/skins/collections/celestial/icons/
     - assets/fonts/licenses/
     - assets/icons/
     - LICENSE

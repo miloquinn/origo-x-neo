@@ -99,6 +99,17 @@ class AppThemes {
     );
   }
 
+  /// Shared palette contract for validated community theme packages.
+  static AppTheme coordinated({
+    required Color primary,
+    required Color secondary,
+    required Color tertiary,
+  }) => _coordinatedTheme(
+    primary: primary,
+    secondary: secondary,
+    tertiary: tertiary,
+  );
+
   static AppTheme _coordinatedTheme({
     required Color primary,
     required Color secondary,

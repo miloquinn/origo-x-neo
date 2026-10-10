@@ -6,6 +6,7 @@ import '../utils/page_style_helper.dart';
 import 'app_skin_icon.dart';
 import 'floating_pill_navigation_surface.dart';
 import 'glass_surface.dart';
+import 'glass_buttons.dart';
 
 /// A decorative preview using the same background, asset and glass renderers
 /// as the app. It never handles navigation or represents an actual book.
@@ -39,18 +40,12 @@ class AppThemePreview extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: scheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(9),
-                            ),
-                            child: Icon(
-                              Icons.auto_stories_rounded,
-                              size: 17,
-                              color: scheme.onPrimaryContainer,
-                            ),
+                          GlassIconButton(
+                            dimension: 32,
+                            iconSize: 22,
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            onPressed: () {},
+                            animatePress: false,
                           ),
                           const SizedBox(width: 9),
                           Expanded(
@@ -63,9 +58,12 @@ class AppThemePreview extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Icon(
-                            Icons.more_horiz_rounded,
-                            color: scheme.onSurfaceVariant,
+                          GlassIconButton(
+                            dimension: 32,
+                            iconSize: 22,
+                            icon: const Icon(Icons.search_rounded),
+                            onPressed: () {},
+                            animatePress: false,
                           ),
                         ],
                       ),

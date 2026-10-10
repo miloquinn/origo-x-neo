@@ -13,23 +13,47 @@ enum AppSkinIconSlot {
   back,
   search,
   more,
+  close,
+  forward,
+  settings,
+  refresh,
+  add,
+  share,
+  delete,
+  check,
 }
 
 enum AppSkinArtworkSlot { pageBackground, navigation }
 
+enum AppSkinImageSource { bundledAsset, installedFile }
+
 @immutable
 class AppSkinImage {
   AppSkinImage({required String asset, String? darkAsset})
-    : asset = _validateAsset(asset, field: 'asset'),
+    : source = AppSkinImageSource.bundledAsset,
+      asset = _validateAsset(asset, field: 'asset'),
       darkAsset = darkAsset == null
           ? null
           : _validateAsset(darkAsset, field: 'darkAsset');
 
+  AppSkinImage.file({required String path, String? darkPath})
+    : source = AppSkinImageSource.installedFile,
+      asset = _validateFile(path, field: 'path'),
+      darkAsset = darkPath == null
+          ? null
+          : _validateFile(darkPath, field: 'darkPath');
+
+  factory AppSkinImage.installed({required String path, String? darkPath}) =>
+      AppSkinImage.file(path: path, darkPath: darkPath);
+
+  final AppSkinImageSource source;
   final String asset;
   final String? darkAsset;
 
   String pathFor(Brightness brightness) =>
       brightness == Brightness.dark ? darkAsset ?? asset : asset;
+
+  String stablePathFor(Brightness brightness) => pathFor(brightness);
 
   static String _validateAsset(String value, {required String field}) {
     final lower = value.toLowerCase();
@@ -56,6 +80,44 @@ class AppSkinImage {
         value,
         field,
         'must be a bundled relative assets/ PNG, WebP, JPG, or JPEG path',
+      );
+    }
+    return value;
+  }
+
+  static String _validateFile(String value, {required String field}) {
+    final lower = value.toLowerCase();
+    final unixSegments = value.split('/');
+    final windowsSegments = value.split('\\');
+    final isCanonicalUnix =
+        value.startsWith('/') &&
+        !value.contains('\\') &&
+        !value.contains('//') &&
+        !unixSegments.contains('..') &&
+        !unixSegments.contains('.') &&
+        !unixSegments.skip(1).contains('');
+    final isCanonicalWindows =
+        RegExp(r'^[A-Za-z]:\\[^\\]').hasMatch(value) &&
+        !value.contains('/') &&
+        !value.contains('\\\\') &&
+        !windowsSegments.contains('..') &&
+        !windowsSegments.contains('.') &&
+        !windowsSegments.skip(1).contains('');
+    final isCanonical =
+        (isCanonicalUnix || isCanonicalWindows) &&
+        !value.contains('?') &&
+        !value.contains('#');
+    final hasSupportedSuffix = const [
+      '.png',
+      '.webp',
+      '.jpg',
+      '.jpeg',
+    ].any(lower.endsWith);
+    if (!isCanonical || !hasSupportedSuffix) {
+      throw ArgumentError.value(
+        value,
+        field,
+        'must be a canonical absolute PNG, WebP, JPG, or JPEG file path',
       );
     }
     return value;
@@ -127,60 +189,9 @@ class AppSkinCatalog {
   }
 
   static final AppSkinCatalog builtIn = AppSkinCatalog([
-    AppSkin(
-      id: 'tidal',
-      icons: {
-        AppSkinIconSlot.home: _twemojiIcon('1f3e0'),
-        AppSkinIconSlot.library: _twemojiIcon('1f4da'),
-        AppSkinIconSlot.discover: _twemojiIcon('1f9ed'),
-        AppSkinIconSlot.ai: _twemojiIcon('1f52e'),
-        AppSkinIconSlot.profile: _twemojiIcon('1f3c4'),
-      },
-      artwork: {
-        AppSkinArtworkSlot.pageBackground: AppSkinImage(
-          asset: 'assets/purchase/wave.jpg',
-        ),
-        AppSkinArtworkSlot.navigation: AppSkinImage(
-          asset: 'assets/purchase/wave.jpg',
-        ),
-      },
-    ),
-    AppSkin(
-      id: 'botanical',
-      icons: {
-        AppSkinIconSlot.home: _twemojiIcon('1f3e1'),
-        AppSkinIconSlot.library: _twemojiIcon('1f4d6'),
-        AppSkinIconSlot.discover: _twemojiIcon('1f331'),
-        AppSkinIconSlot.ai: _twemojiIcon('1fa84'),
-        AppSkinIconSlot.profile: _twemojiIcon('1f9d1'),
-      },
-      artwork: {
-        AppSkinArtworkSlot.pageBackground: AppSkinImage(
-          asset: 'assets/purchase/irises.jpg',
-        ),
-        AppSkinArtworkSlot.navigation: AppSkinImage(
-          asset: 'assets/purchase/irises.jpg',
-        ),
-      },
-    ),
-    AppSkin(
-      id: 'celestial',
-      icons: {
-        AppSkinIconSlot.home: _twemojiIcon('1f3e0'),
-        AppSkinIconSlot.library: _twemojiIcon('1f4da'),
-        AppSkinIconSlot.discover: _twemojiIcon('1f52d'),
-        AppSkinIconSlot.ai: _twemojiIcon('1f916'),
-        AppSkinIconSlot.profile: _twemojiIcon('1f9d1-200d-1f680'),
-      },
-      artwork: {
-        AppSkinArtworkSlot.pageBackground: AppSkinImage(
-          asset: 'assets/skins/backgrounds/nasa-blue-marble.jpg',
-        ),
-        AppSkinArtworkSlot.navigation: AppSkinImage(
-          asset: 'assets/skins/backgrounds/nasa-blue-marble.jpg',
-        ),
-      },
-    ),
+    _collectionSkin('tidal'),
+    _collectionSkin('botanical'),
+    _collectionSkin('celestial'),
   ]);
 
   late final List<AppSkin> _skins;
@@ -194,6 +205,30 @@ class AppSkinCatalog {
       savedId == null ? AppSkin.original : find(savedId) ?? AppSkin.original;
 }
 
-AppSkinIconAssets _twemojiIcon(String codepoint) => AppSkinIconAssets(
-  normal: AppSkinImage(asset: 'assets/skins/icons/twemoji/$codepoint.png'),
-);
+AppSkin _collectionSkin(String id) {
+  final iconRoot = 'assets/skins/collections/$id/icons';
+  final backgroundRoot = 'assets/skins/backgrounds/$id';
+  return AppSkin(
+    id: id,
+    icons: {
+      for (final slot in AppSkinIconSlot.values)
+        slot: AppSkinIconAssets(
+          normal: AppSkinImage(
+            asset: '$iconRoot/${slot.name}.png',
+            darkAsset: '$iconRoot/${slot.name}-dark.png',
+          ),
+          selected: AppSkinImage(
+            asset: '$iconRoot/${slot.name}-selected.png',
+            darkAsset: '$iconRoot/${slot.name}-selected-dark.png',
+          ),
+        ),
+    },
+    artwork: {
+      for (final slot in AppSkinArtworkSlot.values)
+        slot: AppSkinImage(
+          asset: '$backgroundRoot.jpg',
+          darkAsset: '$backgroundRoot-dark.jpg',
+        ),
+    },
+  );
+}

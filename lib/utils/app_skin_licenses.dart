@@ -12,19 +12,19 @@ void registerAppSkinLicenses() {
 
   LicenseRegistry.addLicense(() async* {
     final credits = await rootBundle.loadString('assets/skins/APP_CREDITS.txt');
-    final twemojiLicense = await rootBundle.loadString(
-      'assets/skins/LICENSE-TWEMOJI-CC-BY-4.0.txt',
+    final iconParkLicense = await rootBundle.loadString(
+      'assets/skins/LICENSE-ICONPARK-APACHE-2.0.txt',
     );
 
     yield LicenseEntryWithLineBreaks(const ['App skin artwork'], credits);
     yield LicenseEntryWithLineBreaks(
-      const ['Twemoji graphics'],
+      const ['IconPark graphics'],
       '''
-Twemoji graphics, version 14.0.2, by Twitter, Inc. and other contributors.
-Source: https://github.com/twitter/twemoji/tree/v14.0.2
-Changes: selected SVG graphics were rasterized to transparent 128 x 128 PNG files, stripped of metadata and reduced to 8-bit RGBA. The artwork itself was not redrawn.
+IconPark graphics, version 1.4.2, by ByteDance and contributors.
+Source: https://github.com/bytedance/IconPark/tree/v1.4.2
+Changes: selected vector geometry was recolored, composed into coordinated themes and rasterized to transparent PNG images.
 
-$twemojiLicense
+$iconParkLicense
 ''',
     );
   });

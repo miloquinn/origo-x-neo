@@ -13841,19 +13841,19 @@ abstract class AppLocalizations {
   /// No description provided for @settingsThemeSkinTidalHint.
   ///
   /// In en, this message translates to:
-  /// **'Wave background and nautical artwork'**
+  /// **'Ocean curves and coral line art'**
   String get settingsThemeSkinTidalHint;
 
   /// No description provided for @settingsThemeSkinBotanicalHint.
   ///
   /// In en, this message translates to:
-  /// **'Iris background and botanical artwork'**
+  /// **'Botanical scenery and soft line art'**
   String get settingsThemeSkinBotanicalHint;
 
   /// No description provided for @settingsThemeSkinCelestialHint.
   ///
   /// In en, this message translates to:
-  /// **'Earth background and planetary artwork'**
+  /// **'Orbital skies and two-tone line art'**
   String get settingsThemeSkinCelestialHint;
 
   /// No description provided for @settingsThemePreviewTitle.
@@ -13867,6 +13867,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep every story, and every mood.'**
   String get settingsThemePreviewBody;
+
+  /// No description provided for @settingsThemeMarketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Market'**
+  String get settingsThemeMarketTitle;
+
+  /// No description provided for @themeMarketRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get themeMarketRefresh;
+
+  /// No description provided for @themeMarketInstalledLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load installed themes: {error}'**
+  String themeMarketInstalledLoadFailed(String error);
+
+  /// No description provided for @themeMarketInstalledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” is installed'**
+  String themeMarketInstalledMessage(String name);
+
+  /// No description provided for @themeMarketUpdateInstalledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The “{name}” update is installed. Switch to it under Installed themes when you are ready.'**
+  String themeMarketUpdateInstalledMessage(String name);
+
+  /// No description provided for @themeMarketInstalledAndAppliedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” is installed and active'**
+  String themeMarketInstalledAndAppliedMessage(String name);
+
+  /// No description provided for @themeMarketInstallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Installation failed: {error}'**
+  String themeMarketInstallFailed(String error);
+
+  /// No description provided for @themeMarketAppliedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” is active'**
+  String themeMarketAppliedMessage(String name);
+
+  /// No description provided for @themeMarketApplyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t apply theme: {error}'**
+  String themeMarketApplyFailed(String error);
+
+  /// No description provided for @themeMarketRemoveDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove theme?'**
+  String get themeMarketRemoveDialogTitle;
+
+  /// No description provided for @themeMarketRemoveDialogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove “{name}” from this device? You can download it again from the Theme Market.'**
+  String themeMarketRemoveDialogMessage(String name);
+
+  /// No description provided for @themeMarketRemovedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed “{name}”'**
+  String themeMarketRemovedMessage(String name);
+
+  /// No description provided for @themeMarketRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t remove theme: {error}'**
+  String themeMarketRemoveFailed(String error);
+
+  /// No description provided for @themeMarketCreatorOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the theme creator right now'**
+  String get themeMarketCreatorOpenFailed;
+
+  /// No description provided for @themeMarketActionFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme action not completed'**
+  String get themeMarketActionFailedTitle;
+
+  /// No description provided for @themeMarketInstalledSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get themeMarketInstalledSectionTitle;
+
+  /// No description provided for @themeMarketInstalledSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use and switch themes even when you are offline'**
+  String get themeMarketInstalledSectionSubtitle;
+
+  /// No description provided for @themeMarketFeaturedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured themes'**
+  String get themeMarketFeaturedSectionTitle;
+
+  /// No description provided for @themeMarketFeaturedSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Only themes approved on the official website appear here'**
+  String get themeMarketFeaturedSectionSubtitle;
+
+  /// No description provided for @themeMarketHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Themes made by everyone'**
+  String get themeMarketHeroTitle;
+
+  /// No description provided for @themeMarketHeroDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create color palettes, backgrounds, and a full set of semantic icons with the open specification. Submit your theme on the official website for review to publish it here.'**
+  String get themeMarketHeroDescription;
+
+  /// No description provided for @themeMarketCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and submit a theme'**
+  String get themeMarketCreateAction;
+
+  /// No description provided for @themeMarketNetworkDisabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Online features are off'**
+  String get themeMarketNetworkDisabledTitle;
+
+  /// No description provided for @themeMarketNetworkDisabledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed themes remain available offline. Allow network access again to browse the Theme Market.'**
+  String get themeMarketNetworkDisabledMessage;
+
+  /// No description provided for @themeMarketLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the Theme Market'**
+  String get themeMarketLoadFailedTitle;
+
+  /// No description provided for @themeMarketEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No public themes yet'**
+  String get themeMarketEmptyTitle;
+
+  /// No description provided for @themeMarketEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator themes will appear here after they pass review.'**
+  String get themeMarketEmptyMessage;
+
+  /// No description provided for @themeMarketInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get themeMarketInUse;
+
+  /// No description provided for @themeMarketDownloadAndApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Download and apply'**
+  String get themeMarketDownloadAndApply;
+
+  /// No description provided for @accountDeleteBlockedThemeCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your published or pending-review themes on the website before deleting your account.'**
+  String get accountDeleteBlockedThemeCreator;
+
+  /// No description provided for @accountDeleteManageThemes.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage my themes'**
+  String get accountDeleteManageThemes;
 }
 
 class _AppLocalizationsDelegate

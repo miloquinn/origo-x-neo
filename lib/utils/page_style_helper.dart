@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'ui_style.dart';
 import '../models/app_skin.dart';
 import 'app_skin_theme.dart';
+import 'app_skin_image_provider.dart';
 
 class PageVisualPalette {
   final Color backgroundStart;
@@ -46,7 +47,7 @@ class PageStyleHelper {
     if (asset == null) return original;
     return original.copyWith(
       image: DecorationImage(
-        image: AssetImage(asset.pathFor(Theme.of(context).brightness)),
+        image: appSkinImageProvider(asset, Theme.of(context).brightness),
         fit: BoxFit.cover,
         opacity: Theme.of(context).brightness == Brightness.dark ? 0.24 : 0.35,
         onError: (error, stackTrace) => FlutterError.reportError(

@@ -46,12 +46,15 @@ Future<ThemeNotifier> _loadTheme() async {
   return theme;
 }
 
-Future<void> _pumpPreferences(WidgetTester tester) async {
+Future<void> _pumpPreferences(
+  WidgetTester tester, {
+  SettingsCategory? category = SettingsCategory.preferences,
+}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(390, 844);
   addTearDown(tester.view.reset);
 
-  final theme = await _loadTheme();
+  final theme = (await tester.runAsync(_loadTheme))!;
   final appSettings = AppSettingsNotifier();
   final webDav = WebDavBackupController();
   final account = MemberAccountController();
@@ -73,7 +76,7 @@ Future<void> _pumpPreferences(WidgetTester tester) async {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: SettingsPage(
-          category: SettingsCategory.preferences,
+          category: category,
           cacheManager: _FakeCacheManager(),
           preferencesStore: _FakePreferencesStore(),
           aiService: MockAIService(),
@@ -116,6 +119,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppThemePage), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('My page keeps the theme entry only inside preferences', (
+    tester,
+  ) async {
+    await _pumpPreferences(tester, category: null);
+    expect(find.byKey(const ValueKey('settings-theme-gallery')), findsNothing);
+    expect(find.byType(AppThemePage), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

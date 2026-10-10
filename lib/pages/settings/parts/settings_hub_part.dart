@@ -103,8 +103,6 @@ extension _SettingsHubPart on _SettingsPageState {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppThemeSummaryCard(onTap: _openThemeGallery),
-        const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(

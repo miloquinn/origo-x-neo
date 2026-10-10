@@ -7974,20 +7974,139 @@ class AppLocalizationsEn extends AppLocalizations {
       'Original gradient background and icons';
 
   @override
-  String get settingsThemeSkinTidalHint =>
-      'Wave background and nautical artwork';
+  String get settingsThemeSkinTidalHint => 'Ocean curves and coral line art';
 
   @override
   String get settingsThemeSkinBotanicalHint =>
-      'Iris background and botanical artwork';
+      'Botanical scenery and soft line art';
 
   @override
   String get settingsThemeSkinCelestialHint =>
-      'Earth background and planetary artwork';
+      'Orbital skies and two-tone line art';
 
   @override
   String get settingsThemePreviewTitle => 'Read a little longer';
 
   @override
   String get settingsThemePreviewBody => 'Keep every story, and every mood.';
+
+  @override
+  String get settingsThemeMarketTitle => 'Theme Market';
+
+  @override
+  String get themeMarketRefresh => 'Refresh';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return 'Couldn\'t load installed themes: $error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return '“$name” is installed';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return 'The “$name” update is installed. Switch to it under Installed themes when you are ready.';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return '“$name” is installed and active';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return 'Installation failed: $error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return '“$name” is active';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return 'Couldn\'t apply theme: $error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => 'Remove theme?';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return 'Remove “$name” from this device? You can download it again from the Theme Market.';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return 'Removed “$name”';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return 'Couldn\'t remove theme: $error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed =>
+      'Couldn\'t open the theme creator right now';
+
+  @override
+  String get themeMarketActionFailedTitle => 'Theme action not completed';
+
+  @override
+  String get themeMarketInstalledSectionTitle => 'Installed';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle =>
+      'Use and switch themes even when you are offline';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => 'Featured themes';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle =>
+      'Only themes approved on the official website appear here';
+
+  @override
+  String get themeMarketHeroTitle => 'Themes made by everyone';
+
+  @override
+  String get themeMarketHeroDescription =>
+      'Create color palettes, backgrounds, and a full set of semantic icons with the open specification. Submit your theme on the official website for review to publish it here.';
+
+  @override
+  String get themeMarketCreateAction => 'Create and submit a theme';
+
+  @override
+  String get themeMarketNetworkDisabledTitle => 'Online features are off';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      'Installed themes remain available offline. Allow network access again to browse the Theme Market.';
+
+  @override
+  String get themeMarketLoadFailedTitle => 'Couldn\'t load the Theme Market';
+
+  @override
+  String get themeMarketEmptyTitle => 'No public themes yet';
+
+  @override
+  String get themeMarketEmptyMessage =>
+      'Creator themes will appear here after they pass review.';
+
+  @override
+  String get themeMarketInUse => 'In use';
+
+  @override
+  String get themeMarketDownloadAndApply => 'Download and apply';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      'Delete your published or pending-review themes on the website before deleting your account.';
+
+  @override
+  String get accountDeleteManageThemes => 'Manage my themes';
 }

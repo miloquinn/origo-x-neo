@@ -7657,17 +7657,133 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsThemeSkinOriginalHint => '元のグラデーション背景とアイコン';
 
   @override
-  String get settingsThemeSkinTidalHint => '波模様の背景と航海イラスト';
+  String get settingsThemeSkinTidalHint => '波の曲線と珊瑚色の線画';
 
   @override
-  String get settingsThemeSkinBotanicalHint => 'アイリスの背景と草花イラスト';
+  String get settingsThemeSkinBotanicalHint => '草木の背景と柔らかな線画';
 
   @override
-  String get settingsThemeSkinCelestialHint => '地球の背景と惑星イラスト';
+  String get settingsThemeSkinCelestialHint => '軌道の星空と二色の線画';
 
   @override
   String get settingsThemePreviewTitle => 'もう少しだけ読んでいこう';
 
   @override
   String get settingsThemePreviewBody => '物語も、そのときの気持ちも、そっとコレクション。';
+
+  @override
+  String get settingsThemeMarketTitle => 'テーママーケット';
+
+  @override
+  String get themeMarketRefresh => '更新';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return 'インストール済みテーマを読み込めませんでした：$error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return '「$name」をインストールしました';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return '「$name」の新しいバージョンをインストールしました。インストール済みテーマから切り替えられます。';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return '「$name」をインストールして適用しました';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return 'インストールできませんでした：$error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return '「$name」を適用しました';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return 'テーマを適用できませんでした：$error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => 'テーマを削除しますか？';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return 'この端末から「$name」を削除します。テーママーケットから再度ダウンロードできます。';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return '「$name」を削除しました';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return 'テーマを削除できませんでした：$error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed => '現在、テーマ作成ページを開けません';
+
+  @override
+  String get themeMarketActionFailedTitle => 'テーマの操作を完了できませんでした';
+
+  @override
+  String get themeMarketInstalledSectionTitle => 'インストール済み';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle => 'オフラインでもテーマを使用・切り替えできます';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => 'おすすめテーマ';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle => '公式サイトの審査を通過した公開テーマのみ表示します';
+
+  @override
+  String get themeMarketHeroTitle => 'みんなで作るテーマ';
+
+  @override
+  String get themeMarketHeroDescription =>
+      '公開仕様に沿って配色、背景、セマンティックアイコン一式を作り、公式サイトから審査に提出できます。';
+
+  @override
+  String get themeMarketCreateAction => 'テーマを作成して投稿';
+
+  @override
+  String get themeMarketNetworkDisabledTitle => 'オンライン機能はオフです';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      'インストール済みテーマはオフラインでも使えます。テーママーケットを見るにはネットワークアクセスを再度許可してください。';
+
+  @override
+  String get themeMarketLoadFailedTitle => 'テーママーケットを読み込めませんでした';
+
+  @override
+  String get themeMarketEmptyTitle => '公開テーマはまだありません';
+
+  @override
+  String get themeMarketEmptyMessage => '審査を通過したクリエイターのテーマがここに表示されます。';
+
+  @override
+  String get themeMarketInUse => '使用中';
+
+  @override
+  String get themeMarketDownloadAndApply => 'ダウンロードして適用';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      'アカウントを削除する前に、公式サイトのテーマ作成ページで公開済みまたは審査中のテーマを削除してください。';
+
+  @override
+  String get accountDeleteManageThemes => '自分のテーマを管理';
 }

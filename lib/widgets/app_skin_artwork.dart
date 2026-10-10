@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/app_skin.dart';
 import '../utils/app_skin_theme.dart';
+import '../utils/app_skin_image_provider.dart';
 
 /// Layout-neutral artwork inside an existing surface. It never owns filters,
 /// material parameters, hit targets or semantics.
@@ -29,8 +30,11 @@ class AppSkinArtwork extends StatelessWidget {
           child: IgnorePointer(
             child: ClipPath(
               clipper: ShapeBorderClipper(shape: shape),
-              child: Image.asset(
-                asset.pathFor(Theme.of(context).brightness),
+              child: Image(
+                image: appSkinImageProvider(
+                  asset,
+                  Theme.of(context).brightness,
+                ),
                 fit: BoxFit.cover,
                 opacity: AlwaysStoppedAnimation(
                   Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.22,

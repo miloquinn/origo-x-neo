@@ -8105,20 +8105,141 @@ class AppLocalizationsIt extends AppLocalizations {
       'Sfondo sfumato e icone originali';
 
   @override
-  String get settingsThemeSkinTidalHint =>
-      'Sfondo con onde e illustrazioni nautiche';
+  String get settingsThemeSkinTidalHint => 'Onde e linee corallo';
 
   @override
   String get settingsThemeSkinBotanicalHint =>
-      'Sfondo con iris e illustrazioni botaniche';
+      'Scenari botanici e linee morbide';
 
   @override
-  String get settingsThemeSkinCelestialHint =>
-      'Sfondo con la Terra e illustrazioni planetarie';
+  String get settingsThemeSkinCelestialHint => 'Orbite e linee bicolore';
 
   @override
   String get settingsThemePreviewTitle => 'Continua a leggere ancora un po’';
 
   @override
   String get settingsThemePreviewBody => 'Conserva le storie e ogni emozione.';
+
+  @override
+  String get settingsThemeMarketTitle => 'Mercato dei temi';
+
+  @override
+  String get themeMarketRefresh => 'Aggiorna';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return 'Impossibile caricare i temi installati: $error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return '“$name” è installato';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return 'L’aggiornamento di “$name” è installato. Puoi attivarlo tra i temi installati.';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return '“$name” è installato e attivo';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return 'Installazione non riuscita: $error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return '“$name” è attivo';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return 'Impossibile applicare il tema: $error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => 'Rimuovere il tema?';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return 'Rimuovere “$name” da questo dispositivo? Potrai scaricarlo di nuovo dal Mercato dei temi.';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return '“$name” è stato rimosso';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return 'Impossibile rimuovere il tema: $error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed =>
+      'Impossibile aprire ora lo strumento di creazione temi';
+
+  @override
+  String get themeMarketActionFailedTitle =>
+      'Operazione sul tema non completata';
+
+  @override
+  String get themeMarketInstalledSectionTitle => 'Installati';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle =>
+      'Usa e cambia tema anche offline';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => 'Temi in evidenza';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle =>
+      'Qui compaiono solo i temi approvati sul sito ufficiale';
+
+  @override
+  String get themeMarketHeroTitle => 'Temi creati da tutti';
+
+  @override
+  String get themeMarketHeroDescription =>
+      'Crea palette, sfondi e un set completo di icone semantiche con la specifica aperta. Invia il tema al sito ufficiale per la revisione.';
+
+  @override
+  String get themeMarketCreateAction => 'Crea e invia un tema';
+
+  @override
+  String get themeMarketNetworkDisabledTitle =>
+      'Le funzioni online sono disattivate';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      'I temi installati restano disponibili offline. Consenti di nuovo l’accesso alla rete per esplorare il mercato.';
+
+  @override
+  String get themeMarketLoadFailedTitle =>
+      'Impossibile caricare il Mercato dei temi';
+
+  @override
+  String get themeMarketEmptyTitle => 'Nessun tema pubblico per ora';
+
+  @override
+  String get themeMarketEmptyMessage =>
+      'I temi dei creatori compariranno qui dopo la revisione.';
+
+  @override
+  String get themeMarketInUse => 'In uso';
+
+  @override
+  String get themeMarketDownloadAndApply => 'Scarica e applica';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      'Prima di eliminare l’account, elimina dal sito i temi pubblicati o in attesa di revisione.';
+
+  @override
+  String get accountDeleteManageThemes => 'Gestisci i miei temi';
 }

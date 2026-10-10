@@ -1,10 +1,15 @@
 // 文件说明：应用主题状态服务，负责主题模式、UI 风格、强调色持久化与旧设置迁移。
 // 技术要点：ChangeNotifier、SharedPreferences、Material 3 配色、玻璃效果配置。
 
+import 'dart:convert';
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:xxread/models/app_skin.dart';
+import 'package:xxread/models/theme_package.dart';
+import 'package:xxread/services/themes/theme_package_store.dart';
 import 'package:xxread/utils/app_themes.dart';
 import 'package:xxread/utils/app_skin_theme.dart';
 import 'package:xxread/utils/glass_config.dart';
@@ -18,6 +23,7 @@ class ThemeNotifier extends ChangeNotifier {
   static const String _accentColorPrefKey = 'appAccentColorV2';
   static const String _colorPresetPrefKey = 'appColorPresetIdV1';
   static const String _skinPrefKey = 'appSkinIdV1';
+  static const String _packageSelectionPrefKey = 'appThemePackageSelectionV1';
 
   // 仅用于从旧版“双层主题 + 强调色”设置迁移。
   static const String _appThemePrefKey = 'appTheme';
@@ -37,8 +43,11 @@ class ThemeNotifier extends ChangeNotifier {
   double _liquidGlassOpacity = defaultLiquidGlassOpacity;
   final AppSkinCatalog _skinCatalog;
   AppSkin _currentSkin = AppSkin.original;
-  Future<void> _colorPersistenceTail = Future.value();
-  Future<void> _skinPersistenceTail = Future.value();
+  final ThemePackageStore packageStore;
+  List<ThemePackage> _installedThemes = const [];
+  ThemePackage? _skinPackage;
+  ThemePackage? _colorPackage;
+  Future<void> _appearancePersistenceTail = Future.value();
 
   ThemeMode get themeMode => _themeMode;
   bool get isInitialized => _isInitialized;
@@ -52,15 +61,38 @@ class ThemeNotifier extends ChangeNotifier {
   bool get shouldDisableGlassEffects => _uiStyle == AppUiStyle.material3;
   AppSkin get currentSkin => _currentSkin;
   List<AppSkin> get availableSkins => _skinCatalog.skins;
+  List<ThemePackage> get installedThemes => List.unmodifiable(_installedThemes);
+  ThemePackage? get currentSkinPackage => _skinPackage;
+  ThemePackage? get currentColorPackage => _colorPackage;
   AppSkinTheme get skinTheme => AppSkinTheme(skin: _currentSkin);
 
-  ThemeNotifier({AppSkinCatalog? skinCatalog})
-    : _skinCatalog = skinCatalog ?? AppSkinCatalog.builtIn {
+  ThemeNotifier({AppSkinCatalog? skinCatalog, ThemePackageStore? packageStore})
+    : _skinCatalog = skinCatalog ?? AppSkinCatalog.builtIn,
+      packageStore = packageStore ?? ThemePackageStore() {
     _loadTheme();
   }
 
   void _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
+    try {
+      final saved = prefs.getString(_packageSelectionPrefKey);
+      if (saved != null) {
+        final selection = jsonDecode(saved) as Map<String, dynamic>;
+        _skinPackage = await _resolveSavedPackage(selection['skin']);
+        _colorPackage = await _resolveSavedPackage(selection['palette']);
+        _installedThemes = {
+          for (final package in <ThemePackage>[?_skinPackage, ?_colorPackage])
+            '${package.id}@${package.version}': package,
+        }.values.toList(growable: false);
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'Ignoring invalid theme selection',
+        name: 'app.theme',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     final isDarkMode = prefs.getBool(_themeModePrefKey);
     _uiStyle = appUiStyleFromStorage(prefs.getString(_uiStylePrefKey));
     _glassStyle = GlassStyle.fromStorage(prefs.getString(_glassStylePrefKey));
@@ -78,8 +110,9 @@ class ThemeNotifier extends ChangeNotifier {
       await prefs.remove(_colorPresetPrefKey);
     }
     final storedSkinId = prefs.getString(_skinPrefKey);
-    _currentSkin = _skinCatalog.resolve(storedSkinId);
+    _currentSkin = _skinPackage?.skin ?? _skinCatalog.resolve(storedSkinId);
     if (storedSkinId != null &&
+        _skinPackage == null &&
         (storedSkinId != _currentSkin.id ||
             _currentSkin.id == AppSkin.originalId)) {
       await prefs.remove(_skinPrefKey);
@@ -113,6 +146,11 @@ class ThemeNotifier extends ChangeNotifier {
     await _removeLegacyThemePreferences(prefs);
     _currentAppTheme =
         _currentColorPreset?.theme ?? AppThemes.fromAccentColor(_accentColor);
+    if (_colorPackage?.palette case final palette?) {
+      _currentColorPreset = null;
+      _currentAppTheme = _packagePalette(palette);
+      _accentColor = _currentAppTheme.seedColor;
+    }
 
     _isInitialized = true;
     notifyListeners();
@@ -131,8 +169,11 @@ class ThemeNotifier extends ChangeNotifier {
 
   /// 保留任意强调色兼容；调用后会退出已选中的协调色套餐。
   Future<void> setAccentColor(Color color) async {
+    final hadPackagePalette = _colorPackage != null;
+    _colorPackage = null;
     if (_accentColor.toARGB32() != color.toARGB32() ||
-        _currentColorPreset != null) {
+        _currentColorPreset != null ||
+        hadPackagePalette) {
       _currentColorPreset = null;
       _accentColor = color;
       _currentAppTheme = AppThemes.fromAccentColor(color);
@@ -148,6 +189,7 @@ class ThemeNotifier extends ChangeNotifier {
     if (preset == null) {
       throw ArgumentError.value(id, 'id', 'is not a known color preset');
     }
+    _colorPackage = null;
     if (_currentColorPreset?.id != preset.id) {
       _currentColorPreset = preset;
       _accentColor = preset.theme.seedColor;
@@ -159,8 +201,18 @@ class ThemeNotifier extends ChangeNotifier {
   }
 
   Future<void> _queueColorPersistence(Future<void> Function() persist) async {
-    final operation = _colorPersistenceTail.then((_) => persist());
-    _colorPersistenceTail = operation.then<void>(
+    await _queueAppearancePersistence(persist);
+  }
+
+  Future<void> _queueAppearancePersistence(
+    Future<void> Function() persist,
+  ) async {
+    final packageSnapshot = _packageSelectionJson();
+    final operation = _appearancePersistenceTail.then((_) async {
+      await persist();
+      await _persistPackageSelection(packageSnapshot);
+    });
+    _appearancePersistenceTail = operation.then<void>(
       (_) {},
       onError: (Object _, StackTrace _) {},
     );
@@ -207,19 +259,107 @@ class ThemeNotifier extends ChangeNotifier {
     if (skin == null) {
       throw ArgumentError.value(id, 'id', 'is not present in the skin catalog');
     }
+    _skinPackage = null;
     if (_currentSkin.id != skin.id) {
       _currentSkin = skin;
       notifyListeners();
     }
 
-    final operation = _skinPersistenceTail.then((_) => _persistSkin(skin));
-    // Callers receive their own write failure, while the recovered tail keeps
-    // later requests schedulable after a plugin error or false result.
-    _skinPersistenceTail = operation.then<void>(
-      (_) {},
-      onError: (Object _, StackTrace _) {},
+    await _queueAppearancePersistence(() => _persistSkin(skin));
+  }
+
+  Future<void> reloadInstalledThemes({bool notify = true}) async {
+    try {
+      _installedThemes = await packageStore.loadInstalled();
+    } catch (error, stackTrace) {
+      developer.log(
+        'Loading local themes failed',
+        name: 'app.theme',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _installedThemes = const [];
+    }
+    if (notify) notifyListeners();
+  }
+
+  Future<void> applyInstalledTheme(ThemePackage package) async {
+    final installed = await packageStore.findInstalled(
+      package.id,
+      version: package.version,
+      allowVersionFallback: false,
     );
-    await operation;
+    if (installed == null) throw StateError('Theme is not installed');
+    _skinPackage = installed;
+    _currentSkin = installed.skin;
+    if (installed.palette case final palette?) {
+      _colorPackage = installed;
+      _currentColorPreset = null;
+      _currentAppTheme = _packagePalette(palette);
+      _accentColor = _currentAppTheme.seedColor;
+    }
+    notifyListeners();
+    final skin = _currentSkin;
+    final color = _accentColor;
+    await _queueAppearancePersistence(() async {
+      await _persistSkin(skin);
+      if (installed.palette != null) await _persistCustomAccent(color);
+    });
+  }
+
+  Future<void> removeInstalledTheme(ThemePackage package) async {
+    if (_skinPackage?.id == package.id &&
+        _skinPackage?.version == package.version) {
+      await setSkin(AppSkin.originalId);
+    }
+    if (_colorPackage?.id == package.id &&
+        _colorPackage?.version == package.version) {
+      await setColorPreset('blue');
+    }
+    await packageStore.remove(package);
+    await reloadInstalledThemes();
+  }
+
+  Future<ThemePackage?> _resolveSavedPackage(Object? value) async {
+    if (value is! Map || value['id'] is! String || value['version'] is! int) {
+      return null;
+    }
+    return packageStore.findInstalled(
+      value['id'] as String,
+      version: value['version'] as int,
+      allowVersionFallback: false,
+    );
+  }
+
+  String? _packageSelectionJson() {
+    if (_skinPackage == null && _colorPackage == null) return null;
+    Map<String, dynamic>? reference(ThemePackage? package) =>
+        package == null ? null : {'id': package.id, 'version': package.version};
+    return jsonEncode({
+      'skin': reference(_skinPackage),
+      'palette': reference(_colorPackage),
+    });
+  }
+
+  Future<void> _persistPackageSelection(String? snapshot) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (snapshot == null && !prefs.containsKey(_packageSelectionPrefKey)) {
+      return;
+    }
+    final saved = snapshot == null
+        ? await prefs.remove(_packageSelectionPrefKey)
+        : await prefs.setString(_packageSelectionPrefKey, snapshot);
+    if (!saved) throw StateError('Failed to persist theme package selection');
+  }
+
+  static AppTheme _packagePalette(ThemePackagePalette palette) {
+    Color color(String value) =>
+        Color(int.parse(value.substring(1), radix: 16) | 0xff000000);
+    return AppThemes.coordinated(
+      primary: color(palette.primary),
+      secondary: color(palette.secondary),
+      tertiary: color(palette.tertiary),
+    );
   }
 
   Future<void> _persistSkin(AppSkin skin) async {

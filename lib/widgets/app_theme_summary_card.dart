@@ -5,6 +5,7 @@ import '../models/app_skin.dart';
 import '../services/core/theme_notifier.dart';
 import '../utils/app_theme_labels.dart';
 import '../utils/localization_extension.dart';
+import '../utils/app_skin_image_provider.dart';
 import 'app_skin_icon.dart';
 
 class AppThemeSummaryCard extends StatelessWidget {
@@ -14,13 +15,16 @@ class AppThemeSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selection = context.select<ThemeNotifier, (String?, String, Color)>(
-      (theme) => (
-        theme.currentColorPreset?.id,
-        theme.currentSkin.id,
-        theme.accentColor,
-      ),
-    );
+    final selection = context
+        .select<ThemeNotifier, (String?, AppSkin, Color, String?, String?)>(
+          (theme) => (
+            theme.currentColorPreset?.id,
+            theme.currentSkin,
+            theme.accentColor,
+            theme.currentColorPackage?.name,
+            theme.currentSkinPackage?.name,
+          ),
+        );
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     final skin = context.read<ThemeNotifier>().currentSkin;
@@ -49,7 +53,7 @@ class AppThemeSummaryCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '${appColorPresetName(l10n, selection.$1)} · ${appSkinName(l10n, selection.$2)}',
+                        '${selection.$4 ?? appColorPresetName(l10n, selection.$1)} · ${selection.$5 ?? appSkinName(l10n, selection.$2.id)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
@@ -95,8 +99,9 @@ class AppThemeSummaryCard extends StatelessWidget {
                       image: image == null
                           ? null
                           : DecorationImage(
-                              image: AssetImage(
-                                image.pathFor(Theme.of(context).brightness),
+                              image: appSkinImageProvider(
+                                image,
+                                Theme.of(context).brightness,
                               ),
                               fit: BoxFit.cover,
                               opacity: .65,

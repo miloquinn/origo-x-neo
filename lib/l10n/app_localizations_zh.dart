@@ -7520,27 +7520,140 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsThemeSkinOriginalHint => '原来的渐变背景与图标';
 
   @override
-  String get settingsThemeSkinTidalHint => '浪花底图与航海贴图';
+  String get settingsThemeSkinTidalHint => '海浪曲线与珊瑚色线描';
 
   @override
-  String get settingsThemeSkinBotanicalHint => '鸢尾花底图与草木贴图';
+  String get settingsThemeSkinBotanicalHint => '草木底图与柔和线描';
 
   @override
-  String get settingsThemeSkinCelestialHint => '地球底图与星球贴图';
+  String get settingsThemeSkinCelestialHint => '轨道星空与双色线描';
 
   @override
   String get settingsThemePreviewTitle => '继续读一会儿';
 
   @override
   String get settingsThemePreviewBody => '收藏故事，也收藏每一种心情。';
+
+  @override
+  String get settingsThemeMarketTitle => '主题市场';
+
+  @override
+  String get themeMarketRefresh => '刷新';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return '读取本地主题失败：$error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return '“$name”已安装';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return '“$name”新版本已安装，可在已安装主题中切换';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return '“$name”已安装并启用';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return '安装失败：$error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return '“$name”已启用';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return '启用失败：$error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => '移除主题？';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return '将从本机移除“$name”。以后仍可从主题市场重新下载。';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return '已移除“$name”';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return '移除失败：$error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed => '暂时无法打开主题制作页面';
+
+  @override
+  String get themeMarketActionFailedTitle => '主题操作未完成';
+
+  @override
+  String get themeMarketInstalledSectionTitle => '已安装';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle => '没有网络也能继续使用和切换';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => '精选主题';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle => '这里只展示官网审核通过的公开主题';
+
+  @override
+  String get themeMarketHeroTitle => '让每个人都能做主题';
+
+  @override
+  String get themeMarketHeroDescription =>
+      '按开放规范制作配色、背景和整套语义图标，上传官网审核后即可出现在这里。';
+
+  @override
+  String get themeMarketCreateAction => '制作并投稿主题';
+
+  @override
+  String get themeMarketNetworkDisabledTitle => '联网功能已关闭';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      '已安装主题仍可离线使用；重新同意联网后才能浏览主题市场。';
+
+  @override
+  String get themeMarketLoadFailedTitle => '主题市场加载失败';
+
+  @override
+  String get themeMarketEmptyTitle => '暂时还没有公开主题';
+
+  @override
+  String get themeMarketEmptyMessage => '审核通过的创作者主题会出现在这里。';
+
+  @override
+  String get themeMarketInUse => '正在使用';
+
+  @override
+  String get themeMarketDownloadAndApply => '下载并使用';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      '请先去官网主题制作页删除已发布或待审核的主题，再回来注销账号。';
+
+  @override
+  String get accountDeleteManageThemes => '管理我的主题';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
 class AppLocalizationsZhTw extends AppLocalizationsZh {
   AppLocalizationsZhTw() : super('zh_TW');
-
-  @override
-  String get appTitle => '開元閱讀';
 
   @override
   String adjustmentDecrease(String label) {
@@ -7551,6 +7664,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String adjustmentIncrease(String label) {
     return '增大$label';
   }
+
+  @override
+  String get appTitle => '開元閱讀';
 
   @override
   String get home => '首頁';
@@ -15052,17 +15168,133 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsThemeSkinOriginalHint => '原來的漸層背景與圖示';
 
   @override
-  String get settingsThemeSkinTidalHint => '浪花底圖與航海貼圖';
+  String get settingsThemeSkinTidalHint => '海浪曲線與珊瑚色線描';
 
   @override
-  String get settingsThemeSkinBotanicalHint => '鳶尾花底圖與草木貼圖';
+  String get settingsThemeSkinBotanicalHint => '草木底圖與柔和線描';
 
   @override
-  String get settingsThemeSkinCelestialHint => '地球底圖與星球貼圖';
+  String get settingsThemeSkinCelestialHint => '軌道星空與雙色線描';
 
   @override
   String get settingsThemePreviewTitle => '繼續讀一會兒';
 
   @override
   String get settingsThemePreviewBody => '收藏故事，也收藏每一種心情。';
+
+  @override
+  String get settingsThemeMarketTitle => '主題市場';
+
+  @override
+  String get themeMarketRefresh => '重新整理';
+
+  @override
+  String themeMarketInstalledLoadFailed(String error) {
+    return '讀取本機主題失敗：$error';
+  }
+
+  @override
+  String themeMarketInstalledMessage(String name) {
+    return '「$name」已安裝';
+  }
+
+  @override
+  String themeMarketUpdateInstalledMessage(String name) {
+    return '「$name」的新版本已安裝，可在「已安裝」主題中切換';
+  }
+
+  @override
+  String themeMarketInstalledAndAppliedMessage(String name) {
+    return '「$name」已安裝並啟用';
+  }
+
+  @override
+  String themeMarketInstallFailed(String error) {
+    return '安裝失敗：$error';
+  }
+
+  @override
+  String themeMarketAppliedMessage(String name) {
+    return '「$name」已啟用';
+  }
+
+  @override
+  String themeMarketApplyFailed(String error) {
+    return '無法啟用主題：$error';
+  }
+
+  @override
+  String get themeMarketRemoveDialogTitle => '移除主題？';
+
+  @override
+  String themeMarketRemoveDialogMessage(String name) {
+    return '要從此裝置移除「$name」嗎？之後仍可從主題市場重新下載。';
+  }
+
+  @override
+  String themeMarketRemovedMessage(String name) {
+    return '已移除「$name」';
+  }
+
+  @override
+  String themeMarketRemoveFailed(String error) {
+    return '無法移除主題：$error';
+  }
+
+  @override
+  String get themeMarketCreatorOpenFailed => '目前無法開啟主題製作頁面';
+
+  @override
+  String get themeMarketActionFailedTitle => '主題操作未完成';
+
+  @override
+  String get themeMarketInstalledSectionTitle => '已安裝';
+
+  @override
+  String get themeMarketInstalledSectionSubtitle => '離線時仍可使用與切換主題';
+
+  @override
+  String get themeMarketFeaturedSectionTitle => '精選主題';
+
+  @override
+  String get themeMarketFeaturedSectionSubtitle => '此處只顯示已通過官網審核的公開主題';
+
+  @override
+  String get themeMarketHeroTitle => '讓每個人都能製作主題';
+
+  @override
+  String get themeMarketHeroDescription =>
+      '依照開放規範製作配色、背景與完整語意圖示，提交至官網審核後即可在此上架。';
+
+  @override
+  String get themeMarketCreateAction => '製作並投稿主題';
+
+  @override
+  String get themeMarketNetworkDisabledTitle => '連線功能已關閉';
+
+  @override
+  String get themeMarketNetworkDisabledMessage =>
+      '已安裝的主題仍可離線使用；再次允許網路連線後即可瀏覽主題市場。';
+
+  @override
+  String get themeMarketLoadFailedTitle => '無法載入主題市場';
+
+  @override
+  String get themeMarketEmptyTitle => '目前還沒有公開主題';
+
+  @override
+  String get themeMarketEmptyMessage => '通過審核的創作者主題會顯示在這裡。';
+
+  @override
+  String get themeMarketInUse => '使用中';
+
+  @override
+  String get themeMarketDownloadAndApply => '下載並套用';
+
+  @override
+  String get accountDeleteBlockedThemeCreator =>
+      '請先前往官網主題製作頁刪除已發佈或待審核的主題，再回來註銷帳號。';
+
+  @override
+  String get accountDeleteManageThemes => '管理我的主題';
 }
