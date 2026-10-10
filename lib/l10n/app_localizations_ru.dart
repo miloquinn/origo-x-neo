@@ -8194,6 +8194,7 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Не удалось загрузить комментарии. Можно продолжить чтение.';
+
   @override
   String get readerProgressBarTitle => 'Плавающая шкала прогресса';
 
@@ -8262,5 +8263,4 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get libraryMoveLater => 'Переместить позже';
-
 }

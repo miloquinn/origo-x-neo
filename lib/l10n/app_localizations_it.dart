@@ -8262,6 +8262,7 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Impossibile caricare i commenti. Puoi continuare a leggere.';
+
   @override
   String get readerProgressBarTitle => 'Barra di avanzamento flottante';
 
@@ -8330,5 +8331,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get libraryMoveLater => 'Sposta dopo';
-
 }

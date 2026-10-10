@@ -7805,6 +7805,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get readerParagraphReviewFailed => 'コメントを読み込めませんでした。本文は引き続き読めます。';
+
   @override
   String get readerProgressBarTitle => 'フローティング進捗バー';
 
@@ -7870,5 +7871,4 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get libraryMoveLater => '後ろに移動';
-
 }

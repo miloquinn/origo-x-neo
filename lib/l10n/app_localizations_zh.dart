@@ -7667,6 +7667,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get readerParagraphReviewFailed => '段评暂时无法加载，正文仍可继续阅读。';
+
   @override
   String get readerProgressBarTitle => '悬浮阅读进度条';
 
@@ -7732,7 +7733,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get libraryMoveLater => '向后移动';
-
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -15399,6 +15399,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get readerParagraphReviewFailed => '段評暫時無法載入，仍可繼續閱讀正文。';
+
   @override
   String get readerProgressBarTitle => '懸浮閱讀進度條';
 
@@ -15464,5 +15465,4 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get libraryMoveLater => '向後移動';
-
 }

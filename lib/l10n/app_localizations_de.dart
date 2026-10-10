@@ -8248,6 +8248,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Absatzkommentare konnten nicht geladen werden. Du kannst weiterlesen.';
+
   @override
   String get readerProgressBarTitle => 'Schwebender Lesefortschritt';
 
@@ -8316,5 +8317,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get libraryMoveLater => 'Nach hinten verschieben';
-
 }

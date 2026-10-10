@@ -8129,6 +8129,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get readerParagraphReviewFailed =>
       'Paragraph comments could not be loaded. You can keep reading.';
+
   @override
   String get readerProgressBarTitle => 'Floating progress bar';
 
@@ -8197,5 +8198,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryMoveLater => 'Move later';
-
 }

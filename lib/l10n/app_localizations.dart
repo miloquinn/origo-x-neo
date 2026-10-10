@@ -14071,6 +14071,7 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage my themes'**
   String get accountDeleteManageThemes;
+
   /// No description provided for @readerParagraphReviews.
   ///
   /// In en, this message translates to:
@@ -14124,7 +14125,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chapter'**
   String get readerProgressChapterShort;
-
 
   /// No description provided for @libraryOrganize.
   ///
