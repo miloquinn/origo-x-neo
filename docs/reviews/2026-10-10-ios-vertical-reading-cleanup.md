@@ -116,20 +116,45 @@ offline CI suite.
 ## Delivery boundary
 
 The six reader product files are finalized and their hashes are published in
-`build/device-ios/coordination.json`. Its intermediate reader-adjustment build
-`261010004` was cancelled before installation because shared theme/AI work was
-still changing. The theme chat now owns one final combined latest-checkout
-build/install; this reader chat independently verifies those six hashes and
-the installed application identity. This record's follow-up delivery receipt
-will be added once available.
+`build/device-ios/coordination.json`. The intermediate reader-adjustment build
+was cancelled before installation because shared theme/AI work was still
+changing. The theme coordinator subsequently built the final combined Release
+`2.7.3+261010004` from `d9c6ef03`, verified stable product/generated inputs,
+updated SloanePro in place and launched it. No uninstall or app-data clearing
+was used.
 
-The current SloanePro identity was verified as iPhone 16 Pro,
-UDID `00008140-001979421E93001C`. iPhone Mirroring reported the phone in use and
-could not connect, so physical gestures and app switching were not observed.
+Independent reader verification confirmed all six files match the committed
+repair `e72d8042`, the final build manifest, the pre-install manifest and the
+reader source at verification time. The app signature passed `codesign
+--verify --deep --strict`; its AOT binary matches SHA-256
+`392716c75c278b9a07fd792b82d21fee01575a87da65310008e9c0e2bdc24a0e`.
+The combined product fingerprint is
+`ee635cfbd2a42ee923d7636a1269f89cbfdc2880ad6b164b82750ebfcb170507`.
+
+Live device reads identify SloanePro as iPhone 16 Pro,
+UDID `00008140-001979421E93001C`, and the installed app as `com.niki.xxread`,
+version `2.7.3`, build `261010004`. Successful installation and launch receipts
+refer to the same device and installed container. A separate process read
+confirmed PID `30010` running that container's `Runner` executable. This is a
+local development-signed Release, separate from store distribution.
+
+The coordinator's receipts are in `build/theme-market/`. Reader-owned immutable
+delivery metadata and verification are in
+`build/reader-vertical-audit-20261010/delivered-261010004-signed-build.json` and
+`device-verification-261010004.json`; live device, app and process reads are
+saved alongside them. The theme coordinator retains sole ownership of its next
+combined installation. This completed `261010004` snapshot must not replace a
+later build.
+
+iPhone Mirroring previously reported the phone in use and could not connect;
+the coordinator's retry also timed out. Physical gestures and repeated app
+switching were not observed.
 Network-chain success, controlled reader regressions and physical-device UI
 acceptance remain separate evidence boundaries. No TestFlight, App Store or
 public GitHub release publication is implied by this follow-up.
 
 The current host is `sloane.local`; Git synchronization on that machine uses
-this checkout. Windows SSH synchronization remains unavailable: both `knbook`
-and `milo-pc.local` timed out on port 22. No remote worktree was changed.
+this checkout. Initial Windows SSH attempts timed out. The reader's delivery
+verification retry could not reach `milo-pc.local` (`No route to host`) or
+`knbook` (SSH timeout); remote synchronization remains unverified by this reader
+task. No remote worktree was reset or overwritten.
