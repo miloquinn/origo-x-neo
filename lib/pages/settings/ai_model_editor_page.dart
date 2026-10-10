@@ -6,6 +6,7 @@ import 'package:xxread/utils/localization_extension.dart';
 import 'package:xxread/widgets/floating_subpage_scaffold.dart';
 import 'package:xxread/widgets/ai_provider_logo.dart';
 import 'package:xxread/widgets/pill_input_surface.dart';
+import 'package:xxread/widgets/pill_dropdown.dart';
 import 'package:xxread/widgets/pill_search_field.dart';
 import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/widgets/glass_dialog.dart';
@@ -269,6 +270,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
     required String label,
     required Widget child,
     String? helper,
+    bool inputSurface = true,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: Column(
@@ -278,22 +280,25 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
           padding: const EdgeInsets.only(left: 16, bottom: 6),
           child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ),
-        Focus(
-          canRequestFocus: false,
-          onFocusChange: (focused) => setState(() {
-            if (focused) {
-              _focusedField = label;
-            } else if (_focusedField == label) {
-              _focusedField = null;
-            }
-          }),
-          child: PillInputSurface(
-            focusColor: _focusedField == label
-                ? Theme.of(context).colorScheme.primary
-                : null,
-            child: child,
-          ),
-        ),
+        if (inputSurface)
+          Focus(
+            canRequestFocus: false,
+            onFocusChange: (focused) => setState(() {
+              if (focused) {
+                _focusedField = label;
+              } else if (_focusedField == label) {
+                _focusedField = null;
+              }
+            }),
+            child: PillInputSurface(
+              focusColor: _focusedField == label
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+              child: child,
+            ),
+          )
+        else
+          child,
         if (helper != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -335,21 +340,14 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
   }) => _field(
     label: label,
     helper: helper,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          key: key,
-          value: value,
-          isExpanded: true,
-          borderRadius: BorderRadius.circular(20),
-          menuMaxHeight: MediaQuery.sizeOf(context).height * .55,
-          icon: const Icon(Icons.expand_more_rounded),
-          items: items,
-          selectedItemBuilder: selectedItemBuilder,
-          onChanged: onChanged,
-        ),
-      ),
+    inputSurface: false,
+    child: PillDropdown<T>(
+      key: key,
+      semanticLabel: label,
+      value: value,
+      items: items,
+      selectedItemBuilder: selectedItemBuilder,
+      onChanged: onChanged,
     ),
   );
 
@@ -448,7 +446,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _selector<String>(
-                        key: ValueKey('provider-$brand'),
+                        key: const ValueKey('provider-selector'),
                         label: l10n.settingsAiProviderLabel,
                         value: brand,
                         items: [
@@ -506,9 +504,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                       ),
                       if (presets.isNotEmpty)
                         _selector<AIModelPreset>(
-                          key: ValueKey(
-                            'preset-${_provider.value}-${_preset.id}',
-                          ),
+                          key: const ValueKey('preset-selector'),
                           label: l10n.settingsAiPresetModel,
                           // Custom edits keep the source preset visible as a starting point.
                           value: presets.contains(_preset)
@@ -567,7 +563,7 @@ class _AiModelEditorPageState extends State<AiModelEditorPage> {
                         ),
                       ),
                       _selector<String>(
-                        key: ValueKey('protocol-${_protocol?.value ?? 'auto'}'),
+                        key: const ValueKey('protocol-selector'),
                         label: l10n.settingsAiProtocolLabel,
                         value: _protocol?.value ?? 'auto',
                         helper: _protocol == null

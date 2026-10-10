@@ -15,7 +15,7 @@
 
 - `AiSettingsPage` 的服务商目录、已添加模型和 `AiModelEditorPage` 复用 `AIProviderSettings`。所有服务商均可选择“自动识别”、OpenAI Compatible、Anthropic Messages 或 Gemini；`protocol == null` 表示自动模式，显式协议优先。自动模式根据服务地址的协议特征识别，未知地址使用服务商默认协议，不会携带密钥试探其他主机。
 - 目录按品牌展示独立透明标志和真实配置状态；未配置的入门推荐仍保留在迁移与存储中，但不重复占据已添加列表。已配置服务商入口打开原来的地址、密钥和模型；已添加模型保留点击切换、箭头编辑与长按菜单。添加入口直接打开空白自定义配置。
-- 编辑器按实际品牌选择预设；DeepSeek、通义千问等 OpenAI 兼容服务仍显示自己的品牌，协议家族只属于请求配置。普通输入与选择器复用 `PillInputSurface`，模型搜索复用 `PillSearchField`，动作使用 `GlassTextButton`，模型选择与确认使用 `GlassDialog`。外观继续服从全局玻璃/实色与性能设置，不另建页面材质。预设的地址、协议、模型和温度可以直接自定义，切换不同端点不沿用当前输入的密钥。
+- 编辑器按实际品牌选择预设；DeepSeek、通义千问等 OpenAI 兼容服务仍显示自己的品牌，协议家族只属于请求配置。普通输入复用 `PillInputSurface`，服务商、预设模型和接口协议统一使用 `PillDropdown`；展开选项复用共享锚定菜单的 adaptivePanel 分支，材质随玻璃/实色设置变化，保留选中标记、键盘操作及关闭后的焦点。模型搜索复用 `PillSearchField`，动作使用 `GlassTextButton`，模型选择与确认使用 `GlassDialog`。外观继续服从全局玻璃/实色与性能设置，不另建页面材质。预设的地址、协议、模型和温度可以直接自定义，切换不同端点不沿用当前输入的密钥。
 - BigModel Coding Plan 可选择 GLM 预设，使用 `https://open.bigmodel.cn/api/anthropic` 与 `glm-5.3` / `glm-5.3-flash`；实际聊天地址为 `/api/anthropic/v1/messages`。也提供智谱 OpenAI 兼容预设。Base URL、协议和模型 ID 均可修改。
 - `ai_configuration.dart` 保持自动协议在连续规范化、保存和恢复后不变；当剥离完整 endpoint 会丢失协议信号时，设置保留该 URL，由 `ai_protocol_adapter.dart` 在发请求时剥离并构造最终路径。`ai_settings_store.dart` 按服务商保存可选协议，兼容旧自定义协议和既有用户模型/地址，不用新版预设覆盖旧配置；仅刷新未配置、未修改的旧入门推荐卡片。快捷模型 JSON 保存 `protocol: null`，重新编辑仍保持自动识别。
 - “获取模型列表”使用当前地址、密钥和有效协议，请求 OpenAI `/models`、Anthropic `/v1/models` 或 Gemini `/models`；支持各协议分页，去重排序后可搜索选择。地址、密钥或协议变化使旧请求结果失效。接口明确返回 404/405/501 时提示使用预设或手填 ID；鉴权错误仍按真实错误展示，不把内置预设冒充联网返回。

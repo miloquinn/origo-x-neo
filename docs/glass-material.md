@@ -22,6 +22,7 @@
 | 悬浮导航、阅读控制栏 | 尺寸、圆角、弹性、图标与操作 | 共用 floating 材质 |
 | 选中文字工具栏 | 超椭圆、分隔线、复制/高亮/笔记/更多、空间限位 | 共用 floating 材质，阅读器配色 |
 | 按钮、搜索框、AI 输入框 | 命中、输入、焦点、禁用、布局 | control 或 floating 材质 |
+| 圆角下拉选择 | `PillDropdown` 的锚点、选中项、键盘、焦点和关闭；复用共享锚定菜单 | 输入外壳 control，静止弹层为单一 panel；玻璃与实色策略由公共层解析 |
 | 阅读文字与版式调节条 | 原生拖动、加减步进、提交边界、语义与字体预览 | control 轨道/按钮、selection 数值胶囊；见[阅读调节控件](reader-adjustments.md) |
 | 共用底部菜单 | 原生弹层路由、圆角、拖动横条、安全区与内容裁切 | 单一 panel 材质；见[底部菜单](bottom-sheets.md) |
 | 选中透镜、书源分区指示 | 位置、外形、选择动画 | selection 材质；已过滤父层内不重复采样 |
@@ -44,13 +45,14 @@
 
 `GradientTopBackdrop` 是全宽顶部的专用渐进渲染器：材质策略、底色与 `progressiveBlurSigma` 来自公共解析层，保留自己的 clear tail、可变 sigma、镜像边缘和分段兼容算法。`GlassTopBar` 与宽屏首页消费这个背景，实色策略下同样有不透明底色。实色模式不初始化渐进 shader，之后切换玻璃仍可加载。
 
-首次支持引导的全屏暗化遮罩，以及 `AppPopupMenuButton` 锚定小菜单的实底，属于不同用途。锚定菜单保持实底，避免移动时在玻璃导航上叠加模糊产生重影；底部菜单按共用 panel 策略显示。
+首次支持引导的全屏暗化遮罩，以及 `AppPopupMenuButton` 锚定动作菜单的实底，属于不同用途。动作菜单默认保持移动实底，避免在玻璃导航上叠加模糊产生重影。表单下拉使用同一锚定路由的 `AppMenuPresentation.adaptivePanel`：静止的圆角面板读取共用 panel 材质，前景单独淡入淡出，不另写模糊或透明度配方。`PillDropdown` 复用 `PillInputSurface` 作为输入外壳；AI 的三个选择器统一接入。弹层等宽于触发器，空间不足时向上放置并在安全区与键盘之外滚动；选择或关闭后恢复可用触发器焦点。底部菜单也按共用 panel 策略显示。
 
 ## 回归与证据
 
 当日更新见 [2026-10-10 共享菜单与阅读栏验证](reviews/2026-10-10-glass-sheets-reader-chrome.md)；原始材质迁移见 [2026-10-09 共用玻璃背景验证](reviews/2026-10-09-shared-glass-background-validation.md)。
 
 - `test/shared_glass_background_test.dart`：布局/点击稳定、模式优先级、高对比、单次采样、内部可见度和全 `lib/` 的渲染所有权。
+- `test/pill_dropdown_test.dart`、`test/app_menu_test.dart`：共享下拉的选择、关闭、禁用、当前值语义、窄屏大字、键盘、毛玻璃/液态/全局关闭/实色/高对比，以及原动作菜单行为。
 - `test/glass_material_consumers_test.dart`：顶部实底与模式优先级、弹窗范围/键盘/大字、提示条前景淡出、渐进染色。
 - `test/reader_theme_glass_policy_test.dart`：阅读配色与应用外观策略同时保留。
 - `test/liquid_glass_lighting_test.dart`：白色、羊皮纸、夜色、纯黑与深蓝画布的边缘光照，阅读语义颜色/亮暗覆盖与可见度。

@@ -12,10 +12,12 @@ import 'package:xxread/pages/settings/ai_model_editor_page.dart';
 import 'package:xxread/pages/settings/ai_settings_page.dart';
 import 'package:xxread/reader_core/ai/ai_service.dart';
 import 'package:xxread/widgets/pill_input_surface.dart';
+import 'package:xxread/widgets/pill_dropdown.dart';
 import 'package:xxread/widgets/pill_search_field.dart';
 import 'package:xxread/widgets/glass_dialog.dart';
 import 'package:xxread/widgets/ai_provider_logo.dart';
 import 'package:xxread/utils/app_themes.dart';
+import 'package:xxread/utils/ui_style.dart';
 
 class _FakeAiService extends ReaderHttpAIService {
   _FakeAiService({this.saveError, this.models, this.modelsError});
@@ -99,6 +101,8 @@ Future<void> _pumpEditor(
   AIProviderSettings? initialSettings,
   Locale locale = const Locale('en'),
   Brightness brightness = Brightness.light,
+  GlassStyle? glassStyle,
+  AppUiStyle? uiStyle,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -113,12 +117,25 @@ Future<void> _pumpEditor(
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          viewInsets: viewInsets,
-          textScaler: TextScaler.linear(textScale),
+      builder: (context, child) => RepaintBoundary(
+        key: const ValueKey('ai-popup-preview'),
+        child: MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            viewInsets: viewInsets,
+            textScaler: TextScaler.linear(textScale),
+          ),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              extensions: [
+                UiStyleThemeExtension(
+                  style: uiStyle ?? AppUiStyle.glass,
+                  glassStyle: glassStyle ?? defaultGlassStyle,
+                ),
+              ],
+            ),
+            child: child!,
+          ),
         ),
-        child: child!,
       ),
       home: RepaintBoundary(
         key: const ValueKey('ai-editor-preview'),
@@ -265,9 +282,7 @@ void main() {
     final presets = AIModelPresets.byProvider(AIProviderType.openai);
     expect(presets.length, greaterThan(1));
     await tester.tap(
-      find.byWidgetPredicate(
-        (widget) => widget is DropdownButton<AIModelPreset>,
-      ),
+      find.byWidgetPredicate((widget) => widget is PillDropdown<AIModelPreset>),
     );
     await tester.pumpAndSettle();
     await tester.tap(
@@ -554,12 +569,12 @@ void main() {
             .copyWith(model: 'deepseek-custom'),
       );
       expect(find.text('DeepSeek'), findsOneWidget);
-      expect(find.byKey(const ValueKey('provider-deepseek')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('provider-deepseek')));
+      expect(find.byKey(const ValueKey('provider-selector')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('provider-selector')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Qwen').last);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('provider-qwen')), findsOneWidget);
+      expect(find.byKey(const ValueKey('provider-selector')), findsOneWidget);
       final fields = tester
           .widgetList<TextFormField>(find.byType(TextFormField))
           .toList();
@@ -643,6 +658,122 @@ void main() {
       );
     },
   );
+
+  testWidgets('selector values keep field identity and keyboard focus', (
+    tester,
+  ) async {
+    await _pumpEditor(tester, _FakeAiService());
+    for (final key in [
+      'protocol-selector',
+      'preset-selector',
+      'provider-selector',
+    ]) {
+      final selector = find.byKey(ValueKey(key));
+      final state = tester.state(selector);
+      await tester.ensureVisible(selector);
+      await tester.pumpAndSettle();
+      await tester.tap(selector);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(tester.state(selector), same(state), reason: key);
+      expect(
+        find.descendant(
+          of: selector,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Focus && (widget.focusNode?.hasFocus ?? false),
+          ),
+        ),
+        findsOneWidget,
+        reason: key,
+      );
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('protocol menu dismissal preserves custom connection fields', (
+    tester,
+  ) async {
+    await _pumpEditor(tester, _FakeAiService());
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'https://custom.example/api/anthropic',
+    );
+    await tester.enterText(find.byType(TextFormField).at(1), 'typed-key');
+    await tester.enterText(find.byType(TextFormField).at(2), 'custom-model');
+    await tester.ensureVisible(find.byKey(const ValueKey('protocol-selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('protocol-selector')));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('protocol-selector')), findsOneWidget);
+    final fields = tester
+        .widgetList<TextFormField>(find.byType(TextFormField))
+        .toList();
+    expect(fields[0].controller!.text, 'https://custom.example/api/anthropic');
+    expect(fields[1].controller!.text, 'typed-key');
+    expect(fields[2].controller!.text, 'custom-model');
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final brightness in Brightness.values) {
+    for (final mode in ['frosted', 'liquid', 'solid']) {
+      testWidgets('protocol popup renders $mode in ${brightness.name}', (
+        tester,
+      ) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(390, 844);
+        addTearDown(tester.view.reset);
+        await _pumpEditor(
+          tester,
+          _FakeAiService(),
+          locale: const Locale('zh'),
+          brightness: brightness,
+          glassStyle: mode == 'liquid' ? GlassStyle.liquid : GlassStyle.frosted,
+          uiStyle: mode == 'solid' ? AppUiStyle.material3 : AppUiStyle.glass,
+          initialSettings: const AIProviderSettings(
+            provider: AIProviderType.glm,
+            apiKey: '',
+            baseUrl: 'https://open.bigmodel.cn/api/anthropic',
+            model: 'glm-5.3',
+            temperature: 0.7,
+          ),
+        );
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('protocol-selector')),
+        );
+        await tester.pumpAndSettle();
+        if (Platform.environment['AI_SETTINGS_PREVIEW'] == '1') {
+          await _decodeLogos(tester);
+        }
+        await tester.tap(find.byKey(const ValueKey('protocol-selector')));
+        await tester.pumpAndSettle();
+        expect(find.text('OpenAI 兼容协议'), findsOneWidget);
+        expect(find.byType(DropdownButton<String>), findsNothing);
+        expect(tester.takeException(), isNull);
+        if (Platform.environment['AI_SETTINGS_PREVIEW'] == '1') {
+          final boundary = tester.renderObject<RenderRepaintBoundary>(
+            find.byKey(const ValueKey('ai-popup-preview')),
+          );
+          await tester.runAsync(() async {
+            final image = await boundary.toImage(pixelRatio: 2);
+            final bytes = await image.toByteData(
+              format: ui.ImageByteFormat.png,
+            );
+            await File(
+              'build/ai-dropdown-20261010/protocol-$mode-${brightness.name}.png',
+            ).writeAsBytes(bytes!.buffer.asUint8List());
+            image.dispose();
+          });
+        }
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+      });
+    }
+  }
 
   for (final brightness in Brightness.values) {
     testWidgets(

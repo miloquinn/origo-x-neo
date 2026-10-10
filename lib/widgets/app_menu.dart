@@ -9,10 +9,15 @@ import 'package:flutter/services.dart';
 import 'elastic_motion.dart';
 import 'elastic_press.dart';
 import 'glass_buttons.dart';
+import 'glass_surface.dart';
 import 'glass_top_bar.dart';
 
 /// Trigger appearance is independent of the shared menu surface and motion.
 enum AppMenuButtonStyle { plain, circular }
+
+/// Controls only the menu surface and placement. Existing action menus retain
+/// their morphing surface; field-like selectors can opt into a static panel.
+enum AppMenuPresentation { morph, adaptivePanel }
 
 /// The shared anchored menu. Keep PopupMenuEntry as the data adapter so callers
 /// retain their values, disabled states, checked items and section dividers.
@@ -182,6 +187,7 @@ Future<T?> showAppMenu<T>({
   Color? color,
   double? anchorRadius,
   Widget? anchorIcon,
+  AppMenuPresentation presentation = AppMenuPresentation.morph,
 }) async {
   if (items.isEmpty) return null;
   final navigator = Navigator.of(context);
@@ -194,6 +200,7 @@ Future<T?> showAppMenu<T>({
     color: color,
     anchorRadius: anchorRadius ?? anchor.shortestSide / 2,
     anchorIcon: anchorIcon,
+    presentation: presentation,
     media: MediaQuery.of(context),
     themes: InheritedTheme.capture(from: context, to: navigator.context),
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -213,6 +220,7 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
     required this.color,
     required this.anchorRadius,
     required this.anchorIcon,
+    required this.presentation,
     required this.media,
     required this.themes,
     required this.barrierLabel,
@@ -225,12 +233,15 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
   final Color? color;
   final double anchorRadius;
   final Widget? anchorIcon;
+  final AppMenuPresentation presentation;
   final MediaQueryData media;
   final CapturedThemes themes;
   VoidCallback? selectedCallback;
 
   static const _openDuration = Duration(milliseconds: 750);
   static const _closeDuration = Duration(milliseconds: 400);
+  static const _panelOpenDuration = Duration(milliseconds: 180);
+  static const _panelCloseDuration = Duration(milliseconds: 140);
   late final _grow = _spring(
     const Duration(milliseconds: 500),
     0.3,
@@ -285,11 +296,20 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
   @override
   Color? get barrierColor => Colors.transparent;
   @override
-  Duration get transitionDuration =>
-      media.disableAnimations ? Duration.zero : _openDuration;
+  Duration get transitionDuration {
+    if (media.disableAnimations) return Duration.zero;
+    return presentation == AppMenuPresentation.adaptivePanel
+        ? _panelOpenDuration
+        : _openDuration;
+  }
+
   @override
-  Duration get reverseTransitionDuration =>
-      media.disableAnimations ? Duration.zero : _closeDuration;
+  Duration get reverseTransitionDuration {
+    if (media.disableAnimations) return Duration.zero;
+    return presentation == AppMenuPresentation.adaptivePanel
+        ? _panelCloseDuration
+        : _closeDuration;
+  }
 
   @override
   Widget buildPage(
@@ -297,9 +317,16 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
+    final overlayMedia = MediaQuery.of(context);
+    final pageMedia = presentation == AppMenuPresentation.adaptivePanel
+        ? media.copyWith(
+            padding: _maxInsets(media.padding, overlayMedia.padding),
+            viewInsets: _maxInsets(media.viewInsets, overlayMedia.viewInsets),
+          )
+        : media;
     return themes.wrap(
       MediaQuery(
-        data: media,
+        data: pageMedia,
         child: CallbackShortcuts(
           bindings: {
             const SingleActivator(LogicalKeyboardKey.escape): () =>
@@ -312,24 +339,65 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
           child: LayoutBuilder(
             builder: (context, viewport) {
               final safe = Rect.fromLTRB(
-                media.padding.left + 12,
-                media.padding.top + 12,
-                viewport.maxWidth - media.padding.right - 12,
+                pageMedia.padding.left + 12,
+                pageMedia.padding.top + 12,
+                viewport.maxWidth - pageMedia.padding.right - 12,
                 viewport.maxHeight -
-                    math.max(media.padding.bottom, media.viewInsets.bottom) -
+                    math.max(
+                      pageMedia.padding.bottom,
+                      pageMedia.viewInsets.bottom,
+                    ) -
                     12,
               );
               final availableWidth = math.max(1.0, safe.width);
+              final requestedWidth =
+                  presentation == AppMenuPresentation.adaptivePanel
+                  ? anchor.width
+                  : math.max(272.0, math.min(anchor.width, 360.0));
               final double width = math.min<double>(
                 availableWidth,
-                math
-                    .max(272.0, math.min(anchor.width, 360.0))
-                    .clamp(
-                      constraints?.minWidth ?? 0.0,
-                      constraints?.maxWidth ?? double.infinity,
-                    ),
+                requestedWidth.clamp(
+                  constraints?.minWidth ?? 0.0,
+                  constraints?.maxWidth ?? double.infinity,
+                ),
               );
-              final geometry = _MenuGeometry(anchor, safe, anchorRadius);
+              final geometry = _MenuGeometry(
+                anchor,
+                safe,
+                anchorRadius,
+                panelGap: presentation == AppMenuPresentation.adaptivePanel
+                    ? 6
+                    : 0,
+              );
+              if (presentation == AppMenuPresentation.adaptivePanel) {
+                return CustomSingleChildLayout(
+                  delegate: _MenuLayout(geometry, width),
+                  child: AnimatedBuilder(
+                    animation: animation,
+                    builder: (context, child) {
+                      final reveal = _content.value;
+                      return GlassSurface(
+                        key: const ValueKey('app-menu-adaptive-surface'),
+                        shape: const RoundedSuperellipseBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(22)),
+                        ),
+                        role: GlassSurfaceRole.panel,
+                        color: color,
+                        visibility: animation.value.clamp(0, 1),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: IgnorePointer(
+                            ignoring:
+                                animation.status != AnimationStatus.completed,
+                            child: Opacity(opacity: reveal, child: child),
+                          ),
+                        ),
+                      );
+                    },
+                    child: _menuContent(context),
+                  ),
+                );
+              }
               return CustomSingleChildLayout(
                 delegate: _MenuLayout(geometry, width),
                 child: AnimatedBuilder(
@@ -401,15 +469,7 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
                       ),
                     );
                   },
-                  child: FocusTraversalGroup(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: _tiles(context),
-                      ),
-                    ),
-                  ),
+                  child: _menuContent(context),
                 ),
               );
             },
@@ -419,7 +479,32 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
     );
   }
 
+  EdgeInsets _maxInsets(EdgeInsets local, EdgeInsets overlay) =>
+      EdgeInsets.fromLTRB(
+        math.max(local.left, overlay.left),
+        math.max(local.top, overlay.top),
+        math.max(local.right, overlay.right),
+        math.max(local.bottom, overlay.bottom),
+      );
+
+  Widget _menuContent(BuildContext context) => FocusTraversalGroup(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(8),
+      child: Column(mainAxisSize: MainAxisSize.min, children: _tiles(context)),
+    ),
+  );
+
   List<Widget> _tiles(BuildContext context) {
+    PopupMenuItem<T>? preferredFocus;
+    if (presentation == AppMenuPresentation.adaptivePanel &&
+        initialValue != null) {
+      for (final item in items.whereType<PopupMenuItem<T>>()) {
+        if (item.enabled && item.value == initialValue) {
+          preferredFocus = item;
+          break;
+        }
+      }
+    }
     bool focusAssigned = false;
     return [
       for (final item in items)
@@ -432,7 +517,13 @@ class _AppMenuRoute<T> extends PopupRoute<T> {
             selected: item is CheckedPopupMenuItem<T>
                 ? item.checked
                 : initialValue != null && item.value == initialValue,
-            autofocus: item.enabled && !focusAssigned && (focusAssigned = true),
+            autofocus:
+                item.enabled &&
+                !focusAssigned &&
+                (preferredFocus == null || identical(item, preferredFocus)) &&
+                (focusAssigned = true),
+            ensureVisibleOnFocus:
+                presentation == AppMenuPresentation.adaptivePanel,
             onTap: item.enabled
                 ? () {
                     selectedCallback = item.onTap;
@@ -450,11 +541,13 @@ class _AppMenuTile<T> extends StatelessWidget {
     required this.item,
     required this.selected,
     required this.autofocus,
+    required this.ensureVisibleOnFocus,
     required this.onTap,
   });
   final PopupMenuItem<T> item;
   final bool selected;
   final bool autofocus;
+  final bool ensureVisibleOnFocus;
   final VoidCallback? onTap;
 
   @override
@@ -476,6 +569,22 @@ class _AppMenuTile<T> extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         autofocus: autofocus,
+        onFocusChange: ensureVisibleOnFocus
+            ? (focused) {
+                if (!focused) return;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!context.mounted) return;
+                  Scrollable.ensureVisible(
+                    context,
+                    alignment: .5,
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                  );
+                });
+              }
+            : null,
         borderRadius: BorderRadius.circular(14),
         child: Opacity(
           opacity: item.enabled ? 1 : 0.42,
@@ -548,16 +657,28 @@ class _AppMenuTile<T> extends StatelessWidget {
 }
 
 class _MenuGeometry {
-  const _MenuGeometry(this.anchor, this.safe, this.radius);
+  const _MenuGeometry(this.anchor, this.safe, this.radius, {this.panelGap = 0});
   final Rect anchor;
   final Rect safe;
   final double radius;
+  final double panelGap;
 
   Offset position(Size size) {
     final x = (anchor.right - size.width).clamp(
       safe.left,
       math.max(safe.left, safe.right - size.width),
     );
+    if (panelGap > 0) {
+      final below = anchor.bottom + panelGap;
+      final above = anchor.top - panelGap - size.height;
+      final y = below + size.height <= safe.bottom ? below : above;
+      return Offset(
+        x.toDouble(),
+        y
+            .clamp(safe.top, math.max(safe.top, safe.bottom - size.height))
+            .toDouble(),
+      );
+    }
     // Grow down from a top action; grow upward from a bottom list action.
     final y =
         (anchor.top + size.height <= safe.bottom
