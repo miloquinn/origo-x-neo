@@ -36,9 +36,9 @@ flowchart TD
 
 当前 `AppSkinCatalog.builtIn` 包含 `original`、`tidal`（海边来信）、`botanical`（花园漫读）、`celestial`（星际漫游）。后 3 套使用原有 IconPark 线描素材、新增原创动作几何与原创背景，覆盖 62 个槽位的浅色/深色/选中四种状态；返回、搜索等公共按钮也由同一主题替换。素材清单、来源与维护规则见[素材目录](app-skin-assets.md)，随包授权通过 `registerAppSkinLicenses()` 注入应用许可证页。
 
-`AppSkinIconSlot` 是前后端共同维护的 62 个稳定语义槽。v1 的固定 16 槽为：`home`、`library`、`discover`、`ai`、`profile`、`back`、`search`、`more`、`close`、`forward`、`settings`、`refresh`、`add`、`share`、`delete`、`check`。导航槽由 `HomeNavigationDestination` 映射，公共操作由 `AppSkinIcon.commonSlot` 统一适配，不从索引、译文或页面条件分支推导。缺少整个槽或加载失败时回退调用方的系统图标。
+`AppSkinIconSlot` 是前后端共同维护的 62 个稳定语义槽，全部纳入首个正式主题协议 V1。导航与常用动作包括：`home`、`library`、`discover`、`ai`、`profile`、`back`、`search`、`more`、`close`、`forward`、`settings`、`refresh`、`add`、`share`、`delete`、`check`。导航槽由 `HomeNavigationDestination` 映射，公共操作由 `AppSkinIcon.commonSlot` 统一适配，不从索引、译文或页面条件分支推导。缺少整个槽或加载失败时回退调用方的系统图标。
 
-v2 追加 46 槽：`bookmark`、`catalog`、`readAloud`、`locate`、`play`、`pause`、`stop`、`previous`、`next`、`rewind`、`fastForward`、`speed`、`timer`、`volume`、`volumeOff`、`expand`、`collapse`、`remove`、`filter`、`sort`、`layoutGrid`、`layoutList`、`download`、`upload`、`folder`、`createFolder`、`moveFolder`、`edit`、`copy`、`note`、`highlight`、`history`、`help`、`info`、`cloud`、`sync`、`save`、`restore`、`link`、`palette`、`font`、`image`、`device`、`key`、`extension`、`network`。各槽可选；播放、暂停、停止、跳章、快进、快退保持不同语义。
+阅读、播放、管理与偏好动作包括：`bookmark`、`catalog`、`readAloud`、`locate`、`play`、`pause`、`stop`、`previous`、`next`、`rewind`、`fastForward`、`speed`、`timer`、`volume`、`volumeOff`、`expand`、`collapse`、`remove`、`filter`、`sort`、`layoutGrid`、`layoutList`、`download`、`upload`、`folder`、`createFolder`、`moveFolder`、`edit`、`copy`、`note`、`highlight`、`history`、`help`、`info`、`cloud`、`sync`、`save`、`restore`、`link`、`palette`、`font`、`image`、`device`、`key`、`extension`、`network`。62 个槽全部可选，部分主题只需提供想替换的槽；播放、暂停、停止、跳章、快进、快退保持不同语义。
 
 `AppSkinIcon.adapt` 只接管已知 `Icon` 叶子，保留原图标对象、颜色透明度、尺寸、语义和文字方向；`selected` 显式状态优先，书签和朗读活动状态保持独立。阅读控制栏、图片阅读控制栏、自动翻页、选择菜单、目录/搜索/设置面板、触区编辑、注释工具、听书播放器/跟读，以及设置/书架标题与菜单共用此入口。播放、暂停、睡眠定时、播放面板与语音引擎使用实际状态选择贴图。品牌标志、书封面、加载动画和系统状态仍各自维护，不从 Widget 树递归替换。下划线、特殊翻页方式、顶部/底部对齐等没有准确语义槽的图标保留原字形，不借用含义不同的贴图。
 
@@ -71,9 +71,9 @@ AppSkin(
 
 ## 社区主题包、安装与联网边界
 
-主题包 v1/v2 制作、投稿与审核规范见官网仓库的 `docs/theme-market.md`，新版模板来自官网 `/theme-template-v2.zip`，旧版 `/theme-template.zip` 保持可用。主题页的市场入口通过官网 API 展示审核通过的主题，创作入口打开 `/themes/create`。桌面 APP 图标切换不属于主题包契约。
+主题包 V1 制作、投稿与审核规范见官网仓库的 `docs/theme-market.md`，唯一完整模板来自官网 `/theme-template.zip`，由 Next.js 的 `web/public/theme-template.zip` 提供。主题功能此前未正式发布，本次将完整契约统一为 `schemaVersion: 1`。主题页的市场入口通过官网 API 展示审核通过的主题，创作入口打开 `/themes/create`。桌面 APP 图标切换不属于主题包契约。
 
-`lib/models/theme_package.dart` 只解析纯数据 `manifest.json`。ZIP 只允许根目录清单/授权/README 和 `assets/` 下静态 PNG、JPEG、WebP；不允许脚本、字体、动画、网络 URL 或无关文件。限制为压缩 10 MiB、展开 20 MiB、v1 最多 96 个条目、v2 最多 512 个条目（含目录项）、清单 64 KiB、合计 2400 万解码像素；图标必须带透明通道、为不超过 512×512 的正方形，预览最大 1600×1600，背景最大 2048×2048。服务端重新编码图片与 ZIP，客户端仍独立校验。客户端严格区分 v1 固定 16 槽与 v2 的 62 槽，扩大内置枚举不会放宽旧协议。市场公开列表、详情、预览与下载按 `maxSchemaVersion` 过滤：缺省为 1，当前 APP 与官网显式请求 2；旧客户端不会看到不能安装的新协议包。安装收据及原有存储目录仍沿用原格式，保留已安装 v1 主题和用户设置。
+`lib/models/theme_package.dart` 只解析纯数据 `manifest.json`，严格要求整数 `schemaVersion: 1`，拒绝其他协议值和未知图标槽。ZIP 只允许根目录清单/授权/README 和 `assets/` 下静态 PNG、JPEG、WebP；不允许脚本、字体、动画、网络 URL 或无关文件。限制为压缩 10 MiB、展开 20 MiB、最多 512 个条目（含目录项）、清单 64 KiB、合计 2400 万解码像素；图标必须带透明通道、为不超过 512×512 的正方形，预览最大 1600×1600，背景最大 2048×2048。服务端重新编码图片与 ZIP，客户端仍独立校验。市场列表使用 `GET /api/v1/themes`，预览与下载仅携带主题自身的 `?version=N`，没有协议版本协商。主题自身的正整数 `version` 与协议、人工审核状态分开维护。安装收据、原有存储目录和用户设置沿用原格式；开发期间的 schema 2 包不自动改写，需按正式模板重新提交。
 
 `ThemePackageStore` 检查市场的 ID、精确版本、长度和 SHA-256，再读取 ZIP、解码图片并写入随机 staging。目录 rename 发布不可变版本，收据记录每个文件的哈希。重新加载核对文件集合、哈希与祖先链接边界；损坏包跳过，保存的版本失效时回退默认外观，不会自动启用新版。重新下载同版本时，完整有效版本仍拒绝覆盖；只有新包全部验证通过且原目录确认损坏、安全时，才把原目录原子移到随机隔离目录并发布新目录。发布失败恢复原目录，成功后清理隔离目录。
 
@@ -97,7 +97,7 @@ AppSkin(
 - `test/app_color_preset_state_test.dart`：默认/旧色迁移、失效 ID、顺序保存、失败重试和偏好隔离。
 - `test/app_theme_page_test.dart`：选择、真实素材、失败重试/快速选择竞态、选中语义、点击区域、大字体/长文案/平板与无障碍策略。
 - `test/settings_theme_entry_test.dart`：设置摘要入口和自由色盘移除。
-- `test/theme_package_model_test.dart`、`theme_package_store_test.dart`、`theme_package_state_test.dart`：v1/v2 严格解析、恶意包边界、两版服务端归一化官网模板安装、Windows 路径、链接、精确版本、损坏重装、独立两层组合与重启恢复。
+- `test/theme_package_model_test.dart`、`theme_package_store_test.dart`、`theme_package_state_test.dart`：唯一 V1 的完整 62 槽与未知协议拒绝、含目录的 512 条目边界、恶意包、Windows 路径、链接、精确版本、损坏重装、独立两层组合与重启恢复。`test/fixtures/theme-template.zip` 是服务端归一化的完整正式模板，`theme-template-partial.zip` 覆盖可选槽缺省；两者均为 V1。
 - `test/theme_market_api_test.dart`、`theme_market_page_test.dart`：官方 URL、联网撤回、流式长度、远程/本地市场操作和布局。
 - `test/app_skin_assets_test.dart`：实际随包素材解码及许可证注册。
 - `test/app_skin_test.dart`：目录、路径、不可变集合、明暗/选中解析及主题插值。
@@ -110,4 +110,4 @@ AppSkin(
 - `tool/preview_theme_gallery.dart`：真实 iOS Flutter 的配色页、浅/深贴图页、1024 平板、大字体和偏好设置预览。桌面模拟器载体用 FittedBox 承载完整设计尺寸，截图取内部 RepaintBoundary。本次原生渲染截图见 [2026-10-10 新素材与主题市场预览](previews/theme-market-20261010/README.md)，它不等同于用户真机视觉验收。
 - `tool/preview_app_skin.dart`：真实 Flutter 渲染的原始/贴图毛玻璃/液态/深色/实底/高对比预览，仅复用已有随包图片验证架构，不注册为生产皮肤。
 
-主题包 v1/v2 不支持脚本、字体、动画素材、远程图片、玻璃/阅读器配置或系统桌面图标切换。Dart 文件 API 缺少跨平台 openat/O_NOFOLLOW；逐级 lstat、解析根路径和操作前复核覆盖常规链接攻击，但同权限本机恶意进程并发替换目录的 TOCTOU 仍是沙箱外边界。自动化覆盖契约、安装、选择与联网门禁；真实创作者投稿/人工审核、用户真机视觉和交互另行验收，文档不代替部署或设备收据。
+主题包 V1 不支持脚本、字体、动画素材、远程图片、玻璃/阅读器配置或系统桌面图标切换。Dart 文件 API 缺少跨平台 openat/O_NOFOLLOW；逐级 lstat、解析根路径和操作前复核覆盖常规链接攻击，但同权限本机恶意进程并发替换目录的 TOCTOU 仍是沙箱外边界。自动化覆盖契约、安装、选择与联网门禁；真实创作者投稿/人工审核、用户真机视觉和交互另行验收，文档不代替部署或设备收据。

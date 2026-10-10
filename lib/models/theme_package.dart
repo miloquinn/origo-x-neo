@@ -1,4 +1,4 @@
-// 文件说明：定义可审核、可安装的第三方主题包 v1/v2 纯数据契约。
+// 文件说明：定义可审核、可安装的第三方主题包 V1 纯数据契约。
 // 安全边界：严格字段白名单；不允许网络地址、脚本、字体、动画或阅读器配置。
 
 import 'package:flutter/foundation.dart';
@@ -53,13 +53,7 @@ class ThemePackage {
     this.schemaVersion = 1,
   });
 
-  static const int currentSchemaVersion = 2;
-  static const int legacyIconSlotCount = 16;
-
-  static Iterable<AppSkinIconSlot> iconSlotsForSchema(int version) =>
-      version == 1
-      ? AppSkinIconSlot.values.take(legacyIconSlotCount)
-      : AppSkinIconSlot.values;
+  static const int currentSchemaVersion = 1;
 
   final int schemaVersion;
   final String id;
@@ -95,9 +89,9 @@ class ThemePackage {
     }, 'manifest');
 
     final schemaVersion = _integer(manifest, 'schemaVersion');
-    if (schemaVersion < 1 || schemaVersion > currentSchemaVersion) {
+    if (schemaVersion != currentSchemaVersion) {
       throw ThemePackageFormatException(
-        'schemaVersion must be 1 or $currentSchemaVersion',
+        'schemaVersion must be $currentSchemaVersion',
       );
     }
     final id = _text(manifest, 'id', max: 48);
@@ -134,11 +128,7 @@ class ThemePackage {
     final palette = paletteValue == null
         ? null
         : _parsePalette(_map(paletteValue, 'palette'));
-    final icons = _parseIcons(
-      manifest['icons'],
-      rootDirectory: canonicalRoot,
-      schemaVersion: schemaVersion,
-    );
+    final icons = _parseIcons(manifest['icons'], rootDirectory: canonicalRoot);
     final artwork = _parseArtwork(
       manifest['artwork'],
       rootDirectory: canonicalRoot,
@@ -172,13 +162,10 @@ class ThemePackage {
   static Map<AppSkinIconSlot, AppSkinIconAssets> _parseIcons(
     Object? value, {
     required String rootDirectory,
-    required int schemaVersion,
   }) {
     if (value == null) return const {};
     final map = _map(value, 'icons');
-    final allowed = iconSlotsForSchema(
-      schemaVersion,
-    ).map((slot) => slot.name).toSet();
+    final allowed = AppSkinIconSlot.values.map((slot) => slot.name).toSet();
     _expectKeys(map, allowed, 'icons');
     return {
       for (final entry in map.entries)

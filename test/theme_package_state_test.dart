@@ -147,7 +147,7 @@ void main() {
       await notifier.applyInstalledTheme(paletteOnly);
       expect(notifier.currentSkinPackage?.id, canonical.id);
       expect(notifier.currentColorPackage?.id, paletteOnly.id);
-      expect(notifier.currentSkin.icons.length, 16);
+      expect(notifier.currentSkin.icons.length, 62);
 
       final paletteTheme = notifier.currentAppTheme;
       await notifier.applyInstalledTheme(skinOnly);
@@ -227,11 +227,11 @@ Future<ThemePackage> _install(ThemePackageStore store, int version) async {
 }
 
 Future<ThemePackage> _installCanonicalTemplate(ThemePackageStore store) async {
-  final bytes = await File('test/fixtures/theme-template-v1.zip').readAsBytes();
+  final bytes = await File('test/fixtures/theme-template.zip').readAsBytes();
   return store.install(
     bytes,
     expectedSha256:
-        '8d47127b561065318f01b5e2f548556dac8c41c6712ccec6f365e1da8a187867',
+        '021964ff1554a371e530d6b35cca4f7ea613dcbc466844f645e5be02793840d0',
     expectedId: 'coastal-studio-template',
     expectedVersion: 1,
   );

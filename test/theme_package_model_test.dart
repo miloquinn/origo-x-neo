@@ -10,7 +10,7 @@ void main() {
   test('v1 manifest maps every public semantic slot to installed files', () {
     final manifest = _manifest();
     manifest['icons'] = {
-      for (final slot in AppSkinIconSlot.values.take(16))
+      for (final slot in AppSkinIconSlot.values)
         slot.name: {
           'normal': {'asset': 'assets/icon.png'},
           'selected': {
@@ -28,7 +28,8 @@ void main() {
 
     expect(package.runtimeSkinId, 'community_paper-garden');
     expect(package.skin.id, package.runtimeSkinId);
-    expect(package.skin.icons.keys, AppSkinIconSlot.values.take(16));
+    expect(package.schemaVersion, 1);
+    expect(package.skin.icons.keys, AppSkinIconSlot.values);
     expect(package.palette?.primary, '#123456');
     expect(package.preview.source, AppSkinImageSource.installedFile);
     expect(
@@ -47,7 +48,7 @@ void main() {
     );
   });
 
-  test('v2 accepts the complete vocabulary while v1 remains strict', () {
+  test('the first public protocol accepts 62 slots only as schema 1', () {
     final manifest = _manifest()
       ..['icons'] = {
         for (final slot in AppSkinIconSlot.values)
@@ -55,15 +56,11 @@ void main() {
             'normal': {'asset': 'assets/icon.png'},
           },
       };
-    expect(
-      () => ThemePackage.parse(manifest, rootDirectory: root),
-      throwsA(isA<ThemePackageFormatException>()),
-    );
-    manifest['schemaVersion'] = 2;
     final package = ThemePackage.parse(manifest, rootDirectory: root);
-    expect(package.schemaVersion, 2);
+    expect(ThemePackage.currentSchemaVersion, 1);
+    expect(package.schemaVersion, 1);
     expect(package.skin.icons.keys, AppSkinIconSlot.values);
-    for (final version in [0, 3]) {
+    for (final version in [0, 2, 3]) {
       manifest['schemaVersion'] = version;
       expect(
         () => ThemePackage.parse(manifest, rootDirectory: root),

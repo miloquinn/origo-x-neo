@@ -14,8 +14,7 @@ class ThemeMarketItem {
       license = json['license'] as String,
       sha256 = json['sha256'] as String,
       size = json['size'] as int {
-    if (schemaVersion < 1 ||
-        schemaVersion > ThemePackage.currentSchemaVersion ||
+    if (schemaVersion != ThemePackage.currentSchemaVersion ||
         !RegExp(r'^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$').hasMatch(id) ||
         id.length > 48 ||
         version < 1 ||
@@ -46,9 +45,9 @@ class ThemeMarketItem {
 
   // URLs are derived from validated identity, never taken from package input.
   String get downloadPath =>
-      '/api/v1/themes/${Uri.encodeComponent(id)}/download?version=$version&maxSchemaVersion=${ThemePackage.currentSchemaVersion}';
+      '/api/v1/themes/${Uri.encodeComponent(id)}/download?version=$version';
   String get previewPath =>
-      '/api/v1/themes/${Uri.encodeComponent(id)}/preview?version=$version&maxSchemaVersion=${ThemePackage.currentSchemaVersion}';
+      '/api/v1/themes/${Uri.encodeComponent(id)}/preview?version=$version';
 
   @override
   String toString() => jsonEncode({'id': id, 'version': version});

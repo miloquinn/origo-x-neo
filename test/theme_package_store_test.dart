@@ -33,21 +33,21 @@ void main() {
   });
 
   test(
-    'installs and reloads a normalized v2 market package with 62 slots',
+    'installs and reloads the complete formal V1 package with 62 slots',
     () async {
       final bytes = await File(
-        'test/fixtures/theme-template-v2.zip',
+        'test/fixtures/theme-template.zip',
       ).readAsBytes();
       const expectedSha256 =
-          '98035e71212cd4e76d703bf9261ca7df783c468eb554e263a87196de3d83ff8d';
+          '021964ff1554a371e530d6b35cca4f7ea613dcbc466844f645e5be02793840d0';
       expect(sha256.convert(bytes).toString(), expectedSha256);
       final package = await store.install(
         bytes,
         expectedSha256: expectedSha256,
-        expectedId: 'coastal-studio-v2-template',
+        expectedId: 'coastal-studio-template',
         expectedVersion: 1,
       );
-      expect(package.schemaVersion, 2);
+      expect(package.schemaVersion, 1);
       expect(package.skin.icons.keys.toSet(), AppSkinIconSlot.values.toSet());
       for (final icons in package.skin.icons.values) {
         expect(icons.selected, isNotNull);
@@ -55,69 +55,74 @@ void main() {
         expect(icons.selected!.darkAsset, isNotNull);
       }
       final reloaded = (await store.loadInstalled()).single;
-      expect(reloaded.schemaVersion, 2);
+      expect(reloaded.schemaVersion, 1);
       expect(reloaded.skin.icons.length, 62);
       await store.remove(reloaded);
       expect(await store.loadInstalled(), isEmpty);
     },
   );
 
-  test('installs and reloads the canonical server theme template', () async {
-    final bytes = await File(
-      'test/fixtures/theme-template-v1.zip',
-    ).readAsBytes();
-    const expectedSha256 =
-        '8d47127b561065318f01b5e2f548556dac8c41c6712ccec6f365e1da8a187867';
-    expect(sha256.convert(bytes).toString(), expectedSha256);
+  test(
+    'installs and reloads a partial theme with optional missing slots',
+    () async {
+      final bytes = await File(
+        'test/fixtures/theme-template-partial.zip',
+      ).readAsBytes();
+      const expectedSha256 =
+          '8d47127b561065318f01b5e2f548556dac8c41c6712ccec6f365e1da8a187867';
+      expect(sha256.convert(bytes).toString(), expectedSha256);
 
-    final package = await store.install(
-      bytes,
-      expectedSha256: expectedSha256,
-      expectedId: 'coastal-studio-template',
-      expectedVersion: 1,
-    );
+      final package = await store.install(
+        bytes,
+        expectedSha256: expectedSha256,
+        expectedId: 'coastal-studio-template',
+        expectedVersion: 1,
+      );
 
-    expect(
-      package.skin.icons.keys.toSet(),
-      AppSkinIconSlot.values.take(16).toSet(),
-    );
-    for (final slot in AppSkinIconSlot.values.take(16)) {
-      final icon = package.skin.icons[slot]!;
-      expect(icon.selected, isNotNull, reason: '$slot selected icon');
-      for (final image in [icon.normal, icon.selected!]) {
-        expect(image.darkAsset, isNotNull, reason: '$slot dark icon');
-        for (final brightness in Brightness.values) {
-          final png = await File(image.stablePathFor(brightness)).readAsBytes();
-          expect(png.length, greaterThan(25), reason: '$slot $brightness');
-          expect(
-            png[25],
-            anyOf(4, 6),
-            reason: '$slot $brightness must retain a PNG alpha channel',
-          );
+      expect(
+        package.skin.icons.keys.toSet(),
+        AppSkinIconSlot.values.take(16).toSet(),
+      );
+      for (final slot in AppSkinIconSlot.values.take(16)) {
+        final icon = package.skin.icons[slot]!;
+        expect(icon.selected, isNotNull, reason: '$slot selected icon');
+        for (final image in [icon.normal, icon.selected!]) {
+          expect(image.darkAsset, isNotNull, reason: '$slot dark icon');
+          for (final brightness in Brightness.values) {
+            final png = await File(
+              image.stablePathFor(brightness),
+            ).readAsBytes();
+            expect(png.length, greaterThan(25), reason: '$slot $brightness');
+            expect(
+              png[25],
+              anyOf(4, 6),
+              reason: '$slot $brightness must retain a PNG alpha channel',
+            );
+          }
         }
       }
-    }
 
-    for (final slot in AppSkinArtworkSlot.values) {
-      final artwork = package.skin.artwork[slot]!;
-      expect(
-        artwork.stablePathFor(Brightness.light),
-        endsWith(path.join('assets', 'background.jpg')),
-      );
-      expect(
-        artwork.stablePathFor(Brightness.dark),
-        endsWith(path.join('assets', 'background-dark.jpg')),
-      );
-    }
+      for (final slot in AppSkinArtworkSlot.values) {
+        final artwork = package.skin.artwork[slot]!;
+        expect(
+          artwork.stablePathFor(Brightness.light),
+          endsWith(path.join('assets', 'background.jpg')),
+        );
+        expect(
+          artwork.stablePathFor(Brightness.dark),
+          endsWith(path.join('assets', 'background-dark.jpg')),
+        );
+      }
 
-    final reloaded = (await store.loadInstalled()).single;
-    expect(reloaded.id, 'coastal-studio-template');
-    expect(reloaded.version, 1);
-    expect(
-      reloaded.referencedRelativePaths(),
-      package.referencedRelativePaths(),
-    );
-  });
+      final reloaded = (await store.loadInstalled()).single;
+      expect(reloaded.id, 'coastal-studio-template');
+      expect(reloaded.version, 1);
+      expect(
+        reloaded.referencedRelativePaths(),
+        package.referencedRelativePaths(),
+      );
+    },
+  );
 
   test(
     'installs atomically, reloads verified versions and resolves fallback',
@@ -252,9 +257,43 @@ void main() {
     },
   );
 
-  test('enforces the 96-entry and 64-KiB manifest boundaries', () async {
+  test('counts empty directories within the 512-entry boundary', () async {
+    final files = _files();
+    for (var index = files.length; index < 512; index++) {
+      files['assets/folder-$index/'] = Uint8List(0);
+    }
+    final bytes = _zip(files);
+    final installed = await store.install(
+      bytes,
+      expectedSha256: sha256.convert(bytes).toString(),
+      expectedId: 'paper-garden',
+      expectedVersion: 1,
+    );
+    expect(installed.schemaVersion, 1);
+    expect((await store.loadInstalled()).single.id, installed.id);
+
+    files['assets/overflow/'] = Uint8List(0);
+    final oversized = _zip(files);
+    await expectLater(
+      store.install(
+        oversized,
+        expectedSha256: sha256.convert(oversized).toString(),
+        expectedId: 'paper-garden',
+        expectedVersion: 1,
+      ),
+      throwsA(
+        isA<ThemePackageStoreException>().having(
+          (error) => error.message,
+          'entry limit',
+          contains('512'),
+        ),
+      ),
+    );
+  });
+
+  test('enforces the 512-entry and 64-KiB manifest boundaries', () async {
     final tooMany = _files();
-    for (var index = 0; index < 92; index++) {
+    for (var index = 0; index < 508; index++) {
       tooMany['assets/extra-$index.png'] = _png;
     }
     final oversizedManifest = _files();
@@ -514,7 +553,10 @@ Map<String, Uint8List> _files({
 Uint8List _zip(Map<String, Uint8List> files, {String? symbolicLink}) {
   final archive = Archive();
   for (final entry in files.entries) {
-    archive.addFile(ArchiveFile(entry.key, entry.value.length, entry.value));
+    archive.addFile(
+      ArchiveFile(entry.key, entry.value.length, entry.value)
+        ..isFile = !entry.key.endsWith('/'),
+    );
   }
   if (symbolicLink != null) {
     final link = ArchiveFile(symbolicLink, 0, Uint8List(0))

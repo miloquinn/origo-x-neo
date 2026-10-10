@@ -30,21 +30,15 @@ void main() {
     final theme = (await api.approvedThemes()).single;
     expect(
       theme.downloadPath,
-      '/api/v1/themes/paper-garden/download?version=2&maxSchemaVersion=2',
+      '/api/v1/themes/paper-garden/download?version=2',
     );
-    expect(
-      theme.previewPath,
-      '/api/v1/themes/paper-garden/preview?version=2&maxSchemaVersion=2',
-    );
+    expect(theme.previewPath, '/api/v1/themes/paper-garden/preview?version=2');
     expect(adapter.requests.single.uri.host, 'example.test');
-    expect(
-      adapter.requests.single.uri.queryParameters['maxSchemaVersion'],
-      '2',
-    );
+    expect(adapter.requests.single.uri.queryParameters, isEmpty);
     expect(theme.schemaVersion, 1);
     expect(
-      ThemeMarketItem.fromJson({..._item(), 'schemaVersion': 2}).schemaVersion,
-      2,
+      () => ThemeMarketItem.fromJson({..._item(), 'schemaVersion': 2}),
+      throwsFormatException,
     );
     expect(
       () => ThemeMarketItem.fromJson({..._item(), 'schemaVersion': 3}),
