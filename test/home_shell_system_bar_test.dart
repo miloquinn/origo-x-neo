@@ -7,6 +7,8 @@ import 'package:xxread/models/home_navigation_destination.dart';
 import 'package:xxread/pages/home/home_shell_page.dart';
 import 'package:xxread/pages/home/widgets/home_mobile_top_bar.dart';
 import 'package:xxread/widgets/glass_top_bar.dart';
+import 'package:xxread/widgets/floating_pill_navigation_surface.dart';
+import 'package:xxread/pages/home/home_mobile_chrome.dart';
 import 'package:xxread/widgets/gradient_top_backdrop.dart';
 import 'package:xxread/services/ai/ai_chat_history_store.dart';
 import 'package:xxread/services/core/app_settings_service.dart';
@@ -15,6 +17,48 @@ import 'package:xxread/utils/glass_config.dart';
 import 'package:xxread/utils/ui_style.dart';
 
 void main() {
+  for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+    testWidgets(
+      '${platform.name} floating navigation respects its bottom gap',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final historyStore = AiChatHistoryStore();
+        addTearDown(historyStore.dispose);
+        await tester.binding.setSurfaceSize(const Size(402, 874));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider(
+            create: (_) => AppSettingsNotifier(),
+            child: MaterialApp(
+              locale: const Locale('zh'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(402, 874),
+                  viewPadding: EdgeInsets.only(top: 62, bottom: 34),
+                ),
+                child: HomeShellPage(aiChatHistoryStore: historyStore),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        final bar = find.byType(FloatingPillNavigationSurface);
+        final rect = tester.getRect(bar);
+        final gap = platform == TargetPlatform.iOS ? 2.0 : 10.0;
+        expect(rect.bottom, 874 - 34 - gap);
+        expect(rect.height, platform == TargetPlatform.iOS ? 60 : 56);
+        final metrics = HomeMobileChromeScope.of(tester.element(bar));
+        expect(metrics.pageBottomPadding, 874 - rect.top + 10);
+        expect(metrics.floatingActionBottomMargin, 874 - rect.top + 15);
+        expect(tester.takeException(), isNull);
+      },
+      variant: TargetPlatformVariant({platform}),
+    );
+  }
+
   testWidgets(
     'unrelated settings notifications keep the home shell widget instances',
     (tester) async {

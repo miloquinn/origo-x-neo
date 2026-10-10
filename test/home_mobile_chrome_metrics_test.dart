@@ -37,6 +37,7 @@ void main() {
           size: Size(393, 852),
           viewPadding: EdgeInsets.only(top: 59, bottom: 34),
         ),
+        platform: TargetPlatform.iOS,
       );
 
       expect(metrics.systemTopInset, 59);
@@ -44,10 +45,39 @@ void main() {
       expect(metrics.floatingNavHeight, 56);
       expect(metrics.topBarHeight, 119);
       expect(metrics.pageTopPadding, 127);
-      expect(metrics.navBottomInset, 44);
-      expect(metrics.navContainerHeight, 100);
-      expect(metrics.pageBottomPadding, 110);
-      expect(metrics.floatingActionBottomMargin, 115);
+      expect(metrics.navBottomInset, 36);
+      expect(metrics.navContainerHeight, 92);
+      expect(metrics.pageBottomPadding, 102);
+      expect(metrics.floatingActionBottomMargin, 107);
+    });
+
+    test('iOS gap preserves safe area across keyboards and custom heights', () {
+      for (final inset in [20.0, 34.0, 60.0]) {
+        for (final height in [52.0, 60.0, 72.0]) {
+          for (final keyboard in [0.0, 300.0]) {
+            final metrics = HomeMobileChromeMetrics.fromMediaQuery(
+              MediaQueryData(
+                viewPadding: EdgeInsets.only(bottom: inset),
+                viewInsets: EdgeInsets.only(bottom: keyboard),
+              ),
+              platform: TargetPlatform.iOS,
+              floatingNavHeight: height,
+            );
+            expect(metrics.navBottomInset, inset + 2);
+            expect(metrics.pageBottomPadding, height + inset + 12);
+            expect(metrics.floatingActionBottomMargin, height + inset + 17);
+            expect(metrics.keyboardVisible, keyboard > 0);
+          }
+        }
+      }
+    });
+
+    test('iPhones without a home indicator retain the existing edge gap', () {
+      final metrics = HomeMobileChromeMetrics.fromMediaQuery(
+        const MediaQueryData(),
+        platform: TargetPlatform.iOS,
+      );
+      expect(metrics.navBottomInset, 10);
     });
 
     test(
@@ -136,6 +166,7 @@ void main() {
           size: Size(412, 915),
           viewPadding: EdgeInsets.only(top: 24, bottom: 24),
         ),
+        platform: TargetPlatform.android,
       );
 
       expect(metrics.topBarHeight, 84);

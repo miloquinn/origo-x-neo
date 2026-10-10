@@ -1,6 +1,7 @@
 // 文件说明：首页响应式布局常量文件，统一定义间距、断点和尺寸策略。
 // 技术要点：Flutter UI。
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 /// 首页布局公共常量。
@@ -17,6 +18,7 @@ bool homeTabletStacksNavigationLabels(TextScaler scaler) =>
 const double kHomeMobileTopBarContentHeight = 60.0;
 const double kHomeMobileFloatingNavHeight = 56.0;
 const double kHomeMobileFloatingNavBottomGap = 10.0;
+const double kHomeIosFloatingNavBottomGap = 2.0;
 const double kHomeMobileFloatingNavScreenGap = 36.0;
 const double kHomeMobileFloatingNavHorizontalPadding = 4.0;
 const double kHomeMobileFloatingNavDesiredItemWidth = 90.0;
@@ -116,12 +118,14 @@ HomeMobileFloatingNavDimensions homeMobileFloatingNavDimensionsFor({
 /// 手机壳层的统一安全区与浮动控件尺寸。
 ///
 /// 系统安全区始终来自 [MediaQueryData.viewPadding]，这样键盘弹出时不会
-/// 改变 Home Indicator / Dynamic Island 的真实占位，也不需要按平台或机型分支。
+/// 改变 Home Indicator / Dynamic Island 的真实占位。iOS 仅缩小安全区外的
+/// 装饰间距，不削减系统安全区。
 class HomeMobileChromeMetrics {
   final double systemTopInset;
   final double systemBottomInset;
   final double topBarContentHeight;
   final double floatingNavHeight;
+  final double floatingNavBottomGap;
 
   /// 键盘是否可见。必须在壳层 Scaffold 外侧读取原始 viewInsets 得出——
   /// Scaffold 的键盘避让会把 inset 从子树 MediaQuery 中消费掉，
@@ -135,6 +139,7 @@ class HomeMobileChromeMetrics {
     required this.systemBottomInset,
     this.topBarContentHeight = kHomeMobileTopBarContentHeight,
     this.floatingNavHeight = kHomeMobileFloatingNavHeight,
+    this.floatingNavBottomGap = kHomeMobileFloatingNavBottomGap,
     this.keyboardVisible = false,
     this.navigationAtTop = false,
     this.tabletToolbarInline = false,
@@ -147,6 +152,7 @@ class HomeMobileChromeMetrics {
     bool tabletToolbarInline = false,
     double topBarContentHeight = kHomeMobileTopBarContentHeight,
     double floatingNavHeight = kHomeMobileFloatingNavHeight,
+    TargetPlatform? platform,
   }) {
     final resolvedInsets = systemInsets ?? mediaQuery.viewPadding;
     return HomeMobileChromeMetrics(
@@ -156,6 +162,11 @@ class HomeMobileChromeMetrics {
       systemTopInset: resolvedInsets.top,
       systemBottomInset: resolvedInsets.bottom,
       floatingNavHeight: floatingNavHeight,
+      floatingNavBottomGap:
+          (platform ?? defaultTargetPlatform) == TargetPlatform.iOS &&
+              resolvedInsets.bottom >= 20
+          ? kHomeIosFloatingNavBottomGap
+          : kHomeMobileFloatingNavBottomGap,
       keyboardVisible: mediaQuery.viewInsets.bottom > 0,
     );
   }
@@ -192,8 +203,7 @@ class HomeMobileChromeMetrics {
   double get pageTopPadding =>
       topBarHeight + (navigationAtTop ? 40 : kHomeMobileContentTopExtra);
 
-  double get navBottomInset =>
-      systemBottomInset + kHomeMobileFloatingNavBottomGap;
+  double get navBottomInset => systemBottomInset + floatingNavBottomGap;
 
   double get navContainerHeight => floatingNavHeight + navBottomInset;
 
@@ -255,6 +265,8 @@ class HomeMobileChromeScope extends InheritedWidget {
         oldWidget.metrics.systemBottomInset != metrics.systemBottomInset ||
         oldWidget.metrics.topBarContentHeight != metrics.topBarContentHeight ||
         oldWidget.metrics.floatingNavHeight != metrics.floatingNavHeight ||
+        oldWidget.metrics.floatingNavBottomGap !=
+            metrics.floatingNavBottomGap ||
         oldWidget.metrics.keyboardVisible != metrics.keyboardVisible;
   }
 }

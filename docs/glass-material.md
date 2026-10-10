@@ -27,6 +27,8 @@
 
 `GlassSurface` 不增加内容内边距，背景在独立图层绘制，阴影在裁切之外。形状裁切、内容留白及按钮 ripple 由专属组件管理。`GlassControlSurface` 仅是控件布局适配入口，明确保留原一像素留白并委托公共背景。消费者统一传语义 `outlineColor`，没有只读取颜色却接收宽度/样式的旧 `BorderSide` 接口；描边透明度与宽度由材质解析。
 
+首页底置导航的位置由 `lib/pages/home/home_mobile_chrome.dart` 的 `HomeMobileChromeMetrics` 统一计算，`home_shell_layout_part.dart` 消费同一份指标。带 Home Indicator 的 iOS 设备（底部 `viewPadding` 至少 20 点）保留完整系统安全区，只将区外间距设为 2 点，比原位置下移 8 点；Android 和无 Home Indicator 的 iPhone 仍留 10 点。内容底部留白、书库多选操作栏及悬浮按钮随同一指标避让；平板顶置导航位置不受底部间距影响。键盘隐藏导航和阅读返回安全区稳定策略保持原有契约。回归入口为 `test/home_mobile_chrome_metrics_test.dart` 与 `test/home_shell_system_bar_test.dart`；实际触感与视觉位置仍需真机验收。
+
 阅读器传自己的背景、描边、阴影与亮暗主题。`ReaderThemePalette.toThemeData(parentTheme: ...)` 保留应用的外观扩展及文字排版，再应用阅读配色；目录面板缓存也以父主题身份失效，切换阅读配色不会丢掉玻璃设置。
 
 ## 策略与特殊渲染
