@@ -49,7 +49,7 @@ EPUB 仅“书籍内置”保留书内字体；系统与自定义选择按已有
 - `lib/pages/settings/cloud_tts_settings_page.dart` 是应用设置与听书播放器共用的配置入口。主页面直接列出豆包、MiniMax、OpenAI、小米 MiMo 预设，以及已有的命名语音；点预设直接新建，点已保存语音直接编辑，当前配置显示选中标记。添加兼容服务直接进入自定义编辑，不再多跳一层服务列表。
 - 编辑页优先展示语音模型、音色、API Key 和试听。模型与音频格式共用 `PillDropdown`，音色在 `GlassDialog` 中通过 `PillSearchField` 搜索；输入框共用 `PillInputSurface`，试听与保存共用 `GlassTextButton`。材质由共享玻璃层适配玻璃、无玻璃及明暗主题，不在页面内另写下拉材质。
 - 配置名称、地址、自定义模型和音色 ID、音频格式、失败回退及密钥移除位于高级设置。收起高级区仍参与表单校验，失败时展开内联错误；自定义模型和音色输入即时更新上方选择器，不用预设值覆盖用户输入。
-- `lib/widgets/cloud_tts_provider_logo.dart` 复用 AI 配置的离线品牌图；缺失的豆包与 MiMo 图标由固定版本的 MIT 图标资源补齐，来源见 `assets/ai_providers/NOTICE.md`。自定义服务使用通用图标。
+- `lib/widgets/cloud_tts_provider_logo.dart` 复用 AI 配置的中性服务图标，由 `AppSkinIcon` 的 `network` 槽位适配皮肤。未取得品牌方书面授权时不展示第三方 Logo；旧素材版权和品牌核对见 [服务素材与许可](provider-brand-assets.md)。
 - 沿用现有 profile、密钥与试听合同：空白密钥保留已保存值，移除仅在保存时执行，退出编辑不会清除；不同配置的密钥独立，删除单个配置不影响其他语音。试听暂停听书，使用编辑中的参数与当前语速，停止或退出后旧请求不再发声。本轮不改变服务端协议、模型目录及播放引擎。
 
 回归入口：`test/cloud_tts_settings_page_test.dart` 覆盖预设直达、自定义保存、选择器同步、折叠校验、命名语音和密钥隔离、保存失败重试、搜索音色、小屏键盘下保存及玻璃/无玻璃明暗场景；`test/reader_aloud_cloud_service_test.dart` 保留真实请求合同、配置迁移、试听取消与播放隔离回归。图形测试使用生产 Widget 渲染，不能代替真实服务音频与真机触摸验收。

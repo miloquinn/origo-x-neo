@@ -8,8 +8,13 @@ The source glyph names match the destination file names except for
 `zhipu.png`, which uses the `zai` Z_ glyph, and `siliconflow.png`, which uses
 the `siliconcloud-color` glyph. Cloud TTS also uses `doubao-color` for
 `doubao.png` and `xiaomimimo` for `mimo.png` from the same pinned commit.
-Color variants are used when Lobe Icons
-provides one; monochrome glyphs are tinted by the app theme at runtime.
+These are legacy resources. The app currently displays service names with its
+own neutral semantic icons instead of third-party logos because written brand
+permissions have not been obtained. Asset identifiers remain only as the
+existing service-name matching contract; neither AI nor cloud TTS configuration
+loads the provider PNGs for display. The resources and complete MIT attribution
+are retained offline. Do not restore their display without checking official
+artwork, identity and the brand's required permissions.
 
 Lobe Icons is distributed under the MIT License:
 
@@ -32,3 +37,18 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Third-party brand rights
+
+Third-party service names, trademarks and logos belong to their respective
+rights holders. Their use identifies services users may configure and does
+not imply partnership, sponsorship, authorized representation or endorsement.
+The MIT license above applies to the Lobe Icons resources; it does not grant
+blanket permission to use third-party trademarks.
+
+The app exposes the full MIT text at `LICENSE-MIT.txt` and the separate
+bilingual attribution and brand statement at `BRAND-NOTICE.txt`. Both are
+available offline in the app's credits and license pages. Official source
+checks, specific findings and remaining permission limits are recorded in
+`docs/provider-brand-assets.md`. A disclaimer does not replace a required
+brand permission or waive a rights holder's terms.

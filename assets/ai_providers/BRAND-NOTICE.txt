@@ -1,0 +1,17 @@
+第三方服务标识与素材声明 / Third-party service marks and artwork
+
+OpenAI、Claude / Anthropic、Google Gemini、DeepSeek、通义千问 / Qwen、智谱 / Z.ai、MiniMax、Kimi / Moonshot AI、Groq、硅基流动 / SiliconFlow、豆包 / Doubao、Xiaomi MiMo 的名称、商标与标识归各自权利人所有。
+
+这些名称与标识仅用于识别用户可以自行配置的第三方服务，不表示 Origo X 与相应权利人存在合作、赞助、授权代理或认可关系，也不保证自定义接口由该品牌运营。
+
+部分图标资源来自 Lobe Icons，版本固定于提交 c385b2b8d1f9e19aa86e628d4e23c91ee1111a47，按 MIT 许可证使用。完整版权和许可文本见本页的「Lobe Icons」条目。库的 MIT 许可证与第三方商标权相互独立，不代表各品牌对商标使用的统一授权。
+
+当前显示方式：服务名称配合 Origo X 自己的中性图标。因未取得品牌方书面 Logo 使用授权，应用内不展示上述第三方 Logo。旧版图标素材仍随包保留，其 MIT 版权声明同时保留；留存素材不表示获得品牌授权。今后恢复标识前，需要核对对应服务、官方原始资产、允许的用途、配色、比例与留白，并取得品牌规范所要求的许可。
+
+Third-party names, trademarks and logos belong to their respective rights holders. They identify services that users may configure. Their appearance does not imply partnership, sponsorship, authorized representation or endorsement of Origo X, and does not certify the operator of a custom endpoint.
+
+Some icon resources are from Lobe Icons at commit c385b2b8d1f9e19aa86e628d4e23c91ee1111a47 under the MIT License. The complete copyright and license notice is available in the Lobe Icons entry. This library license does not grant blanket permission to use third-party trademarks.
+
+Current display: service names with Origo X's own neutral icons. The app does not display these third-party logos because written brand permissions have not been obtained. Legacy icon resources remain bundled with their MIT copyright notice; retaining resources does not imply brand permission. Before restoring a mark, verify its service identity, official original artwork, permitted use, colors, proportions and clear space, and obtain any permission required by the brand guidelines.
+
+Groq is a trademark of Groq LLC and/or its affiliates. Origo X is not affiliated with or endorsed by Groq LLC.

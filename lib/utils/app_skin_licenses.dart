@@ -4,9 +4,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'provider_asset_licenses.dart';
+
 bool _appSkinLicensesRegistered = false;
 
 void registerAppSkinLicenses() {
+  registerProviderAssetLicenses();
   if (_appSkinLicensesRegistered) return;
   _appSkinLicensesRegistered = true;
 

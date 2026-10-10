@@ -12,6 +12,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_platfor
 import 'package:xxread/l10n/app_localizations.dart';
 import 'package:xxread/models/app_skin.dart';
 import 'package:xxread/pages/settings/app_theme_page.dart';
+import 'package:xxread/pages/settings/about/open_source_licenses_page.dart';
+import 'package:xxread/widgets/glass_buttons.dart';
 import 'package:xxread/services/core/theme_notifier.dart';
 import 'package:xxread/utils/app_themes.dart';
 import 'package:xxread/utils/ui_style.dart';
@@ -489,4 +491,31 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+  testWidgets(
+    'artwork credits route uses shared UI and shows offline notices',
+    (tester) async {
+      await _pumpGallery(tester, locale: const Locale('zh'));
+      final credits = find.byKey(const ValueKey('theme-asset-credits'));
+      await tester.ensureVisible(credits);
+      await tester.pumpAndSettle();
+      expect(tester.widget(credits), isA<GlassTextButton>());
+      await tester.tap(credits);
+      await tester.pumpAndSettle();
+      final page = tester.widget<OpenSourceLicensesPage>(
+        find.byType(OpenSourceLicensesPage),
+      );
+      expect(page.prioritizeAssets, isTrue);
+      expect(page.title, '素材与开源致谢');
+      expect(find.byType(LicensePage), findsNothing);
+      expect(
+        find.byKey(const ValueKey('skin-artwork-credits')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('provider-brand-notice')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

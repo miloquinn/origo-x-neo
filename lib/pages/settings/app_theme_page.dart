@@ -15,7 +15,9 @@ import '../../utils/ui_style.dart';
 import '../../widgets/app_skin_icon.dart';
 import '../../widgets/app_theme_preview.dart';
 import '../../widgets/floating_subpage_scaffold.dart';
+import '../../widgets/glass_buttons.dart';
 import '../../widgets/side_toast.dart';
+import 'about/open_source_licenses_page.dart';
 import 'theme_market_page.dart';
 
 enum AppThemeCategory { color, artwork }
@@ -140,11 +142,26 @@ class _AppThemePageState extends State<AppThemePage> {
                     ),
                     const SizedBox(height: 8),
                     Center(
-                      child: TextButton.icon(
+                      child: GlassTextButton(
                         key: const ValueKey('theme-asset-credits'),
-                        onPressed: () => showLicensePage(context: context),
-                        icon: const Icon(Icons.info_outline_rounded, size: 16),
-                        label: Text(l10n.settingsThemeCredits),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => OpenSourceLicensesPage(
+                              title: l10n.settingsThemeCredits,
+                              prioritizeAssets: true,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppSkinIcon.adapt(
+                              const Icon(Icons.info_outline_rounded, size: 16),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(child: Text(l10n.settingsThemeCredits)),
+                          ],
+                        ),
                       ),
                     ),
                   ],

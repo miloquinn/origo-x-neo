@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../models/app_skin.dart';
+import 'app_skin_icon.dart';
+
 /// Shared brand labels for preset and hand-edited compatible connections.
 String aiProviderDisplayName(
   BuildContext context,
@@ -22,38 +25,19 @@ String aiProviderDisplayName(
   };
 }
 
-/// Bundled provider artwork stays available offline and never contacts a logo CDN.
+/// Providers use our own semantic icon until brand permissions are obtained.
+/// The legacy asset identifier is retained for service-name matching only.
 class AiProviderLogo extends StatelessWidget {
   const AiProviderLogo({super.key, this.asset, this.size = 32});
-
-  static const _monochromeAssets = {
-    'assets/ai_providers/openai.png',
-    'assets/ai_providers/zhipu.png',
-    'assets/ai_providers/moonshot.png',
-    'assets/ai_providers/groq.png',
-    'assets/ai_providers/mimo.png',
-  };
 
   final String? asset;
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    final asset = this.asset;
-    if (asset == null) {
-      return Icon(Icons.hub_outlined, size: size);
-    }
-
-    return Image.asset(
-      asset,
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-      color: _monochromeAssets.contains(asset)
-          ? Theme.of(context).colorScheme.onSurface
-          : null,
-      colorBlendMode: BlendMode.srcIn,
-      errorBuilder: (_, _, _) => Icon(Icons.hub_outlined, size: size),
+    return AppSkinIcon(
+      slot: AppSkinIconSlot.network,
+      fallback: Icon(Icons.hub_outlined, size: size),
     );
   }
 }
